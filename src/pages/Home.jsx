@@ -62,16 +62,17 @@ export default function Home() {
       setStatus('正在儲存檢測結果...')
       
       // 儲存 SEO 審計結果到資料庫
+      // 將複雜的 JSON 物件轉換為簡單的值
       const { error: seoError } = await supabase
         .from('seo_audits')
         .insert([{
           website_id: websiteId,
           score: seoResult.score,
-          meta_tags: seoResult.meta_tags,
-          h1_structure: seoResult.h1_structure,
-          alt_tags: seoResult.alt_tags,
-          mobile_compatible: seoResult.mobile_compatible,
-          page_speed: seoResult.page_speed
+          meta_tags: JSON.stringify(seoResult.meta_tags),
+          h1_structure: JSON.stringify(seoResult.h1_structure),
+          alt_tags: JSON.stringify(seoResult.alt_tags),
+          mobile_compatible: JSON.stringify(seoResult.mobile_compatible),
+          page_speed: JSON.stringify(seoResult.page_speed)
         }])
 
       if (seoError) {
@@ -84,14 +85,13 @@ export default function Home() {
         .insert([{
           website_id: websiteId,
           score: aeoResult.score,
-          json_ld: aeoResult.json_ld,
-          llms_txt: aeoResult.llms_txt,
-          open_graph: aeoResult.open_graph,
-          twitter_card: aeoResult.twitter_card,
-          canonical: aeoResult.canonical,
-          robots_txt: aeoResult.robots_txt,
-          sitemap: aeoResult.sitemap,
-          breadcrumbs: aeoResult.breadcrumbs
+          json_ld: !!aeoResult.json_ld,
+          llms_txt: !!aeoResult.llms_txt,
+          open_graph: !!aeoResult.open_graph,
+          twitter_card: !!aeoResult.twitter_card,
+          canonical: !!aeoResult.canonical,
+          robots_txt: !!aeoResult.robots_txt,
+          sitemap: !!aeoResult.sitemap
         }])
 
       if (aeoError) {
