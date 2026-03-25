@@ -4,7 +4,7 @@
  */
 
 export default async function handler(req, res) {
-  // 允許所有來源（開發階段）
+  // 允許所有來源
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
@@ -29,14 +29,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: '無效的 URL' })
     }
 
-    // 抓取網站內容
-    const response = await fetch(targetUrl.toString(), {
+    // 使用 allorigins.win 代理服務（從伺服器端繞過 CORS）
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl.toString())}`
+    
+    const response = await fetch(proxyUrl, {
       method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7'
-      }
+      },
+      signal: AbortSignal.timeout(20000) // 20秒超時
     })
 
     if (!response.ok) {
