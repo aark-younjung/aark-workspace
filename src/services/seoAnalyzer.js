@@ -199,21 +199,27 @@ function checkMobileCompatibility(doc) {
 
 /**
  * 5. 頁面載入速度檢測
+ * 透過 /api/fetch-url proxy 測量（避免瀏覽器 CORS 阻擋）
  * @param {string} url - 網址
  * @returns {Promise<Object>} - 檢測結果
  */
 async function checkPageSpeed(url) {
-  const startTime = performance.now()
-  
+  const clientStart = performance.now()
+
   try {
-    const response = await fetch(url, {
-      method: 'HEAD',
-      cache: 'no-store'
-    })
-    
-    const endTime = performance.now()
-    const loadTime = Math.round(endTime - startTime)
-    
+    const proxyUrl = `${API_BASE}?url=${encodeURIComponent(url)}`
+    const response = await fetch(proxyUrl, { cache: 'no-store' })
+    const clientEnd = performance.now()
+
+    // 優先使用伺服器端回傳的 fetchTime（較準確），否則用客戶端測量
+    let loadTime
+    if (response.ok) {
+      const data = await response.json()
+      loadTime = data.fetchTime ?? Math.round(clientEnd - clientStart)
+    } else {
+      loadTime = Math.round(clientEnd - clientStart)
+    }
+
     // 評定速度等級
     let speedGrade = '快速'
     if (loadTime > 3000) {
@@ -221,18 +227,17 @@ async function checkPageSpeed(url) {
     } else if (loadTime > 1500) {
       speedGrade = '一般'
     }
-    
+
     // 評分標準 (>5秒 30分, 3-5秒 60分, 1.5-3秒 80分, <1.5秒 100分)
     let score = 100
     if (loadTime > 5000) {
       score = 30
     } else if (loadTime > 3000) {
-      speedGrade = '緩慢'
       score = 60
     } else if (loadTime > 1500) {
       score = 80
     }
-    
+
     return {
       loadTime,
       speedGrade,
