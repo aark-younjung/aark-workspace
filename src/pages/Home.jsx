@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { analyzeSEO } from '../services/seoAnalyzer'
+import { analyzeAEO } from '../services/aeoAnalyzer'
 
 export default function Home() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState('')
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -12,6 +15,8 @@ export default function Home() {
     if (!url) return
 
     setLoading(true)
+    setStatus('正在建立網站記錄...')
+    
     try {
       // 清理 URL
       let cleanUrl = url.trim()
@@ -29,6 +34,7 @@ export default function Home() {
       let websiteId
       if (existing) {
         websiteId = existing.id
+        setStatus('網站已存在，正在執行 SEO 檢測...')
       } else {
         // 建立新網站記錄
         const { data, error } = await supabase
@@ -42,12 +48,61 @@ export default function Home() {
         
         if (error) throw error
         websiteId = data.id
+        setStatus('網站建立完成，正在執行 SEO 檢測...')
+      }
+
+      // 執行 SEO 分析
+      setStatus('正在分析 Meta 標籤...')
+      const seoResult = await analyzeSEO(cleanUrl)
+      
+      // 執行 AEO 分析
+      setStatus('正在分析 AEO 技術指標...')
+      const aeoResult = await analyzeAEO(cleanUrl)
+      
+      setStatus('正在儲存檢測結果...')
+      
+      // 儲存 SEO 審計結果到資料庫
+      const { error: seoError } = await supabase
+        .from('seo_audits')
+        .insert([{
+          website_id: websiteId,
+          score: seoResult.score,
+          meta_tags: seoResult.meta_tags,
+          h1_structure: seoResult.h1_structure,
+          alt_tags: seoResult.alt_tags,
+          mobile_compatible: seoResult.mobile_compatible,
+          page_speed: seoResult.page_speed
+        }])
+
+      if (seoError) {
+        console.error('Error saving SEO audit:', seoError)
+      }
+
+      // 儲存 AEO 審計結果到資料庫
+      const { error: aeoError } = await supabase
+        .from('aeo_audits')
+        .insert([{
+          website_id: websiteId,
+          score: aeoResult.score,
+          json_ld: aeoResult.json_ld,
+          llms_txt: aeoResult.llms_txt,
+          open_graph: aeoResult.open_graph,
+          twitter_card: aeoResult.twitter_card,
+          canonical: aeoResult.canonical,
+          robots_txt: aeoResult.robots_txt,
+          sitemap: aeoResult.sitemap,
+          breadcrumbs: aeoResult.breadcrumbs
+        }])
+
+      if (aeoError) {
+        console.error('Error saving AEO audit:', aeoError)
       }
 
       // 導向儀表板
       navigate(`/dashboard/${websiteId}`)
     } catch (error) {
       console.error('Error:', error)
+      setStatus('')
       alert('發生錯誤，請稍後再試')
     } finally {
       setLoading(false)
@@ -103,6 +158,7 @@ export default function Home() {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="輸入您的網址 (例如: example.com)"
               className="flex-1 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-xl transition-all"
+              disabled={loading}
             />
             <button
               type="submit"
@@ -120,6 +176,9 @@ export default function Home() {
               ) : '開始分析'}
             </button>
           </div>
+          {status && (
+            <p className="mt-3 text-white/60 text-sm">{status}</p>
+          )}
         </form>
 
         {/* Features */}
