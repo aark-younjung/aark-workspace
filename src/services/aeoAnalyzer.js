@@ -5,6 +5,25 @@
 
 import { fetchPageContent, parseHTML } from './seoAnalyzer'
 
+// Vercel Serverless API endpoint
+const API_BASE = '/api/fetch-url'
+
+/**
+ * 透過 Serverless API 取得網頁內容
+ */
+async function fetchUrlViaAPI(url) {
+  try {
+    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(url)}`)
+    if (response.ok) {
+      const data = await response.json()
+      return data.success ? data.content : null
+    }
+  } catch (error) {
+    console.error('API fetch failed:', error)
+  }
+  return null
+}
+
 /**
  * 1. JSON-LD 結構化資料檢測
  */
@@ -37,10 +56,8 @@ function checkJsonLd(doc) {
 async function checkLLMsTxt(url) {
   try {
     const baseUrl = new URL(url).origin
-    const response = await fetch(`${baseUrl}/llms.txt`, {
-      method: 'HEAD',
-      cache: 'no-store'
-    })
+    // 使用 Serverless API 來檢測
+    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/llms.txt')}`)
     return { passed: response.ok, status: response.status }
   } catch {
     return { passed: false, status: 0 }
@@ -106,15 +123,19 @@ function checkCanonical(doc) {
 async function checkRobotsTxt(url) {
   try {
     const baseUrl = new URL(url).origin
-    const response = await fetch(`${baseUrl}/robots.txt`, {
-      method: 'GET',
-      cache: 'no-store'
-    })
-    const text = response.ok ? await response.text() : ''
+    // 使用 Serverless API 來檢測
+    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/robots.txt')}`)
+    let text = ''
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success) {
+        text = data.content.substring(0, 500)
+      }
+    }
     return {
       passed: response.ok,
       hasSitemap: text.toLowerCase().includes('sitemap'),
-      content: text.substring(0, 500)
+      content: text
     }
   } catch {
     return { passed: false, hasSitemap: false }
@@ -127,10 +148,8 @@ async function checkRobotsTxt(url) {
 async function checkSitemap(url) {
   try {
     const baseUrl = new URL(url).origin
-    const response = await fetch(`${baseUrl}/sitemap.xml`, {
-      method: 'HEAD',
-      cache: 'no-store'
-    })
+    // 使用 Serverless API 來檢測
+    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/sitemap.xml')}`)
     return { passed: response.ok, status: response.status }
   } catch {
     return { passed: false, status: 0 }
