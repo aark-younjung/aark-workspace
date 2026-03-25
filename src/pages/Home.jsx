@@ -53,11 +53,23 @@ export default function Home() {
 
       // 執行 SEO 分析
       setStatus('正在分析 Meta 標籤...')
-      const seoResult = await analyzeSEO(cleanUrl)
+      let seoResult
+      try {
+        seoResult = await analyzeSEO(cleanUrl)
+      } catch (seoError) {
+        console.warn('SEO analysis failed:', seoError)
+        seoResult = { score: 0, meta_tags: {}, h1_structure: {}, alt_tags: {}, mobile_compatible: {}, page_speed: {} }
+      }
       
       // 執行 AEO 分析
       setStatus('正在分析 AEO 技術指標...')
-      const aeoResult = await analyzeAEO(cleanUrl)
+      let aeoResult
+      try {
+        aeoResult = await analyzeAEO(cleanUrl)
+      } catch (aeoError) {
+        console.warn('AEO analysis failed:', aeoError)
+        aeoResult = { score: 0, json_ld: false, llms_txt: false, open_graph: false, twitter_card: false, canonical: false, robots_txt: false, sitemap: false }
+      }
       
       setStatus('正在儲存檢測結果...')
       
