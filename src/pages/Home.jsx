@@ -72,19 +72,18 @@ export default function Home() {
       }
       
       setStatus('正在儲存檢測結果...')
-      
-      // 儲存 SEO 審計結果到資料庫
-      // 將複雜的 JSON 物件轉換為簡單的值
+
+      // 儲存 SEO 審計結果到資料庫（直接存物件，Supabase 支援 JSONB）
       const { error: seoError } = await supabase
         .from('seo_audits')
         .insert([{
           website_id: websiteId,
           score: seoResult.score,
-          meta_tags: JSON.stringify(seoResult.meta_tags),
-          h1_structure: JSON.stringify(seoResult.h1_structure),
-          alt_tags: JSON.stringify(seoResult.alt_tags),
-          mobile_compatible: JSON.stringify(seoResult.mobile_compatible),
-          page_speed: JSON.stringify(seoResult.page_speed)
+          meta_tags: seoResult.meta_tags,
+          h1_structure: seoResult.h1_structure,
+          alt_tags: seoResult.alt_tags,
+          mobile_compatible: seoResult.mobile_compatible,
+          page_speed: seoResult.page_speed
         }])
 
       if (seoError) {
