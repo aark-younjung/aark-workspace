@@ -102,8 +102,8 @@ export default function Home() {
           twitter_card: !!aeoResult.twitter_card,
           canonical: !!aeoResult.canonical,
           robots_txt: !!aeoResult.robots_txt,
-          sitemap: !!aeoResult.sitemap,
-          breadcrumbs: !!aeoResult.breadcrumbs
+          sitemap: !!aeoResult.sitemap
+          // breadcrumbs: !!aeoResult.breadcrumbs  // 待 Supabase 欄位確認後啟用
         }])
 
       if (aeoError) {
