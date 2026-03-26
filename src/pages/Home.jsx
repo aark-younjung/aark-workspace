@@ -102,7 +102,8 @@ export default function Home() {
           twitter_card: !!aeoResult.twitter_card,
           canonical: !!aeoResult.canonical,
           robots_txt: !!aeoResult.robots_txt,
-          sitemap: !!aeoResult.sitemap
+          sitemap: !!aeoResult.sitemap,
+          breadcrumbs: !!aeoResult.breadcrumbs
         }])
 
       if (aeoError) {
