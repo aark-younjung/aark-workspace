@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [aeoHistory, setAeoHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
+  const [activeFixTab, setActiveFixTab] = useState('suggestions')
+  const [copiedCode, setCopiedCode] = useState(null)
   
   // GA4 & GSC 數據
   const [ga4Data, setGa4Data] = useState(null)
@@ -269,6 +271,114 @@ export default function Dashboard() {
       setAnalyzing(false)
     }
   }
+
+  // ─── AI 優化工具 helper ───────────────────────────────────────────
+  const domain = website?.url ? (() => { try { return new URL(website.url).hostname } catch(e) { return website.url } })() : ''
+  const siteTitle = seoAudit?.meta_tags?.titleContent || website?.name || domain
+  const siteDesc = seoAudit?.meta_tags?.descriptionContent || `${siteTitle} 的官方網站`
+
+  const getImprovementSuggestions = () => {
+    const tips = []
+    if (!aeoAudit?.llms_txt) tips.push({ icon: '🤖', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Perplexity 更容易引用你。' })
+    if (!aeoAudit?.json_ld) tips.push({ icon: '📋', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 AI 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
+    if (!aeoAudit?.open_graph) tips.push({ icon: '🔗', title: '補充 Open Graph 標籤', desc: '缺少 og:title、og:description 會讓 AI 引用時無法獲取標準化資訊，影響在 AI 摘要中呈現的品質。' })
+    if (!seoAudit?.meta_tags?.hasDescription) tips.push({ icon: '📝', title: '撰寫 Meta 描述', desc: 'Meta 描述是精選摘要的主要來源，建議用 150-160 字元簡潔描述你的核心服務與目標客群。' })
+    if (!aeoAudit?.canonical) tips.push({ icon: '🔒', title: '設置 Canonical 標籤', desc: '未設置 canonical 可能導致 AI 引用錯誤版本的頁面，在每頁 <head> 加入 <link rel="canonical" href="..."> 即可修正。' })
+    if (!aeoAudit?.sitemap) tips.push({ icon: '🗺️', title: '提交 Sitemap.xml', desc: '缺少 sitemap.xml 讓 AI 爬蟲更難發現你的所有頁面及服務，建議產生並提交到 Google Search Console。' })
+    if (!aeoAudit?.breadcrumbs) tips.push({ icon: '🍞', title: '加入麵包屑導航 Schema', desc: '麵包屑導航幫助 AI 理解你網站的資訊架構，使用 BreadcrumbList schema 可提升出現在精選摘要的機率。' })
+    if ((seoAudit?.alt_tags?.altCoverage || 100) < 80) tips.push({ icon: '🖼️', title: '補充圖片 Alt 文字', desc: `目前僅 ${seoAudit?.alt_tags?.altCoverage || 0}% 的圖片有 Alt 描述，AI 爬蟲無法理解沒有 Alt 的圖片，建議全部補齊。` })
+    return tips.slice(0, 5)
+  }
+
+  const generateLLMsTxt = () => `# ${siteTitle}
+> ${siteDesc}
+
+## About
+${siteTitle} — ${siteDesc}
+
+## Services
+- Website: ${website?.url}
+
+## Contact
+- Website: ${website?.url}
+
+## Notes
+本網站內容可由 AI 助理引用和摘要。`
+
+  const generateJSONLD = () => `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "${siteTitle}",
+  "url": "${website?.url}",
+  "description": "${siteDesc}",
+  "publisher": {
+    "@type": "Organization",
+    "name": "${siteTitle}",
+    "url": "${website?.url}"
+  }
+}
+<\/script>`
+
+  const generateFAQSchema = () => `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "${siteTitle} 是什麼？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "${siteDesc}"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "如何聯繫 ${siteTitle}？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "請造訪官網 ${website?.url} 取得聯絡資訊。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "${siteTitle} 提供哪些服務？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "${siteDesc}"
+      }
+    }
+  ]
+}
+<\/script>`
+
+  const getKeywords = () => {
+    const base = siteTitle.replace(/[-|·|–]/g, ' ').trim()
+    return [
+      `${base} 是什麼`,
+      `${base} 怎麼使用`,
+      `${base} 評價`,
+      `${base} 服務內容`,
+      `${base} 費用價格`,
+      `${domain} 可信嗎`,
+      `AI 推薦 ${base}`,
+      `如何找到 ${base}`,
+      `${base} 優缺點比較`,
+      `${base} 常見問題`,
+    ]
+  }
+
+  const copyToClipboard = async (text, id) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedCode(id)
+      setTimeout(() => setCopiedCode(null), 2000)
+    } catch (e) {
+      console.error('Copy failed', e)
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -646,6 +756,112 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* AI 優化工具 */}
+        <div className="mt-8 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+            <span className="text-2xl">🛠️</span>
+            <div>
+              <h3 className="font-bold text-slate-800">AI 優化工具</h3>
+              <p className="text-sm text-slate-500">根據檢測結果自動產生優化建議與修復碼</p>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-slate-100">
+            {[
+              { id: 'suggestions', label: '💡 優化建議', sub: '5 條具體行動' },
+              { id: 'code', label: '⚙️ 修復碼產生器', sub: 'llms.txt · JSON-LD · FAQ' },
+              { id: 'keywords', label: '🔍 AI 搜尋關鍵字', sub: '10 組查詢詞' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveFixTab(tab.id)}
+                className={`flex-1 px-3 py-3 text-sm font-medium transition-colors ${
+                  activeFixTab === tab.id
+                    ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50/50'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <div>{tab.label}</div>
+                <div className="text-xs opacity-60 hidden sm:block">{tab.sub}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="p-6">
+            {/* Tab 1: 優化建議 */}
+            {activeFixTab === 'suggestions' && (
+              <div className="space-y-3">
+                {getImprovementSuggestions().length === 0 ? (
+                  <div className="text-center py-10">
+                    <span className="text-5xl">🎉</span>
+                    <p className="text-slate-700 mt-3 font-semibold">太棒了！所有 AI 優化項目都通過了</p>
+                    <p className="text-sm text-slate-500 mt-1">繼續保持，定期重新掃描以確保持續優化</p>
+                  </div>
+                ) : (
+                  getImprovementSuggestions().map((tip, i) => (
+                    <div key={i} className="flex gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                      <span className="text-2xl flex-shrink-0">{tip.icon}</span>
+                      <div>
+                        <p className="font-semibold text-slate-800 mb-1">{i + 1}. {tip.title}</p>
+                        <p className="text-sm text-slate-600 leading-relaxed">{tip.desc}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Tab 2: 修復碼產生器 */}
+            {activeFixTab === 'code' && (
+              <div className="space-y-6">
+                {[{ id: 'llms', label: 'llms.txt', hint: '放到網站根目錄 → /llms.txt', color: 'text-green-400', fn: generateLLMsTxt },
+                  { id: 'jsonld', label: 'JSON-LD 結構化資料', hint: '貼到 <head> 區塊內', color: 'text-blue-400', fn: generateJSONLD },
+                  { id: 'faq', label: 'FAQ Schema', hint: '貼到 <head> 或頁面底部，修改問題後使用', color: 'text-yellow-400', fn: generateFAQSchema },
+                ].map(({ id, label, hint, color, fn }) => (
+                  <div key={id}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-semibold text-slate-800">{label}</h4>
+                        <p className="text-xs text-slate-500">{hint}</p>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(fn(), id)}
+                        className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200 transition-colors flex-shrink-0"
+                      >
+                        {copiedCode === id ? '✓ 已複製！' : '複製'}
+                      </button>
+                    </div>
+                    <pre className={`bg-slate-900 ${color} rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48`}>
+                      {fn()}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tab 3: AI 搜尋關鍵字 */}
+            {activeFixTab === 'keywords' && (
+              <div>
+                <p className="text-sm text-slate-600 mb-4">用戶可能在 ChatGPT、Perplexity 或 Gemini 上用以下方式搜尋你的品牌：</p>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {getKeywords().map((kw, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                      <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                        {i + 1}
+                      </span>
+                      <span className="text-sm text-slate-700">{kw}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                  <p className="text-xs text-blue-700">💡 建議：在你的網站 FAQ 頁面或內容中，自然地回答這些問題，可大幅提升被 AI 引用的機率。</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
