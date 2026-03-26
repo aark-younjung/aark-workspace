@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
+import { analyzeGEO } from '../services/geoAnalyzer'
 
 export default function Home() {
   const [url, setUrl] = useState('')
@@ -68,9 +69,19 @@ export default function Home() {
         aeoResult = await analyzeAEO(cleanUrl)
       } catch (aeoError) {
         console.warn('AEO analysis failed:', aeoError)
-        aeoResult = { score: 0, json_ld: false, llms_txt: false, open_graph: false, twitter_card: false, canonical: false, robots_txt: false, sitemap: false }
+        aeoResult = { score: 0, json_ld: false, faq_schema: false, canonical: false, breadcrumbs: false, open_graph: false, question_headings: false }
       }
-      
+
+      // 執行 GEO 分析
+      setStatus('正在分析 GEO 生成式 AI 優化...')
+      let geoResult
+      try {
+        geoResult = await analyzeGEO(cleanUrl)
+      } catch (geoError) {
+        console.warn('GEO analysis failed:', geoError)
+        geoResult = { score: 0, llms_txt: false, robots_ai: false, sitemap: false, open_graph: false, twitter_card: false, json_ld_citation: false, canonical: false, https: false }
+      }
+
       setStatus('正在儲存檢測結果...')
 
       // 儲存 SEO 審計結果到資料庫（直接存物件，Supabase 支援 JSONB）
@@ -97,17 +108,35 @@ export default function Home() {
           website_id: websiteId,
           score: aeoResult.score,
           json_ld: !!aeoResult.json_ld,
-          llms_txt: !!aeoResult.llms_txt,
-          open_graph: !!aeoResult.open_graph,
-          twitter_card: !!aeoResult.twitter_card,
+          faq_schema: !!aeoResult.faq_schema,
           canonical: !!aeoResult.canonical,
-          robots_txt: !!aeoResult.robots_txt,
-          sitemap: !!aeoResult.sitemap,
-          breadcrumbs: !!aeoResult.breadcrumbs
+          breadcrumbs: !!aeoResult.breadcrumbs,
+          open_graph: !!aeoResult.open_graph,
+          question_headings: !!aeoResult.question_headings,
         }])
 
       if (aeoError) {
         console.error('Error saving AEO audit:', aeoError)
+      }
+
+      // 儲存 GEO 審計結果到資料庫
+      const { error: geoError } = await supabase
+        .from('geo_audits')
+        .insert([{
+          website_id: websiteId,
+          score: geoResult.score,
+          llms_txt: !!geoResult.llms_txt,
+          robots_ai: !!geoResult.robots_ai,
+          sitemap: !!geoResult.sitemap,
+          open_graph: !!geoResult.open_graph,
+          twitter_card: !!geoResult.twitter_card,
+          json_ld_citation: !!geoResult.json_ld_citation,
+          canonical: !!geoResult.canonical,
+          https: !!geoResult.https,
+        }])
+
+      if (geoError) {
+        console.error('Error saving GEO audit:', geoError)
       }
 
       // 導向儀表板
@@ -196,9 +225,9 @@ export default function Home() {
         {/* Features */}
         <div className="mt-24 grid md:grid-cols-3 gap-6">
           {[
-            { icon: '🎯', title: 'SEO 檢測', desc: '全面分析網站技術 SEO 與內容優化' },
-            { icon: '🤖', title: 'AEO 優化', desc: '8項 AI 搜尋優化技術指標檢測' },
-            { icon: '📍', title: 'GEO 商家', desc: 'Google 商家檔案完整度與評分分析' },
+            { icon: '🎯', title: 'SEO 檢測', desc: '全面分析網站技術 SEO，Meta 標籤、H1、圖片 Alt、行動版等' },
+            { icon: '💬', title: 'AEO 優化', desc: '8 項 Answer Engine 指標：FAQ Schema、問句標題、精選摘要優化' },
+            { icon: '🤖', title: 'GEO 優化', desc: '8 項 Generative Engine 指標：llms.txt、AI 爬蟲開放性、引用信號' },
           ].map((item, i) => (
             <div key={i} className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-xl">
               <div className="text-4xl mb-4">{item.icon}</div>

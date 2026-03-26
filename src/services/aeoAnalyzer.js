@@ -1,31 +1,12 @@
 /**
- * AEO (AI-Enhanced Optimization) 分析服務
- * 檢測 8 項 AI 搜尋優化技術指標
+ * AEO (Answer Engine Optimization) 分析服務
+ * 檢測 8 項傳統 Google 問答優化技術指標
  */
 
 import { fetchPageContent, parseHTML } from './seoAnalyzer'
 
-// Vercel Serverless API endpoint
-const API_BASE = '/api/fetch-url'
-
 /**
- * 透過 Serverless API 取得網頁內容
- */
-async function fetchUrlViaAPI(url) {
-  try {
-    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(url)}`)
-    if (response.ok) {
-      const data = await response.json()
-      return data.success ? data.content : null
-    }
-  } catch (error) {
-    console.error('API fetch failed:', error)
-  }
-  return null
-}
-
-/**
- * 1. JSON-LD 結構化資料檢測
+ * 1. JSON-LD 結構化資料檢測 (schema.org，特別是 FAQ/HowTo)
  */
 function checkJsonLd(doc) {
   const scripts = doc.querySelectorAll('script[type="application/ld+json"]')
@@ -51,21 +32,75 @@ function checkJsonLd(doc) {
 }
 
 /**
- * 2. LLMs.txt 檔案檢測
+ * 2. FAQ Schema 檢測 (FAQPage 或 QAPage)
  */
-async function checkLLMsTxt(url) {
-  try {
-    const baseUrl = new URL(url).origin
-    // 使用 Serverless API 來檢測
-    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/llms.txt')}`)
-    return { passed: response.ok, status: response.status }
-  } catch {
-    return { passed: false, status: 0 }
+function checkFaqSchema(doc) {
+  const scripts = doc.querySelectorAll('script[type="application/ld+json"]')
+  let hasFaqSchema = false
+
+  scripts.forEach(script => {
+    try {
+      const data = JSON.parse(script.textContent)
+      const types = Array.isArray(data['@graph'])
+        ? data['@graph'].map(i => i['@type'])
+        : [data['@type']]
+      if (types.some(t => t === 'FAQPage' || t === 'QAPage')) {
+        hasFaqSchema = true
+      }
+    } catch (e) {}
+  })
+
+  return { passed: hasFaqSchema }
+}
+
+/**
+ * 3. Canonical 標籤檢測
+ */
+function checkCanonical(doc) {
+  const canonical = doc.querySelector('link[rel="canonical"]')
+  return {
+    passed: !!canonical,
+    href: canonical?.getAttribute('href') || null
   }
 }
 
 /**
- * 3. Open Graph 標籤檢測
+ * 4. 麵包屑導航檢測 (BreadcrumbList schema)
+ */
+function checkBreadcrumbs(doc) {
+  const scripts = doc.querySelectorAll('script[type="application/ld+json"]')
+  let hasSchema = false
+  scripts.forEach(script => {
+    try {
+      const data = JSON.parse(script.textContent)
+      if (
+        data['@type'] === 'BreadcrumbList' ||
+        (Array.isArray(data['@graph']) &&
+          data['@graph'].some(i => i['@type'] === 'BreadcrumbList'))
+      ) {
+        hasSchema = true
+      }
+    } catch {}
+  })
+
+  const navElements = doc.querySelectorAll('nav')
+  let hasNavBreadcrumb = false
+  navElements.forEach(nav => {
+    const text = nav.textContent.toLowerCase()
+    if (text.includes('home') || text.includes('首頁') || text.includes('breadcrumb')) {
+      hasNavBreadcrumb = true
+    }
+  })
+
+  return {
+    passed: hasSchema || hasNavBreadcrumb,
+    hasSchema,
+    hasNavBreadcrumb
+  }
+}
+
+/**
+ * 5. Open Graph 標籤檢測 (影響 Google 搜尋預覽)
  */
 function checkOpenGraph(doc) {
   const ogTitle = doc.querySelector('meta[property="og:title"]')
@@ -87,105 +122,88 @@ function checkOpenGraph(doc) {
 }
 
 /**
- * 4. Twitter Card 標籤檢測
+ * 6. H2/H3 問句式標題檢測 (標題是否以問句呈現)
  */
-function checkTwitterCard(doc) {
-  const twitterCard = doc.querySelector('meta[name="twitter:card"]')
-  const twitterTitle = doc.querySelector('meta[name="twitter:title"]')
-  const twitterImage = doc.querySelector('meta[name="twitter:image"]')
+function checkQuestionHeadings(doc) {
+  const headings = doc.querySelectorAll('h2, h3')
+  let questionCount = 0
+  let totalCount = 0
 
-  const hasAll = !!(twitterCard && twitterTitle && twitterImage)
-  const hasPartial = !!(twitterCard || twitterTitle || twitterImage)
+  // 問句特徵：以「？」「?」結尾，或以疑問詞開頭
+  const questionWords = ['什麼', '怎麼', '如何', '為什麼', '哪些', '哪裡', '誰', '何時', 'what', 'how', 'why', 'when', 'where', 'who', 'which']
 
-  return {
-    passed: hasAll,
-    hasPartial,
-    hasCard: !!twitterCard,
-    hasTitle: !!twitterTitle,
-    hasImage: !!twitterImage
-  }
-}
-
-/**
- * 5. Canonical 標籤檢測
- */
-function checkCanonical(doc) {
-  const canonical = doc.querySelector('link[rel="canonical"]')
-  return {
-    passed: !!canonical,
-    href: canonical?.getAttribute('href') || null
-  }
-}
-
-/**
- * 6. robots.txt 檢測
- */
-async function checkRobotsTxt(url) {
-  try {
-    const baseUrl = new URL(url).origin
-    // 使用 Serverless API 來檢測
-    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/robots.txt')}`)
-    let text = ''
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success) {
-        text = data.content.substring(0, 500)
-      }
-    }
-    return {
-      passed: response.ok,
-      hasSitemap: text.toLowerCase().includes('sitemap'),
-      content: text
-    }
-  } catch {
-    return { passed: false, hasSitemap: false }
-  }
-}
-
-/**
- * 7. sitemap.xml 檢測
- */
-async function checkSitemap(url) {
-  try {
-    const baseUrl = new URL(url).origin
-    // 使用 Serverless API 來檢測
-    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/sitemap.xml')}`)
-    return { passed: response.ok, status: response.status }
-  } catch {
-    return { passed: false, status: 0 }
-  }
-}
-
-/**
- * 8. 麵包屑導航檢測
- */
-function checkBreadcrumbs(doc) {
-  // 檢查 schema.org BreadcrumbList
-  const breadcrumbSchema = doc.querySelector('script[type="application/ld+json"]')
-  let hasSchema = false
-  if (breadcrumbSchema) {
-    try {
-      const data = JSON.parse(breadcrumbSchema.textContent)
-      if (data['@type'] === 'BreadcrumbList' || (Array.isArray(data['@graph']) && data['@graph'].some(i => i['@type'] === 'BreadcrumbList'))) {
-        hasSchema = true
-      }
-    } catch {}
-  }
-
-  // 檢查 nav 元素中的麵包屑
-  const navElements = doc.querySelectorAll('nav')
-  let hasNavBreadcrumb = false
-  navElements.forEach(nav => {
-    const text = nav.textContent.toLowerCase()
-    if (text.includes('home') || text.includes('首頁') || text.includes('breadcrumb')) {
-      hasNavBreadcrumb = true
-    }
+  headings.forEach(h => {
+    const text = h.textContent.trim()
+    if (!text) return
+    totalCount++
+    const lower = text.toLowerCase()
+    const isQuestion =
+      text.endsWith('？') ||
+      text.endsWith('?') ||
+      questionWords.some(w => lower.includes(w))
+    if (isQuestion) questionCount++
   })
 
   return {
-    passed: hasSchema || hasNavBreadcrumb,
-    hasSchema,
-    hasNavBreadcrumb
+    passed: questionCount > 0,
+    questionCount,
+    totalCount
+  }
+}
+
+/**
+ * 7. Meta 描述長度檢測 (150-160 字元)
+ */
+function checkMetaDescLength(doc) {
+  const metaDesc = doc.querySelector('meta[name="description"]')
+  if (!metaDesc) return { passed: false, length: 0, hasDescription: false }
+
+  const content = metaDesc.getAttribute('content') || ''
+  const length = content.length
+  const passed = length >= 120 && length <= 160
+
+  return {
+    passed,
+    length,
+    hasDescription: true,
+    content: content.substring(0, 50) + (content.length > 50 ? '...' : '')
+  }
+}
+
+/**
+ * 8. 結構化答案段落檢測 (首段是否有清楚的問答格式)
+ */
+function checkStructuredAnswer(doc) {
+  // 檢查是否有 FAQ 段落或明顯的問答格式
+  const paragraphs = doc.querySelectorAll('p')
+  let hasStructuredContent = false
+
+  // 方法 1：找含有問號的段落後面接著答案
+  let foundQuestionPara = false
+  paragraphs.forEach(p => {
+    const text = p.textContent.trim()
+    if (text.endsWith('？') || text.endsWith('?')) {
+      foundQuestionPara = true
+    }
+  })
+
+  // 方法 2：頁面有明確的 FAQ 區塊 (含 FAQ/常見問題 字樣)
+  const bodyText = doc.body?.textContent || ''
+  const hasFaqSection =
+    bodyText.includes('常見問題') ||
+    bodyText.includes('FAQ') ||
+    bodyText.toLowerCase().includes('frequently asked')
+
+  // 方法 3：有 details/summary 元素 (Q&A 格式)
+  const hasDetailsElement = doc.querySelectorAll('details').length > 0
+
+  hasStructuredContent = foundQuestionPara || hasFaqSection || hasDetailsElement
+
+  return {
+    passed: hasStructuredContent,
+    hasFaqSection,
+    hasDetailsElement,
+    foundQuestionPara
   }
 }
 
@@ -212,21 +230,16 @@ export async function analyzeAEO(url) {
     doc = parseHTML(html)
   }
 
-  // 平行執行各項檢測
-  const [llms, robots, sitemap] = await Promise.all([
-    checkLLMsTxt(cleanUrl),
-    checkRobotsTxt(cleanUrl),
-    checkSitemap(cleanUrl)
-  ])
-
-  const jsonLd = doc ? checkJsonLd(doc) : { passed: false, schemaType: null }
-  const openGraph = doc ? checkOpenGraph(doc) : { passed: false }
-  const twitterCard = doc ? checkTwitterCard(doc) : { passed: false }
+  const jsonLd = doc ? checkJsonLd(doc) : { passed: false }
+  const faqSchema = doc ? checkFaqSchema(doc) : { passed: false }
   const canonical = doc ? checkCanonical(doc) : { passed: false }
   const breadcrumbs = doc ? checkBreadcrumbs(doc) : { passed: false }
+  const openGraph = doc ? checkOpenGraph(doc) : { passed: false }
+  const questionHeadings = doc ? checkQuestionHeadings(doc) : { passed: false }
+  const metaDescLength = doc ? checkMetaDescLength(doc) : { passed: false }
+  const structuredAnswer = doc ? checkStructuredAnswer(doc) : { passed: false }
 
-  // 計算分數
-  const checks = [jsonLd, llms, openGraph, twitterCard, canonical, robots, sitemap, breadcrumbs]
+  const checks = [jsonLd, faqSchema, canonical, breadcrumbs, openGraph, questionHeadings, metaDescLength, structuredAnswer]
   const passedCount = checks.filter(c => c.passed).length
   const score = Math.round((passedCount / 8) * 100)
 
@@ -234,23 +247,22 @@ export async function analyzeAEO(url) {
     url: cleanUrl,
     score,
     json_ld: jsonLd.passed,
-    llms_txt: llms.passed,
-    open_graph: openGraph.passed,
-    twitter_card: twitterCard.passed,
+    faq_schema: faqSchema.passed,
     canonical: canonical.passed,
-    robots_txt: robots.passed,
-    sitemap: sitemap.passed,
     breadcrumbs: breadcrumbs.passed,
-    // 詳細資訊
+    open_graph: openGraph.passed,
+    question_headings: questionHeadings.passed,
+    meta_desc_length: metaDescLength.passed,
+    structured_answer: structuredAnswer.passed,
     details: {
       jsonLd,
-      llmsTxt: llms,
-      openGraph,
-      twitterCard,
+      faqSchema,
       canonical,
-      robotsTxt: robots,
-      sitemap,
-      breadcrumbs
+      breadcrumbs,
+      openGraph,
+      questionHeadings,
+      metaDescLength,
+      structuredAnswer
     },
     analyzed_at: new Date().toISOString()
   }

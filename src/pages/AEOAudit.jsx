@@ -7,58 +7,58 @@ const AEO_CHECKS = [
   {
     id: 'json_ld',
     name: 'JSON-LD 結構化資料',
-    description: '驗證網頁是否包含 JSON-LD 結構化資料，幫助 AI 搜尋引擎理解內容',
+    description: '驗證網頁是否包含 schema.org JSON-LD 標記（特別是 FAQ/HowTo），幫助 Google 理解內容結構',
     icon: '📋',
-    recommendation: '使用 schema.org 標準添加 JSON-LD 標記'
+    recommendation: '使用 schema.org 標準添加 JSON-LD 標記，至少包含 WebSite 或 Organization schema'
   },
   {
-    id: 'llms_txt',
-    name: 'LLMs.txt 檔案',
-    description: '檢測是否提供 LLMs.txt 檔案，讓 AI 系統能夠識別網站內容',
-    icon: '🤖',
-    recommendation: '建立 /llms.txt 檔案描述網站內容結構'
-  },
-  {
-    id: 'open_graph',
-    name: 'Open Graph 標籤',
-    description: '驗證 Open Graph 標籤是否正確設置，影響社群分享與 AI 摘要',
-    icon: '🔗',
-    recommendation: '添加 og:title, og:description, og:image, og:url'
-  },
-  {
-    id: 'twitter_card',
-    name: 'Twitter Card 標籤',
-    description: '檢測 Twitter Card 標籤配置，影響 X (Twitter) 分享呈現',
-    icon: '🐦',
-    recommendation: '添加 twitter:card, twitter:title, twitter:image'
+    id: 'faq_schema',
+    name: 'FAQ Schema',
+    description: '檢測是否含有 FAQPage 或 QAPage 類型的結構化資料，直接影響 Google 精選摘要呈現',
+    icon: '❓',
+    recommendation: '為常見問題區塊添加 FAQPage schema，每個 Q&A 需包含 Question 和 Answer 節點'
   },
   {
     id: 'canonical',
     name: 'Canonical 標籤',
-    description: '驗證 canonical 標籤設置，防止重複內容問題',
+    description: '驗證 canonical 標籤是否正確設置，防止重複內容影響精選摘要排名',
     icon: '🔒',
-    recommendation: '在所有頁面設置正確的 canonical URL'
+    recommendation: '在所有頁面 <head> 設置正確的 <link rel="canonical" href="..."> 標籤'
   },
   {
     id: 'breadcrumbs',
     name: '麵包屑導航',
-    description: '檢測麵包屑導航結構，提升網站結構清晰度',
+    description: '檢測 BreadcrumbList schema，幫助 Google 理解網站層級結構並在搜尋結果中顯示路徑',
     icon: '🍞',
-    recommendation: '使用 schema.org BreadcrumbList 標記'
+    recommendation: '使用 schema.org BreadcrumbList 標記網站導航層級'
   },
   {
-    id: 'faq_schema',
-    name: 'FAQ 結構化資料',
-    description: '驗證常見問題結構化資料，有助於 AI 搜尋結果呈現',
-    icon: '❓',
-    recommendation: '為 FAQ 區塊添加 QAPage schema'
+    id: 'open_graph',
+    name: 'Open Graph',
+    description: '驗證 Open Graph 標籤（og:title、og:description、og:image、og:url），影響 Google 搜尋預覽品質',
+    icon: '🔗',
+    recommendation: '添加完整的 og:title, og:description, og:image, og:url 四項標籤'
   },
   {
-    id: 'howto_schema',
-    name: 'HowTo 結構化資料',
-    description: '檢測教學內容結構化資料，提升 AI 搜尋能見度',
-    icon: '📚',
-    recommendation: '為教學文章添加 HowTo schema'
+    id: 'question_headings',
+    name: 'H2/H3 問句式標題',
+    description: '檢測 H2/H3 標題是否以問句形式呈現，問答式內容更容易被 Google 選為精選摘要',
+    icon: '💬',
+    recommendation: '將部分 H2/H3 標題改為問句格式（例如「什麼是...？」「如何...？」）'
+  },
+  {
+    id: 'meta_desc_length',
+    name: 'Meta 描述長度',
+    description: '檢測 Meta 描述是否在 120-160 字元範圍內，精簡描述更容易出現在 Google 精選摘要',
+    icon: '📝',
+    recommendation: '將 Meta 描述控制在 120-160 字元，簡潔說明頁面核心內容'
+  },
+  {
+    id: 'structured_answer',
+    name: '結構化答案段落',
+    description: '檢測頁面是否包含清楚的問答格式內容（FAQ 區塊、問句段落、details/summary 元素）',
+    icon: '📖',
+    recommendation: '在頁面中加入 FAQ 區塊，或使用 Q&A 格式撰寫內容，首段直接給出答案'
   }
 ]
 
@@ -113,13 +113,11 @@ export default function AEOAudit() {
         website_id: id,
         score: result.score,
         json_ld: result.json_ld,
-        llms_txt: result.llms_txt,
-        open_graph: result.open_graph,
-        twitter_card: result.twitter_card,
+        faq_schema: result.faq_schema,
         canonical: result.canonical,
-        robots_txt: result.robots_txt,
-        sitemap: result.sitemap,
-        breadcrumbs: result.breadcrumbs
+        breadcrumbs: result.breadcrumbs,
+        open_graph: result.open_graph,
+        question_headings: result.question_headings,
       }])
       fetchData()
     } catch (error) {
@@ -158,7 +156,8 @@ export default function AEOAudit() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold">AEO 技術檢測</h1>
-              <p className="text-white/80">{website?.url}</p>
+              <p className="text-white/80 text-sm">Answer Engine Optimization — 傳統 Google 問答優化</p>
+              <p className="text-white/60 text-xs mt-1">{website?.url}</p>
             </div>
           </div>
         </div>

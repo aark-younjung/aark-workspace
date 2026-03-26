@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
+import { analyzeGEO } from '../services/geoAnalyzer'
 import { getGA4Summary } from '../services/ga4Analyzer'
 import { getGSCSummary } from '../services/gscAnalyzer'
 import {
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [website, setWebsite] = useState(null)
   const [seoAudit, setSeoAudit] = useState(null)
   const [aeoAudit, setAeoAudit] = useState(null)
+  const [geoAudit, setGeoAudit] = useState(null)
   const [seoHistory, setSeoHistory] = useState([])
   const [aeoHistory, setAeoHistory] = useState([])
   const [loading, setLoading] = useState(true)
@@ -160,6 +162,18 @@ export default function Dashboard() {
           setAeoAudit(aeoData[0])
           setAeoHistory(aeoData.slice(0, 10).reverse())
         }
+
+        // 獲取 GEO 審計
+        const { data: geoData } = await supabase
+          .from('geo_audits')
+          .select('*')
+          .eq('website_id', id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (geoData) {
+          setGeoAudit(geoData)
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -192,7 +206,7 @@ export default function Dashboard() {
 
   const seoScore = seoAudit?.score || 0
   const aeoScore = aeoAudit?.score || 0
-  const geoScore = 0
+  const geoScore = geoAudit?.score || 0
 
   // 雷達圖數據 - 5 項 SEO 檢測
   const radarData = [
@@ -219,13 +233,24 @@ export default function Dashboard() {
   // AEO 8 項檢測數據
   const aeoChecks = [
     { key: 'json_ld', name: 'JSON-LD', passed: !!aeoAudit?.json_ld },
-    { key: 'llms_txt', name: 'LLMs.txt', passed: !!aeoAudit?.llms_txt },
-    { key: 'open_graph', name: 'Open Graph', passed: !!aeoAudit?.open_graph },
-    { key: 'twitter_card', name: 'Twitter Card', passed: !!aeoAudit?.twitter_card },
+    { key: 'faq_schema', name: 'FAQ Schema', passed: !!aeoAudit?.faq_schema },
     { key: 'canonical', name: 'Canonical', passed: !!aeoAudit?.canonical },
-    { key: 'robots_txt', name: 'robots.txt', passed: !!aeoAudit?.robots_txt },
-    { key: 'sitemap', name: 'sitemap.xml', passed: !!aeoAudit?.sitemap },
     { key: 'breadcrumbs', name: '麵包屑導航', passed: !!aeoAudit?.breadcrumbs },
+    { key: 'open_graph', name: 'Open Graph', passed: !!aeoAudit?.open_graph },
+    { key: 'question_headings', name: '問句式標題', passed: !!aeoAudit?.question_headings },
+    { key: 'meta_desc_length', name: 'Meta 描述長度', passed: !!aeoAudit?.meta_desc_length },
+    { key: 'structured_answer', name: '結構化答案', passed: !!aeoAudit?.structured_answer },
+  ]
+
+  const geoChecks = [
+    { key: 'llms_txt', name: 'llms.txt', passed: !!geoAudit?.llms_txt },
+    { key: 'robots_ai', name: 'AI 爬蟲開放', passed: !!geoAudit?.robots_ai },
+    { key: 'sitemap', name: 'Sitemap', passed: !!geoAudit?.sitemap },
+    { key: 'open_graph', name: 'Open Graph', passed: !!geoAudit?.open_graph },
+    { key: 'twitter_card', name: 'Twitter Card', passed: !!geoAudit?.twitter_card },
+    { key: 'json_ld_citation', name: 'JSON-LD 引用信號', passed: !!geoAudit?.json_ld_citation },
+    { key: 'canonical', name: 'Canonical', passed: !!geoAudit?.canonical },
+    { key: 'https', name: 'HTTPS', passed: !!geoAudit?.https },
   ]
 
   // 重新檢測功能
@@ -234,9 +259,10 @@ export default function Dashboard() {
 
     setAnalyzing(true)
     try {
-      const [seoResult, aeoResult] = await Promise.all([
+      const [seoResult, aeoResult, geoResult] = await Promise.all([
         analyzeSEO(website.url),
-        analyzeAEO(website.url)
+        analyzeAEO(website.url),
+        analyzeGEO(website.url)
       ])
 
       await Promise.all([
@@ -253,13 +279,23 @@ export default function Dashboard() {
           website_id: id,
           score: aeoResult.score,
           json_ld: aeoResult.json_ld,
-          llms_txt: aeoResult.llms_txt,
-          open_graph: aeoResult.open_graph,
-          twitter_card: aeoResult.twitter_card,
+          faq_schema: aeoResult.faq_schema,
           canonical: aeoResult.canonical,
-          robots_txt: aeoResult.robots_txt,
-          sitemap: aeoResult.sitemap,
-          breadcrumbs: aeoResult.breadcrumbs
+          breadcrumbs: aeoResult.breadcrumbs,
+          open_graph: aeoResult.open_graph,
+          question_headings: aeoResult.question_headings,
+        }]),
+        supabase.from('geo_audits').insert([{
+          website_id: id,
+          score: geoResult.score,
+          llms_txt: geoResult.llms_txt,
+          robots_ai: geoResult.robots_ai,
+          sitemap: geoResult.sitemap,
+          open_graph: geoResult.open_graph,
+          twitter_card: geoResult.twitter_card,
+          json_ld_citation: geoResult.json_ld_citation,
+          canonical: geoResult.canonical,
+          https: geoResult.https,
         }])
       ])
 
@@ -279,12 +315,12 @@ export default function Dashboard() {
 
   const getImprovementSuggestions = () => {
     const tips = []
-    if (!aeoAudit?.llms_txt) tips.push({ icon: '🤖', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Perplexity 更容易引用你。' })
-    if (!aeoAudit?.json_ld) tips.push({ icon: '📋', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 AI 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
+    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Perplexity 更容易引用你。' })
+    if (!aeoAudit?.json_ld) tips.push({ icon: '📋', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 Google 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
+    if (!aeoAudit?.faq_schema) tips.push({ icon: '❓', title: '新增 FAQ Schema', desc: '缺少 FAQPage schema 讓 Google 無法將你的問答內容顯示為精選摘要，為 FAQ 區塊添加結構化資料可大幅提升能見度。' })
     if (!aeoAudit?.open_graph) tips.push({ icon: '🔗', title: '補充 Open Graph 標籤', desc: '缺少 og:title、og:description 會讓 AI 引用時無法獲取標準化資訊，影響在 AI 摘要中呈現的品質。' })
-    if (!seoAudit?.meta_tags?.hasDescription) tips.push({ icon: '📝', title: '撰寫 Meta 描述', desc: 'Meta 描述是精選摘要的主要來源，建議用 150-160 字元簡潔描述你的核心服務與目標客群。' })
     if (!aeoAudit?.canonical) tips.push({ icon: '🔒', title: '設置 Canonical 標籤', desc: '未設置 canonical 可能導致 AI 引用錯誤版本的頁面，在每頁 <head> 加入 <link rel="canonical" href="..."> 即可修正。' })
-    if (!aeoAudit?.sitemap) tips.push({ icon: '🗺️', title: '提交 Sitemap.xml', desc: '缺少 sitemap.xml 讓 AI 爬蟲更難發現你的所有頁面及服務，建議產生並提交到 Google Search Console。' })
+    if (!aeoAudit?.question_headings) tips.push({ icon: '💬', title: '使用問句式 H2/H3 標題', desc: '問答式標題更容易被 Google 選為精選摘要來源，將部分標題改為「什麼是...？」「如何...？」格式。' })
     if (!aeoAudit?.breadcrumbs) tips.push({ icon: '🍞', title: '加入麵包屑導航 Schema', desc: '麵包屑導航幫助 AI 理解你網站的資訊架構，使用 BreadcrumbList schema 可提升出現在精選摘要的機率。' })
     if ((seoAudit?.alt_tags?.altCoverage || 100) < 80) tips.push({ icon: '🖼️', title: '補充圖片 Alt 文字', desc: `目前僅 ${seoAudit?.alt_tags?.altCoverage || 0}% 的圖片有 Alt 描述，AI 爬蟲無法理解沒有 Alt 的圖片，建議全部補齊。` })
     return tips.slice(0, 5)
@@ -736,12 +772,13 @@ ${siteTitle} — ${siteDesc}
 
           {/* AEO 技術檢測 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-slate-800">AEO 技術檢測</h3>
               <Link to={`/aeo-audit/${id}`} className="text-purple-600 hover:text-purple-700 text-sm font-medium">
                 查看詳情 →
               </Link>
             </div>
+            <p className="text-xs text-slate-400 mb-4">Answer Engine — 傳統 Google 問答優化</p>
             <div className="grid grid-cols-2 gap-3">
               {aeoChecks.map((check) => (
                 <div key={check.key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
@@ -757,6 +794,37 @@ ${siteTitle} — ${siteDesc}
               ))}
             </div>
           </div>
+        </div>
+
+        {/* GEO 生成式 AI 優化檢測 */}
+        <div className="mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-slate-800">GEO 生成式 AI 優化</h3>
+            <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">
+              Generative Engine
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Perplexity、Gemini）</p>
+          {geoAudit ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {geoChecks.map((check) => (
+                <div key={check.key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                    check.passed
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {check.passed ? '✓' : '✗'}
+                  </span>
+                  <span className="text-sm text-slate-700">{check.name}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-slate-400 text-sm">
+              點擊「重新檢測」以執行 GEO 分析
+            </div>
+          )}
         </div>
 
         {/* AI 優化工具 */}
