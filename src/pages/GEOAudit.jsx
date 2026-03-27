@@ -1,0 +1,306 @@
+import { useState, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import { analyzeGEO } from '../services/geoAnalyzer'
+
+const GEO_CHECKS = [
+  {
+    id: 'llms_txt',
+    name: 'llms.txt',
+    description: '網站根目錄是否有 /llms.txt 檔案，讓 ChatGPT、Perplexity 等 AI 工具能識別你的品牌與服務內容',
+    icon: '🤖',
+    recommendation: '在根目錄建立 /llms.txt，用自然語言描述你的品牌、服務與聯絡方式'
+  },
+  {
+    id: 'robots_ai',
+    name: 'AI 爬蟲開放性',
+    description: '檢測 robots.txt 是否封鎖 GPTBot、PerplexityBot、Google-Extended 等主要 AI 爬蟲',
+    icon: '🚦',
+    recommendation: '確認 robots.txt 沒有 Disallow GPTBot 或 Google-Extended，允許 AI 爬蟲索引你的內容'
+  },
+  {
+    id: 'sitemap',
+    name: 'Sitemap.xml',
+    description: '網站根目錄是否有 /sitemap.xml，幫助 AI 爬蟲發現並索引你的所有頁面',
+    icon: '🗺️',
+    recommendation: '建立並提交 sitemap.xml，確保所有重要頁面都被 AI 爬蟲發現'
+  },
+  {
+    id: 'open_graph',
+    name: 'Open Graph',
+    description: '是否有完整的 og:title、og:description、og:image、og:url 標籤，AI 引用時作為內容摘要依據',
+    icon: '🔗',
+    recommendation: '為每個頁面添加完整的 Open Graph 標籤，讓 AI 引用時能呈現正確的標題與描述'
+  },
+  {
+    id: 'twitter_card',
+    name: 'Twitter Card',
+    description: '是否有 twitter:card、twitter:title、twitter:image 標籤，強化 AI 摘要中的社群信號',
+    icon: '🐦',
+    recommendation: '添加 Twitter Card 標籤（twitter:card, twitter:title, twitter:image）'
+  },
+  {
+    id: 'json_ld_citation',
+    name: 'JSON-LD 引用信號',
+    description: '結構化資料中是否包含 author、publisher、datePublished 等可信度資訊，讓 AI 判斷內容可信度',
+    icon: '📜',
+    recommendation: '在 JSON-LD 中加入 author（作者）、publisher（出版者）、datePublished（發布日期）'
+  },
+  {
+    id: 'canonical',
+    name: 'Canonical 標籤',
+    description: '是否有 canonical 標籤，告訴 AI 正確的引用來源 URL，避免引用到重複頁面',
+    icon: '🔒',
+    recommendation: '在每個頁面 <head> 設置 <link rel="canonical" href="...">，確保 AI 引用正確 URL'
+  },
+  {
+    id: 'https',
+    name: 'HTTPS 安全連線',
+    description: '網站是否使用 HTTPS，AI 傾向引用安全可信的來源',
+    icon: '🔐',
+    recommendation: '確保網站使用 HTTPS，向 AI 傳遞「此網站安全可信」的信號'
+  }
+]
+
+export default function GEOAudit() {
+  const { id } = useParams()
+  const [website, setWebsite] = useState(null)
+  const [geoAudit, setGeoAudit] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [analyzing, setAnalyzing] = useState(false)
+
+  useEffect(() => {
+    fetchData()
+  }, [id])
+
+  const fetchData = async () => {
+    try {
+      const { data: websiteData } = await supabase
+        .from('websites')
+        .select('*')
+        .eq('id', id)
+        .single()
+      setWebsite(websiteData)
+
+      const { data: geoData } = await supabase
+        .from('geo_audits')
+        .select('*')
+        .eq('website_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      setGeoAudit(geoData)
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getCheckStatus = (checkId) => {
+    if (!geoAudit) return 'unknown'
+    return geoAudit[checkId] ? 'pass' : 'fail'
+  }
+
+  const handleReanalyze = async () => {
+    if (!website?.url || analyzing) return
+    setAnalyzing(true)
+    try {
+      const result = await analyzeGEO(website.url)
+      await supabase.from('geo_audits').insert([{
+        website_id: id,
+        score: result.score,
+        llms_txt: result.llms_txt,
+        robots_ai: result.robots_ai,
+        sitemap: result.sitemap,
+        open_graph: result.open_graph,
+        twitter_card: result.twitter_card,
+        json_ld_citation: result.json_ld_citation,
+        canonical: result.canonical,
+        https: result.https,
+      }])
+      fetchData()
+    } catch (error) {
+      console.error('Error:', error)
+      alert('檢測失敗，請稍後再試')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  const passedCount = GEO_CHECKS.filter(check => getCheckStatus(check.id) === 'pass').length
+  const totalCount = GEO_CHECKS.length
+  const score = geoAudit ? geoAudit.score : Math.round((passedCount / totalCount) * 100)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">載入資料中...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center gap-4 mb-4">
+            <Link to={`/dashboard/${id}`} className="text-white/70 hover:text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold">GEO 技術檢測</h1>
+              <p className="text-white/80 text-sm">Generative Engine Optimization — 生成式 AI 引用優化</p>
+              <p className="text-white/60 text-xs mt-1">{website?.url}</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* 總覽卡片 */}
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 mb-8">
+          <div className="flex items-center justify-between flex-wrap gap-6">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-700 mb-2">GEO 技術檢測得分</h2>
+              <div className="flex items-baseline gap-3">
+                <span className="text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  {score}
+                </span>
+                <span className="text-slate-500">/ 100</span>
+              </div>
+              <p className="text-slate-500 mt-2">
+                通過 {passedCount} / {totalCount} 項檢測
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleReanalyze}
+                disabled={analyzing}
+                className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {analyzing ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    分析中...
+                  </>
+                ) : '重新檢測'}
+              </button>
+              <Link
+                to={`/dashboard/${id}`}
+                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors font-medium"
+              >
+                返回總覽
+              </Link>
+            </div>
+          </div>
+
+          {/* 進度條 */}
+          <div className="mt-8">
+            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
+                style={{ width: `${score}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 檢測項目列表 */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {GEO_CHECKS.map((check) => {
+            const status = getCheckStatus(check.id)
+            return (
+              <div
+                key={check.id}
+                className={`bg-white rounded-2xl p-6 shadow-sm border-2 transition-all ${
+                  status === 'pass'
+                    ? 'border-green-200 bg-green-50/30'
+                    : status === 'fail'
+                    ? 'border-red-200 bg-red-50/30'
+                    : 'border-slate-100'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">{check.icon}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-slate-800">{check.name}</h3>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        status === 'pass'
+                          ? 'bg-green-100 text-green-700'
+                          : status === 'fail'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-600 mb-4">{check.description}</p>
+                    {status === 'fail' && (
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <p className="text-xs font-medium text-blue-700 mb-1">💡 建議優化</p>
+                        <p className="text-sm text-blue-600">{check.recommendation}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 生成式 AI 優化建議 */}
+        <div className="mt-8 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-8 border border-emerald-100">
+          <h3 className="text-xl font-bold text-slate-800 mb-4">🤖 提升 AI 引用率的建議</h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500">•</span>
+                  建立 /llms.txt 描述品牌與服務內容
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500">•</span>
+                  確認 robots.txt 未封鎖主要 AI 爬蟲
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500">•</span>
+                  補齊 Open Graph 與 Twitter Card 標籤
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-500">•</span>
+                  在 JSON-LD 中加入 author、publisher、datePublished
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-500">•</span>
+                  建立並提交完整的 sitemap.xml
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-500">•</span>
+                  確保所有頁面有正確的 canonical 標籤
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}

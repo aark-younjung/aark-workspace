@@ -44,88 +44,35 @@ export default function Dashboard() {
   
   // 獲取 GA4 和 GSC 數據
   const fetchGA4GSCData = async () => {
-    // 嘗試獲取 GA4 數據
     if (ga4PropertyId) {
       setGa4Loading(true)
       try {
         const data = await getGA4Summary(ga4PropertyId, { startDate: '30daysAgo', endDate: 'today' })
         setGa4Data(data)
       } catch (error) {
-        console.warn('GA4 data fetch failed, using mock data:', error)
-        // 使用模擬數據展示 UI
-        setGa4Data(getMockGA4Data())
+        console.warn('GA4 data fetch failed:', error)
+        setGa4Data(null)
       } finally {
         setGa4Loading(false)
       }
-    } else {
-      // 使用模擬數據
-      setGa4Data(getMockGA4Data())
     }
-    
-    // 嘗試獲取 GSC 數據
+    // 未設定 ga4PropertyId → 保持 null，顯示未串接狀態
+
     if (gscSiteUrl) {
       setGscLoading(true)
       try {
         const data = await getGSCSummary(gscSiteUrl, { startDate: '30daysAgo', endDate: 'today' })
         setGscData(data)
       } catch (error) {
-        console.warn('GSC data fetch failed, using mock data:', error)
-        // 使用模擬數據展示 UI
-        setGscData(getMockGSCData())
+        console.warn('GSC data fetch failed:', error)
+        setGscData(null)
       } finally {
         setGscLoading(false)
       }
-    } else {
-      // 使用模擬數據
-      setGscData(getMockGSCData())
     }
+    // 未設定 gscSiteUrl → 保持 null，顯示未串接狀態
   }
   
-  // 模擬 GA4 數據（用於展示 UI）
-  const getMockGA4Data = () => ({
-    sessions: 12543,
-    activeUsers: 8721,
-    bounceRate: 42.5,
-    pageViews: 34521,
-    newUsers: 3254,
-    engagedSessions: 7212,
-    timeline: Array.from({ length: 30 }, (_, i) => {
-      const date = new Date()
-      date.setDate(date.getDate() - (29 - i))
-      return {
-        date: date.toISOString().split('T')[0],
-        sessions: Math.floor(Math.random() * 500) + 200,
-        pageViews: Math.floor(Math.random() * 1500) + 500,
-        activeUsers: Math.floor(Math.random() * 350) + 150
-      }
-    })
-  })
-  
-  // 模擬 GSC 數據（用於展示 UI）
-  const getMockGSCData = () => ({
-    clicks: 8932,
-    impressions: 156432,
-    ctr: 5.71,
-    position: 8.3,
-    timeline: Array.from({ length: 30 }, (_, i) => {
-      const date = new Date()
-      date.setDate(date.getDate() - (29 - i))
-      return {
-        date: date.toISOString().split('T')[0],
-        clicks: Math.floor(Math.random() * 300) + 100,
-        impressions: Math.floor(Math.random() * 5000) + 2000,
-        ctr: Math.random() * 3 + 2,
-        position: Math.random() * 10 + 5
-      }
-    }),
-    topQueries: [
-      { query: 'SEO優化', clicks: 1234, impressions: 15000, ctr: 8.2, position: 3.2 },
-      { query: 'AEO是什麼', clicks: 892, impressions: 8500, ctr: 10.5, position: 2.1 },
-      { query: 'GEO優化', clicks: 654, impressions: 6200, ctr: 10.5, position: 1.8 },
-      { query: 'AI搜尋優化', clicks: 543, impressions: 5100, ctr: 10.6, position: 2.5 },
-      { query: '數位行銷', clicks: 432, impressions: 4500, ctr: 9.6, position: 4.1 }
-    ]
-  })
 
   const fetchData = async () => {
     try {
@@ -533,77 +480,61 @@ ${siteTitle} — ${siteDesc}
             </h3>
             {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
           </div>
-          
-          {/* GA4 指標卡片 */}
-          <div className="grid md:grid-cols-4 gap-4 mb-4">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
-              <div className="text-blue-100 text-sm mb-1">工作階段</div>
-              <div className="text-2xl font-bold">{ga4Data?.sessions?.toLocaleString() || 0}</div>
-              <div className="text-blue-200 text-xs mt-1">Sessions</div>
+          {ga4Data ? (
+            <>
+              <div className="grid md:grid-cols-4 gap-4 mb-4">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+                  <div className="text-blue-100 text-sm mb-1">工作階段</div>
+                  <div className="text-2xl font-bold">{ga4Data.sessions?.toLocaleString()}</div>
+                  <div className="text-blue-200 text-xs mt-1">Sessions</div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+                  <div className="text-purple-100 text-sm mb-1">活躍使用者</div>
+                  <div className="text-2xl font-bold">{ga4Data.activeUsers?.toLocaleString()}</div>
+                  <div className="text-purple-200 text-xs mt-1">Active Users</div>
+                </div>
+                <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-4 text-white">
+                  <div className="text-cyan-100 text-sm mb-1">網頁瀏覽量</div>
+                  <div className="text-2xl font-bold">{ga4Data.pageViews?.toLocaleString()}</div>
+                  <div className="text-cyan-200 text-xs mt-1">Page Views</div>
+                </div>
+                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
+                  <div className="text-orange-100 text-sm mb-1">跳出率</div>
+                  <div className="text-2xl font-bold">{ga4Data.bounceRate?.toFixed(1)}%</div>
+                  <div className="text-orange-200 text-xs mt-1">Bounce Rate</div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <h4 className="font-semibold text-slate-800 mb-4">流量趨勢 (近30天)</h4>
+                <ResponsiveContainer width="100%" height={280}>
+                  <AreaChart data={ga4Data.timeline || []}>
+                    <defs>
+                      <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickFormatter={(val) => val.slice(5)} />
+                    <YAxis stroke="#64748b" fontSize={11} />
+                    <Tooltip formatter={(value) => value.toLocaleString()} labelFormatter={(label) => `日期: ${label}`} />
+                    <Area type="monotone" dataKey="sessions" stroke="#3b82f6" fillOpacity={1} fill="url(#colorSessions)" name="工作階段" />
+                    <Area type="monotone" dataKey="pageViews" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorPageViews)" name="瀏覽量" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-2xl p-10 shadow-sm border border-slate-100 text-center">
+              <div className="text-4xl mb-3">📊</div>
+              <h4 className="font-semibold text-slate-700 mb-1">尚未串接 Google Analytics 4</h4>
+              <p className="text-sm text-slate-400">串接 GA4 後可查看真實流量數據（專業版功能）</p>
             </div>
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
-              <div className="text-purple-100 text-sm mb-1">活躍使用者</div>
-              <div className="text-2xl font-bold">{ga4Data?.activeUsers?.toLocaleString() || 0}</div>
-              <div className="text-purple-200 text-xs mt-1">Active Users</div>
-            </div>
-            <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-4 text-white">
-              <div className="text-cyan-100 text-sm mb-1">網頁瀏覽量</div>
-              <div className="text-2xl font-bold">{ga4Data?.pageViews?.toLocaleString() || 0}</div>
-              <div className="text-cyan-200 text-xs mt-1">Page Views</div>
-            </div>
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
-              <div className="text-orange-100 text-sm mb-1">跳出率</div>
-              <div className="text-2xl font-bold">{ga4Data?.bounceRate?.toFixed(1) || 0}%</div>
-              <div className="text-orange-200 text-xs mt-1">Bounce Rate</div>
-            </div>
-          </div>
-          
-          {/* GA4 流量趨勢圖 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h4 className="font-semibold text-slate-800 mb-4">流量趨勢 (近30天)</h4>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={ga4Data?.timeline || []}>
-                <defs>
-                  <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#64748b" 
-                  fontSize={10} 
-                  tickFormatter={(val) => val.slice(5)}
-                />
-                <YAxis stroke="#64748b" fontSize={11} />
-                <Tooltip 
-                  formatter={(value) => value.toLocaleString()}
-                  labelFormatter={(label) => `日期: ${label}`}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="sessions" 
-                  stroke="#3b82f6" 
-                  fillOpacity={1} 
-                  fill="url(#colorSessions)" 
-                  name="工作階段"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="pageViews" 
-                  stroke="#8b5cf6" 
-                  fillOpacity={1} 
-                  fill="url(#colorPageViews)" 
-                  name="瀏覽量"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          )}
         </div>
 
         {/* GSC 搜尋數據區塊 */}
@@ -614,94 +545,70 @@ ${siteTitle} — ${siteDesc}
             </h3>
             {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
           </div>
-          
-          {/* GSC 指標卡片 */}
-          <div className="grid md:grid-cols-4 gap-4 mb-4">
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
-              <div className="text-green-100 text-sm mb-1">曝光次數</div>
-              <div className="text-2xl font-bold">{gscData?.impressions?.toLocaleString() || 0}</div>
-              <div className="text-green-200 text-xs mt-1">Impressions</div>
-            </div>
-            <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white">
-              <div className="text-teal-100 text-sm mb-1">點擊次數</div>
-              <div className="text-2xl font-bold">{gscData?.clicks?.toLocaleString() || 0}</div>
-              <div className="text-teal-200 text-xs mt-1">Clicks</div>
-            </div>
-            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white">
-              <div className="text-indigo-100 text-sm mb-1">點擊率</div>
-              <div className="text-2xl font-bold">{gscData?.ctr?.toFixed(2) || 0}%</div>
-              <div className="text-indigo-200 text-xs mt-1">CTR</div>
-            </div>
-            <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-4 text-white">
-              <div className="text-pink-100 text-sm mb-1">平均排名</div>
-              <div className="text-2xl font-bold">{gscData?.position?.toFixed(1) || 0}</div>
-              <div className="text-pink-200 text-xs mt-1">Avg Position</div>
-            </div>
-          </div>
-          
-          {/* GSC 圖表區域 */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* GSC 趨勢圖 */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h4 className="font-semibold text-slate-800 mb-4">搜尋曝光與點擊趨勢</h4>
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={gscData?.timeline || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#64748b" 
-                    fontSize={10} 
-                    tickFormatter={(val) => val.slice(5)}
-                  />
-                  <YAxis stroke="#64748b" fontSize={11} />
-                  <Tooltip formatter={(value) => value.toLocaleString()} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="impressions" 
-                    stroke="#10b981" 
-                    strokeWidth={2} 
-                    dot={{ r: 2 }} 
-                    name="曝光"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="clicks" 
-                    stroke="#f59e0b" 
-                    strokeWidth={2} 
-                    dot={{ r: 2 }} 
-                    name="點擊"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            
-            {/* 熱門關鍵字 */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h4 className="font-semibold text-slate-800 mb-4">熱門搜尋關鍵字</h4>
-              <div className="space-y-3">
-                {(gscData?.topQueries || []).slice(0, 5).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">
-                        {index + 1}
-                      </span>
-                      <span className="text-sm text-slate-700 font-medium truncate max-w-[150px]">
-                        {item.query}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs">
-                      <span className="text-slate-500">
-                        <span className="text-green-600 font-medium">{item.clicks}</span> 點擊
-                      </span>
-                      <span className="text-slate-500">
-                        <span className="text-blue-600 font-medium">{item.position.toFixed(1)}</span> 排名
-                      </span>
-                    </div>
-                  </div>
-                ))}
+          {gscData ? (
+            <>
+              <div className="grid md:grid-cols-4 gap-4 mb-4">
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
+                  <div className="text-green-100 text-sm mb-1">曝光次數</div>
+                  <div className="text-2xl font-bold">{gscData.impressions?.toLocaleString()}</div>
+                  <div className="text-green-200 text-xs mt-1">Impressions</div>
+                </div>
+                <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white">
+                  <div className="text-teal-100 text-sm mb-1">點擊次數</div>
+                  <div className="text-2xl font-bold">{gscData.clicks?.toLocaleString()}</div>
+                  <div className="text-teal-200 text-xs mt-1">Clicks</div>
+                </div>
+                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white">
+                  <div className="text-indigo-100 text-sm mb-1">點擊率</div>
+                  <div className="text-2xl font-bold">{gscData.ctr?.toFixed(2)}%</div>
+                  <div className="text-indigo-200 text-xs mt-1">CTR</div>
+                </div>
+                <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-4 text-white">
+                  <div className="text-pink-100 text-sm mb-1">平均排名</div>
+                  <div className="text-2xl font-bold">{gscData.position?.toFixed(1)}</div>
+                  <div className="text-pink-200 text-xs mt-1">Avg Position</div>
+                </div>
               </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <h4 className="font-semibold text-slate-800 mb-4">搜尋曝光與點擊趨勢</h4>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={gscData.timeline || []}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickFormatter={(val) => val.slice(5)} />
+                      <YAxis stroke="#64748b" fontSize={11} />
+                      <Tooltip formatter={(value) => value.toLocaleString()} />
+                      <Line type="monotone" dataKey="impressions" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} name="曝光" />
+                      <Line type="monotone" dataKey="clicks" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} name="點擊" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <h4 className="font-semibold text-slate-800 mb-4">熱門搜尋關鍵字</h4>
+                  <div className="space-y-3">
+                    {(gscData.topQueries || []).slice(0, 5).map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">{index + 1}</span>
+                          <span className="text-sm text-slate-700 font-medium truncate max-w-[150px]">{item.query}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="text-slate-500"><span className="text-green-600 font-medium">{item.clicks}</span> 點擊</span>
+                          <span className="text-slate-500"><span className="text-blue-600 font-medium">{item.position.toFixed(1)}</span> 排名</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-2xl p-10 shadow-sm border border-slate-100 text-center">
+              <div className="text-4xl mb-3">🔍</div>
+              <h4 className="font-semibold text-slate-700 mb-1">尚未串接 Google Search Console</h4>
+              <p className="text-sm text-slate-400">串接 GSC 後可查看關鍵字排名、曝光與點擊數據（專業版功能）</p>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 詳細檢測項目 */}
@@ -800,9 +707,10 @@ ${siteTitle} — ${siteDesc}
         <div className="mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-slate-800">GEO 生成式 AI 優化</h3>
-            <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">
-              Generative Engine
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">Generative Engine</span>
+              <Link to={`/geo-audit/${id}`} className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">查看詳情 →</Link>
+            </div>
           </div>
           <p className="text-xs text-slate-400 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Perplexity、Gemini）</p>
           {geoAudit ? (
