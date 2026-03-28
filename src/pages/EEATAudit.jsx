@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
+import { useAuth } from '../context/AuthContext'
 
 const EEAT_CHECKS = [
   {
@@ -119,8 +120,8 @@ export default function EEATAudit() {
     }
   }
 
-  // 付費狀態（目前固定 false，待會員系統完成後改為動態判斷）
-  const isPro = false
+  // 付費狀態（從 AuthContext 取得，未來串接 Stripe 後 profiles.is_pro 會自動更新）
+  const { isPro } = useAuth()
 
   const passedCount = EEAT_CHECKS.filter(c => getCheckStatus(c.id) === 'pass').length
   const score = eeatAudit ? eeatAudit.score : Math.round((passedCount / EEAT_CHECKS.length) * 100)

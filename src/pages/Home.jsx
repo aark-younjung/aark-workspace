@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
@@ -11,6 +12,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
   const navigate = useNavigate()
+  const { user, userName, signOut } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -191,8 +193,14 @@ export default function Home() {
           <nav className="flex items-center gap-6">
             <Link to="/showcase" className="text-white/70 hover:text-white transition-colors text-sm">排行榜</Link>
             <Link to="/compare" className="text-white/70 hover:text-white transition-colors text-sm">競品比較</Link>
-            <a href="#" className="text-white/70 hover:text-white transition-colors text-sm">價格</a>
-            <a href="#" className="text-white/70 hover:text-white transition-colors text-sm">登入</a>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-white/60 text-sm">👤 {userName}</span>
+                <button onClick={signOut} className="text-white/50 hover:text-white text-sm transition-colors">登出</button>
+              </div>
+            ) : (
+              <Link to="/login" className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors">登入</Link>
+            )}
           </nav>
         </div>
       </header>
