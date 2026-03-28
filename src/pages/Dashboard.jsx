@@ -11,7 +11,7 @@ import { exportDashboardPDF } from '../services/pdfExport'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
+  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, Legend
 } from 'recharts'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
@@ -25,6 +25,8 @@ export default function Dashboard() {
   const [eeatAudit, setEeatAudit] = useState(null)
   const [seoHistory, setSeoHistory] = useState([])
   const [aeoHistory, setAeoHistory] = useState([])
+  const [geoHistory, setGeoHistory] = useState([])
+  const [eeatHistory, setEeatHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
   const [exportingPDF, setExportingPDF] = useState(false)
@@ -120,9 +122,11 @@ export default function Dashboard() {
           .select('*')
           .eq('website_id', id)
           .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        if (geoData) setGeoAudit(geoData)
+          .limit(10)
+        if (geoData && geoData.length > 0) {
+          setGeoAudit(geoData[0])
+          setGeoHistory(geoData.slice(0, 10).reverse())
+        }
 
         // 獲取 E-E-A-T 審計
         const { data: eeatData } = await supabase
@@ -130,9 +134,11 @@ export default function Dashboard() {
           .select('*')
           .eq('website_id', id)
           .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        if (eeatData) setEeatAudit(eeatData)
+          .limit(10)
+        if (eeatData && eeatData.length > 0) {
+          setEeatAudit(eeatData[0])
+          setEeatHistory(eeatData.slice(0, 10).reverse())
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -177,12 +183,22 @@ export default function Dashboard() {
     { subject: '載入速度', score: seoAudit?.page_speed?.score || 0, fullMark: 100 },
   ]
 
-  // 歷史趨勢數據
-  const trendData = seoHistory.map((s, i) => ({
-    name: new Date(s.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }),
-    seo: s.score,
-    aeo: aeoHistory[i]?.score || 0,
-  }))
+  // 歷史趨勢數據（以 SEO 歷史為基準對齊各模組）
+  const trendData = seoHistory.map((s, i) => {
+    const seo = s.score
+    const aeo = aeoHistory[i]?.score || 0
+    const geo = geoHistory[i]?.score || 0
+    const eeat = eeatHistory[i]?.score || 0
+    const overall = Math.round((seo + aeo + geo + eeat) / 4)
+    return {
+      name: new Date(s.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }),
+      SEO: seo,
+      AEO: aeo,
+      GEO: geo,
+      'E-E-A-T': eeat,
+      綜合: overall,
+    }
+  })
 
   const scoreData = [
     { name: 'SEO', value: seoScore, color: '#3b82f6' },
@@ -513,21 +529,62 @@ ${siteTitle} — ${siteDesc}
 
           {/* 趨勢圖 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-800 mb-6">分數趨勢</h3>
-            {trendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" stroke="#64748b" fontSize={11} />
-                  <YAxis stroke="#64748b" fontSize={11} domain={[0, 100]} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="seo" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} name="SEO" />
-                  <Line type="monotone" dataKey="aeo" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} name="AEO" />
-                </LineChart>
-              </ResponsiveContainer>
+            <h3 className="font-semibold text-slate-800 mb-1">歷史趨勢</h3>
+            <p className="text-xs text-slate-400 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
+
+            {trendData.length >= 2 ? (
+              <>
+                {/* 進步摘要卡 */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-6">
+                  {[
+                    { key: 'SEO',    color: '#3b82f6', bg: '#eff6ff' },
+                    { key: 'AEO',    color: '#8b5cf6', bg: '#f5f3ff' },
+                    { key: 'GEO',    color: '#10b981', bg: '#f0fdf4' },
+                    { key: 'E-E-A-T',color: '#f59e0b', bg: '#fffbeb' },
+                    { key: '綜合',   color: '#64748b', bg: '#f8fafc' },
+                  ].map(({ key, color, bg }) => {
+                    const first = trendData[0][key] || 0
+                    const last = trendData[trendData.length - 1][key] || 0
+                    const diff = last - first
+                    return (
+                      <div key={key} style={{ background: bg }} className="rounded-xl p-3 text-center">
+                        <div className="text-xs text-slate-500 mb-1">{key}</div>
+                        <div className="text-xl font-bold" style={{ color }}>{last}</div>
+                        <div className={`text-xs font-medium mt-0.5 ${diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                          {diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '持平'}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={trendData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 100]} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 12 }}
+                      formatter={(v, name) => [`${v} 分`, name]}
+                    />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
+                    <Line type="monotone" dataKey="SEO"    stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="AEO"    stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="GEO"    stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="E-E-A-T" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="綜合"   stroke="#64748b" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </>
+            ) : trendData.length === 1 ? (
+              <div className="h-[280px] flex flex-col items-center justify-center text-slate-400 gap-2">
+                <div className="text-3xl">📈</div>
+                <p className="text-sm">已有 1 筆記錄，再次「重新檢測」後即可顯示趨勢圖</p>
+              </div>
             ) : (
-              <div className="h-[280px] flex items-center justify-center text-slate-400">
-                尚無歷史資料，執行「重新檢測」建立記錄
+              <div className="h-[280px] flex flex-col items-center justify-center text-slate-400 gap-2">
+                <div className="text-3xl">📊</div>
+                <p className="text-sm">尚無歷史資料，執行「重新檢測」建立記錄</p>
               </div>
             )}
           </div>
