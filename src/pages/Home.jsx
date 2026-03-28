@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
@@ -164,9 +164,9 @@ export default function Home() {
             <span className="text-xl font-bold text-white">優勢方舟</span>
           </div>
           <nav className="flex items-center gap-6">
-            <a href="#" className="text-white/70 hover:text-white transition-colors">功能</a>
-            <a href="#" className="text-white/70 hover:text-white transition-colors">價格</a>
-            <a href="#" className="text-white/70 hover:text-white transition-colors">登入</a>
+            <Link to="/showcase" className="text-white/70 hover:text-white transition-colors text-sm">排行榜</Link>
+            <a href="#" className="text-white/70 hover:text-white transition-colors text-sm">價格</a>
+            <a href="#" className="text-white/70 hover:text-white transition-colors text-sm">登入</a>
           </nav>
         </div>
       </header>
@@ -235,6 +235,17 @@ export default function Home() {
               <p className="text-white/50">{item.desc}</p>
             </div>
           ))}
+        </div>
+
+        {/* 排行榜入口 */}
+        <div className="mt-16 p-8 rounded-2xl border border-white/10 bg-white/5 text-center">
+          <div className="text-3xl mb-3">🏆</div>
+          <h2 className="text-xl font-bold text-white mb-2">想知道其他網站的 AI 能見度表現？</h2>
+          <p className="text-white/50 mb-6 text-sm">查看進步之星、排行榜與成功案例，了解優化前後的差異</p>
+          <Link to="/showcase"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-500/25">
+            查看 AI 能見度排行榜 →
+          </Link>
         </div>
       </main>
     </div>
