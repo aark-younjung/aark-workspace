@@ -120,8 +120,37 @@ export default function EEATAudit() {
     }
   }
 
-  // 付費狀態（從 AuthContext 取得，未來串接 Stripe 後 profiles.is_pro 會自動更新）
-  const { isPro } = useAuth()
+  const { isPro, user } = useAuth()
+  const [upgrading, setUpgrading] = useState(false)
+
+  const handleUpgrade = async () => {
+    if (!user) {
+      alert('請先登入再升級 Pro 方案')
+      return
+    }
+    setUpgrading(true)
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          returnUrl: window.location.href,
+        }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error || '建立付款頁面失敗，請稍後再試')
+      }
+    } catch {
+      alert('連線失敗，請稍後再試')
+    } finally {
+      setUpgrading(false)
+    }
+  }
 
   const passedCount = EEAT_CHECKS.filter(c => getCheckStatus(c.id) === 'pass').length
   const score = eeatAudit ? eeatAudit.score : Math.round((passedCount / EEAT_CHECKS.length) * 100)
@@ -327,8 +356,12 @@ export default function EEATAudit() {
                   <div className="text-4xl mb-3">🔒</div>
                   <h4 className="text-lg font-bold text-slate-800 mb-2">升級 Pro 解鎖完整建議</h4>
                   <p className="text-sm text-slate-500 mb-5">包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
-                  <button className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-md">
-                    升級 Pro 方案 →
+                  <button
+                    onClick={handleUpgrade}
+                    disabled={upgrading}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {upgrading ? '跳轉中...' : '升級 Pro 方案 →'}
                   </button>
                   <p className="text-xs text-slate-400 mt-3">NT$2,000 / 月 · 隨時取消</p>
                 </div>

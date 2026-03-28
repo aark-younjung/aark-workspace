@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
@@ -18,6 +19,11 @@ const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
 
 export default function Dashboard() {
   const { id } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { user, isPro, refreshProfile } = useAuth()
+  const [upgradeSuccess, setUpgradeSuccess] = useState(false)
+  const [upgrading, setUpgrading] = useState(false)
   const [website, setWebsite] = useState(null)
   const [seoAudit, setSeoAudit] = useState(null)
   const [aeoAudit, setAeoAudit] = useState(null)
@@ -54,6 +60,47 @@ export default function Dashboard() {
     fetchData()
     fetchGA4GSCData()
   }, [id])
+
+  // 付款成功後刷新 isPro 狀態
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('upgraded') === 'true') {
+      setUpgradeSuccess(true)
+      refreshProfile()
+      // 清除 URL 參數
+      navigate(location.pathname, { replace: true })
+      setTimeout(() => setUpgradeSuccess(false), 6000)
+    }
+  }, [])
+
+  const handleUpgrade = async () => {
+    if (!user) {
+      alert('請先登入再升級 Pro 方案')
+      return
+    }
+    setUpgrading(true)
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          returnUrl: window.location.href,
+        }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error || '建立付款頁面失敗，請稍後再試')
+      }
+    } catch {
+      alert('連線失敗，請稍後再試')
+    } finally {
+      setUpgrading(false)
+    }
+  }
   
   // 獲取 GA4 和 GSC 數據
   const fetchGA4GSCData = async () => {
@@ -547,6 +594,12 @@ ${siteTitle} — ${siteDesc}
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* 升級成功提示 */}
+      {upgradeSuccess && (
+        <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center py-3 px-6 text-sm font-semibold">
+          🎉 恭喜！Pro 方案啟用成功！所有進階功能已解鎖。
+        </div>
+      )}
       {/* Header */}
       <header className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -1008,7 +1061,15 @@ ${siteTitle} — ${siteDesc}
           ) : (
             <div className="text-center py-6">
               <p className="text-slate-400 text-sm mb-2">點擊「重新檢測」以執行 E-E-A-T 分析</p>
-              <p className="text-orange-400 text-xs font-medium">🔒 升級專業版，解鎖完整修改建議與優化行動計畫</p>
+              {!isPro && (
+                <button
+                  onClick={handleUpgrade}
+                  disabled={upgrading}
+                  className="mt-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60"
+                >
+                  {upgrading ? '跳轉中...' : '🔒 升級 Pro，解鎖完整修改建議'}
+                </button>
+              )}
             </div>
           )}
         </div>

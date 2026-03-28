@@ -69,12 +69,15 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
-  // isPro：從 profiles 資料表讀取（未來串接 Stripe 後在此更新）
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id)
+  }
+
   const isPro = profile?.is_pro || false
   const userName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || ''
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isPro, userName, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isPro, userName, signIn, signUp, signOut, refreshProfile }}>
       {!loading && children}
     </AuthContext.Provider>
   )
