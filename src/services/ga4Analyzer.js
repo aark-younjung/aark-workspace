@@ -1,22 +1,9 @@
 /**
  * GA4 數據分析服務
- * 串接 Google Analytics 4 Data API
- * 
- * 數據指標：
- * - sessions: 工作階段
- * - activeUsers: 活躍使用者
- * - bounceRate: 跳出率
- * - pageViews: 網頁瀏覽量
+ * 透過 /api/ga4-data Vercel proxy 串接 Google Analytics 4 Data API
  */
 
-// n8n Webhook URL
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook'
-
-// API 配置
-const API_CONFIG = {
-  useN8n: true,  // 使用 n8n 作為代理
-  ga4Endpoint: 'https://analyticsdata.googleapis.com/v1beta'
-}
+import { getAccessToken } from './googleAuth'
 
 /**
  * 透過 n8n 獲取 GA4 數據（推薦方式）
@@ -184,20 +171,33 @@ function parseGA4Response(response) {
 }
 
 /**
- * 獲取 GA4 摘要數據
- * @param {string} propertyId - GA4 屬性 ID
- * @param {Object} options - 查詢選項
- * @returns {Promise<Object>} - 摘要數據
+ * 獲取 GA4 摘要數據（透過 /api/ga4-data proxy）
  */
 export async function getGA4Summary(propertyId, options = {}) {
-  if (!propertyId) {
-    throw new Error('GA4 Property ID is required')
+  if (!propertyId) throw new Error('GA4 Property ID is required')
+
+  const token = getAccessToken()
+  if (!token) throw new Error('NOT_AUTHENTICATED')
+
+  const res = await fetch('/api/ga4-data', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      propertyId,
+      startDate: options.startDate || '30daysAgo',
+      endDate: options.endDate || 'today',
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error || 'GA4 fetch failed')
   }
-  
-  const response = API_CONFIG.useN8n 
-    ? await fetchGA4ViaN8n(propertyId, options)
-    : await fetchGA4Direct(null, propertyId, options)
-  
+
+  const response = await res.json()
   const { summary, timeline } = parseGA4Response(response)
   
   return {

@@ -1,22 +1,9 @@
 /**
  * GSC (Google Search Console) 數據分析服務
- * 串接 Google Search Console API
- * 
- * 數據指標：
- * - impressions: 曝光數
- * - clicks: 點擊數
- * - ctr: 點擊率
- * - position: 排名
+ * 透過 /api/gsc-data Vercel proxy 串接 Google Search Console API
  */
 
-// n8n Webhook URL
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook'
-
-// API 配置
-const API_CONFIG = {
-  useN8n: true,
-  gscEndpoint: 'https://www.googleapis.com/webmasters/v3'
-}
+import { getAccessToken } from './googleAuth'
 
 /**
  * 透過 n8n 獲取 GSC 數據（推薦方式）
@@ -256,14 +243,30 @@ function parseGSCResponse(response) {
  * @returns {Promise<Object>} - 摘要數據
  */
 export async function getGSCSummary(siteUrl, options = {}) {
-  if (!siteUrl) {
-    throw new Error('GSC Site URL is required')
+  if (!siteUrl) throw new Error('GSC Site URL is required')
+
+  const token = getAccessToken()
+  if (!token) throw new Error('NOT_AUTHENTICATED')
+
+  const res = await fetch('/api/gsc-data', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      siteUrl,
+      startDate: options.startDate || '30daysAgo',
+      endDate: options.endDate || 'today',
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error || 'GSC fetch failed')
   }
-  
-  const response = API_CONFIG.useN8n
-    ? await fetchGSCViaN8n(siteUrl, { ...options, dimensions: ['date'] })
-    : await fetchGSCDirect(null, siteUrl, { ...options, dimensions: ['date'] })
-  
+
+  const response = await res.json()
   const { summary, timeline, topQueries } = parseGSCResponse(response)
   
   return {

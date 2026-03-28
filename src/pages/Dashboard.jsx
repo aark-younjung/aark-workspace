@@ -8,6 +8,10 @@ import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { getGA4Summary } from '../services/ga4Analyzer'
 import { getGSCSummary } from '../services/gscAnalyzer'
+import {
+  initiateGoogleAuth, isAuthenticated as isGoogleConnected,
+  getPropertyId, getSiteUrl, setPropertyId, setSiteUrl, clearGoogleToken
+} from '../services/googleAuth'
 import { exportDashboardPDF } from '../services/pdfExport'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -52,14 +56,31 @@ export default function Dashboard() {
   const [ga4Loading, setGa4Loading] = useState(false)
   const [gscLoading, setGscLoading] = useState(false)
   
-  // 從 localStorage 獲取配置的 GA4 Property ID 和 GSC Site URL
-  const ga4PropertyId = localStorage.getItem('ga4_property_id')
-  const gscSiteUrl = localStorage.getItem('gsc_site_url')
+  // Google Analytics 連接狀態
+  const [googleConnected, setGoogleConnected] = useState(isGoogleConnected())
+  const [ga4PropertyId, setGa4PropertyId] = useState(getPropertyId() || '')
+  const [gscSiteUrl, setGscSiteUrl] = useState(getSiteUrl() || '')
+  const [showGoogleSettings, setShowGoogleSettings] = useState(false)
+  const [ga4Input, setGa4Input] = useState(getPropertyId() || '')
+  const [gscInput, setGscInput] = useState(getSiteUrl() || '')
 
   useEffect(() => {
     fetchData()
     fetchGA4GSCData()
   }, [id])
+
+  // 監聽 Google OAuth 彈窗成功訊息
+  useEffect(() => {
+    const handleMessage = (e) => {
+      if (e.origin !== window.location.origin) return
+      if (e.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+        setGoogleConnected(true)
+        setShowGoogleSettings(true)
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
 
   // 付款成功後刷新 isPro 狀態
   useEffect(() => {
@@ -102,35 +123,53 @@ export default function Dashboard() {
     }
   }
   
+  // 儲存 Google 設定並拉取數據
+  const handleSaveGoogleSettings = () => {
+    if (ga4Input) { setPropertyId(ga4Input); setGa4PropertyId(ga4Input) }
+    if (gscInput) { setSiteUrl(gscInput); setGscSiteUrl(gscInput) }
+    setShowGoogleSettings(false)
+    fetchGA4GSCData(ga4Input, gscInput)
+  }
+
+  const handleDisconnectGoogle = () => {
+    clearGoogleToken()
+    setGoogleConnected(false)
+    setGa4Data(null)
+    setGscData(null)
+    setGa4PropertyId('')
+    setGscSiteUrl('')
+    setGa4Input('')
+    setGscInput('')
+  }
+
   // 獲取 GA4 和 GSC 數據
-  const fetchGA4GSCData = async () => {
-    if (ga4PropertyId) {
+  const fetchGA4GSCData = async (pid, surl) => {
+    const propId = pid ?? ga4PropertyId
+    const siteUrl = surl ?? gscSiteUrl
+    if (propId) {
       setGa4Loading(true)
       try {
-        const data = await getGA4Summary(ga4PropertyId, { startDate: '30daysAgo', endDate: 'today' })
+        const data = await getGA4Summary(propId, { startDate: '30daysAgo', endDate: 'today' })
         setGa4Data(data)
       } catch (error) {
-        console.warn('GA4 data fetch failed:', error)
+        if (error.message !== 'NOT_AUTHENTICATED') console.warn('GA4 data fetch failed:', error)
         setGa4Data(null)
       } finally {
         setGa4Loading(false)
       }
     }
-    // 未設定 ga4PropertyId → 保持 null，顯示未串接狀態
-
-    if (gscSiteUrl) {
+    if (siteUrl) {
       setGscLoading(true)
       try {
-        const data = await getGSCSummary(gscSiteUrl, { startDate: '30daysAgo', endDate: 'today' })
+        const data = await getGSCSummary(siteUrl, { startDate: '30daysAgo', endDate: 'today' })
         setGscData(data)
       } catch (error) {
-        console.warn('GSC data fetch failed:', error)
+        if (error.message !== 'NOT_AUTHENTICATED') console.warn('GSC data fetch failed:', error)
         setGscData(null)
       } finally {
         setGscLoading(false)
       }
     }
-    // 未設定 gscSiteUrl → 保持 null，顯示未串接狀態
   }
   
 
@@ -637,6 +676,23 @@ ${siteTitle} — ${siteDesc}
                 </>
               )}
             </button>
+            {googleConnected ? (
+              <button
+                onClick={() => setShowGoogleSettings(true)}
+                className="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors flex items-center gap-1.5"
+              >
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                Google 已連接
+              </button>
+            ) : (
+              <button
+                onClick={initiateGoogleAuth}
+                className="px-3 py-2 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+              >
+                <span className="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>
+                連接 Google
+              </button>
+            )}
             <button
               onClick={handleReanalyze}
               disabled={analyzing}
@@ -831,8 +887,23 @@ ${siteTitle} — ${siteDesc}
           ) : (
             <div className="bg-white rounded-2xl p-10 shadow-sm border border-slate-100 text-center">
               <div className="text-4xl mb-3">📊</div>
-              <h4 className="font-semibold text-slate-700 mb-1">尚未串接 Google Analytics 4</h4>
-              <p className="text-sm text-slate-400">串接 GA4 後可查看真實流量數據（專業版功能）</p>
+              <h4 className="font-semibold text-slate-700 mb-2">尚未串接 Google Analytics 4</h4>
+              {!googleConnected ? (
+                <button
+                  onClick={initiateGoogleAuth}
+                  className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  連接 Google 帳號
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowGoogleSettings(true)}
+                  className="mt-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-all"
+                >
+                  設定 GA4 Property ID
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -905,8 +976,23 @@ ${siteTitle} — ${siteDesc}
           ) : (
             <div className="bg-white rounded-2xl p-10 shadow-sm border border-slate-100 text-center">
               <div className="text-4xl mb-3">🔍</div>
-              <h4 className="font-semibold text-slate-700 mb-1">尚未串接 Google Search Console</h4>
-              <p className="text-sm text-slate-400">串接 GSC 後可查看關鍵字排名、曝光與點擊數據（專業版功能）</p>
+              <h4 className="font-semibold text-slate-700 mb-2">尚未串接 Google Search Console</h4>
+              {!googleConnected ? (
+                <button
+                  onClick={initiateGoogleAuth}
+                  className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  連接 Google 帳號
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowGoogleSettings(true)}
+                  className="mt-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-all"
+                >
+                  設定 GSC Site URL
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1259,6 +1345,65 @@ ${siteTitle} — ${siteDesc}
         </div>
 
       </main>
+
+      {/* Google 連接設定 Modal */}
+      {showGoogleSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-slate-800">設定 Google 串接</h3>
+              <button onClick={() => setShowGoogleSettings(false)} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  GA4 Property ID
+                  <span className="ml-1 text-slate-400 font-normal">（格式：123456789）</span>
+                </label>
+                <input
+                  type="text"
+                  value={ga4Input}
+                  onChange={e => setGa4Input(e.target.value)}
+                  placeholder="例：123456789"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-slate-400 mt-1">GA4 後台 → 管理 → 資源設定 → 資源 ID</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  GSC Site URL
+                  <span className="ml-1 text-slate-400 font-normal">（需已在 GSC 驗證）</span>
+                </label>
+                <input
+                  type="text"
+                  value={gscInput}
+                  onChange={e => setGscInput(e.target.value)}
+                  placeholder="例：https://example.com"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-slate-400 mt-1">Search Console → 選擇資源 → 複製網址</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleSaveGoogleSettings}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all"
+              >
+                儲存並載入數據
+              </button>
+              <button
+                onClick={handleDisconnectGoogle}
+                className="px-4 py-2.5 text-red-500 border border-red-200 rounded-xl text-sm hover:bg-red-50 transition-all"
+              >
+                中斷連接
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

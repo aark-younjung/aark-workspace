@@ -9,6 +9,7 @@ import Showcase from './pages/Showcase'
 import Compare from './pages/Compare'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import GoogleAuthCallback from './pages/GoogleAuthCallback'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/aeo-audit/:id" element={<AEOAudit />} />
           <Route path="/geo-audit/:id" element={<GEOAudit />} />
           <Route path="/eeat-audit/:id" element={<EEATAudit />} />
+          <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
