@@ -28,12 +28,25 @@ export function AuthProvider({ children }) {
 
   const fetchProfile = async (userId) => {
     try {
-      const { data } = await supabase
+      const { data: existing } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
-      setProfile(data)
+
+      if (existing) {
+        setProfile(existing)
+      } else {
+        // Google OAuth 首次登入時自動建立 profile
+        const { data: { user } } = await supabase.auth.getUser()
+        const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || ''
+        const { data: created } = await supabase
+          .from('profiles')
+          .insert([{ id: userId, email: user?.email || '', name, is_pro: false }])
+          .select()
+          .single()
+        setProfile(created)
+      }
     } catch (e) {
       console.error('fetchProfile error:', e)
     } finally {
@@ -64,6 +77,14 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
+  const signInWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/' },
+    })
+    return { data, error }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
     setProfile(null)
@@ -77,7 +98,7 @@ export function AuthProvider({ children }) {
   const userName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || ''
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isPro, userName, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, isPro, userName, signIn, signUp, signOut, signInWithGoogle, refreshProfile }}>
       {!loading && children}
     </AuthContext.Provider>
   )
