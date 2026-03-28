@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
+import { analyzeEEAT } from '../services/eeatAnalyzer'
 
 export default function Home() {
   const [url, setUrl] = useState('')
@@ -82,6 +83,16 @@ export default function Home() {
         geoResult = { score: 0, llms_txt: false, robots_ai: false, sitemap: false, open_graph: false, twitter_card: false, json_ld_citation: false, canonical: false, https: false }
       }
 
+      // 執行 E-E-A-T 分析
+      setStatus('正在分析 E-E-A-T 可信度指標...')
+      let eeatResult
+      try {
+        eeatResult = await analyzeEEAT(cleanUrl)
+      } catch (eeatError) {
+        console.warn('EEAT analysis failed:', eeatError)
+        eeatResult = { score: 0, author_info: false, about_page: false, contact_page: false, privacy_policy: false, organization_schema: false, date_published: false, social_links: false, outbound_links: false }
+      }
+
       setStatus('正在儲存檢測結果...')
 
       // 儲存 SEO 審計結果到資料庫（直接存物件，Supabase 支援 JSONB）
@@ -134,10 +145,24 @@ export default function Home() {
           canonical: !!geoResult.canonical,
           https: !!geoResult.https,
         }])
+      if (geoError) console.error('Error saving GEO audit:', geoError)
 
-      if (geoError) {
-        console.error('Error saving GEO audit:', geoError)
-      }
+      // 儲存 E-E-A-T 審計結果到資料庫
+      const { error: eeatError } = await supabase
+        .from('eeat_audits')
+        .insert([{
+          website_id: websiteId,
+          score: eeatResult.score,
+          author_info: !!eeatResult.author_info,
+          about_page: !!eeatResult.about_page,
+          contact_page: !!eeatResult.contact_page,
+          privacy_policy: !!eeatResult.privacy_policy,
+          organization_schema: !!eeatResult.organization_schema,
+          date_published: !!eeatResult.date_published,
+          social_links: !!eeatResult.social_links,
+          outbound_links: !!eeatResult.outbound_links,
+        }])
+      if (eeatError) console.error('Error saving EEAT audit:', eeatError)
 
       // 導向儀表板
       navigate(`/dashboard/${websiteId}`)

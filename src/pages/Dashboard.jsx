@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
+import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { getGA4Summary } from '../services/ga4Analyzer'
 import { getGSCSummary } from '../services/gscAnalyzer'
 import {
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [seoAudit, setSeoAudit] = useState(null)
   const [aeoAudit, setAeoAudit] = useState(null)
   const [geoAudit, setGeoAudit] = useState(null)
+  const [eeatAudit, setEeatAudit] = useState(null)
   const [seoHistory, setSeoHistory] = useState([])
   const [aeoHistory, setAeoHistory] = useState([])
   const [loading, setLoading] = useState(true)
@@ -118,9 +120,17 @@ export default function Dashboard() {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle()
-        if (geoData) {
-          setGeoAudit(geoData)
-        }
+        if (geoData) setGeoAudit(geoData)
+
+        // 獲取 E-E-A-T 審計
+        const { data: eeatData } = await supabase
+          .from('eeat_audits')
+          .select('*')
+          .eq('website_id', id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (eeatData) setEeatAudit(eeatData)
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -154,6 +164,7 @@ export default function Dashboard() {
   const seoScore = seoAudit?.score || 0
   const aeoScore = aeoAudit?.score || 0
   const geoScore = geoAudit?.score || 0
+  const eeatScore = eeatAudit?.score || 0
 
   // 雷達圖數據 - 5 項 SEO 檢測
   const radarData = [
@@ -175,6 +186,18 @@ export default function Dashboard() {
     { name: 'SEO', value: seoScore, color: '#3b82f6' },
     { name: 'AEO', value: aeoScore, color: '#8b5cf6' },
     { name: 'GEO', value: geoScore, color: '#10b981' },
+    { name: 'E-E-A-T', value: eeatScore, color: '#f59e0b' },
+  ]
+
+  const eeatChecks = [
+    { key: 'author_info',         name: '作者資訊',          passed: !!eeatAudit?.author_info },
+    { key: 'about_page',          name: '關於我們',          passed: !!eeatAudit?.about_page },
+    { key: 'contact_page',        name: '聯絡方式',          passed: !!eeatAudit?.contact_page },
+    { key: 'privacy_policy',      name: '隱私權政策',        passed: !!eeatAudit?.privacy_policy },
+    { key: 'organization_schema', name: 'Organization Schema', passed: !!eeatAudit?.organization_schema },
+    { key: 'date_published',      name: '發布日期',          passed: !!eeatAudit?.date_published },
+    { key: 'social_links',        name: '社群媒體連結',      passed: !!eeatAudit?.social_links },
+    { key: 'outbound_links',      name: '外部權威連結',      passed: !!eeatAudit?.outbound_links },
   ]
 
   // AEO 8 項檢測數據
@@ -206,43 +229,37 @@ export default function Dashboard() {
 
     setAnalyzing(true)
     try {
-      const [seoResult, aeoResult, geoResult] = await Promise.all([
-        analyzeSEO(website.url),
-        analyzeAEO(website.url),
-        analyzeGEO(website.url)
-      ])
+      const seoResult = await analyzeSEO(website.url).catch(() => ({ score: 0 }))
+      const aeoResult = await analyzeAEO(website.url).catch(() => ({ score: 0 }))
+      const geoResult = await analyzeGEO(website.url).catch(() => ({ score: 0 }))
+      const eeatResult = await analyzeEEAT(website.url).catch(() => ({ score: 0 }))
 
       await Promise.all([
         supabase.from('seo_audits').insert([{
-          website_id: id,
-          score: seoResult.score,
-          meta_tags: seoResult.meta_tags,
-          h1_structure: seoResult.h1_structure,
-          alt_tags: seoResult.alt_tags,
-          mobile_compatible: seoResult.mobile_compatible,
+          website_id: id, score: seoResult.score,
+          meta_tags: seoResult.meta_tags, h1_structure: seoResult.h1_structure,
+          alt_tags: seoResult.alt_tags, mobile_compatible: seoResult.mobile_compatible,
           page_speed: seoResult.page_speed
         }]),
         supabase.from('aeo_audits').insert([{
-          website_id: id,
-          score: aeoResult.score,
-          json_ld: aeoResult.json_ld,
-          faq_schema: aeoResult.faq_schema,
-          canonical: aeoResult.canonical,
-          breadcrumbs: aeoResult.breadcrumbs,
-          open_graph: aeoResult.open_graph,
-          question_headings: aeoResult.question_headings,
+          website_id: id, score: aeoResult.score,
+          json_ld: aeoResult.json_ld, faq_schema: aeoResult.faq_schema,
+          canonical: aeoResult.canonical, breadcrumbs: aeoResult.breadcrumbs,
+          open_graph: aeoResult.open_graph, question_headings: aeoResult.question_headings,
         }]),
         supabase.from('geo_audits').insert([{
-          website_id: id,
-          score: geoResult.score,
-          llms_txt: geoResult.llms_txt,
-          robots_ai: geoResult.robots_ai,
-          sitemap: geoResult.sitemap,
-          open_graph: geoResult.open_graph,
-          twitter_card: geoResult.twitter_card,
-          json_ld_citation: geoResult.json_ld_citation,
-          canonical: geoResult.canonical,
-          https: geoResult.https,
+          website_id: id, score: geoResult.score,
+          llms_txt: geoResult.llms_txt, robots_ai: geoResult.robots_ai,
+          sitemap: geoResult.sitemap, open_graph: geoResult.open_graph,
+          twitter_card: geoResult.twitter_card, json_ld_citation: geoResult.json_ld_citation,
+          canonical: geoResult.canonical, https: geoResult.https,
+        }]),
+        supabase.from('eeat_audits').insert([{
+          website_id: id, score: eeatResult.score,
+          author_info: !!eeatResult.author_info, about_page: !!eeatResult.about_page,
+          contact_page: !!eeatResult.contact_page, privacy_policy: !!eeatResult.privacy_policy,
+          organization_schema: !!eeatResult.organization_schema, date_published: !!eeatResult.date_published,
+          social_links: !!eeatResult.social_links, outbound_links: !!eeatResult.outbound_links,
         }])
       ])
 
@@ -264,6 +281,10 @@ export default function Dashboard() {
     const tips = []
     if (!seoAudit?.h1_structure?.hasOnlyOneH1) tips.push({ icon: '🏷️', title: '修正 H1 標題結構', desc: `頁面目前有 ${seoAudit?.h1_structure?.h1Count ?? 0} 個 H1 標題。每個頁面應只有一個 H1，清楚說明頁面主題，幫助 Google 與 AI 理解內容核心。` })
     if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Perplexity 更容易引用你。' })
+    if (!eeatAudit?.about_page) tips.push({ icon: '🏢', title: '建立關於我們頁面', desc: '缺少品牌介紹頁面。建立 /about 頁面說明公司背景與核心服務，強化 Google 與 AI 對你品牌的「權威性」認知。' })
+    if (!eeatAudit?.contact_page) tips.push({ icon: '📞', title: '提供聯絡方式', desc: '找不到聯絡資訊。建立 /contact 頁面或在頁尾加入 email 連結，讓訪客和搜尋引擎確認這是真實存在的機構。' })
+    if (!eeatAudit?.privacy_policy) tips.push({ icon: '🔏', title: '建立隱私權政策', desc: '缺少隱私權政策。建立 /privacy-policy 頁面並在頁尾加入連結，是合規與信任的基本要求。' })
+    if (!eeatAudit?.organization_schema) tips.push({ icon: '🏷️', title: '加入 Organization Schema', desc: '缺少機構結構化資料。在 JSON-LD 加入 Organization schema（含 name、url、logo），讓 Google 和 AI 明確識別你的品牌。' })
     if (!aeoAudit?.json_ld) tips.push({ icon: '📋', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 Google 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
     if (!aeoAudit?.faq_schema) tips.push({ icon: '❓', title: '新增 FAQ Schema', desc: '缺少 FAQPage schema 讓 Google 無法將你的問答內容顯示為精選摘要，為 FAQ 區塊添加結構化資料可大幅提升能見度。' })
     if (!aeoAudit?.open_graph) tips.push({ icon: '🔗', title: '補充 Open Graph 標籤', desc: '缺少 og:title、og:description 會讓 AI 引用時無法獲取標準化資訊，影響在 AI 摘要中呈現的品質。' })
@@ -732,6 +753,36 @@ ${siteTitle} — ${siteDesc}
           ) : (
             <div className="text-center py-6 text-slate-400 text-sm">
               點擊「重新檢測」以執行 GEO 分析
+            </div>
+          )}
+        </div>
+
+        {/* E-E-A-T 可信度 */}
+        <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-slate-800">E-E-A-T 可信度</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">Trust Signals</span>
+              <Link to={`/eeat-audit/${id}`} className="text-orange-500 hover:text-orange-600 text-sm font-medium">查看詳情 →</Link>
+            </div>
+          </div>
+          <p className="text-xs text-slate-400 mb-4">檢測作者資訊、組織可信度與外部權威連結（Experience · Expertise · Authoritativeness · Trustworthiness）</p>
+          {eeatAudit ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {eeatChecks.map((check) => (
+                <div key={check.key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                    check.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {check.passed ? '✓' : '✗'}
+                  </span>
+                  <span className="text-sm text-slate-700">{check.name}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-slate-400 text-sm">
+              點擊「重新檢測」以執行 E-E-A-T 分析
             </div>
           )}
         </div>

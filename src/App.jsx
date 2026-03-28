@@ -5,6 +5,7 @@ import AEOAudit from './pages/AEOAudit'
 import GEOAudit from './pages/GEOAudit'
 import Showcase from './pages/Showcase'
 import Compare from './pages/Compare'
+import EEATAudit from './pages/EEATAudit'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/dashboard/:id" element={<Dashboard />} />
         <Route path="/aeo-audit/:id" element={<AEOAudit />} />
         <Route path="/geo-audit/:id" element={<GEOAudit />} />
+        <Route path="/eeat-audit/:id" element={<EEATAudit />} />
       </Routes>
     </BrowserRouter>
   )

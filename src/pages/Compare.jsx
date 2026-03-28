@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
+import { analyzeEEAT } from '../services/eeatAnalyzer'
 
 const scoreColor = (s) => s >= 70 ? 'text-green-400' : s >= 40 ? 'text-yellow-400' : 'text-red-400'
 const scoreBg = (s) => s >= 70 ? 'bg-green-500/20 border-green-500/30' : s >= 40 ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-red-500/20 border-red-500/30'
@@ -24,6 +25,17 @@ const AEO_CHECKS = [
   { key: 'question_headings', label: '問句式標題',            getValue: r => r.aeo?.question_headings },
   { key: 'meta_desc_length',  label: 'Meta 描述長度',        getValue: r => r.aeo?.meta_desc_length },
   { key: 'structured_answer', label: '結構化答案段落',        getValue: r => r.aeo?.structured_answer },
+]
+
+const EEAT_CHECKS = [
+  { key: 'author_info',         label: '作者資訊',           getValue: r => r.eeat?.author_info },
+  { key: 'about_page',          label: '關於我們頁面',       getValue: r => r.eeat?.about_page },
+  { key: 'contact_page',        label: '聯絡方式',           getValue: r => r.eeat?.contact_page },
+  { key: 'privacy_policy',      label: '隱私權政策',         getValue: r => r.eeat?.privacy_policy },
+  { key: 'organization_schema', label: 'Organization Schema', getValue: r => r.eeat?.organization_schema },
+  { key: 'date_published',      label: '發布日期',           getValue: r => r.eeat?.date_published },
+  { key: 'social_links',        label: '社群媒體連結',       getValue: r => r.eeat?.social_links },
+  { key: 'outbound_links',      label: '外部權威連結',       getValue: r => r.eeat?.outbound_links },
 ]
 
 const GEO_CHECKS = [
@@ -74,13 +86,14 @@ export default function Compare() {
         const seo = await analyzeSEO(url).catch(() => ({ score: 0 }))
         const aeo = await analyzeAEO(url).catch(() => ({ score: 0 }))
         const geo = await analyzeGEO(url).catch(() => ({ score: 0 }))
-        const total = Math.round(((seo.score || 0) + (aeo.score || 0) + (geo.score || 0)) / 3)
-        const result = { url, hostname: getHostname(url), seo, aeo, geo, total }
+        const eeat = await analyzeEEAT(url).catch(() => ({ score: 0 }))
+        const total = Math.round(((seo.score || 0) + (aeo.score || 0) + (geo.score || 0) + (eeat.score || 0)) / 4)
+        const result = { url, hostname: getHostname(url), seo, aeo, geo, eeat, total }
         all.push(result)
         setLoadingStates(prev => prev.map((s, i) => i === idx ? '完成' : s))
         setResults([...all])
       } catch {
-        const result = { url, hostname: getHostname(url), seo: { score: 0 }, aeo: { score: 0 }, geo: { score: 0 }, total: 0 }
+        const result = { url, hostname: getHostname(url), seo: { score: 0 }, aeo: { score: 0 }, geo: { score: 0 }, eeat: { score: 0 }, total: 0 }
         all.push(result)
         setLoadingStates(prev => prev.map((s, i) => i === idx ? '失敗' : s))
         setResults([...all])
@@ -98,6 +111,7 @@ export default function Compare() {
   const seoWinners = analyzed ? getWinner(results.map(r => r.seo?.score || 0)) : []
   const aeoWinners = analyzed ? getWinner(results.map(r => r.aeo?.score || 0)) : []
   const geoWinners = analyzed ? getWinner(results.map(r => r.geo?.score || 0)) : []
+  const eeatWinners = analyzed ? getWinner(results.map(r => r.eeat?.score || 0)) : []
   const totalWinners = analyzed ? getWinner(results.map(r => r.total)) : []
 
   const isLoading = loadingStates.length > 0 && loadingStates.some(s => s === '分析中...')
@@ -208,7 +222,7 @@ export default function Compare() {
                   <div className="text-white/40 text-xs mb-1 truncate">{r.hostname}</div>
                   <div className={`text-4xl font-bold mb-4 ${scoreColor(r.total)}`}>{r.total}</div>
                   <div className="space-y-2">
-                    {[['SEO', r.seo?.score || 0, seoWinners[i]], ['AEO', r.aeo?.score || 0, aeoWinners[i]], ['GEO', r.geo?.score || 0, geoWinners[i]]].map(([label, score, winner]) => (
+                    {[['SEO', r.seo?.score || 0, seoWinners[i]], ['AEO', r.aeo?.score || 0, aeoWinners[i]], ['GEO', r.geo?.score || 0, geoWinners[i]], ['E-E-A-T', r.eeat?.score || 0, eeatWinners[i]]].map(([label, score, winner]) => (
                       <div key={label} className="flex items-center justify-between">
                         <span className="text-white/40 text-sm">{label}</span>
                         <span className={`text-sm font-bold ${scoreColor(score)} ${winner ? 'underline decoration-dotted' : ''}`}>
@@ -226,6 +240,7 @@ export default function Compare() {
               { title: '🔍 SEO 檢測項目', checks: SEO_CHECKS },
               { title: '💬 AEO 檢測項目', checks: AEO_CHECKS },
               { title: '🤖 GEO 檢測項目', checks: GEO_CHECKS },
+              { title: '🛡️ E-E-A-T 可信度', checks: EEAT_CHECKS },
             ].map(({ title, checks }) => (
               <div key={title} className="mb-8">
                 <h2 className="text-xl font-bold text-white mb-4">{title}</h2>
@@ -267,7 +282,7 @@ export default function Compare() {
               <h2 className="text-xl font-bold text-white mb-6">📊 比較摘要</h2>
               <div className={`grid gap-4 ${results.length === 2 ? 'grid-cols-2' : results.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
                 {results.map((r, i) => {
-                  const allChecks = [...SEO_CHECKS, ...AEO_CHECKS, ...GEO_CHECKS]
+                  const allChecks = [...SEO_CHECKS, ...AEO_CHECKS, ...GEO_CHECKS, ...EEAT_CHECKS]
                   const passCount = allChecks.filter(c => c.getValue(r)).length
                   const totalCount = allChecks.length
                   return (
