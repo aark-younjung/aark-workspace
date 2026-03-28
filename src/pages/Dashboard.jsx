@@ -31,6 +31,13 @@ export default function Dashboard() {
   const [analyzing, setAnalyzing] = useState(false)
   const [exportingPDF, setExportingPDF] = useState(false)
   const [activeFixTab, setActiveFixTab] = useState('suggestions')
+
+  // Email notification state
+  const [emailInput, setEmailInput] = useState('')
+  const [emailSubscription, setEmailSubscription] = useState(null) // active subscription record
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailMessage, setEmailMessage] = useState(null) // { type: 'success'|'error', text }
   const [copiedCode, setCopiedCode] = useState(null)
   
   // GA4 & GSC 數據
@@ -300,6 +307,128 @@ export default function Dashboard() {
       alert('PDF 匯出失敗，請稍後再試')
     } finally {
       setExportingPDF(false)
+    }
+  }
+
+  // ─── Email 訂閱 ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (id) fetchEmailSubscription()
+  }, [id])
+
+  const fetchEmailSubscription = async () => {
+    const { data } = await supabase
+      .from('email_subscriptions')
+      .select('*')
+      .eq('website_id', id)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (data) {
+      setEmailSubscription(data)
+      setEmailInput(data.email)
+    }
+  }
+
+  const handleEmailSubscribe = async () => {
+    if (!emailInput || !emailInput.includes('@')) {
+      setEmailMessage({ type: 'error', text: '請輸入有效的 Email 地址' })
+      return
+    }
+    setEmailLoading(true)
+    setEmailMessage(null)
+    try {
+      if (emailSubscription) {
+        // Update existing
+        const { error } = await supabase
+          .from('email_subscriptions')
+          .update({ email: emailInput })
+          .eq('id', emailSubscription.id)
+        if (error) throw error
+        setEmailSubscription({ ...emailSubscription, email: emailInput })
+        setEmailMessage({ type: 'success', text: '訂閱 Email 已更新' })
+      } else {
+        // Create new
+        const { data, error } = await supabase
+          .from('email_subscriptions')
+          .insert([{ website_id: id, email: emailInput, frequency: 'weekly', is_active: true }])
+          .select()
+          .single()
+        if (error) throw error
+        setEmailSubscription(data)
+        setEmailMessage({ type: 'success', text: '已訂閱週報，每週一早上自動發送' })
+      }
+    } catch (err) {
+      console.error('Subscribe error:', err)
+      setEmailMessage({ type: 'error', text: '操作失敗，請稍後再試' })
+    } finally {
+      setEmailLoading(false)
+    }
+  }
+
+  const handleEmailUnsubscribe = async () => {
+    if (!emailSubscription) return
+    setEmailLoading(true)
+    setEmailMessage(null)
+    try {
+      const { error } = await supabase
+        .from('email_subscriptions')
+        .update({ is_active: false })
+        .eq('id', emailSubscription.id)
+      if (error) throw error
+      setEmailSubscription(null)
+      setEmailInput('')
+      setEmailMessage({ type: 'success', text: '已取消訂閱' })
+    } catch (err) {
+      setEmailMessage({ type: 'error', text: '取消失敗，請稍後再試' })
+    } finally {
+      setEmailLoading(false)
+    }
+  }
+
+  const handleSendNow = async () => {
+    const targetEmail = emailInput || emailSubscription?.email
+    if (!targetEmail || !targetEmail.includes('@')) {
+      setEmailMessage({ type: 'error', text: '請先填入 Email 地址' })
+      return
+    }
+    setEmailSending(true)
+    setEmailMessage(null)
+    try {
+      const overall = Math.round(((seoAudit?.score || 0) + (aeoAudit?.score || 0) + (geoAudit?.score || 0) + (eeatAudit?.score || 0)) / 4)
+      const res = await fetch('/api/send-report-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: targetEmail,
+          website,
+          scores: {
+            seo: seoAudit?.score || 0,
+            aeo: aeoAudit?.score || 0,
+            geo: geoAudit?.score || 0,
+            eeat: eeatAudit?.score || 0,
+            overall,
+          },
+          checks: {
+            seo: [
+              { name: 'Meta 標題', passed: !!seoAudit?.meta_tags?.hasTitle },
+              { name: 'Meta 描述', passed: !!seoAudit?.meta_tags?.hasDescription },
+              { name: 'H1 標題結構', passed: !!seoAudit?.h1_structure?.hasOnlyOneH1 },
+              { name: '圖片 Alt 屬性', passed: (seoAudit?.alt_tags?.altCoverage || 0) >= 80 },
+              { name: '行動版相容', passed: !!seoAudit?.mobile_compatible?.hasViewport },
+            ],
+            aeo: aeoChecks,
+            geo: geoChecks,
+            eeat: eeatChecks,
+          },
+          dashboardUrl: `${window.location.origin}/dashboard/${id}`,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      setEmailMessage({ type: 'success', text: `報告已寄送到 ${targetEmail}` })
+    } catch (err) {
+      setEmailMessage({ type: 'error', text: '發送失敗，請確認 Resend API Key 已設定' })
+    } finally {
+      setEmailSending(false)
     }
   }
 
@@ -989,6 +1118,85 @@ ${siteTitle} — ${siteDesc}
             )}
           </div>
         </div>
+
+        {/* Email 通知訂閱 */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-8">
+          <div className="flex items-center gap-3 mb-1">
+            <span className="text-xl">📧</span>
+            <h3 className="font-semibold text-slate-800">Email 通知</h3>
+            {emailSubscription && (
+              <span className="ml-auto text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                已訂閱週報
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-slate-500 mb-5">
+            訂閱後每週一早上自動收到本網站的 AI 能見度週報，或立即發送一份報告到信箱。
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="email"
+              value={emailInput}
+              onChange={e => setEmailInput(e.target.value)}
+              placeholder="your@email.com"
+              className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleEmailSubscribe}
+                disabled={emailLoading}
+                className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap"
+              >
+                {emailLoading ? '處理中...' : emailSubscription ? '更新訂閱' : '訂閱週報'}
+              </button>
+              <button
+                onClick={handleSendNow}
+                disabled={emailSending}
+                className="px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-800 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap flex items-center gap-1.5"
+              >
+                {emailSending ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    發送中...
+                  </>
+                ) : '立即發送'}
+              </button>
+              {emailSubscription && (
+                <button
+                  onClick={handleEmailUnsubscribe}
+                  disabled={emailLoading}
+                  className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  取消訂閱
+                </button>
+              )}
+            </div>
+          </div>
+
+          {emailMessage && (
+            <div className={`mt-3 px-4 py-2.5 rounded-lg text-sm ${
+              emailMessage.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-red-50 text-red-600 border border-red-200'
+            }`}>
+              {emailMessage.type === 'success' ? '✓ ' : '⚠ '}{emailMessage.text}
+            </div>
+          )}
+
+          {emailSubscription && (
+            <p className="text-xs text-slate-400 mt-3">
+              訂閱信箱：{emailSubscription.email} ·
+              上次發送：{emailSubscription.last_sent_at
+                ? new Date(emailSubscription.last_sent_at).toLocaleDateString('zh-TW')
+                : '尚未發送'}
+            </p>
+          )}
+        </div>
+
       </main>
     </div>
   )
