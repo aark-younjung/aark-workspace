@@ -63,26 +63,29 @@ export default function Compare() {
 
     setAnalyzed(false)
     setResults([])
-    setLoadingStates(cleaned.map(() => '分析中...'))
+    setLoadingStates(cleaned.map(() => '等待中'))
 
-    const analyzeOne = async (url, idx) => {
+    // 逐個網站依序分析，避免並行請求過多導致 Serverless Function 失敗
+    const all = []
+    for (let idx = 0; idx < cleaned.length; idx++) {
+      const url = cleaned[idx]
+      setLoadingStates(prev => prev.map((s, i) => i === idx ? '分析中...' : s))
       try {
-        const [seo, aeo, geo] = await Promise.all([
-          analyzeSEO(url).catch(() => ({ score: 0 })),
-          analyzeAEO(url).catch(() => ({ score: 0 })),
-          analyzeGEO(url).catch(() => ({ score: 0 })),
-        ])
+        const seo = await analyzeSEO(url).catch(() => ({ score: 0 }))
+        const aeo = await analyzeAEO(url).catch(() => ({ score: 0 }))
+        const geo = await analyzeGEO(url).catch(() => ({ score: 0 }))
+        const total = Math.round(((seo.score || 0) + (aeo.score || 0) + (geo.score || 0)) / 3)
+        const result = { url, hostname: getHostname(url), seo, aeo, geo, total }
+        all.push(result)
         setLoadingStates(prev => prev.map((s, i) => i === idx ? '完成' : s))
-        return { url, hostname: getHostname(url), seo, aeo, geo,
-          total: Math.round(((seo.score || 0) + (aeo.score || 0) + (geo.score || 0)) / 3) }
+        setResults([...all])
       } catch {
+        const result = { url, hostname: getHostname(url), seo: { score: 0 }, aeo: { score: 0 }, geo: { score: 0 }, total: 0 }
+        all.push(result)
         setLoadingStates(prev => prev.map((s, i) => i === idx ? '失敗' : s))
-        return { url, hostname: getHostname(url), seo: { score: 0 }, aeo: { score: 0 }, geo: { score: 0 }, total: 0 }
+        setResults([...all])
       }
     }
-
-    const all = await Promise.all(cleaned.map((url, idx) => analyzeOne(url, idx)))
-    setResults(all)
     setAnalyzed(true)
   }
 
