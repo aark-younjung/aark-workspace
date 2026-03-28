@@ -34,7 +34,7 @@ const timeAgo = (d) => {
 export default function Showcase() {
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
-  const [leaderTab, setLeaderTab] = useState('score')
+  const [leaderTab, setLeaderTab] = useState('ai')
   const [page, setPage] = useState(0)
   const [sortBy, setSortBy] = useState('total_score')
   const [starIndex, setStarIndex] = useState(0)
@@ -99,9 +99,9 @@ export default function Showcase() {
 
   // 排行榜資料
   const leaders = {
-    score: [...sites].sort((a, b) => b.total_score - a.total_score).slice(0, 10),
+    ai: [...sites].sort((a, b) => b.geo_score - a.geo_score).slice(0, 10),
     recent: [...sites].sort((a, b) => new Date(b.last_scanned_at) - new Date(a.last_scanned_at)).slice(0, 10),
-    scans: [...sites].sort((a, b) => b.scan_count - a.scan_count).slice(0, 10),
+    crawled: [...sites].sort((a, b) => b.scan_count - a.scan_count).slice(0, 10),
   }
 
   // 目錄排序
@@ -249,7 +249,7 @@ export default function Showcase() {
                 🏆 排行榜
               </h2>
               <div className="flex gap-2 mb-4">
-                {[['score', '總分 TOP 10'], ['recent', '最近更新'], ['scans', '最多掃描']].map(([key, label]) => (
+                {[['ai', '🤖 今日 AI 關注'], ['recent', '📅 最近更新'], ['crawled', '🔍 被爬蟲找到']].map(([key, label]) => (
                   <button key={key} onClick={() => setLeaderTab(key)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${leaderTab === key
                       ? 'bg-purple-600 text-white'
@@ -273,22 +273,20 @@ export default function Showcase() {
                       <div className="text-white font-medium truncate">{site.name}</div>
                       <div className="text-white/30 text-xs truncate">{site.url}</div>
                     </div>
-                    {leaderTab === 'score' && (
+                    {leaderTab === 'ai' && (
                       <>
-                        <div className="hidden sm:flex gap-3 text-xs">
-                          <span className={scoreColor(site.seo_score)}>SEO {site.seo_score}</span>
-                          <span className={scoreColor(site.aeo_score)}>AEO {site.aeo_score}</span>
-                          <span className={scoreColor(site.geo_score)}>GEO {site.geo_score}</span>
+                        <div className="hidden sm:flex items-center gap-2 text-xs text-white/40">
+                          GEO 分數
                         </div>
-                        <div className={`text-2xl font-bold ml-4 flex-shrink-0 ${scoreColor(site.total_score)}`}>
-                          {site.total_score}
+                        <div className={`text-2xl font-bold ml-4 flex-shrink-0 ${scoreColor(site.geo_score)}`}>
+                          {site.geo_score}
                         </div>
                       </>
                     )}
                     {leaderTab === 'recent' && (
                       <div className="text-white/50 text-sm flex-shrink-0">{timeAgo(site.last_scanned_at)}</div>
                     )}
-                    {leaderTab === 'scans' && (
+                    {leaderTab === 'crawled' && (
                       <div className="text-purple-400 font-bold flex-shrink-0">{site.scan_count} 次</div>
                     )}
                   </div>
