@@ -55,7 +55,7 @@ export default function Login() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading || googleLoading}
-            className="w-full flex items-center justify-center gap-3 py-3 bg-white text-slate-700 font-semibold rounded-xl hover:bg-slate-50 active:scale-95 transition-all shadow-md mb-5 disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-3 py-3 bg-white text-slate-700 font-semibold rounded-xl hover:bg-slate-100 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 active:translate-y-0 transition-all shadow-md mb-5 disabled:opacity-60"
           >
             {googleLoading ? (
               <>
