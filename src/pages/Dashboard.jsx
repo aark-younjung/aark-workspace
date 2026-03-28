@@ -781,8 +781,9 @@ ${siteTitle} — ${siteDesc}
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 text-slate-400 text-sm">
-              點擊「重新檢測」以執行 E-E-A-T 分析
+            <div className="text-center py-6">
+              <p className="text-slate-400 text-sm mb-2">點擊「重新檢測」以執行 E-E-A-T 分析</p>
+              <p className="text-orange-400 text-xs font-medium">🔒 升級專業版，解鎖完整修改建議與優化行動計畫</p>
             </div>
           )}
         </div>
