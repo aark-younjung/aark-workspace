@@ -119,6 +119,9 @@ export default function EEATAudit() {
     }
   }
 
+  // 付費狀態（目前固定 false，待會員系統完成後改為動態判斷）
+  const isPro = false
+
   const passedCount = EEAT_CHECKS.filter(c => getCheckStatus(c.id) === 'pass').length
   const score = eeatAudit ? eeatAudit.score : Math.round((passedCount / EEAT_CHECKS.length) * 100)
 
@@ -234,9 +237,21 @@ export default function EEATAudit() {
                     </div>
                     <p className="text-sm text-slate-600 mb-4">{check.description}</p>
                     {status === 'fail' && (
-                      <div className="p-3 bg-orange-50 rounded-lg">
-                        <p className="text-xs font-medium text-orange-700 mb-1">💡 建議優化</p>
-                        <p className="text-sm text-orange-600">{check.recommendation}</p>
+                      <div className="relative rounded-lg overflow-hidden">
+                        {/* 模糊預覽層 */}
+                        <div className={`p-3 bg-orange-50 ${!isPro ? 'blur-sm select-none pointer-events-none' : ''}`}>
+                          <p className="text-xs font-medium text-orange-700 mb-1">💡 建議優化</p>
+                          <p className="text-sm text-orange-600">{check.recommendation}</p>
+                        </div>
+                        {/* 付費鎖定覆蓋層 */}
+                        {!isPro && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-md border border-orange-200">
+                              <span className="text-base">🔒</span>
+                              <span className="text-xs font-semibold text-slate-700">升級 Pro 解鎖修改建議</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -246,27 +261,79 @@ export default function EEATAudit() {
           })}
         </div>
 
-        {/* 優化建議 */}
-        <div className="mt-8 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-8 border border-orange-100">
-          <h3 className="text-xl font-bold text-slate-800 mb-4">🛡️ 提升 E-E-A-T 可信度的建議</h3>
-          <div className="grid md:grid-cols-2 gap-6">
+        {/* 優化行動計畫（付費功能） */}
+        <div className="mt-8 rounded-2xl border-2 border-dashed border-orange-200 overflow-hidden">
+          {/* 標題列 */}
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-5 flex items-center justify-between">
             <div>
-              <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
-                <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
-                <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
-              </ul>
+              <h3 className="text-lg font-bold text-white">🛡️ E-E-A-T 優化行動計畫</h3>
+              <p className="text-white/70 text-sm mt-1">依影響力排序的具體修復步驟與時程規劃</p>
             </div>
-            <div>
-              <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
-                <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
-                <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>
-              </ul>
-            </div>
+            {!isPro && (
+              <span className="px-3 py-1 bg-white/20 rounded-full text-white text-xs font-semibold border border-white/30">
+                🔒 Pro 功能
+              </span>
+            )}
           </div>
+
+          {isPro ? (
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-8">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
+                  <ul className="space-y-2 text-sm text-slate-600">
+                    <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
+                    <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
+                    <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
+                  <ul className="space-y-2 text-sm text-slate-600">
+                    <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
+                    <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
+                    <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="relative bg-gradient-to-br from-orange-50 to-amber-50">
+              {/* 模糊預覽 */}
+              <div className="p-8 blur-sm select-none pointer-events-none">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
+                    <ul className="space-y-2 text-sm text-slate-600">
+                      <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
+                      <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
+                      <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
+                    <ul className="space-y-2 text-sm text-slate-600">
+                      <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
+                      <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
+                      <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              {/* 升級 CTA 覆蓋層 */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl px-10 py-8 shadow-lg border border-orange-100 max-w-sm mx-4">
+                  <div className="text-4xl mb-3">🔒</div>
+                  <h4 className="text-lg font-bold text-slate-800 mb-2">升級 Pro 解鎖完整建議</h4>
+                  <p className="text-sm text-slate-500 mb-5">包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
+                  <button className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-md">
+                    升級 Pro 方案 →
+                  </button>
+                  <p className="text-xs text-slate-400 mt-3">NT$2,000 / 月 · 隨時取消</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

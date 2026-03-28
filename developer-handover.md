@@ -12,12 +12,13 @@
 ### 產品定位
 全方位數位能見度健檢儀表板 (SEO + AEO + GEO Scanner)，幫助業主檢測網站的傳統 SEO、Answer Engine 優化 (AEO) 與 Generative Engine 優化 (GEO)。
 
-### 三大模組定義
+### 四大模組定義
 | 模組 | 全名 | 定義 |
 |------|------|------|
 | SEO | Search Engine Optimization | 傳統搜尋引擎技術優化 |
 | AEO | Answer Engine Optimization | 針對 Google 精選摘要、問答式搜尋的優化 |
 | GEO | Generative Engine Optimization | 針對 ChatGPT、Perplexity、Gemini 等生成式 AI 引用的優化 |
+| E-E-A-T | Experience, Expertise, Authoritativeness, Trustworthiness | 網站可信度與權威度信號，影響 Google 排名與 AI 引用決策 |
 
 ### 商業模式
 - **免費版 (Freemium)**：導流換名單基本檢測
@@ -108,6 +109,30 @@ aark-workspace/
 | 7 | canonical | Canonical（告訴 AI 正確的引用來源 URL） |
 | 8 | https | HTTPS（安全連線，AI 偏好可信來源） |
 
+### E-E-A-T（可信度與權威度信號）*(2026-03-28 新增)*
+| # | 欄位名稱 | 說明 |
+|---|---------|------|
+| 1 | author_info | 作者資訊（rel="author"、itemprop="author" 或 JSON-LD Person schema） |
+| 2 | about_page | 關於我們頁面（/about 連結是否存在於導航或頁尾） |
+| 3 | contact_page | 聯絡方式（/contact 頁面或 mailto:/tel: 連結） |
+| 4 | privacy_policy | 隱私權政策（/privacy-policy 連結） |
+| 5 | organization_schema | Organization Schema（JSON-LD 中的 Organization/LocalBusiness 結構化資料） |
+| 6 | date_published | 發布/更新日期（datePublished、dateModified 或 \<time\> 元素） |
+| 7 | social_links | 社群媒體連結（Facebook、Instagram、LinkedIn、YouTube 等） |
+| 8 | outbound_links | 外部權威連結（至少 2 個外部可信來源連結） |
+
+#### 付費鎖定設計
+| 功能 | 免費版 | Pro 版 |
+|------|------|------|
+| E-E-A-T 分數（0-100） | ✅ | ✅ |
+| 8 項通過/未通過 | ✅ | ✅ |
+| 每項問題說明 | ✅ | ✅ |
+| **每項修改建議**（blur 鎖定） | ❌ | ✅ |
+| **優化行動計畫**（blur 鎖定） | ❌ | ✅ |
+| **優先順序排序** | ❌ | ✅ |
+
+> **實作說明**：`EEATAudit.jsx` 頂部有 `const isPro = false` 常數，待會員系統完成後改為動態判斷用戶訂閱狀態。
+
 ---
 
 ## 🗄️ Supabase 資料表結構
@@ -149,6 +174,22 @@ aark-workspace/
 | robots_txt | BOOLEAN | *(保留舊資料，顯示邏輯已移至 GEO)* |
 | sitemap | BOOLEAN | *(保留舊資料，顯示邏輯已移至 GEO)* |
 | twitter_card | BOOLEAN | *(保留舊資料，顯示邏輯已移至 GEO)* |
+| created_at | TIMESTAMPTZ | 建立時間 |
+
+### eeat_audits *(2026-03-28 新增)*
+| 欄位 | 類型 | 說明 |
+|------|------|------|
+| id | UUID | 主鍵 |
+| website_id | UUID | 關聯 websites |
+| score | INTEGER | 總分 (0-100) |
+| author_info | BOOLEAN | 作者資訊 |
+| about_page | BOOLEAN | 關於我們頁面 |
+| contact_page | BOOLEAN | 聯絡方式 |
+| privacy_policy | BOOLEAN | 隱私權政策 |
+| organization_schema | BOOLEAN | Organization Schema |
+| date_published | BOOLEAN | 發布/更新日期 |
+| social_links | BOOLEAN | 社群媒體連結 |
+| outbound_links | BOOLEAN | 外部權威連結 |
 | created_at | TIMESTAMPTZ | 建立時間 |
 
 ### geo_audits *(2026-03-27 新增)*
@@ -201,6 +242,16 @@ aark-workspace/
 |------|------|------|
 | GEO 8 項 Generative Engine 檢測 | ✅ | llms.txt, robots.txt AI 開放性, Sitemap, Open Graph, Twitter Card, JSON-LD 引用信號, Canonical, HTTPS |
 | GEO 結果顯示於 Dashboard | ✅ | 顯示在詳細檢測區塊底部 |
+
+### Phase 4.5: E-E-A-T 模組（已完成）*(2026-03-28)*
+
+| 功能 | 狀態 | 說明 |
+|------|------|------|
+| E-E-A-T 8 項可信度檢測 | ✅ | 作者資訊、關於我們、聯絡方式、隱私政策、Organization Schema、發布日期、社群連結、外部連結 |
+| EEATAudit.jsx 詳細頁面 | ✅ | /eeat-audit/:id，橙色主題 |
+| 付費鎖定 UI | ✅ | 修改建議與行動計畫模糊鎖定，升級 CTA 覆蓋層 |
+| Dashboard E-E-A-T 區塊 | ✅ | 顯示 8 項通過/未通過，連結詳情頁 |
+| Compare.jsx E-E-A-T 欄 | ✅ | 競品比較新增 E-E-A-T 比較表 |
 
 ### Phase 2.5: Google 數據整合（待開發）
 
@@ -442,4 +493,4 @@ VITE_SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 ---
 
-*最後更新：2026-03-28*
+*最後更新：2026-03-28（新增 E-E-A-T 模組 + 付費鎖定 UI）*
