@@ -202,61 +202,166 @@ aark-workspace/
 | GEO 8 項 Generative Engine 檢測 | ✅ | llms.txt, robots.txt AI 開放性, Sitemap, Open Graph, Twitter Card, JSON-LD 引用信號, Canonical, HTTPS |
 | GEO 結果顯示於 Dashboard | ✅ | 顯示在詳細檢測區塊底部 |
 
-### Phase 2.5: Google 數據整合（待開發）【付費功能】
+### Phase 2.5: Google 數據整合（待開發）
 
-| 功能 | 狀態 | 方案 |
+| 功能 | 狀態 |
+|------|------|
+| Google OAuth 2.0 授權 | ❌ |
+| GSC API 串接 | ❌ |
+| GA4 Data API 串接 | ❌ |
+
+### Phase 5: 公開目錄與社群功能（待開發）
+
+參考對標：https://aeo.washinmura.jp/
+
+首頁新增公開展示區，讓訪客可以看到其他網站的 AI 能見度分數，形成社群效應並增加工具說服力。
+
+#### 5-1 🌟 進步之星
+| 項目 | 說明 |
+|------|------|
+| 觸發條件 | 同一網站有 ≥ 2 次掃描，且最新分數 > 首次分數 |
+| 顯示欄位 | 網站名稱、首次總分 → 最新總分、進步幅度（+N 分）、掃描次數 |
+| 排序 | 進步幅度由大到小，顯示前 5 名 |
+| 更新頻率 | 每次分析完成後觸發重新計算 |
+| 自動輪播 | 每 8 秒切換（參考 washinmura.jp） |
+
+**所需 Supabase 查詢：**
+```sql
+-- 找出同網站最大進步幅度
+SELECT w.name, w.url,
+  MIN(combined_score) AS first_score,
+  MAX(combined_score) AS best_score,
+  MAX(combined_score) - MIN(combined_score) AS improvement,
+  COUNT(*) AS scan_count
+FROM websites w
+JOIN (
+  SELECT website_id,
+    ROUND((COALESCE(s.score,0) + COALESCE(a.score,0) + COALESCE(g.score,0)) / 3.0) AS combined_score
+  FROM seo_audits s
+  JOIN aeo_audits a USING (website_id)
+  JOIN geo_audits g USING (website_id)
+) scores ON scores.website_id = w.id
+GROUP BY w.id, w.name, w.url
+HAVING COUNT(*) >= 2 AND MAX(combined_score) > MIN(combined_score)
+ORDER BY improvement DESC
+LIMIT 5;
+```
+
+#### 5-2 🏆 排行榜
+三個 Tab 切換：
+
+**Tab A：總分 TOP 10**
+| 欄位 | 說明 |
+|------|------|
+| 排名 | 1-10 |
+| 網站名稱 | hostname |
+| 總分 | (SEO + AEO + GEO) / 3，圓餅圖或進度條 |
+| 最後掃描時間 | N 天前 |
+| 分數著色 | ≥70 綠色、40-69 黃色、<40 紅色 |
+
+**Tab B：最近更新**
+| 欄位 | 說明 |
+|------|------|
+| 排名 | 依時間排序 |
+| 網站名稱 | hostname |
+| 最後掃描時間 | 顯示幾分鐘/小時/天前 |
+| 總分 | 最新一次綜合分數 |
+
+**Tab C：最多掃描**
+| 欄位 | 說明 |
+|------|------|
+| 排名 | 依掃描次數排序 |
+| 網站名稱 | hostname |
+| 掃描次數 | 歷史累計掃描總數 |
+| 平均分數 | 所有掃描的平均綜合分數 |
+
+#### 5-3 📖 成功案例
+| 項目 | 說明 |
+|------|------|
+| 資料來源 | 從進步之星中篩選進步幅度 ≥ 20 分的網站 |
+| 卡片格式 | 橫向捲動（overflow-x: scroll） |
+| 卡片內容 | 網站名稱、首次分數 → 最新分數、進步幅度、通過的 AEO/GEO 項目清單 |
+| 展示數量 | 最多 6 張卡片 |
+
+每張卡片範例：
+```
+[網站名稱]
+首次：35 分 → 現在：72 分  (+37 分) 🎉
+通過項目：✅ JSON-LD  ✅ HTTPS  ✅ Open Graph
+          ✅ Sitemap  ✅ Canonical
+```
+
+#### 5-4 全部網站完整目錄
+| 項目 | 說明 |
+|------|------|
+| 每頁顯示 | 20 筆 |
+| 排序 | 預設依總分由高到低 |
+| 可切換排序 | 總分 / 最近更新 / 掃描次數 |
+| 欄位 | 排名、網站名稱、SEO 分、AEO 分、GEO 分、總分、最後掃描 |
+| 分數著色 | ≥70 綠色、40-69 黃色、<40 紅色 |
+| 分頁導航 | 上一頁 / 頁碼 / 下一頁 |
+| 顯示說明 | 「目前展示 20 筆 · 共 X 筆」 |
+
+#### 5-5 資料庫變更需求
+
+**新增 Supabase View（或 RPC）：**
+```sql
+-- 建立公開目錄 View（每個網站的最新綜合分數）
+CREATE OR REPLACE VIEW public_directory AS
+SELECT
+  w.id,
+  w.name,
+  w.url,
+  w.created_at,
+  COALESCE(s.score, 0) AS seo_score,
+  COALESCE(a.score, 0) AS aeo_score,
+  COALESCE(g.score, 0) AS geo_score,
+  ROUND((COALESCE(s.score,0) + COALESCE(a.score,0) + COALESCE(g.score,0)) / 3.0) AS total_score,
+  GREATEST(s.created_at, a.created_at, g.created_at) AS last_scanned_at
+FROM websites w
+LEFT JOIN LATERAL (
+  SELECT score, created_at FROM seo_audits
+  WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1
+) s ON true
+LEFT JOIN LATERAL (
+  SELECT score, created_at FROM aeo_audits
+  WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1
+) a ON true
+LEFT JOIN LATERAL (
+  SELECT score, created_at FROM geo_audits
+  WHERE website_id = w.id ORDER BY created_at DESC LIMIT 1
+) g ON true;
+```
+
+#### 5-6 前端元件規劃
+| 元件 | 路由/位置 | 說明 |
 |------|------|------|
-| Google OAuth 2.0 授權 | ❌ | 專業版 |
-| GSC API 串接（關鍵字排名、曝光、點擊） | ❌ | 專業版 |
-| GA4 Data API 串接（流量、跳出率） | ❌ | 專業版 |
+| `Showcase.jsx` | `/showcase` 或首頁下半段 | 包含全部 4 個區塊 |
+| `ProgressStars.jsx` | Showcase 子元件 | 進步之星輪播 |
+| `Leaderboard.jsx` | Showcase 子元件 | 三 Tab 排行榜 |
+| `SuccessStories.jsx` | Showcase 子元件 | 成功案例橫向捲動 |
+| `DirectoryTable.jsx` | Showcase 子元件 | 分頁目錄表格 |
 
-### Phase 5: 內容智能分析（待開發）【付費功能】
+#### 5-7 與 washinmura.jp 的差異
+| 功能 | washinmura.jp | 我們的版本 |
+|------|------|------|
+| 分類系統 | 商家類型（餐廳/旅宿/景點） | 暫無分類，Phase 6 可加 |
+| AI 爬蟲造訪統計 | 有（需 log 分析） | 無（改用掃描次數） |
+| Verified 徽章 | 有 | 暫無 |
+| 展示上限 | 100 筆 | 20 筆/頁（無限分頁） |
+| 更新頻率 | 60 秒輪詢 | 頁面載入時查詢 |
 
-> 靈感來源：Content Evo 研究報告方法論（2026-03-27）
-> 目標：讓儀表板不只給分數，而是像專業 SEO 顧問一樣給出可執行的改善建議
-
-| 功能 | 狀態 | 方案 | 說明 |
-|------|------|------|------|
-| **H2 結構分析** | ❌ | 免費 | 檢測頁面是否有 H2/H3，以及數量統計 |
-| **競品內容比較** | ❌ | 專業版 | 輸入最多 3 個競品網址，比較 AEO/GEO/內容結構差距 |
-| **Content Gap 分析表** | ❌ | 專業版 | 自動產出「我們有/競品有/我們沒有」的差距對照表 |
-| **關鍵字排名追蹤** | ❌ | 專業版 | 串接 GSC，顯示每個關鍵字的排名、曝光、CTR |
-| **優化建議詳細版** | ❌ | 專業版 | 每項未通過的檢測附上具體修復範例（含範例文字/程式碼） |
-| **ROI 試算器** | ❌ | 專業版 | 根據網站現況自動試算導入優化後的預期效益 |
-| **AI 健檢完整報告 PDF** | ❌ | 專業版 | 自動產出類似 Content Evo 研究報告格式的完整 PDF |
-| **歷史趨勢比較** | ❌ | 專業版 | 追蹤每次掃描的分數變化，顯示優化進度 |
-
-### Phase 6: 商業化基礎設施（待開發）
+### Phase 6: 商業化（待開發）
 
 | 功能 | 狀態 |
 |------|------|
 | 會員系統（註冊/登入） | ❌ |
 | Stripe 金流串接 | ❌ |
-| 訂閱管理系統（免費版 / 專業版） | ❌ |
-| LINE/Email 推播通知 | ❌ |
-
----
-
-## 💰 商業模式規格
-
-### 免費版（Freemium）
-- SEO 基礎 5 項檢測
-- AEO 8 項檢測（無詳細建議）
-- GEO 8 項檢測（無詳細建議）
-- H2 結構計數
-- 每個網址每月可掃描 3 次
-
-### 專業版（$2,000/月）
-- 以上所有免費功能（無掃描次數限制）
-- GSC + GA4 數據整合
-- 優化建議詳細版（含修復範例）
-- 競品內容比較（最多 3 個競品）
-- Content Gap 分析表
-- 關鍵字排名追蹤
-- ROI 試算器
-- AI 健檢完整報告 PDF 匯出
-- 歷史趨勢圖表
-- LINE/Email 推播（分數下降時通知）
+| 訂閱管理系統 | ❌ |
+| PDF 報告生成 | ❌ |
+| LINE/Email 推播 | ❌ |
+| 競品比較分析 | ❌ |
+| 網站分類標籤 | ❌ |
 
 ---
 
@@ -266,17 +371,18 @@ aark-workspace/
 1. **網站抓取穩定性** - 部分網站因 Cloudflare 或 SSL 問題無法抓取，導致 SEO/AEO 分數為 0
 2. **本地開發環境** - `npm run dev` 無法執行 Serverless Functions，需用 `vercel dev` 或直接測試線上版
 
-### 優先順序 2：強化免費版體驗
-1. **GEO 詳細頁面** - 仿照 AEOAudit.jsx 建立 GEOAudit.jsx
-2. **H2 結構計數** - 在 SEO 或 AEO 中加入「頁面是否有 H2」的基礎檢測
-3. **優化建議升級** - 每項未通過項目附上更具體的修復範例文字
+### 優先順序 2：公開目錄（Phase 5）
+1. **建立 Supabase View** - `public_directory` 查詢最新綜合分數
+2. **建立 Showcase.jsx** - 首頁公開目錄頁面
+3. **進步之星元件** - `ProgressStars.jsx`，8 秒輪播
+4. **排行榜元件** - `Leaderboard.jsx`，三 Tab
+5. **成功案例元件** - `SuccessStories.jsx`，橫向捲動
+6. **目錄表格元件** - `DirectoryTable.jsx`，20 筆分頁
 
-### 優先順序 3：付費功能開發
-1. **會員系統** - 註冊/登入，作為所有付費功能的基礎
-2. **Stripe 金流** - 訂閱收費
-3. **競品比較功能** - 最高轉換價值的付費功能
-4. **PDF 報告產出** - 完整健檢報告，參考 Content Evo 研究報告格式
-5. **GSC/GA4 串接** - 關鍵字排名與流量數據
+### 優先順序 3：商業化（Phase 6）
+1. **Stripe 串接** - 訂閱收費
+2. **PDF 報告** - 匯出功能
+3. **推播通知** - LINE/Email
 
 ---
 
@@ -336,4 +442,4 @@ VITE_SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 ---
 
-*最後更新：2026-03-27（新增 Phase 5 內容智能分析付費功能規格）*
+*最後更新：2026-03-28*
