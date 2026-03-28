@@ -59,19 +59,19 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
-  const signUp = async (email, password, name) => {
+  const signUp = async (email, password, name, marketingConsent = false) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { name } }
     })
-    // 建立 profile 記錄
     if (data.user && !error) {
       await supabase.from('profiles').insert([{
         id: data.user.id,
         email,
         name,
         is_pro: false,
+        marketing_consent: marketingConsent,
       }])
     }
     return { data, error }

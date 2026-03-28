@@ -9,6 +9,7 @@ export default function Register() {
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [marketingConsent, setMarketingConsent] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const { signUp, signInWithGoogle } = useAuth()
@@ -28,7 +29,7 @@ export default function Register() {
 
     setLoading(true)
     setError('')
-    const { error } = await signUp(email, password, name)
+    const { error } = await signUp(email, password, name, marketingConsent)
     if (error) {
       setError(error.message === 'User already registered' ? '此信箱已註冊，請直接登入' : error.message)
       setLoading(false)
@@ -124,6 +125,18 @@ export default function Register() {
                 {error}
               </div>
             )}
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={marketingConsent}
+                onChange={e => setMarketingConsent(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded accent-purple-500 cursor-pointer"
+              />
+              <span className="text-white/50 text-xs leading-relaxed">
+                我同意接收 AARK 的產品更新、優化建議與行銷資訊（可隨時取消）
+              </span>
+            </label>
 
             <button
               type="submit"
