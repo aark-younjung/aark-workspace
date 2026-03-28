@@ -7,6 +7,7 @@ import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { getGA4Summary } from '../services/ga4Analyzer'
 import { getGSCSummary } from '../services/gscAnalyzer'
+import { exportDashboardPDF } from '../services/pdfExport'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [aeoHistory, setAeoHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
+  const [exportingPDF, setExportingPDF] = useState(false)
   const [activeFixTab, setActiveFixTab] = useState('suggestions')
   const [copiedCode, setCopiedCode] = useState(null)
   
@@ -272,6 +274,19 @@ export default function Dashboard() {
     }
   }
 
+  const handleExportPDF = async () => {
+    if (exportingPDF) return
+    setExportingPDF(true)
+    try {
+      await exportDashboardPDF({ website, seoAudit, aeoAudit, geoAudit, eeatAudit })
+    } catch (err) {
+      console.error('PDF export failed:', err)
+      alert('PDF 匯出失敗，請稍後再試')
+    } finally {
+      setExportingPDF(false)
+    }
+  }
+
   // ─── AI 優化工具 helper ───────────────────────────────────────────
   const domain = website?.url ? (() => { try { return new URL(website.url).hostname } catch(e) { return website.url } })() : ''
   const siteTitle = seoAudit?.meta_tags?.titleContent || website?.name || domain
@@ -401,21 +416,45 @@ ${siteTitle} — ${siteDesc}
               <p className="text-sm text-slate-500">{website.url}</p>
             </div>
           </div>
-          <button
-            onClick={handleReanalyze}
-            disabled={analyzing}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {analyzing ? (
-              <>
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                分析中...
-              </>
-            ) : '重新檢測'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportPDF}
+              disabled={exportingPDF || analyzing}
+              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {exportingPDF ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  產生中...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                  </svg>
+                  匯出 PDF
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleReanalyze}
+              disabled={analyzing}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {analyzing ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  分析中...
+                </>
+              ) : '重新檢測'}
+            </button>
+          </div>
         </div>
       </header>
 
