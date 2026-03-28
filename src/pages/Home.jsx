@@ -165,6 +165,7 @@ export default function Home() {
           </div>
           <nav className="flex items-center gap-6">
             <Link to="/showcase" className="text-white/70 hover:text-white transition-colors text-sm">排行榜</Link>
+            <Link to="/compare" className="text-white/70 hover:text-white transition-colors text-sm">競品比較</Link>
             <a href="#" className="text-white/70 hover:text-white transition-colors text-sm">價格</a>
             <a href="#" className="text-white/70 hover:text-white transition-colors text-sm">登入</a>
           </nav>
