@@ -46,13 +46,13 @@ export default async function handler(req, res) {
     const response = await fetch(targetUrl.toString(), {
       method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
         'Cache-Control': 'no-cache',
       },
-      signal: AbortSignal.timeout(15000) // 15秒超時
+      redirect: 'follow',
+      signal: AbortSignal.timeout(20000) // 20秒超時
     })
 
     const fetchTime = Date.now() - startTime

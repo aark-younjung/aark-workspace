@@ -57,114 +57,109 @@ export default function Home() {
 
       // 執行 SEO 分析
       setStatus('正在分析 Meta 標籤...')
-      let seoResult
+      let seoResult = null
       try {
         seoResult = await analyzeSEO(cleanUrl)
       } catch (seoError) {
         console.warn('SEO analysis failed:', seoError)
-        seoResult = { score: 0, meta_tags: {}, h1_structure: {}, alt_tags: {}, mobile_compatible: {}, page_speed: {} }
       }
-      
+
       // 執行 AEO 分析
       setStatus('正在分析 AEO 技術指標...')
-      let aeoResult
+      let aeoResult = null
       try {
         aeoResult = await analyzeAEO(cleanUrl)
       } catch (aeoError) {
         console.warn('AEO analysis failed:', aeoError)
-        aeoResult = { score: 0, json_ld: false, faq_schema: false, canonical: false, breadcrumbs: false, open_graph: false, question_headings: false }
       }
 
       // 執行 GEO 分析
       setStatus('正在分析 GEO 生成式 AI 優化...')
-      let geoResult
+      let geoResult = null
       try {
         geoResult = await analyzeGEO(cleanUrl)
       } catch (geoError) {
         console.warn('GEO analysis failed:', geoError)
-        geoResult = { score: 0, llms_txt: false, robots_ai: false, sitemap: false, open_graph: false, twitter_card: false, json_ld_citation: false, canonical: false, https: false }
       }
 
       // 執行 E-E-A-T 分析
       setStatus('正在分析 E-E-A-T 可信度指標...')
-      let eeatResult
+      let eeatResult = null
       try {
         eeatResult = await analyzeEEAT(cleanUrl)
       } catch (eeatError) {
         console.warn('EEAT analysis failed:', eeatError)
-        eeatResult = { score: 0, author_info: false, about_page: false, contact_page: false, privacy_policy: false, organization_schema: false, date_published: false, social_links: false, outbound_links: false }
       }
 
       setStatus('正在儲存檢測結果...')
 
-      // 儲存 SEO 審計結果到資料庫（直接存物件，Supabase 支援 JSONB）
-      const { error: seoError } = await supabase
-        .from('seo_audits')
-        .insert([{
-          website_id: websiteId,
-          score: seoResult.score,
-          meta_tags: seoResult.meta_tags,
-          h1_structure: seoResult.h1_structure,
-          alt_tags: seoResult.alt_tags,
-          mobile_compatible: seoResult.mobile_compatible,
-          page_speed: seoResult.page_speed
-        }])
-
-      if (seoError) {
-        console.error('Error saving SEO audit:', seoError)
+      // 只在分析成功時才儲存（避免覆蓋舊的有效分數）
+      if (seoResult) {
+        const { error: seoError } = await supabase
+          .from('seo_audits')
+          .insert([{
+            website_id: websiteId,
+            score: seoResult.score,
+            meta_tags: seoResult.meta_tags,
+            h1_structure: seoResult.h1_structure,
+            alt_tags: seoResult.alt_tags,
+            mobile_compatible: seoResult.mobile_compatible,
+            page_speed: seoResult.page_speed
+          }])
+        if (seoError) console.error('Error saving SEO audit:', seoError)
       }
 
-      // 儲存 AEO 審計結果到資料庫
-      const { error: aeoError } = await supabase
-        .from('aeo_audits')
-        .insert([{
-          website_id: websiteId,
-          score: aeoResult.score,
-          json_ld: !!aeoResult.json_ld,
-          faq_schema: !!aeoResult.faq_schema,
-          canonical: !!aeoResult.canonical,
-          breadcrumbs: !!aeoResult.breadcrumbs,
-          open_graph: !!aeoResult.open_graph,
-          question_headings: !!aeoResult.question_headings,
-        }])
-
-      if (aeoError) {
-        console.error('Error saving AEO audit:', aeoError)
+      if (aeoResult) {
+        const { error: aeoError } = await supabase
+          .from('aeo_audits')
+          .insert([{
+            website_id: websiteId,
+            score: aeoResult.score,
+            json_ld: !!aeoResult.json_ld,
+            faq_schema: !!aeoResult.faq_schema,
+            canonical: !!aeoResult.canonical,
+            breadcrumbs: !!aeoResult.breadcrumbs,
+            open_graph: !!aeoResult.open_graph,
+            question_headings: !!aeoResult.question_headings,
+          }])
+        if (aeoError) console.error('Error saving AEO audit:', aeoError)
       }
 
-      // 儲存 GEO 審計結果到資料庫
-      const { error: geoError } = await supabase
-        .from('geo_audits')
-        .insert([{
-          website_id: websiteId,
-          score: geoResult.score,
-          llms_txt: !!geoResult.llms_txt,
-          robots_ai: !!geoResult.robots_ai,
-          sitemap: !!geoResult.sitemap,
-          open_graph: !!geoResult.open_graph,
-          twitter_card: !!geoResult.twitter_card,
-          json_ld_citation: !!geoResult.json_ld_citation,
-          canonical: !!geoResult.canonical,
-          https: !!geoResult.https,
-        }])
-      if (geoError) console.error('Error saving GEO audit:', geoError)
+      if (geoResult) {
+        const { error: geoError } = await supabase
+          .from('geo_audits')
+          .insert([{
+            website_id: websiteId,
+            score: geoResult.score,
+            llms_txt: !!geoResult.llms_txt,
+            robots_ai: !!geoResult.robots_ai,
+            sitemap: !!geoResult.sitemap,
+            open_graph: !!geoResult.open_graph,
+            twitter_card: !!geoResult.twitter_card,
+            json_ld_citation: !!geoResult.json_ld_citation,
+            canonical: !!geoResult.canonical,
+            https: !!geoResult.https,
+          }])
+        if (geoError) console.error('Error saving GEO audit:', geoError)
+      }
 
-      // 儲存 E-E-A-T 審計結果到資料庫
-      const { error: eeatError } = await supabase
-        .from('eeat_audits')
-        .insert([{
-          website_id: websiteId,
-          score: eeatResult.score,
-          author_info: !!eeatResult.author_info,
-          about_page: !!eeatResult.about_page,
-          contact_page: !!eeatResult.contact_page,
-          privacy_policy: !!eeatResult.privacy_policy,
-          organization_schema: !!eeatResult.organization_schema,
-          date_published: !!eeatResult.date_published,
-          social_links: !!eeatResult.social_links,
-          outbound_links: !!eeatResult.outbound_links,
-        }])
-      if (eeatError) console.error('Error saving EEAT audit:', eeatError)
+      if (eeatResult) {
+        const { error: eeatError } = await supabase
+          .from('eeat_audits')
+          .insert([{
+            website_id: websiteId,
+            score: eeatResult.score,
+            author_info: !!eeatResult.author_info,
+            about_page: !!eeatResult.about_page,
+            contact_page: !!eeatResult.contact_page,
+            privacy_policy: !!eeatResult.privacy_policy,
+            organization_schema: !!eeatResult.organization_schema,
+            date_published: !!eeatResult.date_published,
+            social_links: !!eeatResult.social_links,
+            outbound_links: !!eeatResult.outbound_links,
+          }])
+        if (eeatError) console.error('Error saving EEAT audit:', eeatError)
+      }
 
       // 導向儀表板
       navigate(`/dashboard/${websiteId}`)
