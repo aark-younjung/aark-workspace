@@ -949,25 +949,50 @@ ${siteTitle} — ${siteDesc}
               </div>
             </>
           ) : (
-            <div className="bg-white rounded-2xl p-10 shadow-sm border border-slate-100 text-center">
-              <div className="text-4xl mb-3">📊</div>
-              <h4 className="font-semibold text-slate-700 mb-2">尚未串接 Google Analytics 4</h4>
-              {!googleConnected ? (
-                <button
-                  onClick={initiateGoogleAuth}
-                  className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                  連接 Google 帳號
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowGoogleSettings(true)}
-                  className="mt-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-all"
-                >
-                  設定 GA4 Property ID
-                </button>
-              )}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-3xl">📊</span>
+                    <div>
+                      <h4 className="font-semibold text-slate-800">串接 Google Analytics 4</h4>
+                      <p className="text-sm text-slate-500">了解你的網站流量與用戶行為</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {['工作階段數', '活躍使用者', '跳出率', '頁面瀏覽量', '新使用者', '互動率'].map(m => (
+                      <div key={m} className="bg-blue-50 text-blue-700 text-xs px-2 py-1.5 rounded-lg text-center font-medium">{m}</div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { step: '1', text: '點擊「連接 Google 帳號」，選擇有 GA4 管理權限的帳號', done: googleConnected },
+                      { step: '2', text: '前往 GA4 後台 → 左下角「管理」→「資源設定」→ 複製右上角「資源 ID」（純數字）', done: false },
+                      { step: '3', text: '點擊「設定 GA4 Property ID」填入資源 ID，即可看到流量數據', done: false },
+                    ].map(({ step, text, done }) => (
+                      <div key={step} className="flex gap-3 items-start">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                          {done ? '✓' : step}
+                        </span>
+                        <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col justify-center items-center gap-3 md:w-44">
+                  {!googleConnected ? (
+                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                      步驟 1：連接帳號
+                    </button>
+                  ) : (
+                    <div className="w-full text-center text-sm text-green-600 font-medium bg-green-50 rounded-xl py-2">✓ Google 帳號已連接</div>
+                  )}
+                  <button onClick={() => setShowGoogleSettings(true)} className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-all">
+                    步驟 2：設定 Property ID
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1092,25 +1117,50 @@ ${siteTitle} — ${siteDesc}
               </div>
             </>
           ) : (
-            <div className="bg-white rounded-2xl p-10 shadow-sm border border-slate-100 text-center">
-              <div className="text-4xl mb-3">🔍</div>
-              <h4 className="font-semibold text-slate-700 mb-2">尚未串接 Google Search Console</h4>
-              {!googleConnected ? (
-                <button
-                  onClick={initiateGoogleAuth}
-                  className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                  連接 Google 帳號
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowGoogleSettings(true)}
-                  className="mt-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-all"
-                >
-                  設定 GSC Site URL
-                </button>
-              )}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-3xl">🔍</span>
+                    <div>
+                      <h4 className="font-semibold text-slate-800">串接 Google Search Console</h4>
+                      <p className="text-sm text-slate-500">掌握網站在 Google 搜尋的真實成效</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {['搜尋曝光次數', '點擊次數', '點擊率 CTR', '平均排名', '熱門關鍵字', '機會關鍵字'].map(m => (
+                      <div key={m} className="bg-green-50 text-green-700 text-xs px-2 py-1.5 rounded-lg text-center font-medium">{m}</div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { step: '1', text: '確認網站已在 Google Search Console 完成驗證（search.google.com/search-console）', done: false },
+                      { step: '2', text: '點擊「連接 Google 帳號」，選擇有 GSC 管理權限的帳號', done: googleConnected },
+                      { step: '3', text: '點擊「設定 GSC Site URL」，填入 GSC 中的網站網址（如 https://example.com/）', done: false },
+                    ].map(({ step, text, done }) => (
+                      <div key={step} className="flex gap-3 items-start">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                          {done ? '✓' : step}
+                        </span>
+                        <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-col justify-center items-center gap-3 md:w-44">
+                  {!googleConnected ? (
+                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                      步驟 2：連接帳號
+                    </button>
+                  ) : (
+                    <div className="w-full text-center text-sm text-green-600 font-medium bg-green-50 rounded-xl py-2">✓ Google 帳號已連接</div>
+                  )}
+                  <button onClick={() => setShowGoogleSettings(true)} className="w-full px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-all">
+                    步驟 3：設定 Site URL
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
