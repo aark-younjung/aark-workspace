@@ -69,6 +69,23 @@ export default function Dashboard() {
     fetchGA4GSCData()
   }, [id])
 
+  useEffect(() => {
+    if (id) fetchEmailSubscription()
+  }, [id])
+
+  const fetchEmailSubscription = async () => {
+    const { data } = await supabase
+      .from('email_subscriptions')
+      .select('*')
+      .eq('website_id', id)
+      .eq('is_active', true)
+      .maybeSingle()
+    if (data) {
+      setEmailSubscription(data)
+      setEmailInput(data.email)
+    }
+  }
+
   // 監聽 Google OAuth 彈窗成功訊息
   useEffect(() => {
     const handleMessage = (e) => {
@@ -397,23 +414,6 @@ export default function Dashboard() {
   }
 
   // ─── Email 訂閱 ─────────────────────────────────────────────────
-  useEffect(() => {
-    if (id) fetchEmailSubscription()
-  }, [id])
-
-  const fetchEmailSubscription = async () => {
-    const { data } = await supabase
-      .from('email_subscriptions')
-      .select('*')
-      .eq('website_id', id)
-      .eq('is_active', true)
-      .maybeSingle()
-    if (data) {
-      setEmailSubscription(data)
-      setEmailInput(data.email)
-    }
-  }
-
   const handleEmailSubscribe = async () => {
     if (!emailInput || !emailInput.includes('@')) {
       setEmailMessage({ type: 'error', text: '請輸入有效的 Email 地址' })
