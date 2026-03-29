@@ -293,12 +293,13 @@ export default function Dashboard() {
     { subject: '載入速度', score: seoAudit?.page_speed?.score || 0, fullMark: 100 },
   ]
 
-  // 歷史趨勢數據（以 SEO 歷史為基準對齊各模組）
+  // 歷史趨勢數據（從最新紀錄對齊，避免各模組筆數不同時錯位）
   const trendData = seoHistory.map((s, i) => {
+    const offsetFromEnd = seoHistory.length - 1 - i
+    const aeo = aeoHistory[aeoHistory.length - 1 - offsetFromEnd]?.score || 0
+    const geo = geoHistory[geoHistory.length - 1 - offsetFromEnd]?.score || 0
+    const eeat = eeatHistory[eeatHistory.length - 1 - offsetFromEnd]?.score || 0
     const seo = s.score
-    const aeo = aeoHistory[i]?.score || 0
-    const geo = geoHistory[i]?.score || 0
-    const eeat = eeatHistory[i]?.score || 0
     const overall = Math.round((seo + aeo + geo + eeat) / 4)
     return {
       name: new Date(s.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }),
