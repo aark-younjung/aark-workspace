@@ -21,6 +21,18 @@ import {
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
 
+function InfoTooltip({ text }) {
+  return (
+    <span className="relative group inline-flex items-center ml-1.5 align-middle">
+      <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-xs flex items-center justify-center cursor-help font-bold leading-none">?</span>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed shadow-lg">
+        {text}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></span>
+      </span>
+    </span>
+  )
+}
+
 export default function Dashboard() {
   const { id } = useParams()
   const location = useLocation()
@@ -738,7 +750,7 @@ ${siteTitle} — ${siteDesc}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* 雷達圖 - 5 項 SEO 檢測 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-800 mb-2">SEO 5 項檢測分析</h3>
+            <h3 className="font-semibold text-slate-800 mb-2">SEO 5 項檢測分析<InfoTooltip text="檢測網站 5 項 SEO 基礎指標：Meta 標籤完整性、H1 標題結構、圖片 Alt 屬性、行動版相容性及頁面載入速度，以雷達圖呈現各項強弱。" /></h3>
             <p className="text-sm text-slate-500 mb-4">Meta · H1 · Alt · Mobile · Speed</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData}>
@@ -768,7 +780,7 @@ ${siteTitle} — ${siteDesc}
 
           {/* 趨勢圖 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-800 mb-1">歷史趨勢</h3>
+            <h3 className="font-semibold text-slate-800 mb-1">歷史趨勢<InfoTooltip text="每次重新檢測後自動記錄分數，追蹤 SEO、AEO、GEO、E-E-A-T 四項指標的長期變化，最多顯示近 10 次記錄。" /></h3>
             <p className="text-xs text-slate-400 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
 
             {trendData.length >= 2 ? (
@@ -833,7 +845,7 @@ ${siteTitle} — ${siteDesc}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <span className="text-xl">📊</span> GA4 網站流量分析
+              <span className="text-xl">📊</span> GA4 網站流量分析<InfoTooltip text="串接 Google Analytics 4，顯示工作階段、活躍使用者、頁面瀏覽量、跳出率、互動率等流量數據，並根據數據提供具體優化建議。" />
             </h3>
             {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
           </div>
@@ -1001,7 +1013,7 @@ ${siteTitle} — ${siteDesc}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <span className="text-xl">🔍</span> Google Search Console 搜尋成效
+              <span className="text-xl">🔍</span> Google Search Console 搜尋成效<InfoTooltip text="串接 Google Search Console，顯示網站在 Google 搜尋的曝光次數、點擊次數、點擊率（CTR）及平均排名，並列出熱門關鍵字與機會關鍵字。" />
             </h3>
             {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
           </div>
@@ -1170,7 +1182,7 @@ ${siteTitle} — ${siteDesc}
           {/* SEO 基本檢測 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-semibold text-slate-800">SEO 基本檢測</h3>
+              <h3 className="font-semibold text-slate-800">SEO 基本檢測<InfoTooltip text="檢測 Meta 標題/描述長度、H1 標題數量、圖片 Alt 覆蓋率、行動版相容性及頁面載入速度，這些是搜尋引擎排名的基礎要素。" /></h3>
             </div>
             <div className="space-y-4">
               {[
@@ -1234,7 +1246,7 @@ ${siteTitle} — ${siteDesc}
           {/* AEO 技術檢測 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-slate-800">AEO 技術檢測</h3>
+              <h3 className="font-semibold text-slate-800">AEO 技術檢測<InfoTooltip text="AEO（Answer Engine Optimization）檢測 8 項技術指標，提升網站在 ChatGPT、Perplexity、Google AI Overview 等 AI 搜尋引擎的能見度。" /></h3>
               <Link to={`/aeo-audit/${id}`} className="text-purple-600 hover:text-purple-700 text-sm font-medium">
                 查看詳情 →
               </Link>
@@ -1260,7 +1272,7 @@ ${siteTitle} — ${siteDesc}
         {/* GEO 生成式 AI 優化檢測 */}
         <div className="mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-slate-800">GEO 生成式 AI 優化</h3>
+            <h3 className="font-semibold text-slate-800">GEO 生成式 AI 優化<InfoTooltip text="GEO（Generative Engine Optimization）檢測網站是否對 AI 爬蟲友善，包含 llms.txt、Sitemap、Open Graph 等，提升被 AI 模型引用的機率。" /></h3>
             <div className="flex items-center gap-2">
               <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">Generative Engine</span>
               <Link to={`/geo-audit/${id}`} className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">查看詳情 →</Link>
@@ -1292,7 +1304,7 @@ ${siteTitle} — ${siteDesc}
         {/* E-E-A-T 可信度 */}
         <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-slate-800">E-E-A-T 可信度</h3>
+            <h3 className="font-semibold text-slate-800">E-E-A-T 可信度<InfoTooltip text="依 Google E-E-A-T 指南（經驗、專業、權威、可信度）檢測 8 項指標：作者資訊、關於我們、聯絡方式、隱私政策等，直接影響搜尋排名品質評分。" /></h3>
             <div className="flex items-center gap-2">
               <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">Trust Signals</span>
               <Link to={`/eeat-audit/${id}`} className="text-orange-500 hover:text-orange-600 text-sm font-medium">查看詳情 →</Link>
