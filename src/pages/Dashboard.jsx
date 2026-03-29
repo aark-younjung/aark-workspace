@@ -22,11 +22,14 @@ import {
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
 
 function InfoTooltip({ text }) {
+  const lines = text.split('\n')
   return (
     <span className="relative group inline-flex items-center ml-1.5 align-middle">
       <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-xs flex items-center justify-center cursor-help font-bold leading-none">?</span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed shadow-lg">
-        {text}
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-slate-800 text-white text-xs rounded-lg px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+        {lines.map((line, i) => (
+          <span key={i} className={`block ${line.startsWith('・') ? 'mt-1 text-slate-300' : 'font-medium mb-1'}`}>{line}</span>
+        ))}
         <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></span>
       </span>
     </span>
@@ -750,7 +753,7 @@ ${siteTitle} — ${siteDesc}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* 雷達圖 - 5 項 SEO 檢測 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-800 mb-2">SEO 5 項檢測分析<InfoTooltip text="檢測網站 5 項 SEO 基礎指標：Meta 標籤完整性、H1 標題結構、圖片 Alt 屬性、行動版相容性及頁面載入速度，以雷達圖呈現各項強弱。" /></h3>
+            <h3 className="font-semibold text-slate-800 mb-2">SEO 5 項檢測分析<InfoTooltip text={`以雷達圖呈現 5 項 SEO 核心指標得分\n・Meta 標籤：標題與描述是否完整且長度符合規範\n・H1 結構：頁面是否只有一個清晰的主標題\n・Alt 屬性：圖片是否都有描述文字\n・行動版相容：是否適合手機瀏覽（Google 行動優先索引）\n・載入速度：頁面回應時間，影響排名與跳出率`} /></h3>
             <p className="text-sm text-slate-500 mb-4">Meta · H1 · Alt · Mobile · Speed</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData}>
@@ -780,7 +783,7 @@ ${siteTitle} — ${siteDesc}
 
           {/* 趨勢圖 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-800 mb-1">歷史趨勢<InfoTooltip text="每次重新檢測後自動記錄分數，追蹤 SEO、AEO、GEO、E-E-A-T 四項指標的長期變化，最多顯示近 10 次記錄。" /></h3>
+            <h3 className="font-semibold text-slate-800 mb-1">歷史趨勢<InfoTooltip text={`每次重新檢測後自動記錄，最多顯示近 10 次\n・折線圖追蹤 SEO、AEO、GEO、E-E-A-T 四項分數變化\n・綜合分數為四項平均值\n・可觀察優化動作是否有效提升分數\n・卡片上的 +/- 數字代表與上次相比的變化`} /></h3>
             <p className="text-xs text-slate-400 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
 
             {trendData.length >= 2 ? (
@@ -845,7 +848,7 @@ ${siteTitle} — ${siteDesc}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <span className="text-xl">📊</span> GA4 網站流量分析<InfoTooltip text="串接 Google Analytics 4，顯示工作階段、活躍使用者、頁面瀏覽量、跳出率、互動率等流量數據，並根據數據提供具體優化建議。" />
+              <span className="text-xl">📊</span> GA4 網站流量分析<InfoTooltip text={`串接 Google Analytics 4 顯示真實流量數據\n・工作階段：用戶造訪網站的次數\n・活躍使用者：實際與網站互動的人數\n・跳出率：只看一頁就離開的比例（越低越好）\n・互動率：有效互動工作階段的比例（越高越好）\n・新使用者：首次造訪的訪客比例\n系統會根據數據自動給出優化建議`} />
             </h3>
             {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
           </div>
@@ -1013,7 +1016,7 @@ ${siteTitle} — ${siteDesc}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <span className="text-xl">🔍</span> Google Search Console 搜尋成效<InfoTooltip text="串接 Google Search Console，顯示網站在 Google 搜尋的曝光次數、點擊次數、點擊率（CTR）及平均排名，並列出熱門關鍵字與機會關鍵字。" />
+              <span className="text-xl">🔍</span> Google Search Console 搜尋成效<InfoTooltip text={`顯示網站在 Google 搜尋結果的真實表現\n・曝光次數：網站出現在搜尋結果的次數\n・點擊次數：用戶實際點進網站的次數\n・點擊率 CTR：曝光中有多少人點擊（越高越好）\n・平均排名：關鍵字在 Google 的平均位置\n・機會關鍵字：排名第 4–10 名、稍加優化就能衝進前三的關鍵字`} />
             </h3>
             {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
           </div>
@@ -1182,7 +1185,7 @@ ${siteTitle} — ${siteDesc}
           {/* SEO 基本檢測 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-semibold text-slate-800">SEO 基本檢測<InfoTooltip text="檢測 Meta 標題/描述長度、H1 標題數量、圖片 Alt 覆蓋率、行動版相容性及頁面載入速度，這些是搜尋引擎排名的基礎要素。" /></h3>
+              <h3 className="font-semibold text-slate-800">SEO 基本檢測<InfoTooltip text={`搜尋引擎排名的基礎要素，共 5 項\n・Meta 標題：建議 30–60 字，包含目標關鍵字\n・Meta 描述：建議 70–155 字，吸引用戶點擊\n・H1 結構：每頁應只有一個 H1，明確傳達主題\n・圖片 Alt：所有圖片需有描述文字（SEO + 無障礙）\n・載入速度：回應時間越短，排名與用戶體驗越好`} /></h3>
             </div>
             <div className="space-y-4">
               {[
@@ -1246,7 +1249,7 @@ ${siteTitle} — ${siteDesc}
           {/* AEO 技術檢測 */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-slate-800">AEO 技術檢測<InfoTooltip text="AEO（Answer Engine Optimization）檢測 8 項技術指標，提升網站在 ChatGPT、Perplexity、Google AI Overview 等 AI 搜尋引擎的能見度。" /></h3>
+              <h3 className="font-semibold text-slate-800">AEO 技術檢測<InfoTooltip text={`AEO（答案引擎優化）共 8 項技術指標\n・JSON-LD：結構化資料，幫助 AI 理解網頁內容\n・FAQ Schema：問答格式，提升被 AI 直接引用的機率\n・Canonical：避免重複內容，集中 SEO 權重\n・麵包屑：網站層級結構，改善索引效率\n・Open Graph：社群分享時的標題與圖片預覽\n・問句式標題：以問題形式撰寫標題，符合 AI 搜尋行為\n・Meta 描述長度：控制在適當範圍內\n・結構化答案：直接在頁面上給出清晰答案`} /></h3>
               <Link to={`/aeo-audit/${id}`} className="text-purple-600 hover:text-purple-700 text-sm font-medium">
                 查看詳情 →
               </Link>
@@ -1272,7 +1275,7 @@ ${siteTitle} — ${siteDesc}
         {/* GEO 生成式 AI 優化檢測 */}
         <div className="mt-6 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-slate-800">GEO 生成式 AI 優化<InfoTooltip text="GEO（Generative Engine Optimization）檢測網站是否對 AI 爬蟲友善，包含 llms.txt、Sitemap、Open Graph 等，提升被 AI 模型引用的機率。" /></h3>
+            <h3 className="font-semibold text-slate-800">GEO 生成式 AI 優化<InfoTooltip text={`GEO（生成式引擎優化）共 8 項指標\n・llms.txt：專為 AI 爬蟲設計的說明文件\n・AI 爬蟲開放：robots.txt 是否允許 GPTBot 等爬取\n・Sitemap：網站地圖，幫助搜尋引擎完整索引\n・Open Graph：頁面的標題、描述、圖片標記\n・Twitter Card：社群預覽卡片設定\n・JSON-LD 引用信號：提供 AI 引用所需的結構化資訊\n・Canonical：告知搜尋引擎頁面的標準版本\n・HTTPS：安全連線，影響排名與用戶信任`} /></h3>
             <div className="flex items-center gap-2">
               <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">Generative Engine</span>
               <Link to={`/geo-audit/${id}`} className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">查看詳情 →</Link>
@@ -1304,7 +1307,7 @@ ${siteTitle} — ${siteDesc}
         {/* E-E-A-T 可信度 */}
         <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-slate-800">E-E-A-T 可信度<InfoTooltip text="依 Google E-E-A-T 指南（經驗、專業、權威、可信度）檢測 8 項指標：作者資訊、關於我們、聯絡方式、隱私政策等，直接影響搜尋排名品質評分。" /></h3>
+            <h3 className="font-semibold text-slate-800">E-E-A-T 可信度<InfoTooltip text={`Google 品質評分核心：經驗、專業、權威、可信度\n・作者資訊：頁面是否標示作者姓名與專業背景\n・關於我們：是否有介紹公司/團隊的頁面\n・聯絡方式：是否提供可驗證的聯絡資訊\n・隱私權政策：必備的法律合規頁面\n・Organization Schema：結構化的組織資訊標記\n・發布日期：文章是否標示發布與更新時間\n・社群媒體連結：提升品牌可信度與權威性\n・外部權威連結：引用可信來源，增加內容可信度`} /></h3>
             <div className="flex items-center gap-2">
               <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">Trust Signals</span>
               <Link to={`/eeat-audit/${id}`} className="text-orange-500 hover:text-orange-600 text-sm font-medium">查看詳情 →</Link>
