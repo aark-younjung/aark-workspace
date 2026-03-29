@@ -1,94 +1,191 @@
-# 優勢方舟 AI 能見度儀表板
+# AARK AI 能見度儀表板
 
-> 全面檢測網站 SEO、AEO 與 Google 商家表現的 SaaS 儀表板
+> 全面檢測網站 SEO、AEO、GEO、E-E-A-T，並整合 GA4 / GSC 數據的 SaaS 儀表板
 
-## 🚀 功能特色
+**線上網址**: https://aark-workspace.vercel.app
 
-- **首頁** - 輸入網址即可進行 AI 能見度檢測
-- **儀表板** - 顯示 SEO、AEO、GEO 分數與趨勢圖表
-- **AEO 技術檢測** - 8項 AI 搜尋優化技術指標檢測
+---
 
-## 🛠️ 技術堆疊
+## 功能總覽
 
-- **前端框架**: React (Vite)
-- **圖表庫**: Recharts
-- **樣式**: Tailwind CSS
-- **資料庫**: Supabase
-- **後端**: n8n
+### 核心分析（免費）
+| 功能 | 說明 |
+|------|------|
+| SEO 分析 | Meta 標籤、H1 結構、Alt 屬性、行動版相容、載入速度 |
+| AEO 分析 | JSON-LD、FAQ Schema、Canonical、麵包屑、Open Graph、問句標題、Meta 描述長度、結構化答案 |
+| GEO 分析 | llms.txt、AI 爬蟲開放、Sitemap、OG/Twitter Card、JSON-LD 引用、Canonical、HTTPS |
+| E-E-A-T 分析 | 作者資訊、關於我們、聯絡方式、隱私權政策、Organization Schema、發布日期、社群連結、外部連結 |
+| 歷史趨勢 | 最多 10 次重新檢測記錄，各模組分數趨勢圖 |
+| PDF 匯出 | 匯出完整報告為 PDF |
+| Email 訂閱 | 設定 Email 接收週報通知 |
 
-## 📋 AEO 技術檢測項目
+### GA4 流量分析（需串接）
+- 工作階段、活躍使用者、網頁瀏覽量、新使用者、跳出率、互動率
+- 近 30 天流量趨勢圖
+- 智能洞察：跳出率過高/互動率偏低/新訪客比例等建議
 
-1. JSON-LD 結構化資料
-2. LLMs.txt 檔案
-3. Open Graph 標籤
-4. Twitter Card 標籤
-5. Canonical 標籤
-6. 麵包屑導航
-7. FAQ 結構化資料
-8. HowTo 結構化資料
+### GSC 搜尋成效（需串接）
+- 曝光次數、點擊次數、點擊率、平均排名
+- 搜尋曝光與點擊趨勢圖
+- 熱門關鍵字 Top 10（含 CTR、排名、機會標注）
+- 搜尋優化建議：排名過低、CTR 偏低、機會關鍵字提示
 
-## 🏁 快速開始
+### 帳號系統
+- Email / 密碼 註冊登入
+- Google OAuth 登入（Supabase Auth）
+- 行銷同意 checkbox（GDPR 合規）
+- Pro 方案升級（Stripe，台灣本地金流待開發）
 
-### 安裝依賴
+---
 
-```bash
-cd aark-dashboard
-npm install
+## 技術堆疊
+
+| 層級 | 技術 |
+|------|------|
+| 前端 | React 18 + Vite |
+| 樣式 | Tailwind CSS |
+| 圖表 | Recharts |
+| 資料庫 / Auth | Supabase (PostgreSQL + RLS) |
+| Serverless API | Vercel Functions |
+| 部署 | Vercel (aark.younjung@gmail.com) |
+| 支付 | Stripe Checkout（訂閱模式） |
+
+---
+
+## 專案結構
+
+```
+aark-workspace/
+├── api/                          # Vercel Serverless Functions
+│   ├── fetch-url.js              # 網站內容抓取 proxy（解決 CORS）
+│   ├── ga4-data.js               # GA4 Data API proxy
+│   ├── gsc-data.js               # Google Search Console API proxy
+│   ├── create-checkout-session.js # Stripe 付款頁面建立
+│   ├── stripe-webhook.js         # Stripe Webhook 處理（升級/取消）
+│   ├── send-report-email.js      # 發送週報 Email
+│   └── cron-weekly-reports.js    # 週報排程
+├── src/
+│   ├── context/
+│   │   └── AuthContext.jsx       # 全域 Auth 狀態（user, profile, isPro）
+│   ├── lib/
+│   │   └── supabase.js           # Supabase client
+│   ├── pages/
+│   │   ├── Home.jsx              # 首頁（網址輸入 + 分析觸發）
+│   │   ├── Dashboard.jsx         # 主儀表板（分數、GA4、GSC、歷史）
+│   │   ├── AEOAudit.jsx          # AEO 詳細頁
+│   │   ├── GEOAudit.jsx          # GEO 詳細頁
+│   │   ├── EEATAudit.jsx         # E-E-A-T 詳細頁
+│   │   ├── Login.jsx             # 登入（Email + Google）
+│   │   ├── Register.jsx          # 註冊（含行銷同意）
+│   │   ├── Showcase.jsx          # 展示頁
+│   │   ├── Compare.jsx           # 比較頁
+│   │   └── GoogleAuthCallback.jsx # GA4/GSC OAuth 回調頁
+│   ├── services/
+│   │   ├── seoAnalyzer.js        # SEO 分析邏輯
+│   │   ├── aeoAnalyzer.js        # AEO 分析邏輯
+│   │   ├── geoAnalyzer.js        # GEO 分析邏輯
+│   │   ├── eeatAnalyzer.js       # E-E-A-T 分析邏輯
+│   │   ├── ga4Analyzer.js        # GA4 數據拉取與解析
+│   │   ├── gscAnalyzer.js        # GSC 數據拉取與解析
+│   │   ├── googleAuth.js         # GA4/GSC OAuth 隱式流程
+│   │   └── pdfExport.js          # PDF 匯出
+│   ├── App.jsx                   # 路由設定
+│   └── main.jsx                  # 入口
 ```
 
-### 啟動開發伺服器
+---
+
+## 環境變數
+
+### Vercel 設定（Settings → Environment Variables）
+
+| 變數名 | 用途 |
+|--------|------|
+| `VITE_SUPABASE_URL` | Supabase 專案 URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase Anon Key |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID（GA4/GSC 連接用） |
+| `STRIPE_SECRET_KEY` | Stripe Secret Key |
+| `STRIPE_PRICE_ID` | Stripe 訂閱方案 Price ID |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook Signing Secret |
+| `SUPABASE_URL` | Supabase URL（server-side webhook 用） |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key（webhook 用） |
+| `NEXT_PUBLIC_SITE_URL` | 網站網址（Stripe 回調用） |
+
+---
+
+## Supabase 資料表
+
+| 資料表 | 說明 |
+|--------|------|
+| `websites` | 使用者分析的網站記錄 |
+| `seo_audits` | SEO 分析結果（JSONB 欄位） |
+| `aeo_audits` | AEO 分析結果 |
+| `geo_audits` | GEO 分析結果 |
+| `eeat_audits` | E-E-A-T 分析結果 |
+| `profiles` | 使用者資料（name, is_pro, marketing_consent） |
+| `email_subscriptions` | Email 週報訂閱記錄 |
+
+---
+
+## Google Cloud Console 設定
+
+**OAuth 用戶端（GA4/GSC 連接用）：**
+- 已授權 JavaScript 來源：`https://aark-workspace.vercel.app`
+- 已授權重新導向 URI：`https://aark-workspace.vercel.app/auth/google/callback`
+
+**已啟用的 API：**
+- Google Analytics Data API
+- Google Search Console API
+
+**OAuth 同意畫面：** 測試模式（需手動加入測試使用者）
+
+---
+
+## Supabase Auth 設定
+
+- Google Provider 已啟用
+- Redirect URL：`https://aark-workspace.vercel.app/**`
+- Skip nonce checks：已啟用
+
+---
+
+## 付款流程
+
+**目前：** Stripe Checkout（訂閱模式）
+- `checkout.session.completed` → `profiles.is_pro = true`
+- `customer.subscription.deleted` → `profiles.is_pro = false`
+
+**待開發：** 台灣本地金流（綠界 / 藍新）
+
+---
+
+## 本地開發
 
 ```bash
+cd aark-workspace
+npm install
 npm run dev
 ```
 
-### 建置生產版本
-
-```bash
-npm run build
+`.env.local`：
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_GOOGLE_CLIENT_ID=...
 ```
 
-## 🔧 環境變數
+---
 
-確保在 `.env` 中設定 Supabase 連線資訊：
+## 版本記錄
 
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-## 📁 專案結構
-
-```
-aark-dashboard/
-├── src/
-│   ├── lib/
-│   │   └── supabase.js      # Supabase 用戶端
-│   ├── pages/
-│   │   ├── Home.jsx        # 首頁（網址輸入）
-│   │   ├── Dashboard.jsx  # 儀表板結果頁面
-│   │   └── AEOAudit.jsx    # AEO 技術檢測頁面
-│   ├── App.jsx             # 路由配置
-│   ├── main.jsx            # 入口點
-│   └── index.css           # 全域樣式
-├── index.html
-├── vite.config.js
-└── package.json
-```
-
-## 🔐 GitHub 推送說明
-
-如果您需要將程式碼推送到 GitHub，請確保已配置 Git 憑證：
-
-```bash
-# 方法 1: 使用 GitHub CLI
-gh auth login
-
-# 方法 2: 使用 Personal Access Token
-git remote add origin https://github.com/aark-younjung/aark-workspace.git
-git push -u origin master
-```
-
-## 📄 授權
-
-MIT License
+| 日期 | 更新內容 |
+|------|----------|
+| 2026-03-29 | GA4/GSC 介接說明卡（未串接時顯示步驟說明） |
+| 2026-03-29 | GA4/GSC 加強：新增指標、機會關鍵字、智能建議 |
+| 2026-03-29 | 修正歷史趨勢圖對齊問題（從最新端對齊） |
+| 2026-03-29 | 修正分析失敗時不覆蓋舊分數 |
+| 2026-03-29 | 修正 React #310 錯誤（useEffect 位置問題） |
+| 2026-03-29 | GA4/GSC 串接完成（Google OAuth 隱式流程） |
+| 2026-03-28 | Google OAuth 登入（Supabase Auth） |
+| 2026-03-28 | 行銷同意 checkbox（Register 頁） |
+| 2026-03-28 | Stripe 付款流程（Serverless Functions） |
