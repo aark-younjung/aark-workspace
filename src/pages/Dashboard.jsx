@@ -839,7 +839,7 @@ ${siteTitle} — ${siteDesc}
           </div>
           {ga4Data ? (
             <>
-              <div className="grid md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
                   <div className="text-blue-100 text-sm mb-1">工作階段</div>
                   <div className="text-2xl font-bold">{ga4Data.sessions?.toLocaleString()}</div>
@@ -855,34 +855,97 @@ ${siteTitle} — ${siteDesc}
                   <div className="text-2xl font-bold">{ga4Data.pageViews?.toLocaleString()}</div>
                   <div className="text-cyan-200 text-xs mt-1">Page Views</div>
                 </div>
+                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white">
+                  <div className="text-emerald-100 text-sm mb-1">新使用者</div>
+                  <div className="text-2xl font-bold">{ga4Data.newUsers?.toLocaleString()}</div>
+                  <div className="text-emerald-200 text-xs mt-1">New Users</div>
+                </div>
                 <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
                   <div className="text-orange-100 text-sm mb-1">跳出率</div>
                   <div className="text-2xl font-bold">{ga4Data.bounceRate?.toFixed(1)}%</div>
                   <div className="text-orange-200 text-xs mt-1">Bounce Rate</div>
                 </div>
+                <div className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl p-4 text-white">
+                  <div className="text-rose-100 text-sm mb-1">互動率</div>
+                  <div className="text-2xl font-bold">
+                    {ga4Data.sessions > 0 ? Math.round(ga4Data.engagedSessions / ga4Data.sessions * 100) : 0}%
+                  </div>
+                  <div className="text-rose-200 text-xs mt-1">Engagement Rate</div>
+                </div>
               </div>
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h4 className="font-semibold text-slate-800 mb-4">流量趨勢 (近30天)</h4>
-                <ResponsiveContainer width="100%" height={280}>
-                  <AreaChart data={ga4Data.timeline || []}>
-                    <defs>
-                      <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickFormatter={(val) => val.slice(5)} />
-                    <YAxis stroke="#64748b" fontSize={11} />
-                    <Tooltip formatter={(value) => value.toLocaleString()} labelFormatter={(label) => `日期: ${label}`} />
-                    <Area type="monotone" dataKey="sessions" stroke="#3b82f6" fillOpacity={1} fill="url(#colorSessions)" name="工作階段" />
-                    <Area type="monotone" dataKey="pageViews" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorPageViews)" name="瀏覽量" />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <div className="grid md:grid-cols-2 gap-6 mb-4">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <h4 className="font-semibold text-slate-800 mb-4">流量趨勢 (近30天)</h4>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <AreaChart data={ga4Data.timeline || []}>
+                      <defs>
+                        <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickFormatter={(val) => val.slice(5)} />
+                      <YAxis stroke="#64748b" fontSize={11} />
+                      <Tooltip formatter={(value) => value.toLocaleString()} labelFormatter={(label) => `日期: ${label}`} />
+                      <Area type="monotone" dataKey="sessions" stroke="#3b82f6" fillOpacity={1} fill="url(#colorSessions)" name="工作階段" />
+                      <Area type="monotone" dataKey="pageViews" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorPageViews)" name="瀏覽量" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <h4 className="font-semibold text-slate-800 mb-4">📊 流量洞察與建議</h4>
+                  <div className="space-y-3">
+                    {ga4Data.bounceRate > 70 ? (
+                      <div className="flex gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                        <span className="text-lg flex-shrink-0">⚠️</span>
+                        <div>
+                          <div className="font-medium text-red-700 text-sm">跳出率偏高（{ga4Data.bounceRate?.toFixed(1)}%）</div>
+                          <div className="text-red-600 text-xs mt-0.5">建議改善頁面載入速度、提升內容相關性，加入明確的 CTA 引導使用者繼續瀏覽</div>
+                        </div>
+                      </div>
+                    ) : ga4Data.bounceRate > 0 && ga4Data.bounceRate <= 50 ? (
+                      <div className="flex gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                        <span className="text-lg flex-shrink-0">✅</span>
+                        <div>
+                          <div className="font-medium text-green-700 text-sm">跳出率表現良好（{ga4Data.bounceRate?.toFixed(1)}%）</div>
+                          <div className="text-green-600 text-xs mt-0.5">使用者願意留在頁面繼續瀏覽，內容相關性高</div>
+                        </div>
+                      </div>
+                    ) : null}
+                    {ga4Data.sessions > 0 && (ga4Data.engagedSessions / ga4Data.sessions) < 0.4 && (
+                      <div className="flex gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                        <span className="text-lg flex-shrink-0">💡</span>
+                        <div>
+                          <div className="font-medium text-amber-700 text-sm">互動率偏低（{Math.round(ga4Data.engagedSessions / ga4Data.sessions * 100)}%）</div>
+                          <div className="text-amber-600 text-xs mt-0.5">考慮加入影片、互動元素或清晰的號召行動按鈕</div>
+                        </div>
+                      </div>
+                    )}
+                    {ga4Data.activeUsers > 0 && ga4Data.newUsers / ga4Data.activeUsers > 0.7 && (
+                      <div className="flex gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <span className="text-lg flex-shrink-0">📣</span>
+                        <div>
+                          <div className="font-medium text-blue-700 text-sm">新訪客佔比高（{Math.round(ga4Data.newUsers / ga4Data.activeUsers * 100)}%）</div>
+                          <div className="text-blue-600 text-xs mt-0.5">建議加強留存策略：Email 訂閱、社群追蹤、推播通知</div>
+                        </div>
+                      </div>
+                    )}
+                    {ga4Data.sessions > 0 && ga4Data.bounceRate >= 50 && ga4Data.bounceRate <= 70 && (
+                      <div className="flex gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                        <span className="text-lg flex-shrink-0">📈</span>
+                        <div>
+                          <div className="font-medium text-amber-700 text-sm">跳出率尚可（{ga4Data.bounceRate?.toFixed(1)}%），仍有改善空間</div>
+                          <div className="text-amber-600 text-xs mt-0.5">嘗試優化首屏內容、加快頁面載入速度可進一步降低跳出率</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </>
           ) : (
@@ -956,21 +1019,75 @@ ${siteTitle} — ${siteDesc}
                   </ResponsiveContainer>
                 </div>
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                  <h4 className="font-semibold text-slate-800 mb-4">熱門搜尋關鍵字</h4>
-                  <div className="space-y-3">
-                    {(gscData.topQueries || []).slice(0, 5).map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold">{index + 1}</span>
-                          <span className="text-sm text-slate-700 font-medium truncate max-w-[150px]">{item.query}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="text-slate-500"><span className="text-green-600 font-medium">{item.clicks}</span> 點擊</span>
-                          <span className="text-slate-500"><span className="text-blue-600 font-medium">{item.position.toFixed(1)}</span> 排名</span>
-                        </div>
-                      </div>
-                    ))}
+                  <h4 className="font-semibold text-slate-800 mb-3">熱門搜尋關鍵字</h4>
+                  <div className="flex gap-4 text-xs text-slate-400 mb-2 px-3">
+                    <span className="flex-1">關鍵字</span>
+                    <span className="w-10 text-right">點擊</span>
+                    <span className="w-12 text-right">CTR</span>
+                    <span className="w-10 text-right">排名</span>
                   </div>
+                  <div className="space-y-2">
+                    {(gscData.topQueries || []).slice(0, 10).map((item, index) => {
+                      const isOpportunity = item.position >= 4 && item.position <= 10
+                      const posColor = item.position <= 3 ? 'text-green-600' : item.position <= 10 ? 'text-amber-600' : 'text-red-500'
+                      return (
+                        <div key={index} className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg">
+                          <span className="w-5 h-5 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{index + 1}</span>
+                          <span className="text-sm text-slate-700 font-medium truncate flex-1">{item.query}</span>
+                          {isOpportunity && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">機會</span>}
+                          <span className="w-10 text-right text-xs text-green-600 font-medium flex-shrink-0">{item.clicks}</span>
+                          <span className="w-12 text-right text-xs text-blue-600 font-medium flex-shrink-0">{(item.ctr * 100).toFixed(1)}%</span>
+                          <span className={`w-10 text-right text-xs font-bold flex-shrink-0 ${posColor}`}>#{item.position.toFixed(0)}</span>
+                        </div>
+                      )
+                    })}
+                    {(gscData.topQueries || []).length === 0 && (
+                      <div className="text-center text-slate-400 text-sm py-6">尚無搜尋關鍵字數據</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mt-4">
+                <h4 className="font-semibold text-slate-800 mb-4">🎯 搜尋優化建議</h4>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {gscData.position > 10 && (
+                    <div className="flex gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                      <span className="text-lg flex-shrink-0">⚠️</span>
+                      <div>
+                        <div className="font-medium text-red-700 text-sm">平均排名在第 2 頁（#{gscData.position?.toFixed(1)}）</div>
+                        <div className="text-red-600 text-xs mt-0.5">加強內容深度、Schema 標記、E-E-A-T 指標可提升排名</div>
+                      </div>
+                    </div>
+                  )}
+                  {gscData.position > 0 && gscData.position <= 10 && (
+                    <div className="flex gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <span className="text-lg flex-shrink-0">✅</span>
+                      <div>
+                        <div className="font-medium text-green-700 text-sm">平均排名在第 1 頁（#{gscData.position?.toFixed(1)}）</div>
+                        <div className="text-green-600 text-xs mt-0.5">持續維持內容品質，爭取更多精選摘要（Featured Snippet）</div>
+                      </div>
+                    </div>
+                  )}
+                  {gscData.impressions > 0 && gscData.ctr < 0.02 && (
+                    <div className="flex gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                      <span className="text-lg flex-shrink-0">💡</span>
+                      <div>
+                        <div className="font-medium text-amber-700 text-sm">點擊率偏低（{(gscData.ctr * 100).toFixed(2)}%）</div>
+                        <div className="text-amber-600 text-xs mt-0.5">優化 Meta 標題與描述，加入數字、問句或情緒詞提升吸引力</div>
+                      </div>
+                    </div>
+                  )}
+                  {(gscData.topQueries || []).filter(q => q.position >= 4 && q.position <= 10).length > 0 && (
+                    <div className="flex gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <span className="text-lg flex-shrink-0">🚀</span>
+                      <div>
+                        <div className="font-medium text-blue-700 text-sm">
+                          {(gscData.topQueries || []).filter(q => q.position >= 4 && q.position <= 10).length} 個「機會關鍵字」排名 4–10
+                        </div>
+                        <div className="text-blue-600 text-xs mt-0.5">針對這些關鍵字加強內頁內容、內部連結、取得反向連結可衝進前三</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </>
