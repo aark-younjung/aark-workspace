@@ -99,8 +99,8 @@ export default function Showcase() {
 
   // 排行榜資料
   const leaders = {
-    ai: [...sites].sort((a, b) => b.geo_score - a.geo_score).slice(0, 10),
-    recent: [...sites].sort((a, b) => new Date(b.last_scanned_at) - new Date(a.last_scanned_at)).slice(0, 10),
+    ai: [...sites].sort((a, b) => new Date(b.last_scanned_at) - new Date(a.last_scanned_at)).slice(0, 10),
+    recent: [...sites].sort((a, b) => b.total_score - a.total_score).slice(0, 10),
     crawled: [...sites].sort((a, b) => b.scan_count - a.scan_count).slice(0, 10),
   }
 
@@ -249,7 +249,7 @@ export default function Showcase() {
                 🏆 排行榜
               </h2>
               <div className="flex gap-2 mb-4">
-                {[['ai', '🤖 今日 AI 關注'], ['recent', '📅 最近更新'], ['crawled', '🔍 被爬蟲找到']].map(([key, label]) => (
+                {[['ai', '🤖 最近被 AI 讀取'], ['recent', '🏆 綜合總分'], ['crawled', '🔍 被爬蟲找到']].map(([key, label]) => (
                   <button key={key} onClick={() => setLeaderTab(key)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${leaderTab === key
                       ? 'bg-purple-600 text-white'
@@ -274,17 +274,14 @@ export default function Showcase() {
                       <div className="text-white/30 text-xs truncate">{site.url}</div>
                     </div>
                     {leaderTab === 'ai' && (
-                      <>
-                        <div className="hidden sm:flex items-center gap-2 text-xs text-white/40">
-                          GEO 分數
-                        </div>
-                        <div className={`text-2xl font-bold ml-4 flex-shrink-0 ${scoreColor(site.geo_score)}`}>
-                          {site.geo_score}
-                        </div>
-                      </>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-300 font-medium">
+                          🤖 {timeAgo(site.last_scanned_at)}
+                        </span>
+                      </div>
                     )}
                     {leaderTab === 'recent' && (
-                      <div className="text-white/50 text-sm flex-shrink-0">{timeAgo(site.last_scanned_at)}</div>
+                      <div className={`text-2xl font-bold flex-shrink-0 ${scoreColor(site.total_score)}`}>{site.total_score}</div>
                     )}
                     {leaderTab === 'crawled' && (
                       <div className="text-purple-400 font-bold flex-shrink-0">{site.scan_count} 次</div>
@@ -377,7 +374,11 @@ export default function Showcase() {
                     <div className="col-span-1 text-white/30 text-sm font-mono">{page * PAGE_SIZE + i + 1}</div>
                     <div className="col-span-4 min-w-0">
                       <div className="text-white font-medium text-sm truncate">{site.name}</div>
-                      <div className="text-white/30 text-xs mt-0.5">{timeAgo(site.last_scanned_at)}</div>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-purple-500/15 text-purple-300/80 rounded-full">
+                          🤖 AI 已讀取 {timeAgo(site.last_scanned_at)}
+                        </span>
+                      </div>
                     </div>
                     {[site.seo_score, site.aeo_score, site.geo_score].map((score, si) => (
                       <div key={si} className="col-span-2 flex flex-col items-center gap-1.5">

@@ -21,6 +21,16 @@ import {
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
 
+const timeAgo = (d) => {
+  if (!d) return null
+  const mins = Math.floor((Date.now() - new Date(d)) / 60000)
+  if (mins < 1) return '剛剛'
+  if (mins < 60) return `${mins} 分鐘前`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} 小時前`
+  return `${Math.floor(hours / 24)} 天前`
+}
+
 function InfoTooltip({ text }) {
   const lines = text.split('\n')
   return (
@@ -666,7 +676,18 @@ ${siteTitle} — ${siteDesc}
             </Link>
             <div>
               <h1 className="text-xl font-bold text-slate-900">{website.name}</h1>
-              <p className="text-sm text-slate-500">{website.url}</p>
+              <div className="flex items-center gap-3 mt-0.5">
+                <p className="text-sm text-slate-500">{website.url}</p>
+                {(seoAudit || aeoAudit || geoAudit || eeatAudit) && (() => {
+                  const ts = seoAudit?.created_at || aeoAudit?.created_at || geoAudit?.created_at || eeatAudit?.created_at
+                  const ago = timeAgo(ts)
+                  return ago ? (
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 text-purple-600 border border-purple-200 rounded-full font-medium">
+                      🤖 AI 已讀取 {ago}
+                    </span>
+                  ) : null
+                })()}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1378,33 +1399,14 @@ ${siteTitle} — ${siteDesc}
 
         {/* AI 優化工具 */}
         <div className="mt-8 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🛠️</span>
-              <div>
-                <h3 className="font-bold text-slate-800">AI 優化工具</h3>
-                <p className="text-sm text-slate-500">根據檢測結果自動產生優化建議與修復碼</p>
-              </div>
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+            <span className="text-2xl">🛠️</span>
+            <div>
+              <h3 className="font-bold text-slate-800">AI 優化工具</h3>
+              <p className="text-sm text-slate-500">根據檢測結果自動產生優化建議與修復碼</p>
             </div>
-            {!isPro && (
-              <span className="px-2 py-1 bg-orange-100 text-orange-600 text-xs font-semibold rounded-full">Pro 功能</span>
-            )}
           </div>
 
-          {!isPro ? (
-            <div className="p-10 text-center">
-              <div className="text-5xl mb-4">🔒</div>
-              <h4 className="font-bold text-slate-800 mb-2">升級 Pro 解鎖 AI 優化工具</h4>
-              <p className="text-sm text-slate-500 mb-5">包含 AI 優化建議、llms.txt 產生器、修復碼、AI 搜尋關鍵字分析</p>
-              <button
-                onClick={handleUpgrade}
-                disabled={upgrading}
-                className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60"
-              >
-                {upgrading ? '跳轉中...' : '升級 Pro 方案'}
-              </button>
-            </div>
-          ) : (
           <>
           {/* Tabs */}
           <div className="flex border-b border-slate-100">
@@ -1501,7 +1503,6 @@ ${siteTitle} — ${siteDesc}
             )}
           </div>
           </>
-          )}
         </div>
 
         {/* Email 通知訂閱 */}
