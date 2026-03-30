@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { analyzeSEO } from '../services/seoAnalyzer'
+import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
@@ -55,12 +55,30 @@ export default function Home() {
           }
         }
 
+        // 自動抓取網站名稱（og:site_name → title 品牌段 → hostname）
+        setStatus('正在讀取網站名稱...')
+        let siteName = new URL(cleanUrl).hostname
+        try {
+          const html = await fetchPageContent(cleanUrl)
+          const doc = parseHTML(html)
+          const ogSiteName = doc.querySelector('meta[property="og:site_name"]')?.getAttribute('content')?.trim()
+          const titleText = doc.querySelector('title')?.textContent?.trim()
+          if (ogSiteName && ogSiteName.length >= 2) {
+            siteName = ogSiteName
+          } else if (titleText) {
+            // "頁面標題 | 品牌名稱" → 取最後段
+            const parts = titleText.split(/\s*[|｜\-–—]\s*/)
+            const brand = parts.length > 1 ? parts[parts.length - 1].trim() : parts[0].trim()
+            if (brand.length >= 2 && brand.length <= 60) siteName = brand
+          }
+        } catch { /* 抓取失敗就用 hostname */ }
+
         // 建立新網站記錄
         const { data, error } = await supabase
           .from('websites')
           .insert([{
             url: cleanUrl,
-            name: new URL(cleanUrl).hostname
+            name: siteName
           }])
           .select()
           .single()
