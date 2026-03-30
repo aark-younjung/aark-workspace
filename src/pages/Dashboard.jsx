@@ -1064,6 +1064,7 @@ ${siteTitle} — ${siteDesc}
                 </div>
               </div>
               {isPro ? (
+              <>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                   <h4 className="font-semibold text-slate-800 mb-4">搜尋曝光與點擊趨勢</h4>
@@ -1150,6 +1151,7 @@ ${siteTitle} — ${siteDesc}
                   )}
                 </div>
               </div>
+              </>
               ) : (
               <div className="bg-white rounded-2xl p-4 border border-orange-100 bg-orange-50 text-center mt-4">
                 <p className="text-sm text-orange-700 font-medium">🔒 趨勢圖、熱門關鍵字與搜尋建議為 Pro 功能</p>
