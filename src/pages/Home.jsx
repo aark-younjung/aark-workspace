@@ -12,7 +12,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
   const navigate = useNavigate()
-  const { user, userName, signOut } = useAuth()
+  const { user, isPro, userName, signOut } = useAuth()
+  const WEBSITE_LIMIT = isPro ? 15 : 5
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,7 +21,7 @@ export default function Home() {
 
     setLoading(true)
     setStatus('正在建立網站記錄...')
-    
+
     try {
       // 清理 URL
       let cleanUrl = url.trim()
@@ -40,16 +41,30 @@ export default function Home() {
         websiteId = existing.id
         setStatus('網站已存在，正在執行 SEO 檢測...')
       } else {
+        // 檢查網站數量上限（登入用戶才計算）
+        if (user) {
+          const { count } = await supabase
+            .from('websites')
+            .select('id', { count: 'exact', head: true })
+
+          if (count >= WEBSITE_LIMIT) {
+            setLoading(false)
+            setStatus('')
+            alert(`您已達到${isPro ? 'Pro' : '免費'}方案上限（${WEBSITE_LIMIT} 個網站）。${!isPro ? '\n升級 Pro 方案可追蹤最多 15 個網站！' : ''}`)
+            return
+          }
+        }
+
         // 建立新網站記錄
         const { data, error } = await supabase
           .from('websites')
-          .insert([{ 
-            url: cleanUrl, 
-            name: new URL(cleanUrl).hostname 
+          .insert([{
+            url: cleanUrl,
+            name: new URL(cleanUrl).hostname
           }])
           .select()
           .single()
-        
+
         if (error) throw error
         websiteId = data.id
         setStatus('網站建立完成，正在執行 SEO 檢測...')

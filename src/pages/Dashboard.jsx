@@ -670,28 +670,38 @@ ${siteTitle} — ${siteDesc}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleExportPDF}
-              disabled={exportingPDF || analyzing}
-              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {exportingPDF ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  產生中...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                  </svg>
-                  匯出 PDF
-                </>
-              )}
-            </button>
+            {isPro ? (
+              <button
+                onClick={handleExportPDF}
+                disabled={exportingPDF || analyzing}
+                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {exportingPDF ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    產生中...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg>
+                    匯出 PDF
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={handleUpgrade}
+                disabled={upgrading}
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60 flex items-center gap-2 text-sm font-semibold"
+              >
+                🔒 匯出 PDF (Pro)
+              </button>
+            )}
             {googleConnected ? (
               <button
                 onClick={() => setShowGoogleSettings(true)}
@@ -888,6 +898,7 @@ ${siteTitle} — ${siteDesc}
                   <div className="text-rose-200 text-xs mt-1">Engagement Rate</div>
                 </div>
               </div>
+              {isPro ? (
               <div className="grid md:grid-cols-2 gap-6 mb-4">
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                   <h4 className="font-semibold text-slate-800 mb-4">流量趨勢 (近30天)</h4>
@@ -962,6 +973,14 @@ ${siteTitle} — ${siteDesc}
                   </div>
                 </div>
               </div>
+              ) : (
+              <div className="bg-white rounded-2xl p-4 border border-orange-100 bg-orange-50 text-center mb-4">
+                <p className="text-sm text-orange-700 font-medium">🔒 趨勢圖與流量洞察建議為 Pro 功能</p>
+                <button onClick={handleUpgrade} disabled={upgrading} className="mt-2 px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60">
+                  {upgrading ? '跳轉中...' : '升級 Pro 解鎖'}
+                </button>
+              </div>
+              )}
             </>
           ) : (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
@@ -1044,6 +1063,7 @@ ${siteTitle} — ${siteDesc}
                   <div className="text-pink-200 text-xs mt-1">Avg Position</div>
                 </div>
               </div>
+              {isPro ? (
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                   <h4 className="font-semibold text-slate-800 mb-4">搜尋曝光與點擊趨勢</h4>
@@ -1130,6 +1150,14 @@ ${siteTitle} — ${siteDesc}
                   )}
                 </div>
               </div>
+              ) : (
+              <div className="bg-white rounded-2xl p-4 border border-orange-100 bg-orange-50 text-center mt-4">
+                <p className="text-sm text-orange-700 font-medium">🔒 趨勢圖、熱門關鍵字與搜尋建議為 Pro 功能</p>
+                <button onClick={handleUpgrade} disabled={upgrading} className="mt-2 px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60">
+                  {upgrading ? '跳轉中...' : '升級 Pro 解鎖'}
+                </button>
+              </div>
+              )}
             </>
           ) : (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
@@ -1186,6 +1214,9 @@ ${siteTitle} — ${siteDesc}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold text-slate-800">SEO 基本檢測<InfoTooltip text={`搜尋引擎排名的基礎要素，共 5 項\n・Meta 標題：建議 30–60 字，包含目標關鍵字\n・Meta 描述：建議 70–155 字，吸引用戶點擊\n・H1 結構：每頁應只有一個 H1，明確傳達主題\n・圖片 Alt：所有圖片需有描述文字（SEO + 無障礙）\n・載入速度：回應時間越短，排名與用戶體驗越好`} /></h3>
+              <Link to={`/seo-audit/${id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                查看詳情 →
+              </Link>
             </div>
             <div className="space-y-4">
               {[
@@ -1345,14 +1376,34 @@ ${siteTitle} — ${siteDesc}
 
         {/* AI 優化工具 */}
         <div className="mt-8 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-            <span className="text-2xl">🛠️</span>
-            <div>
-              <h3 className="font-bold text-slate-800">AI 優化工具</h3>
-              <p className="text-sm text-slate-500">根據檢測結果自動產生優化建議與修復碼</p>
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🛠️</span>
+              <div>
+                <h3 className="font-bold text-slate-800">AI 優化工具</h3>
+                <p className="text-sm text-slate-500">根據檢測結果自動產生優化建議與修復碼</p>
+              </div>
             </div>
+            {!isPro && (
+              <span className="px-2 py-1 bg-orange-100 text-orange-600 text-xs font-semibold rounded-full">Pro 功能</span>
+            )}
           </div>
 
+          {!isPro ? (
+            <div className="p-10 text-center">
+              <div className="text-5xl mb-4">🔒</div>
+              <h4 className="font-bold text-slate-800 mb-2">升級 Pro 解鎖 AI 優化工具</h4>
+              <p className="text-sm text-slate-500 mb-5">包含 AI 優化建議、llms.txt 產生器、修復碼、AI 搜尋關鍵字分析</p>
+              <button
+                onClick={handleUpgrade}
+                disabled={upgrading}
+                className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60"
+              >
+                {upgrading ? '跳轉中...' : '升級 Pro 方案'}
+              </button>
+            </div>
+          ) : (
+          <>
           {/* Tabs */}
           <div className="flex border-b border-slate-100">
             {[
@@ -1447,6 +1498,8 @@ ${siteTitle} — ${siteDesc}
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
 
         {/* Email 通知訂閱 */}
@@ -1454,76 +1507,93 @@ ${siteTitle} — ${siteDesc}
           <div className="flex items-center gap-3 mb-1">
             <span className="text-xl">📧</span>
             <h3 className="font-semibold text-slate-800">Email 通知</h3>
-            {emailSubscription && (
+            {isPro && emailSubscription && (
               <span className="ml-auto text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
                 已訂閱週報
               </span>
+            )}
+            {!isPro && (
+              <span className="ml-auto text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full font-semibold">Pro 功能</span>
             )}
           </div>
           <p className="text-sm text-slate-500 mb-5">
             訂閱後每週一早上自動收到本網站的 AI 能見度週報，或立即發送一份報告到信箱。
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="email"
-              value={emailInput}
-              onChange={e => setEmailInput(e.target.value)}
-              placeholder="your@email.com"
-              className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
-            />
-            <div className="flex gap-2">
+          {!isPro ? (
+            <div className="text-center py-4">
               <button
-                onClick={handleEmailSubscribe}
-                disabled={emailLoading}
-                className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap"
+                onClick={handleUpgrade}
+                disabled={upgrading}
+                className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60"
               >
-                {emailLoading ? '處理中...' : emailSubscription ? '更新訂閱' : '訂閱週報'}
+                {upgrading ? '跳轉中...' : '🔒 升級 Pro，開啟 Email 週報'}
               </button>
-              <button
-                onClick={handleSendNow}
-                disabled={emailSending}
-                className="px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-800 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap flex items-center gap-1.5"
-              >
-                {emailSending ? (
-                  <>
-                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    發送中...
-                  </>
-                ) : '立即發送'}
-              </button>
-              {emailSubscription && (
-                <button
-                  onClick={handleEmailUnsubscribe}
-                  disabled={emailLoading}
-                  className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap"
-                >
-                  取消訂閱
-                </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  placeholder="your@email.com"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleEmailSubscribe}
+                    disabled={emailLoading}
+                    className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap"
+                  >
+                    {emailLoading ? '處理中...' : emailSubscription ? '更新訂閱' : '訂閱週報'}
+                  </button>
+                  <button
+                    onClick={handleSendNow}
+                    disabled={emailSending}
+                    className="px-4 py-2.5 bg-slate-700 text-white rounded-lg hover:bg-slate-800 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap flex items-center gap-1.5"
+                  >
+                    {emailSending ? (
+                      <>
+                        <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        發送中...
+                      </>
+                    ) : '立即發送'}
+                  </button>
+                  {emailSubscription && (
+                    <button
+                      onClick={handleEmailUnsubscribe}
+                      disabled={emailLoading}
+                      className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium disabled:opacity-50 transition-colors whitespace-nowrap"
+                    >
+                      取消訂閱
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {emailMessage && (
+                <div className={`mt-3 px-4 py-2.5 rounded-lg text-sm ${
+                  emailMessage.type === 'success'
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-600 border border-red-200'
+                }`}>
+                  {emailMessage.type === 'success' ? '✓ ' : '⚠ '}{emailMessage.text}
+                </div>
               )}
-            </div>
-          </div>
 
-          {emailMessage && (
-            <div className={`mt-3 px-4 py-2.5 rounded-lg text-sm ${
-              emailMessage.type === 'success'
-                ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-red-50 text-red-600 border border-red-200'
-            }`}>
-              {emailMessage.type === 'success' ? '✓ ' : '⚠ '}{emailMessage.text}
-            </div>
-          )}
-
-          {emailSubscription && (
-            <p className="text-xs text-slate-400 mt-3">
-              訂閱信箱：{emailSubscription.email} ·
-              上次發送：{emailSubscription.last_sent_at
-                ? new Date(emailSubscription.last_sent_at).toLocaleDateString('zh-TW')
-                : '尚未發送'}
-            </p>
+              {emailSubscription && (
+                <p className="text-xs text-slate-400 mt-3">
+                  訂閱信箱：{emailSubscription.email} ·
+                  上次發送：{emailSubscription.last_sent_at
+                    ? new Date(emailSubscription.last_sent_at).toLocaleDateString('zh-TW')
+                    : '尚未發送'}
+                </p>
+              )}
+            </>
           )}
         </div>
 

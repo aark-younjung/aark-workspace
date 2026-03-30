@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeAEO } from '../services/aeoAnalyzer'
+import { useAuth } from '../context/AuthContext'
 
 const AEO_CHECKS = [
   {
@@ -64,6 +65,7 @@ const AEO_CHECKS = [
 
 export default function AEOAudit() {
   const { id } = useParams()
+  const { isPro } = useAuth()
   const [website, setWebsite] = useState(null)
   const [aeoAudit, setAeoAudit] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -247,10 +249,17 @@ export default function AEOAudit() {
                     <p className="text-sm text-slate-600 mb-4">{check.description}</p>
                     
                     {status === 'fail' && (
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <p className="text-xs font-medium text-blue-700 mb-1">💡 建議優化</p>
-                        <p className="text-sm text-blue-600">{check.recommendation}</p>
-                      </div>
+                      isPro ? (
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                          <p className="text-xs font-medium text-blue-700 mb-1">💡 建議優化</p>
+                          <p className="text-sm text-blue-600">{check.recommendation}</p>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-slate-100 rounded-lg flex items-center justify-between gap-3">
+                          <p className="text-xs text-slate-400 blur-sm select-none flex-1">升級 Pro 查看修復建議升級 Pro 查看修復建議升</p>
+                          <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">🔒 Pro</span>
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
@@ -261,43 +270,40 @@ export default function AEOAudit() {
 
         {/* AI 搜尋優化建議 */}
         <div className="mt-8 bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 border border-purple-100">
-          <h3 className="text-xl font-bold text-slate-800 mb-4">🚀 AI 搜尋優化建議</h3>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-500">•</span>
-                  補齊所有缺少的 Open Graph 標籤
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-500">•</span>
-                  建立網站的 LLMs.txt 檔案
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-500">•</span>
-                  修復 canonical 標籤問題
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-500">•</span>
-                  建立完整的 JSON-LD 結構化資料
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-500">•</span>
-                  為常見問題頁面添加 FAQ Schema
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-500">•</span>
-                  優化麵包屑導航結構
-                </li>
-              </ul>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-slate-800">🚀 AI 搜尋優化建議</h3>
+            {!isPro && <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-semibold">Pro 功能</span>}
           </div>
+          {isPro ? (
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
+                <ul className="space-y-2 text-sm text-slate-600">
+                  <li className="flex items-start gap-2"><span className="text-purple-500">•</span>補齊所有缺少的 Open Graph 標籤</li>
+                  <li className="flex items-start gap-2"><span className="text-purple-500">•</span>建立網站的 LLMs.txt 檔案</li>
+                  <li className="flex items-start gap-2"><span className="text-purple-500">•</span>修復 canonical 標籤問題</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
+                <ul className="space-y-2 text-sm text-slate-600">
+                  <li className="flex items-start gap-2"><span className="text-blue-500">•</span>建立完整的 JSON-LD 結構化資料</li>
+                  <li className="flex items-start gap-2"><span className="text-blue-500">•</span>為常見問題頁面添加 FAQ Schema</li>
+                  <li className="flex items-start gap-2"><span className="text-blue-500">•</span>優化麵包屑導航結構</li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-slate-500 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的優化路線圖</p>
+              <Link
+                to="/dashboard"
+                className="inline-block px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all"
+              >
+                🔒 升級 Pro 解鎖完整建議
+              </Link>
+            </div>
+          )}
         </div>
       </main>
     </div>

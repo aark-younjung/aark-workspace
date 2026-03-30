@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
+import SEOAudit from './pages/SEOAudit'
 import AEOAudit from './pages/AEOAudit'
 import GEOAudit from './pages/GEOAudit'
 import EEATAudit from './pages/EEATAudit'
@@ -22,6 +23,7 @@ function App() {
           <Route path="/showcase" element={<Showcase />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/dashboard/:id" element={<Dashboard />} />
+          <Route path="/seo-audit/:id" element={<SEOAudit />} />
           <Route path="/aeo-audit/:id" element={<AEOAudit />} />
           <Route path="/geo-audit/:id" element={<GEOAudit />} />
           <Route path="/eeat-audit/:id" element={<EEATAudit />} />

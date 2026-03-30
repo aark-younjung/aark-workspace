@@ -4,6 +4,7 @@ import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
+import { useAuth } from '../context/AuthContext'
 
 const scoreColor = (s) => s >= 70 ? 'text-green-400' : s >= 40 ? 'text-yellow-400' : 'text-red-400'
 const scoreBg = (s) => s >= 70 ? 'bg-green-500/20 border-green-500/30' : s >= 40 ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-red-500/20 border-red-500/30'
@@ -60,12 +61,14 @@ const getHostname = (url) => {
 }
 
 export default function Compare() {
+  const { isPro } = useAuth()
+  const MAX_URLS = isPro ? 4 : 2
   const [urls, setUrls] = useState(['', ''])
   const [results, setResults] = useState([])
   const [loadingStates, setLoadingStates] = useState([])
   const [analyzed, setAnalyzed] = useState(false)
 
-  const addUrl = () => { if (urls.length < 4) setUrls([...urls, '']) }
+  const addUrl = () => { if (urls.length < MAX_URLS) setUrls([...urls, '']) }
   const removeUrl = (i) => { if (urls.length > 2) setUrls(urls.filter((_, idx) => idx !== i)) }
   const updateUrl = (i, val) => setUrls(urls.map((u, idx) => idx === i ? val : u))
 
@@ -140,7 +143,9 @@ export default function Compare() {
         {/* 標題 */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-white mb-3">競品比較分析</h1>
-          <p className="text-white/60">同時比較最多 4 個網站的 SEO、AEO、GEO 分數與檢測項目</p>
+          <p className="text-white/60">
+            {isPro ? '同時比較最多 4 個網站的 SEO、AEO、GEO 分數與檢測項目' : '免費版可比較 2 個網站，升級 Pro 最多比較 4 個'}
+          </p>
         </div>
 
         {/* URL 輸入區 */}
@@ -169,12 +174,17 @@ export default function Compare() {
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
-            {urls.length < 4 && (
+          <div className="flex items-center gap-4 flex-wrap">
+            {urls.length < MAX_URLS && (
               <button onClick={addUrl} disabled={isLoading}
                 className="px-4 py-2 bg-white/10 text-white/60 hover:text-white rounded-lg text-sm transition-colors disabled:opacity-30">
                 + 新增競品
               </button>
+            )}
+            {!isPro && urls.length >= MAX_URLS && (
+              <Link to="/dashboard" className="px-4 py-2 bg-orange-500/20 border border-orange-500/30 text-orange-300 rounded-lg text-sm hover:bg-orange-500/30 transition-colors">
+                🔒 升級 Pro 比較最多 4 個網站
+              </Link>
             )}
             <button onClick={handleCompare} disabled={isLoading}
               className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-500/25">
