@@ -45,13 +45,30 @@ export default function Pricing() {
   const proYearlyPerMonth = Math.round(proYearly / 12)
   const savedAmount = proMonthly * 12 - proYearly
 
-  const handleUpgradeClick = () => {
-    if (!user) {
-      navigate('/register')
-    } else if (isPro) {
-      navigate('/')
-    } else {
-      navigate('/?upgrade=true')
+  const [upgrading, setUpgrading] = useState(false)
+
+  const handleUpgrade = async (priceType = 'monthly') => {
+    if (!user) { navigate('/register'); return }
+    if (isPro) { navigate('/'); return }
+    setUpgrading(true)
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          returnUrl: window.location.href,
+          priceType,
+        }),
+      })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else alert(data.error || '建立付款頁面失敗，請稍後再試')
+    } catch {
+      alert('連線失敗，請稍後再試')
+    } finally {
+      setUpgrading(false)
     }
   }
 
@@ -173,9 +190,10 @@ export default function Pricing() {
             </ul>
 
             <button
-              onClick={handleUpgradeClick}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25">
-              {isPro ? '已是 Pro 方案 ✓' : '立即升級 Pro'}
+              onClick={() => handleUpgrade(isYearly ? 'yearly' : 'monthly')}
+              disabled={upgrading}
+              className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25 disabled:opacity-50">
+              {isPro ? '已是 Pro 方案 ✓' : upgrading ? '處理中...' : '立即升級 Pro'}
             </button>
           </div>
 
@@ -225,9 +243,10 @@ export default function Pricing() {
               </p>
             </div>
             <button
-              onClick={handleUpgradeClick}
-              className="flex-shrink-0 px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all shadow-lg shadow-yellow-500/25 whitespace-nowrap">
-              搶早鳥優惠 NT$990
+              onClick={() => handleUpgrade('earlybird')}
+              disabled={upgrading}
+              className="flex-shrink-0 px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all shadow-lg shadow-yellow-500/25 whitespace-nowrap disabled:opacity-50">
+              {upgrading ? '處理中...' : '搶早鳥優惠 NT$990'}
             </button>
           </div>
         </div>

@@ -20,15 +20,21 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { userId, email, returnUrl } = req.body
+  const { userId, email, returnUrl, priceType } = req.body
 
   if (!userId || !email) {
     return res.status(400).json({ error: 'userId and email are required' })
   }
 
   const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-  const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aark.io'
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aark-workspace.vercel.app'
+
+  const PRICE_MAP = {
+    monthly:   process.env.STRIPE_PRICE_ID,
+    yearly:    process.env.STRIPE_PRICE_ID_YEARLY,
+    earlybird: process.env.STRIPE_PRICE_ID_EARLYBIRD || process.env.STRIPE_PRICE_ID,
+  }
+  const STRIPE_PRICE_ID = PRICE_MAP[priceType] || PRICE_MAP.monthly
 
   if (!STRIPE_SECRET_KEY || !STRIPE_PRICE_ID) {
     return res.status(500).json({ error: 'Stripe environment variables not configured' })
