@@ -48,6 +48,7 @@ export default function Pricing() {
   const [upgrading, setUpgrading] = useState(false)
 
   const handleUpgrade = async (priceType = 'monthly') => {
+    console.log('[Pricing] handleUpgrade called, priceType:', priceType, 'user:', user?.email, 'isPro:', isPro)
     if (!user) { navigate('/register'); return }
     if (isPro) { navigate('/'); return }
     setUpgrading(true)
@@ -63,9 +64,11 @@ export default function Pricing() {
         }),
       })
       const data = await res.json()
+      console.log('[Pricing] API response:', res.status, data)
       if (data.url) window.location.href = data.url
       else alert(data.error || '建立付款頁面失敗，請稍後再試')
-    } catch {
+    } catch (err) {
+      console.error('[Pricing] fetch error:', err)
       alert('連線失敗，請稍後再試')
     } finally {
       setUpgrading(false)
