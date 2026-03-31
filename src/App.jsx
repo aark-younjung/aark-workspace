@@ -13,6 +13,7 @@ import Register from './pages/Register'
 import GoogleAuthCallback from './pages/GoogleAuthCallback'
 import AdminSeed from './pages/AdminSeed'
 import Pricing from './pages/Pricing'
+import Account from './pages/Account'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
           <Route path="/admin/seed" element={<AdminSeed />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/account" element={<Account />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -48,7 +48,6 @@ export default function Pricing() {
   const [upgrading, setUpgrading] = useState(false)
 
   const handleUpgrade = async (priceType = 'monthly') => {
-    console.log('[Pricing] handleUpgrade called, priceType:', priceType, 'user:', user?.email, 'isPro:', isPro)
     if (!user) { navigate('/register'); return }
     if (isPro) { navigate('/'); return }
     setUpgrading(true)
@@ -64,11 +63,9 @@ export default function Pricing() {
         }),
       })
       const data = await res.json()
-      console.log('[Pricing] API response:', res.status, data)
       if (data.url) window.location.href = data.url
       else alert(data.error || '建立付款頁面失敗，請稍後再試')
-    } catch (err) {
-      console.error('[Pricing] fetch error:', err)
+    } catch {
       alert('連線失敗，請稍後再試')
     } finally {
       setUpgrading(false)
@@ -198,12 +195,23 @@ export default function Pricing() {
               ))}
             </ul>
 
-            <button
-              onClick={() => handleUpgrade(isYearly ? 'yearly' : 'monthly')}
-              disabled={upgrading}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25 disabled:opacity-50">
-              {isPro ? '已是 Pro 方案 ✓' : upgrading ? '處理中...' : '立即升級 Pro'}
-            </button>
+            {isPro ? (
+              <div className="space-y-2">
+                <div className="w-full py-3 text-center bg-green-500/20 text-green-400 rounded-xl font-semibold border border-green-500/30">
+                  ✓ 目前方案
+                </div>
+                <Link to="/account" className="block w-full py-2 text-center text-white/30 hover:text-white/60 text-xs transition-colors">
+                  管理訂閱 →
+                </Link>
+              </div>
+            ) : (
+              <button
+                onClick={() => handleUpgrade(isYearly ? 'yearly' : 'monthly')}
+                disabled={upgrading}
+                className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25 disabled:opacity-50">
+                {upgrading ? '處理中...' : '立即升級 Pro'}
+              </button>
+            )}
           </div>
           </div>
 
