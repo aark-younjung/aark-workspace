@@ -50,7 +50,7 @@ export default function Dashboard() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, isPro, refreshProfile } = useAuth()
+  const { user, isPro, userName, refreshProfile } = useAuth()
   const [upgradeSuccess, setUpgradeSuccess] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
   const [website, setWebsite] = useState(null)
