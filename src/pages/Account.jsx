@@ -42,14 +42,13 @@ export default function Account() {
     }))
   }
 
-  const handleUnsubscribe = async (subId) => {
-    const sub = emailSubs.find(s => s.id === subId)
-    const confirmed = window.confirm(`確定取消 ${sub?.siteName} 的 Email 週報訂閱？\n\n收件信箱：${sub?.email || user.email}`)
+  const handleUnsubscribeAll = async () => {
+    const confirmed = window.confirm(`確定取消所有網站的 Email 週報訂閱？\n\n收件信箱：${user.email}`)
     if (!confirmed) return
-    setUnsubLoading(subId)
-    await supabase.from('email_subscriptions').delete().eq('id', subId)
-    setEmailSubs(prev => prev.filter(s => s.id !== subId))
-    setUnsubLoading(null)
+    setUnsubLoading(true)
+    await supabase.from('email_subscriptions').delete().eq('email', user.email)
+    setEmailSubs([])
+    setUnsubLoading(false)
   }
 
   const handleSignOut = async () => {
@@ -205,28 +204,18 @@ export default function Account() {
           ) : emailSubs.length === 0 ? (
             <p className="text-slate-400 text-sm">尚未訂閱任何網站的週報。請到各網站的 Dashboard 開啟訂閱。</p>
           ) : (
-            <>
-              <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-slate-50 rounded-lg">
-                <span className="text-slate-400 text-xs">收件信箱</span>
-                <span className="text-slate-700 text-sm font-medium">{user.email}</span>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-800 text-sm font-medium">已訂閱 {emailSubs.length} 個網站週報</p>
+                <p className="text-slate-400 text-xs mt-0.5">收件信箱：{user.email}</p>
               </div>
-              <ul className="space-y-2">
-                {emailSubs.map(sub => (
-                  <li key={sub.id} className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></span>
-                      <p className="text-slate-800 text-sm truncate">{sub.siteName}</p>
-                    </div>
-                    <button
-                      onClick={() => handleUnsubscribe(sub.id)}
-                      disabled={unsubLoading === sub.id}
-                      className="flex-shrink-0 text-xs text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50">
-                      {unsubLoading === sub.id ? '處理中...' : '取消訂閱'}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
+              <button
+                onClick={handleUnsubscribeAll}
+                disabled={unsubLoading}
+                className="px-4 py-2 text-red-500 border border-red-200 rounded-lg hover:bg-red-50 text-sm transition-colors disabled:opacity-50">
+                {unsubLoading ? '處理中...' : '全部取消'}
+              </button>
+            </div>
           )}
         </section>
 
