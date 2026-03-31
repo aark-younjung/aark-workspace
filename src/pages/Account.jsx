@@ -18,18 +18,10 @@ export default function Account() {
   }, [user, isPro])
 
   const fetchEmailSubs = async () => {
-    const { data: websites } = await supabase
-      .from('websites')
-      .select('id')
-      .eq('user_id', user.id)
-
-    const websiteIds = websites?.map(w => w.id) || []
-    if (websiteIds.length === 0) { setEmailSubs([]); return }
-
     const { data } = await supabase
       .from('email_subscriptions')
       .select('id, website_id, email, is_active, websites(name, url)')
-      .in('website_id', websiteIds)
+      .eq('email', user.email)
 
     setEmailSubs(data || [])
   }
