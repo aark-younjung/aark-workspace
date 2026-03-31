@@ -1,7 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+
+const timeAgo = (d) => {
+  if (!d) return ''
+  const mins = Math.floor((Date.now() - new Date(d)) / 60000)
+  if (mins < 1) return '剛剛'
+  if (mins < 60) return `${mins} 分鐘前`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} 小時前`
+  return `${Math.floor(hours / 24)} 天前`
+}
 import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
@@ -11,9 +21,24 @@ export default function Home() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
+  const [recentScans, setRecentScans] = useState([])
   const navigate = useNavigate()
   const { user, isPro, userName, signOut } = useAuth()
   const WEBSITE_LIMIT = isPro ? 15 : 5
+
+  useEffect(() => {
+    const fetchRecentScans = async () => {
+      const { data } = await supabase
+        .from('seo_audits')
+        .select('created_at, websites(name)')
+        .order('created_at', { ascending: false })
+        .limit(15)
+      if (data) {
+        setRecentScans(data.map(d => ({ name: d.websites?.name || '—', scanned_at: d.created_at })))
+      }
+    }
+    fetchRecentScans()
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -283,6 +308,31 @@ export default function Home() {
             <p className="mt-3 text-white/60 text-sm">{status}</p>
           )}
         </form>
+
+        {/* 🤖 AI 即時讀取跑馬燈 */}
+        {recentScans.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center gap-2 mb-2 justify-center">
+              <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
+              <span className="text-white/40 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5 py-3">
+              <div
+                className="flex whitespace-nowrap"
+                style={{ animation: 'tickerScroll 60s linear infinite' }}
+              >
+                {[...recentScans, ...recentScans].map((item, i) => (
+                  <span key={i} className="inline-flex items-center gap-2 px-6 text-sm">
+                    <span className="text-purple-400 text-base">🤖</span>
+                    <span className="font-medium text-white">{item.name}</span>
+                    <span className="text-white/30 text-xs">{timeAgo(item.scanned_at)}</span>
+                    <span className="text-white/10 mx-3">·</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Features */}
         <div className="mt-24 grid md:grid-cols-3 gap-6">

@@ -22,3 +22,8 @@ body {
 #root {
   min-height: 100vh;
 }
+
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
