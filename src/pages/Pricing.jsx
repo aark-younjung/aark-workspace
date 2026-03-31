@@ -129,7 +129,9 @@ export default function Pricing() {
         <div className="grid md:grid-cols-3 gap-6 mb-16">
 
           {/* 免費版 */}
-          <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col">
+          <div className="flex flex-col">
+            <div className="flex justify-center mb-2 h-6"></div>
+          <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col flex-1">
             <div className="mb-6">
               <div className="text-white/60 text-sm font-medium mb-2">免費版</div>
               <div className="flex items-end gap-2 mb-1">
@@ -151,6 +153,7 @@ export default function Pricing() {
               className="w-full py-3 text-center bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors font-medium block">
               免費開始使用
             </Link>
+          </div>
           </div>
 
           {/* Pro 版 */}
