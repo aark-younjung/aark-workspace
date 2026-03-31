@@ -17,4 +17,4 @@ Allow: /
 User-agent: anthropic-ai
 Allow: /
 
-Sitemap: https://a-ark.com.tw/sitemap.xml
+Sitemap: https://www.a-ark.com.tw/sitemap.xml
