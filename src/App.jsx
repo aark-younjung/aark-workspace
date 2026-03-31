@@ -11,6 +11,7 @@ import Compare from './pages/Compare'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import GoogleAuthCallback from './pages/GoogleAuthCallback'
+import AdminSeed from './pages/AdminSeed'
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/geo-audit/:id" element={<GEOAudit />} />
           <Route path="/eeat-audit/:id" element={<EEATAudit />} />
           <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+          <Route path="/admin/seed" element={<AdminSeed />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
