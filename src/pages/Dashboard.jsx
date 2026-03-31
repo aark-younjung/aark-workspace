@@ -691,6 +691,51 @@ ${siteTitle} — ${siteDesc}
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* 1. 帳號頭像 */}
+            <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title="帳號設定">
+              {user?.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                  {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
+                </div>
+              )}
+            </Link>
+            {/* 2. 連接 Google */}
+            {googleConnected ? (
+              <button
+                onClick={() => setShowGoogleSettings(true)}
+                className="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors flex items-center gap-1.5"
+              >
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                Google 已連接
+              </button>
+            ) : (
+              <button
+                onClick={initiateGoogleAuth}
+                className="px-3 py-2 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+              >
+                <span className="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>
+                連接 Google
+              </button>
+            )}
+            {/* 3. 重新檢測 */}
+            <button
+              onClick={handleReanalyze}
+              disabled={analyzing}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {analyzing ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  分析中...
+                </>
+              ) : '重新檢測'}
+            </button>
+            {/* 4. 匯出 PDF */}
             {isPro ? (
               <button
                 onClick={handleExportPDF}
@@ -729,47 +774,6 @@ ${siteTitle} — ${siteDesc}
                 查看方案 →
               </Link>
             )}
-            <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title="帳號設定">
-              {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                  {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
-                </div>
-              )}
-            </Link>
-            {googleConnected ? (
-              <button
-                onClick={() => setShowGoogleSettings(true)}
-                className="px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors flex items-center gap-1.5"
-              >
-                <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
-                Google 已連接
-              </button>
-            ) : (
-              <button
-                onClick={initiateGoogleAuth}
-                className="px-3 py-2 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors flex items-center gap-1.5"
-              >
-                <span className="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>
-                連接 Google
-              </button>
-            )}
-            <button
-              onClick={handleReanalyze}
-              disabled={analyzing}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {analyzing ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  分析中...
-                </>
-              ) : '重新檢測'}
-            </button>
           </div>
         </div>
       </header>
