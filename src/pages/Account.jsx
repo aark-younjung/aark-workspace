@@ -32,11 +32,19 @@ export default function Account() {
       .in('id', websiteIds)
 
     const siteMap = Object.fromEntries((sites || []).map(s => [s.id, s]))
-    setEmailSubs(subs.map(s => ({ ...s, siteName: siteMap[s.website_id]?.name || siteMap[s.website_id]?.url || s.website_id })))
+    setEmailSubs(subs.map(s => {
+      const site = siteMap[s.website_id]
+      let siteName = site?.name
+      if (!siteName && site?.url) {
+        try { siteName = new URL(site.url).hostname } catch { siteName = site.url }
+      }
+      return { ...s, siteName: siteName || s.website_id }
+    }))
   }
 
   const handleUnsubscribe = async (subId) => {
-    const confirmed = window.confirm('確定取消這個網站的 Email 週報訂閱？')
+    const sub = emailSubs.find(s => s.id === subId)
+    const confirmed = window.confirm(`確定取消 ${sub?.siteName} 的 Email 週報訂閱？\n\n收件信箱：${sub?.email || user.email}`)
     if (!confirmed) return
     setUnsubLoading(subId)
     await supabase.from('email_subscriptions').delete().eq('id', subId)
