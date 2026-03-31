@@ -18,14 +18,21 @@ export default function Account() {
   }, [user, isPro])
 
   const fetchEmailSubs = async () => {
-    console.log('[Account] fetching email subs for:', user.email)
-    const { data, error } = await supabase
+    const { data: subs } = await supabase
       .from('email_subscriptions')
-      .select('id, website_id, email, is_active, websites(name, url)')
+      .select('id, website_id, email, is_active')
       .eq('email', user.email)
 
-    console.log('[Account] email subs result:', data, 'error:', error)
-    setEmailSubs(data || [])
+    if (!subs || subs.length === 0) { setEmailSubs([]); return }
+
+    const websiteIds = [...new Set(subs.map(s => s.website_id))]
+    const { data: sites } = await supabase
+      .from('websites')
+      .select('id, name, url')
+      .in('id', websiteIds)
+
+    const siteMap = Object.fromEntries((sites || []).map(s => [s.id, s]))
+    setEmailSubs(subs.map(s => ({ ...s, siteName: siteMap[s.website_id]?.name || siteMap[s.website_id]?.url || s.website_id })))
   }
 
   const handleToggleSub = async (sub) => {
@@ -202,7 +209,7 @@ export default function Account() {
               {emailSubs.map(sub => (
                 <li key={sub.id} className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-slate-800 text-sm font-medium truncate">{sub.websites?.name || sub.websites?.url}</p>
+                    <p className="text-slate-800 text-sm font-medium truncate">{sub.siteName}</p>
                     <p className="text-slate-400 text-xs truncate">{sub.email}</p>
                   </div>
                   <button
