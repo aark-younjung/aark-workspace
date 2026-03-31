@@ -154,10 +154,11 @@ export default function Pricing() {
           </div>
 
           {/* Pro 版 */}
-          <div className="p-8 bg-gradient-to-b from-purple-600/30 to-blue-600/20 rounded-2xl border border-purple-500/50 flex flex-col relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <div className="flex flex-col">
+            <div className="flex justify-center mb-2">
               <span className="px-4 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold rounded-full">最多人選擇</span>
             </div>
+          <div className="p-8 bg-gradient-to-b from-purple-600/30 to-blue-600/20 rounded-2xl border border-purple-500/50 flex flex-col flex-1">
 
             <div className="mb-6">
               <div className="text-purple-300 text-sm font-medium mb-2">Pro 方案</div>
@@ -196,12 +197,14 @@ export default function Pricing() {
               {isPro ? '已是 Pro 方案 ✓' : upgrading ? '處理中...' : '立即升級 Pro'}
             </button>
           </div>
+          </div>
 
           {/* Agency 版 */}
-          <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col relative">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <div className="flex flex-col">
+            <div className="flex justify-center mb-2">
               <span className="px-4 py-1 bg-white/10 text-white/60 text-xs font-bold rounded-full border border-white/20">即將推出</span>
             </div>
+          <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col flex-1">
 
             <div className="mb-6">
               <div className="text-white/60 text-sm font-medium mb-2">Agency 方案</div>
@@ -225,6 +228,7 @@ export default function Pricing() {
               className="w-full py-3 bg-white/5 text-white/30 rounded-xl cursor-not-allowed font-medium border border-white/10">
               候補通知（即將推出）
             </button>
+          </div>
           </div>
         </div>
 
