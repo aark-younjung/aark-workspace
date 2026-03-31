@@ -18,11 +18,13 @@ export default function Account() {
   }, [user, isPro])
 
   const fetchEmailSubs = async () => {
-    const { data } = await supabase
+    console.log('[Account] fetching email subs for:', user.email)
+    const { data, error } = await supabase
       .from('email_subscriptions')
       .select('id, website_id, email, is_active, websites(name, url)')
       .eq('email', user.email)
 
+    console.log('[Account] email subs result:', data, 'error:', error)
     setEmailSubs(data || [])
   }
 
