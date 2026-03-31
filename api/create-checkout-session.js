@@ -50,8 +50,10 @@ export default async function handler(req, res) {
       metadata: {
         userId,
       },
-      success_url: `${SITE_URL}/dashboard?upgraded=true`,
-      cancel_url: returnUrl || `${SITE_URL}/dashboard`,
+      success_url: returnUrl
+        ? `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}upgraded=true`
+        : `${SITE_URL}/?upgraded=true`,
+      cancel_url: returnUrl || `${SITE_URL}/`,
       locale: 'zh',
     })
 
