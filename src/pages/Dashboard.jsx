@@ -729,10 +729,14 @@ ${siteTitle} — ${siteDesc}
                 查看方案 →
               </Link>
             )}
-            <Link to="/account"
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity flex-shrink-0"
-              title="帳號設定">
-              {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
+            <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title="帳號設定">
+              {user?.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                  {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
+                </div>
+              )}
             </Link>
             {googleConnected ? (
               <button
