@@ -10,8 +10,8 @@ export default function Account() {
   const [cancelDone, setCancelDone] = useState(false)
 
   // Email 週報
-  const [emailSubs, setEmailSubs] = useState([]) // [{ id, website_id, email, is_active, websites: { name, url } }]
-  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailSubs, setEmailSubs] = useState([])
+  const [unsubLoading, setUnsubLoading] = useState(null)
 
   useEffect(() => {
     if (user && isPro) fetchEmailSubs()
@@ -35,21 +35,13 @@ export default function Account() {
     setEmailSubs(subs.map(s => ({ ...s, siteName: siteMap[s.website_id]?.name || siteMap[s.website_id]?.url || s.website_id })))
   }
 
-  const handleToggleSub = async (sub) => {
-    setEmailLoading(sub.id)
-    if (sub.is_active) {
-      await supabase.from('email_subscriptions').delete().eq('id', sub.id)
-      setEmailSubs(prev => prev.filter(s => s.id !== sub.id))
-    } else {
-      const { data } = await supabase
-        .from('email_subscriptions')
-        .update({ is_active: true })
-        .eq('id', sub.id)
-        .select()
-        .single()
-      setEmailSubs(prev => prev.map(s => s.id === sub.id ? { ...s, is_active: true } : s))
-    }
-    setEmailLoading(null)
+  const handleUnsubscribe = async (subId) => {
+    const confirmed = window.confirm('確定取消這個網站的 Email 週報訂閱？')
+    if (!confirmed) return
+    setUnsubLoading(subId)
+    await supabase.from('email_subscriptions').delete().eq('id', subId)
+    setEmailSubs(prev => prev.filter(s => s.id !== subId))
+    setUnsubLoading(null)
   }
 
   const handleSignOut = async () => {
@@ -205,22 +197,28 @@ export default function Account() {
           ) : emailSubs.length === 0 ? (
             <p className="text-slate-400 text-sm">尚未訂閱任何網站的週報。請到各網站的 Dashboard 開啟訂閱。</p>
           ) : (
-            <ul className="space-y-3">
-              {emailSubs.map(sub => (
-                <li key={sub.id} className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-slate-800 text-sm font-medium truncate">{sub.siteName}</p>
-                    <p className="text-slate-400 text-xs truncate">{sub.email}</p>
-                  </div>
-                  <button
-                    onClick={() => handleToggleSub(sub)}
-                    disabled={emailLoading === sub.id}
-                    className={`flex-shrink-0 relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${sub.is_active ? 'bg-purple-500' : 'bg-slate-200'}`}>
-                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${sub.is_active ? 'translate-x-5' : 'translate-x-0.5'}`}></span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-slate-50 rounded-lg">
+                <span className="text-slate-400 text-xs">收件信箱</span>
+                <span className="text-slate-700 text-sm font-medium">{user.email}</span>
+              </div>
+              <ul className="space-y-2">
+                {emailSubs.map(sub => (
+                  <li key={sub.id} className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0"></span>
+                      <p className="text-slate-800 text-sm truncate">{sub.siteName}</p>
+                    </div>
+                    <button
+                      onClick={() => handleUnsubscribe(sub.id)}
+                      disabled={unsubLoading === sub.id}
+                      className="flex-shrink-0 text-xs text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50">
+                      {unsubLoading === sub.id ? '處理中...' : '取消訂閱'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </section>
 
