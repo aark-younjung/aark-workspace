@@ -723,6 +723,12 @@ ${siteTitle} — ${siteDesc}
                 🔒 匯出 PDF (Pro)
               </button>
             )}
+            {!isPro && (
+              <Link to="/pricing"
+                className="px-3 py-2 text-xs text-purple-400 hover:text-purple-300 border border-purple-500/30 rounded-lg hover:border-purple-500/60 transition-colors">
+                查看方案 →
+              </Link>
+            )}
             {googleConnected ? (
               <button
                 onClick={() => setShowGoogleSettings(true)}

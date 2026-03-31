@@ -273,6 +273,7 @@ export default function Home() {
           <nav className="flex items-center gap-6">
             <Link to="/showcase" className="text-white/70 hover:text-white transition-colors text-sm">排行榜</Link>
             <Link to="/compare" className="text-white/70 hover:text-white transition-colors text-sm">競品比較</Link>
+            <Link to="/pricing" className="text-white/70 hover:text-white transition-colors text-sm">定價</Link>
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-white/60 text-sm">👤 {userName}</span>

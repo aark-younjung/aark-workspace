@@ -1,0 +1,285 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+
+const FEATURES_FREE = [
+  '追蹤最多 5 個網站',
+  'SEO / AEO / GEO / E-E-A-T 基本分析',
+  'GA4 流量摘要（6 個數字）',
+  'GSC 搜尋成效摘要（4 個數字）',
+  'AI 優化建議（5 條通用方向）',
+  'llms.txt 自動生成',
+  '修復碼產生器',
+  '競品比較（最多 2 個網站）',
+  '公開排行榜',
+]
+
+const FEATURES_PRO = [
+  '追蹤最多 15 個網站',
+  'AEO 每項檢測逐項修復建議',
+  'SEO 詳情頁 3 階段優化路線圖',
+  'GA4 進階：趨勢圖 + 智能洞察',
+  'GSC 進階：趨勢圖 + 關鍵字排名表 + 建議',
+  'PDF 報告匯出',
+  'Email 週報訂閱',
+  '競品比較（最多 4 個網站）',
+  'LINE 推播通知（即將推出）',
+  '所有免費版功能',
+]
+
+const FEATURES_AGENCY = [
+  '追蹤最多 50 個網站',
+  '白標 PDF 報告（附你的品牌）',
+  '多帳號協作管理',
+  '客戶報表獨立分享連結',
+  '所有 Pro 版功能',
+]
+
+export default function Pricing() {
+  const [isYearly, setIsYearly] = useState(false)
+  const { user, isPro } = useAuth()
+  const navigate = useNavigate()
+
+  const proMonthly = 1490
+  const proYearly = 14900
+  const proYearlyPerMonth = Math.round(proYearly / 12)
+  const savedAmount = proMonthly * 12 - proYearly
+
+  const handleUpgradeClick = () => {
+    if (!user) {
+      navigate('/register')
+    } else if (isPro) {
+      navigate('/')
+    } else {
+      navigate('/?upgrade=true')
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-white/5 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <span className="text-xl font-bold text-white">優勢方舟</span>
+          </Link>
+          <nav className="flex items-center gap-6">
+            <Link to="/showcase" className="text-white/70 hover:text-white text-sm transition-colors">排行榜</Link>
+            <Link to="/" className="text-white/70 hover:text-white text-sm transition-colors">免費檢測 →</Link>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-6 py-20">
+
+        {/* 標題 */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-6">
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            <span className="text-white/80 text-sm">早鳥優惠進行中・前 100 名永久 NT$990／月</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            簡單透明的定價
+          </h1>
+          <p className="text-white/60 text-lg max-w-2xl mx-auto">
+            SEO 顧問每月收費 NT$15,000 起，優勢方舟讓你用
+            <span className="text-white font-semibold"> 1/10 的費用</span>
+            ，24 小時自動監測 AI 能見度
+          </p>
+
+          {/* 月繳 / 年繳切換 */}
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <span className={`text-sm ${!isYearly ? 'text-white' : 'text-white/40'}`}>月繳</span>
+            <button
+              onClick={() => setIsYearly(v => !v)}
+              className={`relative w-14 h-7 rounded-full transition-colors ${isYearly ? 'bg-purple-600' : 'bg-white/20'}`}
+            >
+              <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${isYearly ? 'translate-x-8' : 'translate-x-1'}`}></span>
+            </button>
+            <span className={`text-sm ${isYearly ? 'text-white' : 'text-white/40'}`}>
+              年繳
+              <span className="ml-2 px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">省 NT${savedAmount.toLocaleString()}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* 方案卡片 */}
+        <div className="grid md:grid-cols-3 gap-6 mb-16">
+
+          {/* 免費版 */}
+          <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col">
+            <div className="mb-6">
+              <div className="text-white/60 text-sm font-medium mb-2">免費版</div>
+              <div className="flex items-end gap-2 mb-1">
+                <span className="text-4xl font-bold text-white">NT$0</span>
+              </div>
+              <p className="text-white/40 text-sm">永久免費，無需信用卡</p>
+            </div>
+
+            <ul className="space-y-3 flex-1 mb-8">
+              {FEATURES_FREE.map((f, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-white/70">
+                  <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <Link to="/"
+              className="w-full py-3 text-center bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors font-medium block">
+              免費開始使用
+            </Link>
+          </div>
+
+          {/* Pro 版 */}
+          <div className="p-8 bg-gradient-to-b from-purple-600/30 to-blue-600/20 rounded-2xl border border-purple-500/50 flex flex-col relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="px-4 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold rounded-full">最多人選擇</span>
+            </div>
+
+            <div className="mb-6">
+              <div className="text-purple-300 text-sm font-medium mb-2">Pro 方案</div>
+              {isYearly ? (
+                <>
+                  <div className="flex items-end gap-2 mb-1">
+                    <span className="text-4xl font-bold text-white">NT${proYearlyPerMonth.toLocaleString()}</span>
+                    <span className="text-white/50 text-sm mb-1">／月</span>
+                  </div>
+                  <p className="text-white/40 text-sm">年繳 NT${proYearly.toLocaleString()}（省 NT${savedAmount.toLocaleString()}）</p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-end gap-2 mb-1">
+                    <span className="text-4xl font-bold text-white">NT${proMonthly.toLocaleString()}</span>
+                    <span className="text-white/50 text-sm mb-1">／月</span>
+                  </div>
+                  <p className="text-white/40 text-sm">隨時取消，無綁約</p>
+                </>
+              )}
+            </div>
+
+            <ul className="space-y-3 flex-1 mb-8">
+              {FEATURES_PRO.map((f, i) => (
+                <li key={i} className={`flex items-start gap-2.5 text-sm ${i === FEATURES_PRO.length - 1 ? 'text-white/40' : 'text-white/80'}`}>
+                  <span className={`mt-0.5 flex-shrink-0 ${i === FEATURES_PRO.length - 1 ? 'text-white/30' : 'text-purple-400'}`}>✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={handleUpgradeClick}
+              className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25">
+              {isPro ? '已是 Pro 方案 ✓' : '立即升級 Pro'}
+            </button>
+          </div>
+
+          {/* Agency 版 */}
+          <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <span className="px-4 py-1 bg-white/10 text-white/60 text-xs font-bold rounded-full border border-white/20">即將推出</span>
+            </div>
+
+            <div className="mb-6">
+              <div className="text-white/60 text-sm font-medium mb-2">Agency 方案</div>
+              <div className="flex items-end gap-2 mb-1">
+                <span className="text-4xl font-bold text-white/40">NT$3,990</span>
+                <span className="text-white/30 text-sm mb-1">／月起</span>
+              </div>
+              <p className="text-white/30 text-sm">適合行銷公司、設計工作室</p>
+            </div>
+
+            <ul className="space-y-3 flex-1 mb-8">
+              {FEATURES_AGENCY.map((f, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-white/40">
+                  <span className="text-white/20 mt-0.5 flex-shrink-0">✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <button disabled
+              className="w-full py-3 bg-white/5 text-white/30 rounded-xl cursor-not-allowed font-medium border border-white/10">
+              候補通知（即將推出）
+            </button>
+          </div>
+        </div>
+
+        {/* 早鳥方案 */}
+        <div className="mb-16 p-8 rounded-2xl border border-yellow-500/30 bg-yellow-500/5">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">🐣</span>
+                <span className="text-yellow-400 font-bold text-lg">早鳥優惠 — 前 100 名</span>
+                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full border border-yellow-500/30">限量</span>
+              </div>
+              <p className="text-white/60 text-sm max-w-xl">
+                前 100 位付費用戶享 <span className="text-white font-semibold">NT$990／月永久鎖定</span>，即使未來漲價也不受影響。
+                成為創始用戶，同時獲得優先新功能體驗與直接回饋管道。
+              </p>
+            </div>
+            <button
+              onClick={handleUpgradeClick}
+              className="flex-shrink-0 px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all shadow-lg shadow-yellow-500/25 whitespace-nowrap">
+              搶早鳥優惠 NT$990
+            </button>
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-white text-center mb-8">常見問題</h2>
+          <div className="space-y-4">
+            {[
+              {
+                q: '免費版和 Pro 版最大的差別是什麼？',
+                a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」。包含逐項修復建議、3 階段 SEO 優化路線圖、GA4/GSC 進階趨勢圖，以及每週自動寄送 Email 週報。',
+              },
+              {
+                q: '可以隨時取消嗎？',
+                a: '可以。月繳方案隨時取消，下個計費週期不再收費。年繳方案在期限內可繼續使用，不提供退款但可降回免費版。',
+              },
+              {
+                q: 'AEO / GEO 是什麼？跟一般 SEO 有什麼不同？',
+                a: 'SEO 是讓 Google 搜尋找到你，AEO（Answer Engine Optimization）是讓 ChatGPT、Perplexity 等 AI 問答引擎引用你的內容，GEO（Generative Engine Optimization）是讓生成式 AI 在回答時主動提及你的品牌。這是 AI 搜尋時代必備的新指標。',
+              },
+              {
+                q: '早鳥價 NT$990 什麼時候截止？',
+                a: '前 100 名付費用戶即可鎖定，名額用完即止。鎖定後永久維持 NT$990，不受未來漲價影響。',
+              },
+              {
+                q: 'Agency 方案什麼時候推出？',
+                a: '預計 2026 年中推出。如果你是行銷公司或設計工作室，歡迎先用 Pro 方案，Agency 推出時會優先通知。',
+              },
+            ].map((item, i) => (
+              <details key={i} className="group p-6 bg-white/5 rounded-xl border border-white/10 cursor-pointer">
+                <summary className="flex items-center justify-between text-white font-medium list-none">
+                  {item.q}
+                  <span className="text-white/40 group-open:rotate-180 transition-transform text-lg flex-shrink-0 ml-4">↓</span>
+                </summary>
+                <p className="mt-4 text-white/60 text-sm leading-relaxed">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA 底部 */}
+        <div className="mt-20 text-center p-12 bg-white/5 rounded-2xl border border-white/10">
+          <h2 className="text-3xl font-bold text-white mb-3">現在就開始免費使用</h2>
+          <p className="text-white/50 mb-8">輸入網址，60 秒內取得 AI 能見度完整分析報告</p>
+          <Link to="/"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-500/25 text-lg">
+            免費檢測我的網站 →
+          </Link>
+        </div>
+
+      </main>
+    </div>
+  )
+}
