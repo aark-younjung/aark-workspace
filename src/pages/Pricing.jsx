@@ -130,7 +130,9 @@ export default function Pricing() {
 
           {/* 免費版 */}
           <div className="flex flex-col">
-            <div className="flex justify-center mb-2 h-6"></div>
+            <div className="flex justify-center mb-2">
+              <span className="px-4 py-1 bg-white/10 text-white/70 text-xs font-bold rounded-full border border-white/20">立即體驗</span>
+            </div>
           <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col flex-1">
             <div className="mb-6">
               <div className="text-white/60 text-sm font-medium mb-2">免費版</div>
