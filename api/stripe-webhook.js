@@ -74,6 +74,7 @@ export default async function handler(req, res) {
         is_pro: true,
         stripe_customer_id: customerId,
         stripe_subscription_id: subscriptionId,
+        subscribed_at: new Date().toISOString(),
       })
       .eq('id', userId)
 

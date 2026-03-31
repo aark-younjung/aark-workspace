@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 
 export default function Account() {
-  const { user, isPro, userName, signOut } = useAuth()
+  const { user, profile, isPro, userName, signOut } = useAuth()
   const navigate = useNavigate()
   const [cancelling, setCancelling] = useState(false)
   const [cancelDone, setCancelDone] = useState(false)
@@ -150,7 +150,12 @@ export default function Account() {
               <div className="flex items-center justify-between py-3 border-b border-slate-100">
                 <div>
                   <p className="text-slate-900 font-medium">目前方案</p>
-                  <p className="text-slate-400 text-sm">Pro 方案・自動續約</p>
+                  <p className="text-slate-400 text-sm">
+                    Pro 方案・自動續約
+                    {profile?.subscribed_at && (
+                      <span className="ml-2">・訂閱於 {new Date(profile.subscribed_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    )}
+                  </p>
                 </div>
                 <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">Pro</span>
               </div>
