@@ -306,14 +306,15 @@ export default function Home() {
               <span className="text-orange-700 text-sm font-medium">AI 搜尋優化新時代</span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6 leading-tight">
-              掌握 AI 能見度<br />
-              <span className="bg-gradient-to-r from-blue-500 to-orange-500 bg-clip-text text-transparent">
-                贏在搜尋未來
-              </span>
+            <h1 className="text-5xl md:text-6xl font-bold mb-3 leading-tight bg-gradient-to-r from-blue-500 to-orange-500 bg-clip-text text-transparent">
+              讓AI看見你
             </h1>
 
-            <p className="text-lg text-slate-600 mb-10 max-w-lg">
+            <p className="text-xl md:text-2xl font-semibold text-slate-800 mb-8 leading-snug">
+              掌握 AI 能見度<br />贏在搜尋未來
+            </p>
+
+            <p className="text-base text-slate-500 mb-10 max-w-lg">
               全面檢測您的網站 SEO、AEO 與 Google 商家表現，
               讓 AI 搜尋引擎看見您的品牌價值
             </p>
@@ -342,7 +343,7 @@ export default function Home() {
                       </svg>
                       分析中...
                     </span>
-                  ) : '開始分析'}
+                  ) : '免費開始分析'}
                 </button>
               </div>
               {status && (
