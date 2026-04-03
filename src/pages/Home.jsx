@@ -296,8 +296,8 @@ export default function Home() {
       </header>
 
       {/* Hero Section — 雙欄佈局 */}
-      <main className="relative z-10 max-w-6xl mx-auto px-6 py-24">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-24 overflow-visible">
+        <div className="grid md:grid-cols-2 gap-6 items-center overflow-visible">
 
           {/* 左欄：文字 + 輸入框 */}
           <div>
@@ -352,10 +352,10 @@ export default function Home() {
           </div>
 
           {/* 右欄：雷達掃描動畫（放大版） */}
-          <div className="hidden md:flex items-center justify-center">
-            <div className="relative w-[520px] h-[520px]">
+          <div className="hidden md:flex items-center justify-center overflow-visible">
+            <div className="relative w-[640px] h-[640px] -ml-20">
               {/* 靜態同心圓 */}
-              {[235, 185, 135, 85, 42].map((r, i) => (
+              {[310, 250, 185, 120, 60].map((r, i) => (
                 <div key={i} className="absolute inset-0 flex items-center justify-center">
                   <div style={{
                     width: r * 2,
@@ -370,8 +370,8 @@ export default function Home() {
               {[0, 1, 2].map((i) => (
                 <div key={i} className="absolute inset-0 flex items-center justify-center">
                   <div style={{
-                    width: 84,
-                    height: 84,
+                    width: 120,
+                    height: 120,
                     borderRadius: '50%',
                     border: '2px solid rgba(59,130,246,0.7)',
                     animation: `radarPulse 3s ease-out ${i * 1}s infinite`,
@@ -391,14 +391,14 @@ export default function Home() {
               <div className="absolute inset-0 flex items-center justify-center" style={{
                 animation: 'radarSpin 4s linear infinite',
               }}>
-                <svg width="520" height="520" viewBox="0 0 520 520">
+                <svg width="640" height="640" viewBox="0 0 640 640">
                   <defs>
                     <linearGradient id="scanGrad" x1="0.5" y1="0.5" x2="1" y2="0.5">
                       <stop offset="0%" stopColor="rgba(59,130,246,0)" />
                       <stop offset="100%" stopColor="rgba(59,130,246,0.75)" />
                     </linearGradient>
                   </defs>
-                  <line x1="260" y1="260" x2="495" y2="260" stroke="url(#scanGrad)" strokeWidth="2.5" />
+                  <line x1="320" y1="320" x2="625" y2="320" stroke="url(#scanGrad)" strokeWidth="2.5" />
                 </svg>
               </div>
 
