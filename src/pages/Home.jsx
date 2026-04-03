@@ -464,7 +464,7 @@ export default function Home() {
             <div className="overflow-hidden rounded-xl border border-white/60 bg-white/40 backdrop-blur-md py-3">
               <div
                 className="flex whitespace-nowrap"
-                style={{ animation: 'tickerScroll 60s linear infinite' }}
+                style={{ animation: 'tickerScroll 25s linear infinite' }}
               >
                 {[...recentScans, ...recentScans].map((item, i) => (
                   <span key={i} className="inline-flex items-center gap-2 px-6 text-sm">
