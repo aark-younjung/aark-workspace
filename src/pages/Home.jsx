@@ -259,7 +259,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative overflow-hidden" style={{
-      background: 'radial-gradient(ellipse at 60% 40%, #fed7aa 0%, #fff7ed 40%, #ffffff 75%)',
+      background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #ffffff 78%)',
     }}>
 
       {/* 點陣背景 */}
@@ -353,15 +353,15 @@ export default function Home() {
 
           {/* 右欄：雷達掃描動畫（放大版） */}
           <div className="hidden md:flex items-center justify-center">
-            <div className="relative w-[420px] h-[420px]">
+            <div className="relative w-[520px] h-[520px]">
               {/* 靜態同心圓 */}
-              {[190, 150, 110, 70, 35].map((r, i) => (
+              {[235, 185, 135, 85, 42].map((r, i) => (
                 <div key={i} className="absolute inset-0 flex items-center justify-center">
                   <div style={{
                     width: r * 2,
                     height: r * 2,
                     borderRadius: '50%',
-                    border: `1px solid rgba(59,130,246,${0.15 + i * 0.05})`,
+                    border: `1px solid rgba(59,130,246,${0.12 + i * 0.05})`,
                   }} />
                 </div>
               ))}
@@ -370,8 +370,8 @@ export default function Home() {
               {[0, 1, 2].map((i) => (
                 <div key={i} className="absolute inset-0 flex items-center justify-center">
                   <div style={{
-                    width: 70,
-                    height: 70,
+                    width: 84,
+                    height: 84,
                     borderRadius: '50%',
                     border: '2px solid rgba(59,130,246,0.7)',
                     animation: `radarPulse 3s ease-out ${i * 1}s infinite`,
@@ -391,29 +391,62 @@ export default function Home() {
               <div className="absolute inset-0 flex items-center justify-center" style={{
                 animation: 'radarSpin 4s linear infinite',
               }}>
-                <svg width="420" height="420" viewBox="0 0 420 420">
+                <svg width="520" height="520" viewBox="0 0 520 520">
                   <defs>
                     <linearGradient id="scanGrad" x1="0.5" y1="0.5" x2="1" y2="0.5">
                       <stop offset="0%" stopColor="rgba(59,130,246,0)" />
-                      <stop offset="100%" stopColor="rgba(59,130,246,0.7)" />
+                      <stop offset="100%" stopColor="rgba(59,130,246,0.75)" />
                     </linearGradient>
                   </defs>
-                  <line x1="210" y1="210" x2="400" y2="210" stroke="url(#scanGrad)" strokeWidth="2.5" />
+                  <line x1="260" y1="260" x2="495" y2="260" stroke="url(#scanGrad)" strokeWidth="2.5" />
                 </svg>
               </div>
 
-              {/* 浮動標籤 */}
-              <div className="absolute top-10 right-6 px-3 py-1.5 bg-blue-100 border border-blue-300 rounded-full shadow-sm">
-                <span className="text-blue-700 text-xs font-semibold">GPTBot</span>
+              {/* 浮動標籤 — 9 個 bot */}
+              <div className="absolute" style={{ top: '4%', right: '8%' }}>
+                <div className="px-3 py-1.5 bg-blue-100/80 backdrop-blur-sm border border-blue-200 rounded-full shadow-sm">
+                  <span className="text-blue-700 text-xs font-semibold">GPTBot</span>
+                </div>
               </div>
-              <div className="absolute bottom-16 right-4 px-3 py-1.5 bg-orange-100 border border-orange-300 rounded-full shadow-sm">
-                <span className="text-orange-700 text-xs font-semibold">Googlebot</span>
+              <div className="absolute" style={{ top: '22%', right: '2%' }}>
+                <div className="px-3 py-1.5 bg-teal-100/80 backdrop-blur-sm border border-teal-200 rounded-full shadow-sm">
+                  <span className="text-teal-700 text-xs font-semibold">ChatGPT</span>
+                </div>
               </div>
-              <div className="absolute top-1/2 left-4 px-3 py-1.5 bg-blue-100 border border-blue-300 rounded-full shadow-sm">
-                <span className="text-blue-700 text-xs font-semibold">ClaudeBot</span>
+              <div className="absolute" style={{ bottom: '18%', right: '3%' }}>
+                <div className="px-3 py-1.5 bg-orange-100/80 backdrop-blur-sm border border-orange-200 rounded-full shadow-sm">
+                  <span className="text-orange-700 text-xs font-semibold">Googlebot</span>
+                </div>
               </div>
-              <div className="absolute top-1/4 left-10 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-full shadow-sm">
-                <span className="text-slate-600 text-xs font-semibold">PerplexityBot</span>
+              <div className="absolute" style={{ bottom: '5%', right: '22%' }}>
+                <div className="px-3 py-1.5 bg-orange-100/80 backdrop-blur-sm border border-orange-200 rounded-full shadow-sm">
+                  <span className="text-orange-600 text-xs font-semibold">Amazonbot</span>
+                </div>
+              </div>
+              <div className="absolute" style={{ bottom: '10%', left: '5%' }}>
+                <div className="px-3 py-1.5 bg-blue-100/80 backdrop-blur-sm border border-blue-200 rounded-full shadow-sm">
+                  <span className="text-blue-700 text-xs font-semibold">Bingbot</span>
+                </div>
+              </div>
+              <div className="absolute" style={{ top: '48%', left: '1%' }}>
+                <div className="px-3 py-1.5 bg-amber-100/80 backdrop-blur-sm border border-amber-200 rounded-full shadow-sm">
+                  <span className="text-amber-700 text-xs font-semibold">ClaudeBot</span>
+                </div>
+              </div>
+              <div className="absolute" style={{ top: '28%', left: '3%' }}>
+                <div className="px-3 py-1.5 bg-slate-100/80 backdrop-blur-sm border border-slate-200 rounded-full shadow-sm">
+                  <span className="text-slate-600 text-xs font-semibold">PerplexityBot</span>
+                </div>
+              </div>
+              <div className="absolute" style={{ top: '8%', left: '28%' }}>
+                <div className="px-3 py-1.5 bg-indigo-100/80 backdrop-blur-sm border border-indigo-200 rounded-full shadow-sm">
+                  <span className="text-indigo-700 text-xs font-semibold">Meta AI</span>
+                </div>
+              </div>
+              <div className="absolute" style={{ top: '68%', right: '4%' }}>
+                <div className="px-3 py-1.5 bg-red-100/80 backdrop-blur-sm border border-red-200 rounded-full shadow-sm">
+                  <span className="text-red-600 text-xs font-semibold">YandexBot</span>
+                </div>
               </div>
             </div>
           </div>
@@ -427,7 +460,7 @@ export default function Home() {
               <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
               <span className="text-gray-400 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
             </div>
-            <div className="overflow-hidden rounded-xl border border-orange-100 bg-white/60 py-3">
+            <div className="overflow-hidden rounded-xl border border-white/60 bg-white/40 backdrop-blur-md py-3">
               <div
                 className="flex whitespace-nowrap"
                 style={{ animation: 'tickerScroll 60s linear infinite' }}
@@ -472,7 +505,7 @@ export default function Home() {
                 const offsetMins = Math.round((1 - bot.ratio) * 90)
                 const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
                 return (
-                  <div key={i} className="p-4 bg-white/70 rounded-xl border border-orange-100 hover:border-orange-200 transition-colors">
+                  <div key={i} className="p-4 bg-white/40 backdrop-blur-md rounded-xl border border-white/60 hover:border-orange-200 hover:bg-white/60 transition-all shadow-sm">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-9 h-9 rounded-full flex-shrink-0" style={{ background: `radial-gradient(circle at 35% 35%, white 0%, ${bot.color} 60%)` }}></div>
                       <div className="min-w-0">
@@ -504,7 +537,7 @@ export default function Home() {
                 const offsetMins = Math.round((1 - bot.ratio) * 60)
                 const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
                 return (
-                  <div key={i} className="p-4 bg-white/70 rounded-xl border border-orange-100 hover:border-orange-200 transition-colors">
+                  <div key={i} className="p-4 bg-white/40 backdrop-blur-md rounded-xl border border-white/60 hover:border-orange-200 hover:bg-white/60 transition-all shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ background: `radial-gradient(circle at 35% 35%, white 0%, ${bot.color} 60%)` }}></div>
                       <div className="min-w-0">
@@ -533,7 +566,7 @@ export default function Home() {
             { icon: '💬', title: 'AEO 優化', desc: '8 項 Answer Engine 指標：FAQ Schema、問句標題、精選摘要優化' },
             { icon: '🤖', title: 'GEO 優化', desc: '8 項 Generative Engine 指標：llms.txt、AI 爬蟲開放性、引用信號' },
           ].map((item, i) => (
-            <div key={i} className="p-6 bg-white/70 rounded-2xl border border-orange-100 backdrop-blur-xl">
+            <div key={i} className="p-6 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 hover:bg-white/60 transition-all shadow-sm">
               <div className="text-4xl mb-4">{item.icon}</div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">{item.title}</h3>
               <p className="text-gray-500">{item.desc}</p>
@@ -542,7 +575,7 @@ export default function Home() {
         </div>
 
         {/* 排行榜入口 */}
-        <div className="mt-16 p-8 rounded-2xl border border-orange-100 bg-white/60 text-center">
+        <div className="mt-16 p-8 rounded-2xl border border-white/60 bg-white/40 backdrop-blur-md text-center shadow-sm">
           <div className="text-3xl mb-3">🏆</div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">想知道其他網站的 AI 能見度表現？</h2>
           <p className="text-gray-500 mb-6 text-sm">查看進步之星、排行榜與成功案例，了解優化前後的差異</p>
