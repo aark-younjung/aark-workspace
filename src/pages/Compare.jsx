@@ -130,7 +130,7 @@ export default function Compare() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-white">優勢方舟</span>
+            <span className="text-xl font-bold text-white">優勢方舟數位行銷</span>
           </Link>
           <nav className="flex items-center gap-6">
             <Link to="/showcase" className="text-white/70 hover:text-white transition-colors text-sm">排行榜</Link>
