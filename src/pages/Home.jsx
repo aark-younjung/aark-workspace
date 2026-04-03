@@ -404,44 +404,44 @@ export default function Home() {
               </div>
 
               {/* 浮動標籤 — 9 個 bot */}
-              {/* 右上：GPTBot — 外圈 */}
-              <div className="absolute" style={{ top: '6%', right: '8%' }}>
+              {/* 右上：GPTBot — 外圈弧上 */}
+              <div className="absolute" style={{ top: '10%', right: '14%' }}>
                 <div className="px-3 py-1.5 bg-blue-100/80 backdrop-blur-sm border border-blue-200 rounded-full shadow-sm">
                   <span className="text-blue-700 text-xs font-semibold">GPTBot</span>
                 </div>
               </div>
-              {/* 正右：ChatGPT — 外圈 */}
-              <div className="absolute" style={{ top: '38%', right: '2%' }}>
+              {/* 正右：ChatGPT — 外圈弧上 */}
+              <div className="absolute" style={{ top: '36%', right: '8%' }}>
                 <div className="px-3 py-1.5 bg-teal-100/80 backdrop-blur-sm border border-teal-200 rounded-full shadow-sm">
                   <span className="text-teal-700 text-xs font-semibold">ChatGPT</span>
                 </div>
               </div>
-              {/* 右下：Googlebot — 外圈 */}
-              <div className="absolute" style={{ top: '66%', right: '6%' }}>
+              {/* 右下：Googlebot — 外圈弧上 */}
+              <div className="absolute" style={{ top: '58%', right: '10%' }}>
                 <div className="px-3 py-1.5 bg-orange-100/80 backdrop-blur-sm border border-orange-200 rounded-full shadow-sm">
                   <span className="text-orange-700 text-xs font-semibold">Googlebot</span>
                 </div>
               </div>
-              {/* 正下偏右：YandexBot — 中圈 */}
-              <div className="absolute" style={{ bottom: '8%', right: '20%' }}>
+              {/* 下偏右：YandexBot — 中外圈 */}
+              <div className="absolute" style={{ bottom: '12%', right: '26%' }}>
                 <div className="px-3 py-1.5 bg-red-100/80 backdrop-blur-sm border border-red-200 rounded-full shadow-sm">
                   <span className="text-red-600 text-xs font-semibold">YandexBot</span>
                 </div>
               </div>
-              {/* 正下偏左：Amazonbot — 中圈 */}
-              <div className="absolute" style={{ bottom: '6%', left: '50%' }}>
+              {/* 正下：Amazonbot — 中圈 */}
+              <div className="absolute" style={{ bottom: '7%', left: '46%' }}>
                 <div className="px-3 py-1.5 bg-orange-100/80 backdrop-blur-sm border border-orange-200 rounded-full shadow-sm">
                   <span className="text-orange-600 text-xs font-semibold">Amazonbot</span>
                 </div>
               </div>
-              {/* 左下：Bingbot — 內圈（近圓心） */}
-              <div className="absolute" style={{ top: '64%', left: '28%' }}>
+              {/* 左下：Bingbot — 下移至中圈 */}
+              <div className="absolute" style={{ top: '72%', left: '22%' }}>
                 <div className="px-3 py-1.5 bg-blue-100/80 backdrop-blur-sm border border-blue-200 rounded-full shadow-sm">
                   <span className="text-blue-700 text-xs font-semibold">Bingbot</span>
                 </div>
               </div>
-              {/* 正左：ClaudeBot — 內圈（近圓心） */}
-              <div className="absolute" style={{ top: '48%', left: '26%' }}>
+              {/* 正左偏下：ClaudeBot — 內中圈 */}
+              <div className="absolute" style={{ top: '53%', left: '24%' }}>
                 <div className="px-3 py-1.5 bg-amber-100/80 backdrop-blur-sm border border-amber-200 rounded-full shadow-sm">
                   <span className="text-amber-700 text-xs font-semibold">ClaudeBot</span>
                 </div>
@@ -453,7 +453,7 @@ export default function Home() {
                 </div>
               </div>
               {/* 上方偏右：Meta AI — 中圈 */}
-              <div className="absolute" style={{ top: '8%', left: '42%' }}>
+              <div className="absolute" style={{ top: '7%', left: '42%' }}>
                 <div className="px-3 py-1.5 bg-indigo-100/80 backdrop-blur-sm border border-indigo-200 rounded-full shadow-sm">
                   <span className="text-indigo-700 text-xs font-semibold">Meta AI</span>
                 </div>
