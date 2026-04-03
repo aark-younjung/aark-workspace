@@ -296,7 +296,7 @@ export default function Home() {
       </header>
 
       {/* Hero Section — 雙欄佈局 */}
-      <main className="relative z-10 max-w-6xl mx-auto px-6 py-24 overflow-visible">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 pt-10 pb-24 overflow-visible">
         <div className="grid md:grid-cols-2 gap-6 items-center overflow-visible">
 
           {/* 左欄：文字 + 輸入框 */}
@@ -459,7 +459,7 @@ export default function Home() {
           <div className="mt-10">
             <div className="flex items-center gap-2 mb-2 justify-center">
               <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
-              <span className="text-gray-400 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
+              <span className="text-gray-700 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
             </div>
             <div className="overflow-hidden rounded-xl border border-white/60 bg-white/40 backdrop-blur-md py-3">
               <div
