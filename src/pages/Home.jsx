@@ -258,36 +258,38 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden" style={{
+      background: 'radial-gradient(ellipse at 60% 40%, #fed7aa 0%, #fff7ed 40%, #ffffff 75%)',
+    }}>
 
       {/* 點陣背景 */}
       <div className="absolute inset-0 pointer-events-none" style={{
-        backgroundImage: 'radial-gradient(circle, rgba(59,130,246,0.12) 1px, transparent 1px)',
+        backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)',
         backgroundSize: '28px 28px',
       }} />
 
       {/* Header */}
-      <header className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-orange-500 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-white">優勢方舟</span>
+            <span className="text-xl font-bold text-slate-800">優勢方舟</span>
           </div>
           <nav className="flex items-center gap-6">
-            <Link to="/showcase" className="text-white/70 hover:text-white transition-colors text-sm">排行榜</Link>
-            <Link to="/compare" className="text-white/70 hover:text-white transition-colors text-sm">競品比較</Link>
-            <Link to="/pricing" className="text-white/70 hover:text-white transition-colors text-sm">定價</Link>
+            <Link to="/showcase" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
+            <Link to="/compare" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">競品比較</Link>
+            <Link to="/pricing" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">定價</Link>
             {user ? (
               <div className="flex items-center gap-3">
-                <span className="text-white/60 text-sm">👤 {userName}</span>
-                <button onClick={signOut} className="text-white/50 hover:text-white text-sm transition-colors">登出</button>
+                <span className="text-slate-600 text-sm">👤 {userName}</span>
+                <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-sm transition-colors">登出</button>
               </div>
             ) : (
-              <Link to="/login" className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors">登入</Link>
+              <Link to="/login" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">登入</Link>
             )}
           </nav>
         </div>
@@ -299,19 +301,19 @@ export default function Home() {
 
           {/* 左欄：文字 + 輸入框 */}
           <div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-8 border border-white/10">
-              <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
-              <span className="text-white/80 text-sm">AI 搜尋優化新時代</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 rounded-full mb-8 border border-orange-200">
+              <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+              <span className="text-orange-700 text-sm font-medium">AI 搜尋優化新時代</span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-5xl md:text-6xl font-bold text-slate-900 mb-6 leading-tight">
               掌握 AI 能見度<br />
-              <span className="bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-500 to-orange-500 bg-clip-text text-transparent">
                 贏在搜尋未來
               </span>
             </h1>
 
-            <p className="text-lg text-white/60 mb-10 max-w-lg">
+            <p className="text-lg text-slate-600 mb-10 max-w-lg">
               全面檢測您的網站 SEO、AEO 與 Google 商家表現，
               讓 AI 搜尋引擎看見您的品牌價值
             </p>
@@ -324,13 +326,13 @@ export default function Home() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="輸入您的網址 (例如: example.com)"
-                  className="flex-1 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent backdrop-blur-xl transition-all"
+                  className="flex-1 px-6 py-4 rounded-xl bg-white border border-orange-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent shadow-sm transition-all"
                   disabled={loading}
                 />
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-500/25"
+                  className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-300/50"
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">
@@ -344,22 +346,22 @@ export default function Home() {
                 </button>
               </div>
               {status && (
-                <p className="mt-3 text-white/60 text-sm">{status}</p>
+                <p className="mt-3 text-slate-500 text-sm">{status}</p>
               )}
             </form>
           </div>
 
-          {/* 右欄：雷達掃描動畫 */}
+          {/* 右欄：雷達掃描動畫（放大版） */}
           <div className="hidden md:flex items-center justify-center">
-            <div className="relative w-80 h-80">
+            <div className="relative w-[420px] h-[420px]">
               {/* 靜態同心圓 */}
-              {[140, 110, 80, 50].map((r, i) => (
+              {[190, 150, 110, 70, 35].map((r, i) => (
                 <div key={i} className="absolute inset-0 flex items-center justify-center">
                   <div style={{
                     width: r * 2,
                     height: r * 2,
                     borderRadius: '50%',
-                    border: '1px solid rgba(59,130,246,0.2)',
+                    border: `1px solid rgba(59,130,246,${0.15 + i * 0.05})`,
                   }} />
                 </div>
               ))}
@@ -368,10 +370,10 @@ export default function Home() {
               {[0, 1, 2].map((i) => (
                 <div key={i} className="absolute inset-0 flex items-center justify-center">
                   <div style={{
-                    width: 60,
-                    height: 60,
+                    width: 70,
+                    height: 70,
                     borderRadius: '50%',
-                    border: '2px solid rgba(59,130,246,0.6)',
+                    border: '2px solid rgba(59,130,246,0.7)',
                     animation: `radarPulse 3s ease-out ${i * 1}s infinite`,
                   }} />
                 </div>
@@ -379,8 +381,9 @@ export default function Home() {
 
               {/* 中心點 */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-4 h-4 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50">
-                  <div className="w-4 h-4 rounded-full bg-blue-400 animate-ping opacity-75" />
+                <div className="relative w-5 h-5">
+                  <div className="w-5 h-5 rounded-full bg-blue-500 shadow-lg shadow-blue-400/60 z-10 relative" />
+                  <div className="absolute inset-0 w-5 h-5 rounded-full bg-blue-400 animate-ping opacity-60" />
                 </div>
               </div>
 
@@ -388,26 +391,29 @@ export default function Home() {
               <div className="absolute inset-0 flex items-center justify-center" style={{
                 animation: 'radarSpin 4s linear infinite',
               }}>
-                <svg width="320" height="320" viewBox="0 0 320 320">
+                <svg width="420" height="420" viewBox="0 0 420 420">
                   <defs>
                     <linearGradient id="scanGrad" x1="0.5" y1="0.5" x2="1" y2="0.5">
                       <stop offset="0%" stopColor="rgba(59,130,246,0)" />
-                      <stop offset="100%" stopColor="rgba(59,130,246,0.6)" />
+                      <stop offset="100%" stopColor="rgba(59,130,246,0.7)" />
                     </linearGradient>
                   </defs>
-                  <line x1="160" y1="160" x2="300" y2="160" stroke="url(#scanGrad)" strokeWidth="2" />
+                  <line x1="210" y1="210" x2="400" y2="210" stroke="url(#scanGrad)" strokeWidth="2.5" />
                 </svg>
               </div>
 
               {/* 浮動標籤 */}
-              <div className="absolute top-8 right-4 px-3 py-1.5 bg-blue-500/20 border border-blue-500/40 rounded-full">
-                <span className="text-blue-300 text-xs font-medium">GPTBot</span>
+              <div className="absolute top-10 right-6 px-3 py-1.5 bg-blue-100 border border-blue-300 rounded-full shadow-sm">
+                <span className="text-blue-700 text-xs font-semibold">GPTBot</span>
               </div>
-              <div className="absolute bottom-12 right-2 px-3 py-1.5 bg-orange-500/20 border border-orange-500/40 rounded-full">
-                <span className="text-orange-300 text-xs font-medium">Googlebot</span>
+              <div className="absolute bottom-16 right-4 px-3 py-1.5 bg-orange-100 border border-orange-300 rounded-full shadow-sm">
+                <span className="text-orange-700 text-xs font-semibold">Googlebot</span>
               </div>
-              <div className="absolute top-1/2 left-2 px-3 py-1.5 bg-blue-500/20 border border-blue-500/40 rounded-full">
-                <span className="text-blue-300 text-xs font-medium">ClaudeBot</span>
+              <div className="absolute top-1/2 left-4 px-3 py-1.5 bg-blue-100 border border-blue-300 rounded-full shadow-sm">
+                <span className="text-blue-700 text-xs font-semibold">ClaudeBot</span>
+              </div>
+              <div className="absolute top-1/4 left-10 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-full shadow-sm">
+                <span className="text-slate-600 text-xs font-semibold">PerplexityBot</span>
               </div>
             </div>
           </div>
