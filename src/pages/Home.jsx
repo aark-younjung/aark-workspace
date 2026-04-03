@@ -258,12 +258,19 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden">
+
+      {/* 點陣背景 */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: 'radial-gradient(circle, rgba(59,130,246,0.12) 1px, transparent 1px)',
+        backgroundSize: '28px 28px',
+      }} />
+
       {/* Header */}
-      <header className="border-b border-white/10 bg-white/5 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-white/10 bg-white/5 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-orange-500 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -286,56 +293,126 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="max-w-4xl mx-auto px-6 py-24 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-8">
-          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-          <span className="text-white/80 text-sm">AI 搜尋優化新時代</span>
-        </div>
-        
-        <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-          掌握 AI 能見度<br />
-          <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            贏在搜尋未來
-          </span>
-        </h1>
-        
-        <p className="text-xl text-white/60 mb-12 max-w-2xl mx-auto">
-          全面檢測您的網站 SEO、AEO 與 Google 商家表現，
-          讓 AI 搜尋引擎看見您的品牌價值
-        </p>
+      {/* Hero Section — 雙欄佈局 */}
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-24">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
 
-        {/* URL Input Form */}
-        <form onSubmit={handleSubmit} className="max-w-xl mx-auto">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="輸入您的網址 (例如: example.com)"
-              className="flex-1 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-xl transition-all"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-500/25"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  分析中...
-                </span>
-              ) : '開始分析'}
-            </button>
+          {/* 左欄：文字 + 輸入框 */}
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-8 border border-white/10">
+              <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
+              <span className="text-white/80 text-sm">AI 搜尋優化新時代</span>
+            </div>
+
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+              掌握 AI 能見度<br />
+              <span className="bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">
+                贏在搜尋未來
+              </span>
+            </h1>
+
+            <p className="text-lg text-white/60 mb-10 max-w-lg">
+              全面檢測您的網站 SEO、AEO 與 Google 商家表現，
+              讓 AI 搜尋引擎看見您的品牌價值
+            </p>
+
+            {/* URL Input Form */}
+            <form onSubmit={handleSubmit}>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="輸入您的網址 (例如: example.com)"
+                  className="flex-1 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent backdrop-blur-xl transition-all"
+                  disabled={loading}
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-500/25"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      分析中...
+                    </span>
+                  ) : '開始分析'}
+                </button>
+              </div>
+              {status && (
+                <p className="mt-3 text-white/60 text-sm">{status}</p>
+              )}
+            </form>
           </div>
-          {status && (
-            <p className="mt-3 text-white/60 text-sm">{status}</p>
-          )}
-        </form>
+
+          {/* 右欄：雷達掃描動畫 */}
+          <div className="hidden md:flex items-center justify-center">
+            <div className="relative w-80 h-80">
+              {/* 靜態同心圓 */}
+              {[140, 110, 80, 50].map((r, i) => (
+                <div key={i} className="absolute inset-0 flex items-center justify-center">
+                  <div style={{
+                    width: r * 2,
+                    height: r * 2,
+                    borderRadius: '50%',
+                    border: '1px solid rgba(59,130,246,0.2)',
+                  }} />
+                </div>
+              ))}
+
+              {/* 脈衝擴散圓（動畫） */}
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="absolute inset-0 flex items-center justify-center">
+                  <div style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: '50%',
+                    border: '2px solid rgba(59,130,246,0.6)',
+                    animation: `radarPulse 3s ease-out ${i * 1}s infinite`,
+                  }} />
+                </div>
+              ))}
+
+              {/* 中心點 */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50">
+                  <div className="w-4 h-4 rounded-full bg-blue-400 animate-ping opacity-75" />
+                </div>
+              </div>
+
+              {/* 掃描線 */}
+              <div className="absolute inset-0 flex items-center justify-center" style={{
+                animation: 'radarSpin 4s linear infinite',
+              }}>
+                <svg width="320" height="320" viewBox="0 0 320 320">
+                  <defs>
+                    <linearGradient id="scanGrad" x1="0.5" y1="0.5" x2="1" y2="0.5">
+                      <stop offset="0%" stopColor="rgba(59,130,246,0)" />
+                      <stop offset="100%" stopColor="rgba(59,130,246,0.6)" />
+                    </linearGradient>
+                  </defs>
+                  <line x1="160" y1="160" x2="300" y2="160" stroke="url(#scanGrad)" strokeWidth="2" />
+                </svg>
+              </div>
+
+              {/* 浮動標籤 */}
+              <div className="absolute top-8 right-4 px-3 py-1.5 bg-blue-500/20 border border-blue-500/40 rounded-full">
+                <span className="text-blue-300 text-xs font-medium">GPTBot</span>
+              </div>
+              <div className="absolute bottom-12 right-2 px-3 py-1.5 bg-orange-500/20 border border-orange-500/40 rounded-full">
+                <span className="text-orange-300 text-xs font-medium">Googlebot</span>
+              </div>
+              <div className="absolute top-1/2 left-2 px-3 py-1.5 bg-blue-500/20 border border-blue-500/40 rounded-full">
+                <span className="text-blue-300 text-xs font-medium">ClaudeBot</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
 
         {/* 🤖 AI 即時讀取跑馬燈 */}
         {recentScans.length > 0 && (

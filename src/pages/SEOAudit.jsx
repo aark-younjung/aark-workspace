@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { useAuth } from '../context/AuthContext'
+import FixGuide from '../components/FixGuide'
 
 const SEO_CHECKS = [
   {
@@ -251,14 +252,11 @@ export default function SEOAudit() {
                   )}
                   {!check.passed && (
                     isPro ? (
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <p className="text-xs font-medium text-blue-700 mb-1">💡 修復建議</p>
-                        <p className="text-sm text-blue-600">{check.recommendation}</p>
-                      </div>
+                      <FixGuide checkId={check.id} />
                     ) : (
                       <div className="p-3 bg-slate-100 rounded-lg flex items-center justify-between gap-3">
-                        <p className="text-xs text-slate-400 blur-sm select-none flex-1">升級 Pro 查看詳細修復建議升級 Pro 查看詳細修復建議</p>
-                        <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">🔒 Pro</span>
+                        <p className="text-xs text-slate-400 blur-sm select-none flex-1">升級 Pro 查看平台別修復指南升級 Pro 查看平台別修復指南</p>
+                        <Link to="/pricing" className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">🔒 升級 Pro</Link>
                       </div>
                     )
                   )}
