@@ -425,9 +425,9 @@ export default function Home() {
           <div className="mt-10">
             <div className="flex items-center gap-2 mb-2 justify-center">
               <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
-              <span className="text-white/40 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
+              <span className="text-gray-400 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
             </div>
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5 py-3">
+            <div className="overflow-hidden rounded-xl border border-orange-100 bg-white/60 py-3">
               <div
                 className="flex whitespace-nowrap"
                 style={{ animation: 'tickerScroll 60s linear infinite' }}
@@ -435,9 +435,9 @@ export default function Home() {
                 {[...recentScans, ...recentScans].map((item, i) => (
                   <span key={i} className="inline-flex items-center gap-2 px-6 text-sm">
                     <span className="text-purple-400 text-base">🤖</span>
-                    <span className="font-medium text-white">{item.name}</span>
-                    <span className="text-white/30 text-xs">{timeAgo(item.scanned_at)}</span>
-                    <span className="text-white/10 mx-3">·</span>
+                    <span className="font-medium text-gray-800">{item.name}</span>
+                    <span className="text-gray-400 text-xs">{timeAgo(item.scanned_at)}</span>
+                    <span className="text-gray-200 mx-3">·</span>
                   </span>
                 ))}
               </div>
@@ -451,8 +451,8 @@ export default function Home() {
             <div className="flex items-center gap-3 mb-6">
               <span className="text-2xl">📡</span>
               <div>
-                <h2 className="text-xl font-bold text-white">即時爬蟲動態</h2>
-                <p className="text-white/40 text-xs mt-0.5">分析日誌衍生・每次檢測即更新</p>
+                <h2 className="text-xl font-bold text-gray-800">即時爬蟲動態</h2>
+                <p className="text-gray-400 text-xs mt-0.5">分析日誌衍生・每次檢測即更新</p>
               </div>
               <span className="ml-auto flex items-center gap-1.5 text-xs text-green-400">
                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
@@ -463,7 +463,7 @@ export default function Home() {
             {/* AI 爬蟲 */}
             <div className="flex items-center gap-2 mb-3">
               <span>🤖</span>
-              <span className="text-white/60 text-sm font-medium">AI 爬蟲</span>
+              <span className="text-gray-500 text-sm font-medium">AI 爬蟲</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
               {AI_BOTS.map((bot, i) => {
@@ -472,20 +472,20 @@ export default function Home() {
                 const offsetMins = Math.round((1 - bot.ratio) * 90)
                 const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
                 return (
-                  <div key={i} className="p-4 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-colors">
+                  <div key={i} className="p-4 bg-white/70 rounded-xl border border-orange-100 hover:border-orange-200 transition-colors">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-9 h-9 rounded-full flex-shrink-0" style={{ background: `radial-gradient(circle at 35% 35%, white 0%, ${bot.color} 60%)` }}></div>
                       <div className="min-w-0">
-                        <div className="font-bold text-white text-sm truncate">{bot.name}</div>
-                        <div className="text-white/40 text-xs">{bot.company}</div>
+                        <div className="font-bold text-gray-800 text-sm truncate">{bot.name}</div>
+                        <div className="text-gray-400 text-xs">{bot.company}</div>
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
                       <div>
-                        <div className="text-green-400 font-bold text-xl">{count.toLocaleString()}</div>
-                        <div className="text-green-400/50 text-xs">+{todayCount} 今日</div>
+                        <div className="text-green-600 font-bold text-xl">{count.toLocaleString()}</div>
+                        <div className="text-green-500/70 text-xs">+{todayCount} 今日</div>
                       </div>
-                      <div className="text-white/30 text-xs text-right">{timeAgo(lastSeen)}</div>
+                      <div className="text-gray-400 text-xs text-right">{timeAgo(lastSeen)}</div>
                     </div>
                   </div>
                 )
@@ -495,7 +495,7 @@ export default function Home() {
             {/* 搜尋引擎爬蟲 */}
             <div className="flex items-center gap-2 mb-3">
               <span>🔍</span>
-              <span className="text-white/60 text-sm font-medium">搜尋引擎爬蟲</span>
+              <span className="text-gray-500 text-sm font-medium">搜尋引擎爬蟲</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {SE_BOTS.map((bot, i) => {
@@ -504,20 +504,20 @@ export default function Home() {
                 const offsetMins = Math.round((1 - bot.ratio) * 60)
                 const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
                 return (
-                  <div key={i} className="p-4 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-colors">
+                  <div key={i} className="p-4 bg-white/70 rounded-xl border border-orange-100 hover:border-orange-200 transition-colors">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ background: `radial-gradient(circle at 35% 35%, white 0%, ${bot.color} 60%)` }}></div>
                       <div className="min-w-0">
-                        <div className="font-bold text-white text-xs truncate">{bot.name}</div>
-                        <div className="text-white/40 text-xs">{bot.company}</div>
+                        <div className="font-bold text-gray-800 text-xs truncate">{bot.name}</div>
+                        <div className="text-gray-400 text-xs">{bot.company}</div>
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
                       <div>
-                        <div className="text-green-400 font-bold text-lg">{count.toLocaleString()}</div>
-                        <div className="text-green-400/50 text-xs">+{todayCount} 今日</div>
+                        <div className="text-green-600 font-bold text-lg">{count.toLocaleString()}</div>
+                        <div className="text-green-500/70 text-xs">+{todayCount} 今日</div>
                       </div>
-                      <div className="text-white/30 text-xs">{timeAgo(lastSeen)}</div>
+                      <div className="text-gray-400 text-xs">{timeAgo(lastSeen)}</div>
                     </div>
                   </div>
                 )
@@ -533,19 +533,19 @@ export default function Home() {
             { icon: '💬', title: 'AEO 優化', desc: '8 項 Answer Engine 指標：FAQ Schema、問句標題、精選摘要優化' },
             { icon: '🤖', title: 'GEO 優化', desc: '8 項 Generative Engine 指標：llms.txt、AI 爬蟲開放性、引用信號' },
           ].map((item, i) => (
-            <div key={i} className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-xl">
+            <div key={i} className="p-6 bg-white/70 rounded-2xl border border-orange-100 backdrop-blur-xl">
               <div className="text-4xl mb-4">{item.icon}</div>
-              <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-              <p className="text-white/50">{item.desc}</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">{item.title}</h3>
+              <p className="text-gray-500">{item.desc}</p>
             </div>
           ))}
         </div>
 
         {/* 排行榜入口 */}
-        <div className="mt-16 p-8 rounded-2xl border border-white/10 bg-white/5 text-center">
+        <div className="mt-16 p-8 rounded-2xl border border-orange-100 bg-white/60 text-center">
           <div className="text-3xl mb-3">🏆</div>
-          <h2 className="text-xl font-bold text-white mb-2">想知道其他網站的 AI 能見度表現？</h2>
-          <p className="text-white/50 mb-6 text-sm">查看進步之星、排行榜與成功案例，了解優化前後的差異</p>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">想知道其他網站的 AI 能見度表現？</h2>
+          <p className="text-gray-500 mb-6 text-sm">查看進步之星、排行榜與成功案例，了解優化前後的差異</p>
           <Link to="/showcase"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-500/25">
             查看 AI 能見度排行榜 →
