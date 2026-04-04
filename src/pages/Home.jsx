@@ -423,7 +423,7 @@ export default function Home() {
                 </div>
               </div>
               {/* 下偏右：YandexBot — 中外圈 */}
-              <div className="absolute" style={{ bottom: '12%', right: '26%' }}>
+              <div className="absolute" style={{ bottom: '12%', right: '18%' }}>
                 <div className="px-3 py-1.5 bg-red-100/80 backdrop-blur-sm border border-red-200 rounded-full shadow-sm">
                   <span className="text-red-600 text-xs font-semibold">YandexBot</span>
                 </div>
