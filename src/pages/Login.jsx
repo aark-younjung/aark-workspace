@@ -32,24 +32,25 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center px-4" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #ffffff 78%)' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div className="w-full max-w-md relative">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold text-white">優勢方舟數位行銷</span>
+            <span className="text-2xl font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">歡迎回來</h1>
-          <p className="text-white/50">登入以查看您的 AI 能見度報告</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">歡迎回來</h1>
+          <p className="text-gray-500">登入以查看您的 AI 能見度報告</p>
         </div>
 
         {/* 表單 */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
+        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-8">
           {/* Google 登入 */}
           <button
             type="button"
@@ -79,37 +80,37 @@ export default function Login() {
           </button>
 
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-white/10"></div>
-            <span className="text-white/30 text-xs">或使用 Email 登入</span>
-            <div className="flex-1 h-px bg-white/10"></div>
+            <div className="flex-1 h-px bg-orange-100"></div>
+            <span className="text-gray-400 text-xs">或使用 Email 登入</span>
+            <div className="flex-1 h-px bg-orange-100"></div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-white/70 text-sm mb-2">電子郵件</label>
+              <label className="block text-gray-500 text-sm mb-2">電子郵件</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-white/70 text-sm mb-2">密碼</label>
+              <label className="block text-gray-500 text-sm mb-2">密碼</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
                 {error}
               </div>
             )}
@@ -117,21 +118,21 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-500/25">
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-200">
               {loading ? '登入中...' : '登入'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <span className="text-white/40 text-sm">還沒有帳號？</span>
-            <Link to="/register" className="text-purple-400 hover:text-purple-300 text-sm ml-1 font-medium">
+            <span className="text-gray-400 text-sm">還沒有帳號？</span>
+            <Link to="/register" className="text-orange-500 hover:text-orange-600 text-sm ml-1 font-medium">
               立即註冊
             </Link>
           </div>
         </div>
 
         <div className="mt-6 text-center">
-          <Link to="/" className="text-white/30 hover:text-white/60 text-sm transition-colors">
+          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
             ← 返回首頁
           </Link>
         </div>

@@ -73,21 +73,23 @@ export default function Pricing() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #ffffff 78%)' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div className="relative">
       {/* Header */}
-      <header className="border-b border-white/10 bg-white/5 backdrop-blur-xl">
+      <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-white">優勢方舟數位行銷</span>
+            <span className="text-xl font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
           <nav className="flex items-center gap-6">
-            <Link to="/showcase" className="text-white/70 hover:text-white text-sm transition-colors">排行榜</Link>
-            <Link to="/" className="text-white/70 hover:text-white text-sm transition-colors">免費檢測 →</Link>
+            <Link to="/showcase" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">排行榜</Link>
+            <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">免費檢測 →</Link>
           </nav>
         </div>
       </header>
@@ -96,29 +98,29 @@ export default function Pricing() {
 
         {/* 標題 */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 border border-orange-200 rounded-full mb-6">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            <span className="text-white/80 text-sm">早鳥優惠進行中・前 100 名永久 NT$990／月</span>
+            <span className="text-gray-500 text-sm">早鳥優惠進行中・前 100 名永久 NT$990／月</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
             簡單透明的定價
           </h1>
-          <p className="text-white/60 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-500 text-lg max-w-2xl mx-auto">
             SEO 顧問每月收費 NT$15,000 起，優勢方舟數位行銷讓你用
-            <span className="text-white font-semibold"> 1/10 的費用</span>
+            <span className="text-gray-800 font-semibold"> 1/10 的費用</span>
             ，24 小時自動監測 AI 能見度
           </p>
 
           {/* 月繳 / 年繳切換 */}
           <div className="flex items-center justify-center gap-4 mt-8">
-            <span className={`text-sm ${!isYearly ? 'text-white' : 'text-white/40'}`}>月繳</span>
+            <span className={`text-sm ${!isYearly ? 'text-gray-800' : 'text-gray-400'}`}>月繳</span>
             <button
               onClick={() => setIsYearly(v => !v)}
-              className={`relative w-14 h-7 rounded-full transition-colors ${isYearly ? 'bg-purple-600' : 'bg-white/20'}`}
+              className={`relative w-14 h-7 rounded-full transition-colors ${isYearly ? 'bg-purple-600' : 'bg-orange-200'}`}
             >
               <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${isYearly ? 'translate-x-8' : 'translate-x-1'}`}></span>
             </button>
-            <span className={`text-sm ${isYearly ? 'text-white' : 'text-white/40'}`}>
+            <span className={`text-sm ${isYearly ? 'text-gray-800' : 'text-gray-400'}`}>
               年繳
               <span className="ml-2 px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">省 NT${savedAmount.toLocaleString()}</span>
             </span>
@@ -131,20 +133,20 @@ export default function Pricing() {
           {/* 免費版 */}
           <div className="flex flex-col">
             <div className="flex justify-center mb-2">
-              <span className="px-4 py-1 bg-white/10 text-white/70 text-xs font-bold rounded-full border border-white/20">立即體驗</span>
+              <span className="px-4 py-1 bg-orange-100 text-gray-500 text-xs font-bold rounded-full border border-orange-200">立即體驗</span>
             </div>
-          <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col flex-1">
+          <div className="p-8 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 flex flex-col flex-1">
             <div className="mb-6">
-              <div className="text-white/60 text-sm font-medium mb-2">免費版</div>
+              <div className="text-gray-500 text-sm font-medium mb-2">免費版</div>
               <div className="flex items-end gap-2 mb-1">
-                <span className="text-4xl font-bold text-white">NT$0</span>
+                <span className="text-4xl font-bold text-gray-800">NT$0</span>
               </div>
-              <p className="text-white/40 text-sm">永久免費，無需信用卡</p>
+              <p className="text-gray-400 text-sm">永久免費，無需信用卡</p>
             </div>
 
             <ul className="space-y-3 flex-1 mb-8">
               {FEATURES_FREE.map((f, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm text-white/70">
+                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-500">
                   <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
                   {f}
                 </li>
@@ -152,7 +154,7 @@ export default function Pricing() {
             </ul>
 
             <Link to="/"
-              className="w-full py-3 text-center bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors font-medium block">
+              className="w-full py-3 text-center bg-orange-100 border border-orange-200 text-gray-800 rounded-xl hover:bg-orange-200 transition-colors font-medium block">
               免費開始使用
             </Link>
           </div>
@@ -163,33 +165,33 @@ export default function Pricing() {
             <div className="flex justify-center mb-2">
               <span className="px-4 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold rounded-full">最多人選擇</span>
             </div>
-          <div className="p-8 bg-gradient-to-b from-purple-600/30 to-blue-600/20 rounded-2xl border border-purple-500/50 flex flex-col flex-1">
+          <div className="p-8 bg-gradient-to-b from-purple-100 to-blue-50 rounded-2xl border border-purple-300 flex flex-col flex-1">
 
             <div className="mb-6">
-              <div className="text-purple-300 text-sm font-medium mb-2">Pro 方案</div>
+              <div className="text-purple-600 text-sm font-medium mb-2">Pro 方案</div>
               {isYearly ? (
                 <>
                   <div className="flex items-end gap-2 mb-1">
-                    <span className="text-4xl font-bold text-white">NT${proYearlyPerMonth.toLocaleString()}</span>
-                    <span className="text-white/50 text-sm mb-1">／月</span>
+                    <span className="text-4xl font-bold text-gray-800">NT${proYearlyPerMonth.toLocaleString()}</span>
+                    <span className="text-gray-500 text-sm mb-1">／月</span>
                   </div>
-                  <p className="text-white/40 text-sm">年繳 NT${proYearly.toLocaleString()}（省 NT${savedAmount.toLocaleString()}）</p>
+                  <p className="text-gray-400 text-sm">年繳 NT${proYearly.toLocaleString()}（省 NT${savedAmount.toLocaleString()}）</p>
                 </>
               ) : (
                 <>
                   <div className="flex items-end gap-2 mb-1">
-                    <span className="text-4xl font-bold text-white">NT${proMonthly.toLocaleString()}</span>
-                    <span className="text-white/50 text-sm mb-1">／月</span>
+                    <span className="text-4xl font-bold text-gray-800">NT${proMonthly.toLocaleString()}</span>
+                    <span className="text-gray-500 text-sm mb-1">／月</span>
                   </div>
-                  <p className="text-white/40 text-sm">隨時取消，無綁約</p>
+                  <p className="text-gray-400 text-sm">隨時取消，無綁約</p>
                 </>
               )}
             </div>
 
             <ul className="space-y-3 flex-1 mb-8">
               {FEATURES_PRO.map((f, i) => (
-                <li key={i} className={`flex items-start gap-2.5 text-sm ${i === FEATURES_PRO.length - 1 ? 'text-white/40' : 'text-white/80'}`}>
-                  <span className={`mt-0.5 flex-shrink-0 ${i === FEATURES_PRO.length - 1 ? 'text-white/30' : 'text-purple-400'}`}>✓</span>
+                <li key={i} className={`flex items-start gap-2.5 text-sm ${i === FEATURES_PRO.length - 1 ? 'text-gray-400' : 'text-gray-800'}`}>
+                  <span className={`mt-0.5 flex-shrink-0 ${i === FEATURES_PRO.length - 1 ? 'text-gray-400' : 'text-purple-500'}`}>✓</span>
                   {f}
                 </li>
               ))}
@@ -197,10 +199,10 @@ export default function Pricing() {
 
             {isPro ? (
               <div className="space-y-2">
-                <div className="w-full py-3 text-center bg-green-500/20 text-green-400 rounded-xl font-semibold border border-green-500/30">
+                <div className="w-full py-3 text-center bg-green-500/20 text-green-600 rounded-xl font-semibold border border-green-500/30">
                   ✓ 目前方案
                 </div>
-                <Link to="/account" className="block w-full py-2 text-center text-white/30 hover:text-white/60 text-xs transition-colors">
+                <Link to="/account" className="block w-full py-2 text-center text-gray-400 hover:text-gray-600 text-xs transition-colors">
                   管理訂閱 →
                 </Link>
               </div>
@@ -218,30 +220,30 @@ export default function Pricing() {
           {/* Agency 版 */}
           <div className="flex flex-col">
             <div className="flex justify-center mb-2">
-              <span className="px-4 py-1 bg-white/10 text-white/60 text-xs font-bold rounded-full border border-white/20">即將推出</span>
+              <span className="px-4 py-1 bg-orange-100 text-gray-500 text-xs font-bold rounded-full border border-orange-200">即將推出</span>
             </div>
-          <div className="p-8 bg-white/5 rounded-2xl border border-white/10 flex flex-col flex-1">
+          <div className="p-8 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 flex flex-col flex-1">
 
             <div className="mb-6">
-              <div className="text-white/60 text-sm font-medium mb-2">Agency 方案</div>
+              <div className="text-gray-500 text-sm font-medium mb-2">Agency 方案</div>
               <div className="flex items-end gap-2 mb-1">
-                <span className="text-4xl font-bold text-white/40">NT$3,990</span>
-                <span className="text-white/30 text-sm mb-1">／月起</span>
+                <span className="text-4xl font-bold text-gray-400">NT$3,990</span>
+                <span className="text-gray-400 text-sm mb-1">／月起</span>
               </div>
-              <p className="text-white/30 text-sm">適合行銷公司、設計工作室</p>
+              <p className="text-gray-400 text-sm">適合行銷公司、設計工作室</p>
             </div>
 
             <ul className="space-y-3 flex-1 mb-8">
               {FEATURES_AGENCY.map((f, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm text-white/40">
-                  <span className="text-white/20 mt-0.5 flex-shrink-0">✓</span>
+                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-400">
+                  <span className="text-gray-300 mt-0.5 flex-shrink-0">✓</span>
                   {f}
                 </li>
               ))}
             </ul>
 
             <button disabled
-              className="w-full py-3 bg-white/5 text-white/30 rounded-xl cursor-not-allowed font-medium border border-white/10">
+              className="w-full py-3 bg-orange-100 text-gray-400 rounded-xl cursor-not-allowed font-medium border border-orange-200">
               候補通知（即將推出）
             </button>
           </div>
@@ -254,11 +256,11 @@ export default function Pricing() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl">🐣</span>
-                <span className="text-yellow-400 font-bold text-lg">早鳥優惠 — 前 100 名</span>
-                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full border border-yellow-500/30">限量</span>
+                <span className="text-yellow-600 font-bold text-lg">早鳥優惠 — 前 100 名</span>
+                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-600 text-xs rounded-full border border-yellow-500/30">限量</span>
               </div>
-              <p className="text-white/60 text-sm max-w-xl">
-                前 100 位付費用戶享 <span className="text-white font-semibold">NT$990／月永久鎖定</span>，即使未來漲價也不受影響。
+              <p className="text-gray-500 text-sm max-w-xl">
+                前 100 位付費用戶享 <span className="text-gray-800 font-semibold">NT$990／月永久鎖定</span>，即使未來漲價也不受影響。
                 成為創始用戶，同時獲得優先新功能體驗與直接回饋管道。
               </p>
             </div>
@@ -273,7 +275,7 @@ export default function Pricing() {
 
         {/* FAQ */}
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-white text-center mb-8">常見問題</h2>
+          <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">常見問題</h2>
           <div className="space-y-4">
             {[
               {
@@ -297,28 +299,29 @@ export default function Pricing() {
                 a: '預計 2026 年中推出。如果你是行銷公司或設計工作室，歡迎先用 Pro 方案，Agency 推出時會優先通知。',
               },
             ].map((item, i) => (
-              <details key={i} className="group p-6 bg-white/5 rounded-xl border border-white/10 cursor-pointer">
-                <summary className="flex items-center justify-between text-white font-medium list-none">
+              <details key={i} className="group p-6 bg-white/40 backdrop-blur-md rounded-xl border border-white/60 cursor-pointer">
+                <summary className="flex items-center justify-between text-gray-800 font-medium list-none">
                   {item.q}
-                  <span className="text-white/40 group-open:rotate-180 transition-transform text-lg flex-shrink-0 ml-4">↓</span>
+                  <span className="text-gray-400 group-open:rotate-180 transition-transform text-lg flex-shrink-0 ml-4">↓</span>
                 </summary>
-                <p className="mt-4 text-white/60 text-sm leading-relaxed">{item.a}</p>
+                <p className="mt-4 text-gray-500 text-sm leading-relaxed">{item.a}</p>
               </details>
             ))}
           </div>
         </div>
 
         {/* CTA 底部 */}
-        <div className="mt-20 text-center p-12 bg-white/5 rounded-2xl border border-white/10">
-          <h2 className="text-3xl font-bold text-white mb-3">現在就開始免費使用</h2>
-          <p className="text-white/50 mb-8">輸入網址，60 秒內取得 AI 能見度完整分析報告</p>
+        <div className="mt-20 text-center p-12 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60">
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">現在就開始免費使用</h2>
+          <p className="text-gray-500 mb-8">輸入網址，60 秒內取得 AI 能見度完整分析報告</p>
           <Link to="/"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-500/25 text-lg">
+            className="inline-flex items-center gap-2 px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-200 text-lg">
             免費檢測我的網站 →
           </Link>
         </div>
 
       </main>
+      </div>
     </div>
   )
 }

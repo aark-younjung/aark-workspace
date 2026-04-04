@@ -120,21 +120,23 @@ export default function Compare() {
   const isLoading = loadingStates.length > 0 && loadingStates.some(s => s === '分析中...')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #ffffff 78%)' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div className="relative">
       {/* Header */}
-      <header className="border-b border-white/10 bg-white/5 backdrop-blur-xl">
+      <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-white">優勢方舟數位行銷</span>
+            <span className="text-xl font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
           <nav className="flex items-center gap-6">
-            <Link to="/showcase" className="text-white/70 hover:text-white transition-colors text-sm">排行榜</Link>
-            <Link to="/" className="text-white/70 hover:text-white transition-colors text-sm">免費檢測</Link>
+            <Link to="/showcase" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
+            <Link to="/" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">免費檢測</Link>
           </nav>
         </div>
       </header>
@@ -142,18 +144,18 @@ export default function Compare() {
       <main className="max-w-6xl mx-auto px-6 py-12">
         {/* 標題 */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-white mb-3">競品比較分析</h1>
-          <p className="text-white/60">
+          <h1 className="text-4xl font-bold text-gray-800 mb-3">競品比較分析</h1>
+          <p className="text-gray-500">
             {isPro ? '同時比較最多 4 個網站的 SEO、AEO、GEO 分數與檢測項目' : '免費版可比較 2 個網站，升級 Pro 最多比較 4 個'}
           </p>
         </div>
 
         {/* URL 輸入區 */}
-        <div className="bg-white/5 rounded-2xl border border-white/10 p-8 mb-10">
+        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-8 mb-10">
           <div className="grid sm:grid-cols-2 gap-4 mb-6">
             {urls.map((url, i) => (
               <div key={i} className="flex gap-2 items-center">
-                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-purple-600/50 flex items-center justify-center text-white text-xs font-bold">
+                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
                   {i + 1}
                 </div>
                 <input
@@ -162,11 +164,11 @@ export default function Compare() {
                   onChange={e => updateUrl(i, e.target.value)}
                   placeholder={i === 0 ? '您的網站 (例如: yoursite.com)' : `競品 ${i} (例如: competitor${i}.com)`}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm disabled:opacity-50"
                 />
                 {urls.length > 2 && (
                   <button onClick={() => removeUrl(i)} disabled={isLoading}
-                    className="text-white/30 hover:text-red-400 transition-colors text-lg disabled:opacity-30">
+                    className="text-gray-400 hover:text-red-400 transition-colors text-lg disabled:opacity-30">
                     ✕
                   </button>
                 )}
@@ -177,17 +179,17 @@ export default function Compare() {
           <div className="flex items-center gap-4 flex-wrap">
             {urls.length < MAX_URLS && (
               <button onClick={addUrl} disabled={isLoading}
-                className="px-4 py-2 bg-white/10 text-white/60 hover:text-white rounded-lg text-sm transition-colors disabled:opacity-30">
+                className="px-4 py-2 bg-orange-100 border border-orange-200 text-gray-500 hover:text-gray-800 rounded-lg text-sm transition-colors disabled:opacity-30">
                 + 新增競品
               </button>
             )}
             {!isPro && urls.length >= MAX_URLS && (
-              <Link to="/dashboard" className="px-4 py-2 bg-orange-500/20 border border-orange-500/30 text-orange-300 rounded-lg text-sm hover:bg-orange-500/30 transition-colors">
+              <Link to="/dashboard" className="px-4 py-2 bg-orange-500/20 border border-orange-500/30 text-orange-600 rounded-lg text-sm hover:bg-orange-500/30 transition-colors">
                 🔒 升級 Pro 比較最多 4 個網站
               </Link>
             )}
             <button onClick={handleCompare} disabled={isLoading}
-              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-500/25">
+              className="px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-200">
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -205,9 +207,9 @@ export default function Compare() {
             <div className="flex flex-wrap gap-3 mt-5">
               {loadingStates.map((state, i) => (
                 <div key={i} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border ${
-                  state === '完成' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                  state === '失敗' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                  'bg-white/5 border-white/10 text-white/50'}`}>
+                  state === '完成' ? 'bg-green-500/10 border-green-500/20 text-green-600' :
+                  state === '失敗' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                  'bg-white/40 border-orange-100 text-gray-500'}`}>
                   {state === '分析中...' && <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>}
                   {state === '完成' && '✓'}
                   {state === '失敗' && '✗'}
@@ -225,16 +227,16 @@ export default function Compare() {
             {/* 總分概覽 */}
             <div className={`grid gap-4 mb-10 ${results.length === 2 ? 'grid-cols-2' : results.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
               {results.map((r, i) => (
-                <div key={i} className={`p-6 rounded-2xl border ${totalWinners[i] ? 'border-yellow-500/40 bg-yellow-500/5' : 'border-white/10 bg-white/5'}`}>
+                <div key={i} className={`p-6 rounded-2xl border ${totalWinners[i] ? 'border-yellow-500/40 bg-yellow-500/5' : 'border-white/60 bg-white/40 backdrop-blur-md'}`}>
                   {totalWinners[i] && (
-                    <div className="text-yellow-400 text-xs font-bold mb-2">🏆 最高分</div>
+                    <div className="text-yellow-600 text-xs font-bold mb-2">🏆 最高分</div>
                   )}
-                  <div className="text-white/40 text-xs mb-1 truncate">{r.hostname}</div>
+                  <div className="text-gray-400 text-xs mb-1 truncate">{r.hostname}</div>
                   <div className={`text-4xl font-bold mb-4 ${scoreColor(r.total)}`}>{r.total}</div>
                   <div className="space-y-2">
                     {[['SEO', r.seo?.score || 0, seoWinners[i]], ['AEO', r.aeo?.score || 0, aeoWinners[i]], ['GEO', r.geo?.score || 0, geoWinners[i]], ['E-E-A-T', r.eeat?.score || 0, eeatWinners[i]]].map(([label, score, winner]) => (
                       <div key={label} className="flex items-center justify-between">
-                        <span className="text-white/40 text-sm">{label}</span>
+                        <span className="text-gray-400 text-sm">{label}</span>
                         <span className={`text-sm font-bold ${scoreColor(score)} ${winner ? 'underline decoration-dotted' : ''}`}>
                           {score} {winner ? '↑' : ''}
                         </span>
@@ -253,10 +255,10 @@ export default function Compare() {
               { title: '🛡️ E-E-A-T 可信度', checks: EEAT_CHECKS },
             ].map(({ title, checks }) => (
               <div key={title} className="mb-8">
-                <h2 className="text-xl font-bold text-white mb-4">{title}</h2>
-                <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
+                <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 overflow-hidden">
                   {/* 表頭 */}
-                  <div className={`grid gap-2 px-6 py-3 border-b border-white/10 text-white/30 text-xs font-medium`}
+                  <div className={`grid gap-2 px-6 py-3 border-b border-orange-100 text-gray-400 text-xs font-medium`}
                     style={{ gridTemplateColumns: `1fr ${results.map(() => '1fr').join(' ')}` }}>
                     <div>檢測項目</div>
                     {results.map((r, i) => (
@@ -269,9 +271,9 @@ export default function Compare() {
                     const passCount = vals.filter(Boolean).length
                     return (
                       <div key={key}
-                        className="grid gap-2 px-6 py-3 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors items-center"
+                        className="grid gap-2 px-6 py-3 border-b border-orange-50 last:border-0 hover:bg-white/30 transition-colors items-center"
                         style={{ gridTemplateColumns: `1fr ${results.map(() => '1fr').join(' ')}` }}>
-                        <div className="text-white/70 text-sm">{label}</div>
+                        <div className="text-gray-500 text-sm">{label}</div>
                         {vals.map((v, i) => (
                           <div key={i} className="flex justify-center">
                             {v
@@ -288,18 +290,18 @@ export default function Compare() {
             ))}
 
             {/* 優劣分析摘要 */}
-            <div className="bg-white/5 rounded-2xl border border-white/10 p-8">
-              <h2 className="text-xl font-bold text-white mb-6">📊 比較摘要</h2>
+            <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-8">
+              <h2 className="text-xl font-bold text-gray-800 mb-6">📊 比較摘要</h2>
               <div className={`grid gap-4 ${results.length === 2 ? 'grid-cols-2' : results.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
                 {results.map((r, i) => {
                   const allChecks = [...SEO_CHECKS, ...AEO_CHECKS, ...GEO_CHECKS, ...EEAT_CHECKS]
                   const passCount = allChecks.filter(c => c.getValue(r)).length
                   const totalCount = allChecks.length
                   return (
-                    <div key={i} className={`p-5 rounded-xl border ${totalWinners[i] ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-white/10'}`}>
-                      <div className="text-white font-medium mb-1 truncate">{r.hostname}</div>
-                      <div className="text-white/40 text-xs mb-4">通過 {passCount} / {totalCount} 項</div>
-                      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div key={i} className={`p-5 rounded-xl border ${totalWinners[i] ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-white/60'}`}>
+                      <div className="text-gray-800 font-medium mb-1 truncate">{r.hostname}</div>
+                      <div className="text-gray-400 text-xs mb-4">通過 {passCount} / {totalCount} 項</div>
+                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div className={`h-2 rounded-full ${passCount / totalCount >= 0.7 ? 'bg-green-400' : passCount / totalCount >= 0.4 ? 'bg-yellow-400' : 'bg-red-400'}`}
                           style={{ width: `${(passCount / totalCount) * 100}%` }} />
                       </div>
@@ -311,6 +313,7 @@ export default function Compare() {
           </>
         )}
       </main>
+      </div>
     </div>
   )
 }

@@ -40,14 +40,15 @@ export default function Register() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
-        <div className="w-full max-w-md text-center">
+      <div className="min-h-screen relative flex items-center justify-center px-4" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #ffffff 78%)' }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+        <div className="w-full max-w-md text-center relative">
           <div className="text-6xl mb-6">🎉</div>
-          <h2 className="text-3xl font-bold text-white mb-3">註冊成功！</h2>
-          <p className="text-white/60 mb-2">請查看您的信箱並點擊確認連結</p>
-          <p className="text-white/40 text-sm mb-8">（確認後即可登入使用）</p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">註冊成功！</h2>
+          <p className="text-gray-500 mb-2">請查看您的信箱並點擊確認連結</p>
+          <p className="text-gray-400 text-sm mb-8">（確認後即可登入使用）</p>
           <Link to="/login"
-            className="inline-block px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all">
+            className="inline-block px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all">
             前往登入
           </Link>
         </div>
@@ -56,72 +57,73 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center px-4" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #ffffff 78%)' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div className="w-full max-w-md relative">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold text-white">優勢方舟數位行銷</span>
+            <span className="text-2xl font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">建立帳號</h1>
-          <p className="text-white/50">免費開始使用 AI 能見度檢測</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">建立帳號</h1>
+          <p className="text-gray-500">免費開始使用 AI 能見度檢測</p>
         </div>
 
         {/* 表單 */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
+        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-white/70 text-sm mb-2">姓名</label>
+              <label className="block text-gray-500 text-sm mb-2">姓名</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="您的姓名"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-white/70 text-sm mb-2">電子郵件</label>
+              <label className="block text-gray-500 text-sm mb-2">電子郵件</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-white/70 text-sm mb-2">密碼</label>
+              <label className="block text-gray-500 text-sm mb-2">密碼</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="至少 6 個字元"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-white/70 text-sm mb-2">確認密碼</label>
+              <label className="block text-gray-500 text-sm mb-2">確認密碼</label>
               <input
                 type="password"
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
                 placeholder="再輸入一次密碼"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
                 {error}
               </div>
             )}
@@ -131,9 +133,9 @@ export default function Register() {
                 type="checkbox"
                 checked={marketingConsent}
                 onChange={e => setMarketingConsent(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded accent-purple-500 cursor-pointer"
+                className="mt-0.5 w-4 h-4 rounded accent-orange-500 cursor-pointer"
               />
-              <span className="text-white/50 text-xs leading-relaxed">
+              <span className="text-gray-400 text-xs leading-relaxed">
                 我同意接收 AARK 的產品更新、優化建議與行銷資訊（可隨時取消）
               </span>
             </label>
@@ -141,22 +143,22 @@ export default function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-500/25">
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-200">
               {loading ? '註冊中...' : '免費註冊'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <span className="text-white/40 text-sm">已有帳號？</span>
-            <Link to="/login" className="text-purple-400 hover:text-purple-300 text-sm ml-1 font-medium">
+            <span className="text-gray-400 text-sm">已有帳號？</span>
+            <Link to="/login" className="text-orange-500 hover:text-orange-600 text-sm ml-1 font-medium">
               直接登入
             </Link>
           </div>
 
           <div className="flex items-center gap-3 mt-6">
-            <div className="flex-1 h-px bg-white/10"></div>
-            <span className="text-white/30 text-xs">或</span>
-            <div className="flex-1 h-px bg-white/10"></div>
+            <div className="flex-1 h-px bg-orange-100"></div>
+            <span className="text-gray-400 text-xs">或</span>
+            <div className="flex-1 h-px bg-orange-100"></div>
           </div>
 
           <button
@@ -188,7 +190,7 @@ export default function Register() {
         </div>
 
         <div className="mt-6 text-center">
-          <Link to="/" className="text-white/30 hover:text-white/60 text-sm transition-colors">
+          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
             ← 返回首頁
           </Link>
         </div>

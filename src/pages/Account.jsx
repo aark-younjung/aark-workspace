@@ -80,10 +80,11 @@ export default function Account() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen relative flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #ffffff 78%)' }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+        <div className="text-center relative">
           <p className="text-slate-500 mb-4">請先登入</p>
-          <Link to="/login" className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+          <Link to="/login" className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors">
             前往登入
           </Link>
         </div>
@@ -95,9 +96,11 @@ export default function Account() {
   const avatarUrl = user?.user_metadata?.avatar_url
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #ffffff 78%)' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div className="relative">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200">
+      <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-2xl mx-auto px-6 py-4 flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,13 +114,13 @@ export default function Account() {
       <main className="max-w-2xl mx-auto px-6 py-10 space-y-6">
 
         {/* 用戶資訊 */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-6">
+        <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xl font-bold">
+                <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-xl font-bold">
                   {initials}
                 </div>
               )}
@@ -132,7 +135,7 @@ export default function Account() {
                     Pro 方案
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-100 text-slate-500 text-xs font-semibold rounded-full">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-orange-100 text-orange-600 text-xs font-semibold rounded-full">
                     免費版
                   </span>
                 )}
@@ -142,12 +145,12 @@ export default function Account() {
         </section>
 
         {/* 方案管理 */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-6">
+        <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">
           <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">方案管理</h3>
 
           {isPro ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-slate-100">
+              <div className="flex items-center justify-between py-3 border-b border-orange-50">
                 <div>
                   <p className="text-slate-900 font-medium">目前方案</p>
                   <p className="text-slate-400 text-sm">
@@ -187,7 +190,7 @@ export default function Account() {
               </div>
               <Link
                 to="/pricing"
-                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-semibold rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all">
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-all">
                 查看方案
               </Link>
             </div>
@@ -195,14 +198,14 @@ export default function Account() {
         </section>
 
         {/* Email 週報 */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-6">
+        <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">
           <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-1">Email 週報</h3>
           <p className="text-slate-400 text-xs mb-4">每週一早上自動收到各網站的 AI 能見度報告</p>
 
           {!isPro ? (
             <div className="flex items-center justify-between">
               <p className="text-slate-400 text-sm">Pro 方案限定功能</p>
-              <Link to="/pricing" className="px-3 py-1.5 text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-semibold">
+              <Link to="/pricing" className="px-3 py-1.5 text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all">
                 升級 Pro
               </Link>
             </div>
@@ -225,7 +228,7 @@ export default function Account() {
         </section>
 
         {/* 登出 */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-6">
+        <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">
           <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">帳號操作</h3>
           <button
             onClick={handleSignOut}
@@ -238,6 +241,7 @@ export default function Account() {
         </section>
 
       </main>
+      </div>
     </div>
   )
 }
