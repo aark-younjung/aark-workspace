@@ -441,7 +441,7 @@ export default function Home() {
                 </div>
               </div>
               {/* 正左偏下：ClaudeBot — 內中圈 */}
-              <div className="absolute" style={{ top: '53%', left: '24%' }}>
+              <div className="absolute" style={{ top: '53%', left: '18%' }}>
                 <div className="px-3 py-1.5 bg-amber-100/80 backdrop-blur-sm border border-amber-200 rounded-full shadow-sm">
                   <span className="text-amber-700 text-xs font-semibold">ClaudeBot</span>
                 </div>
