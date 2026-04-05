@@ -512,13 +512,15 @@ export default function Home() {
             <div className="flex items-center gap-3 mb-6">
               <span className="text-2xl">📡</span>
               <div>
-                <h2 className="text-xl font-bold text-gray-800">即時爬蟲動態</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-800">即時爬蟲動態</h2>
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-600 text-xs font-medium rounded-full border border-green-200">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                    即時
+                  </span>
+                </div>
                 <p className="text-gray-400 text-xs mt-0.5">分析日誌衍生・每次檢測即更新</p>
               </div>
-              <span className="ml-auto flex items-center gap-1.5 text-xs text-green-400">
-                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                即時
-              </span>
             </div>
 
             {/* AI 爬蟲 */}
