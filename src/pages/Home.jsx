@@ -42,7 +42,7 @@ function BotLogo({ domain, color, size = 'md' }) {
   return (
     <div className={`${dim} rounded-full flex-shrink-0 bg-white flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm`}>
       <img
-        src={`https://logo.clearbit.com/${domain}`}
+        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
         alt={domain}
         className={`${imgDim} object-contain`}
         onError={(e) => {
