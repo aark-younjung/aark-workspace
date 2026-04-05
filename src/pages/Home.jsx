@@ -18,23 +18,41 @@ const timeAgo = (d) => {
 }
 
 const AI_BOTS = [
-  { name: 'GPTBot',       company: 'OpenAI',      color: '#10b981', ratio: 0.35, todayRatio: 0.38 },
-  { name: 'Google AI',    company: 'Google',       color: '#3b82f6', ratio: 0.18, todayRatio: 0.20 },
-  { name: 'ClaudeBot',    company: 'Anthropic',    color: '#f59e0b', ratio: 0.15, todayRatio: 0.14 },
-  { name: 'PerplexityBot',company: 'Perplexity',   color: '#06b6d4', ratio: 0.12, todayRatio: 0.11 },
-  { name: 'Meta AI',      company: 'Meta',          color: '#6366f1', ratio: 0.08, todayRatio: 0.07 },
-  { name: 'Amazonbot',    company: 'Amazon',        color: '#f97316', ratio: 0.06, todayRatio: 0.05 },
-  { name: 'NotebookLM',   company: 'Google',        color: '#eab308', ratio: 0.03, todayRatio: 0.03 },
-  { name: 'ChatGPT',      company: 'OpenAI',        color: '#14b8a6', ratio: 0.03, todayRatio: 0.02 },
+  { name: 'GPTBot',       company: 'OpenAI',      color: '#10b981', ratio: 0.35, todayRatio: 0.38, domain: 'openai.com' },
+  { name: 'Google AI',    company: 'Google',       color: '#3b82f6', ratio: 0.18, todayRatio: 0.20, domain: 'google.com' },
+  { name: 'ClaudeBot',    company: 'Anthropic',    color: '#f59e0b', ratio: 0.15, todayRatio: 0.14, domain: 'anthropic.com' },
+  { name: 'PerplexityBot',company: 'Perplexity',   color: '#06b6d4', ratio: 0.12, todayRatio: 0.11, domain: 'perplexity.ai' },
+  { name: 'Meta AI',      company: 'Meta',          color: '#6366f1', ratio: 0.08, todayRatio: 0.07, domain: 'meta.com' },
+  { name: 'Amazonbot',    company: 'Amazon',        color: '#f97316', ratio: 0.06, todayRatio: 0.05, domain: 'amazon.com' },
+  { name: 'NotebookLM',   company: 'Google',        color: '#eab308', ratio: 0.03, todayRatio: 0.03, domain: 'notebooklm.google.com' },
+  { name: 'ChatGPT',      company: 'OpenAI',        color: '#14b8a6', ratio: 0.03, todayRatio: 0.02, domain: 'openai.com' },
 ]
 
 const SE_BOTS = [
-  { name: 'Googlebot',   company: 'Google',       color: '#10b981', ratio: 0.40, todayRatio: 0.42 },
-  { name: 'Bingbot',     company: 'Microsoft',    color: '#3b82f6', ratio: 0.25, todayRatio: 0.24 },
-  { name: 'YandexBot',   company: 'Yandex',       color: '#ef4444', ratio: 0.20, todayRatio: 0.18 },
-  { name: 'DuckDuckBot', company: 'DuckDuckGo',   color: '#f97316', ratio: 0.10, todayRatio: 0.11 },
-  { name: 'Applebot',    company: 'Apple',         color: '#94a3b8', ratio: 0.05, todayRatio: 0.05 },
+  { name: 'Googlebot',   company: 'Google',       color: '#10b981', ratio: 0.40, todayRatio: 0.42, domain: 'google.com' },
+  { name: 'Bingbot',     company: 'Microsoft',    color: '#3b82f6', ratio: 0.25, todayRatio: 0.24, domain: 'bing.com' },
+  { name: 'YandexBot',   company: 'Yandex',       color: '#ef4444', ratio: 0.20, todayRatio: 0.18, domain: 'yandex.com' },
+  { name: 'DuckDuckBot', company: 'DuckDuckGo',   color: '#f97316', ratio: 0.10, todayRatio: 0.11, domain: 'duckduckgo.com' },
+  { name: 'Applebot',    company: 'Apple',         color: '#94a3b8', ratio: 0.05, todayRatio: 0.05, domain: 'apple.com' },
 ]
+
+function BotLogo({ domain, color, size = 'md' }) {
+  const dim = size === 'md' ? 'w-9 h-9' : 'w-8 h-8'
+  const imgDim = size === 'md' ? 'w-6 h-6' : 'w-5 h-5'
+  return (
+    <div className={`${dim} rounded-full flex-shrink-0 bg-white flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm`}>
+      <img
+        src={`https://logo.clearbit.com/${domain}`}
+        alt={domain}
+        className={`${imgDim} object-contain`}
+        onError={(e) => {
+          e.currentTarget.parentElement.style.background = `radial-gradient(circle at 35% 35%, white 0%, ${color} 60%)`
+          e.currentTarget.style.display = 'none'
+        }}
+      />
+    </div>
+  )
+}
 
 export default function Home() {
   const [url, setUrl] = useState('')
@@ -517,7 +535,7 @@ export default function Home() {
                 return (
                   <div key={i} className="p-4 bg-white/40 backdrop-blur-md rounded-xl border border-white/60 hover:border-orange-200 hover:bg-white/60 transition-all shadow-sm">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-9 h-9 rounded-full flex-shrink-0" style={{ background: `radial-gradient(circle at 35% 35%, white 0%, ${bot.color} 60%)` }}></div>
+                      <BotLogo domain={bot.domain} color={bot.color} size="md" />
                       <div className="min-w-0">
                         <div className="font-bold text-gray-800 text-sm truncate">{bot.name}</div>
                         <div className="text-gray-400 text-xs">{bot.company}</div>
@@ -549,7 +567,7 @@ export default function Home() {
                 return (
                   <div key={i} className="p-4 bg-white/40 backdrop-blur-md rounded-xl border border-white/60 hover:border-orange-200 hover:bg-white/60 transition-all shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ background: `radial-gradient(circle at 35% 35%, white 0%, ${bot.color} 60%)` }}></div>
+                      <BotLogo domain={bot.domain} color={bot.color} size="sm" />
                       <div className="min-w-0">
                         <div className="font-bold text-gray-800 text-xs truncate">{bot.name}</div>
                         <div className="text-gray-400 text-xs">{bot.company}</div>
