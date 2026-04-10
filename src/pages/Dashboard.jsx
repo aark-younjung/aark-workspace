@@ -80,6 +80,8 @@ export default function Dashboard() {
   const [gscData, setGscData] = useState(null)
   const [ga4Loading, setGa4Loading] = useState(false)
   const [gscLoading, setGscLoading] = useState(false)
+  const [ga4Error, setGa4Error] = useState('')
+  const [gscError, setGscError] = useState('')
   
   // Google Analytics 連接狀態
   const [googleConnected, setGoogleConnected] = useState(isGoogleConnected())
@@ -117,7 +119,14 @@ export default function Dashboard() {
       if (e.origin !== window.location.origin) return
       if (e.data?.type === 'GOOGLE_AUTH_SUCCESS') {
         setGoogleConnected(true)
-        setShowGoogleSettings(true)
+        // 若已有 Property ID / Site URL，直接拉取資料；否則開啟設定視窗
+        const savedPid = getPropertyId()
+        const savedUrl = getSiteUrl()
+        if (savedPid || savedUrl) {
+          fetchGA4GSCData(savedPid, savedUrl)
+        } else {
+          setShowGoogleSettings(true)
+        }
       }
     }
     window.addEventListener('message', handleMessage)
@@ -190,24 +199,41 @@ export default function Dashboard() {
     const siteUrl = surl ?? gscSiteUrl
     if (propId) {
       setGa4Loading(true)
+      setGa4Error('')
       try {
         const data = await getGA4Summary(propId, { startDate: '30daysAgo', endDate: 'today' })
         setGa4Data(data)
       } catch (error) {
-        if (error.message !== 'NOT_AUTHENTICATED') console.warn('GA4 data fetch failed:', error)
         setGa4Data(null)
+        if (error.message === 'NOT_AUTHENTICATED') {
+          setGa4Error('Google 授權已過期，請重新連接帳號')
+          setGoogleConnected(false)
+        } else if (error.message?.includes('403')) {
+          setGa4Error(`權限不足：請確認此 GA4 Property（${propId}）已授權給你的 Google 帳號`)
+        } else if (error.message?.includes('400')) {
+          setGa4Error(`Property ID 格式錯誤，請重新檢查（應為純數字，例如：123456789）`)
+        } else {
+          setGa4Error(`GA4 資料載入失敗：${error.message}`)
+        }
       } finally {
         setGa4Loading(false)
       }
     }
     if (siteUrl) {
       setGscLoading(true)
+      setGscError('')
       try {
         const data = await getGSCSummary(siteUrl, { startDate: '30daysAgo', endDate: 'today' })
         setGscData(data)
       } catch (error) {
-        if (error.message !== 'NOT_AUTHENTICATED') console.warn('GSC data fetch failed:', error)
         setGscData(null)
+        if (error.message === 'NOT_AUTHENTICATED') {
+          setGscError('Google 授權已過期，請重新連接帳號')
+        } else if (error.message?.includes('403')) {
+          setGscError(`權限不足：請確認此網站（${siteUrl}）已在 Search Console 驗證`)
+        } else {
+          setGscError(`GSC 資料載入失敗：${error.message}`)
+        }
       } finally {
         setGscLoading(false)
       }
@@ -935,6 +961,15 @@ ${siteTitle} — ${siteDesc}
             </h3>
             {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
           </div>
+          {ga4Error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+              <span className="text-red-500 flex-shrink-0">⚠️</span>
+              <div>
+                <p className="text-sm text-red-700 font-medium">{ga4Error}</p>
+                <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-red-500 underline mt-1">重新設定</button>
+              </div>
+            </div>
+          )}
           {ga4Data ? (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
@@ -1112,6 +1147,15 @@ ${siteTitle} — ${siteDesc}
             </h3>
             {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
           </div>
+          {gscError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+              <span className="text-red-500 flex-shrink-0">⚠️</span>
+              <div>
+                <p className="text-sm text-red-700 font-medium">{gscError}</p>
+                <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-red-500 underline mt-1">重新設定</button>
+              </div>
+            </div>
+          )}
           {gscData ? (
             <>
               <div className="grid md:grid-cols-4 gap-4 mb-4">
