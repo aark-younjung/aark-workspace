@@ -801,7 +801,7 @@ ${siteTitle} — ${siteDesc}
                   style={{ width: `${item.value}%`, backgroundColor: item.color }}
                 />
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">{item.detail}</p>
+              <p className="text-xs text-slate-700 leading-relaxed">{item.detail}</p>
             </div>
           ))}
         </div>
