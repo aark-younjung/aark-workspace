@@ -115,14 +115,14 @@ export default function Pricing() {
 
           {/* 月繳 / 年繳切換 */}
           <div className="flex items-center justify-center gap-4 mt-8">
-            <span className={`text-sm ${!isYearly ? 'text-gray-800' : 'text-gray-400'}`}>月繳</span>
+            <span className={`text-sm font-medium ${!isYearly ? 'text-gray-900' : 'text-gray-400'}`}>月繳</span>
             <button
               onClick={() => setIsYearly(v => !v)}
-              className={`relative w-14 h-7 rounded-full transition-colors ${isYearly ? 'bg-purple-600' : 'bg-orange-200'}`}
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${isYearly ? 'bg-purple-600' : 'bg-orange-400'}`}
             >
-              <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${isYearly ? 'translate-x-8' : 'translate-x-1'}`}></span>
+              <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${isYearly ? 'translate-x-7' : 'translate-x-0'}`}></span>
             </button>
-            <span className={`text-sm ${isYearly ? 'text-gray-800' : 'text-gray-400'}`}>
+            <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
               年繳
               <span className="ml-2 px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">省 NT${savedAmount.toLocaleString()}</span>
             </span>
