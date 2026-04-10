@@ -175,7 +175,7 @@ export default function GA4Report() {
         const { data: w } = await supabase.from('websites').select('*').eq('id', id).single()
         setWebsite(w)
         if (!isAuthenticated()) { setError('NOT_AUTHENTICATED'); setLoading(false); return }
-        const pid = getPropertyId()
+        const pid = getPropertyId(id)
         if (!pid) { setError('NO_PROPERTY'); setLoading(false); return }
         const [s, ch, pg, dv] = await Promise.all([
           getGA4Summary(pid),

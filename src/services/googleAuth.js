@@ -17,8 +17,6 @@ const SCOPES = [
 const TOKEN_KEYS = {
   accessToken: 'google_access_token',
   expiresAt: 'google_token_expires_at',
-  propertyId: 'ga4_property_id',
-  siteUrl: 'gsc_site_url',
 }
 
 /**
@@ -92,18 +90,26 @@ export function isAuthenticated() {
   return !!getAccessToken()
 }
 
-// GA4 Property ID 存取
-export function setPropertyId(id) { localStorage.setItem(TOKEN_KEYS.propertyId, id) }
-export function getPropertyId() { return localStorage.getItem(TOKEN_KEYS.propertyId) }
+// GA4 Property ID 存取（per website）
+export function setPropertyId(websiteId, propId) {
+  localStorage.setItem(`ga4_property_id_${websiteId}`, propId)
+}
+export function getPropertyId(websiteId) {
+  return localStorage.getItem(`ga4_property_id_${websiteId}`)
+}
 
-// GSC Site URL 存取
-export function setSiteUrl(url) { localStorage.setItem(TOKEN_KEYS.siteUrl, url) }
-export function getSiteUrl() { return localStorage.getItem(TOKEN_KEYS.siteUrl) }
+// GSC Site URL 存取（per website）
+export function setSiteUrl(websiteId, url) {
+  localStorage.setItem(`gsc_site_url_${websiteId}`, url)
+}
+export function getSiteUrl(websiteId) {
+  return localStorage.getItem(`gsc_site_url_${websiteId}`)
+}
 
-export function getAuthStatus() {
+export function getAuthStatus(websiteId) {
   return {
     isAuthenticated: isAuthenticated(),
-    propertyId: getPropertyId(),
-    siteUrl: getSiteUrl(),
+    propertyId: getPropertyId(websiteId),
+    siteUrl: getSiteUrl(websiteId),
   }
 }

@@ -217,7 +217,7 @@ export default function GSCReport() {
         const { data: w } = await supabase.from('websites').select('*').eq('id', id).single()
         setWebsite(w)
         if (!isAuthenticated()) { setError('NOT_AUTHENTICATED'); setLoading(false); return }
-        const siteUrl = getSiteUrl()
+        const siteUrl = getSiteUrl(id)
         if (!siteUrl) { setError('NO_SITE_URL'); setLoading(false); return }
         const [s, pg, dv] = await Promise.all([
           getGSCSummary(siteUrl),

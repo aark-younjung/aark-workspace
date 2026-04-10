@@ -85,11 +85,11 @@ export default function Dashboard() {
   
   // Google Analytics 連接狀態
   const [googleConnected, setGoogleConnected] = useState(isGoogleConnected())
-  const [ga4PropertyId, setGa4PropertyId] = useState(getPropertyId() || '')
-  const [gscSiteUrl, setGscSiteUrl] = useState(getSiteUrl() || '')
+  const [ga4PropertyId, setGa4PropertyId] = useState(getPropertyId(id) || '')
+  const [gscSiteUrl, setGscSiteUrl] = useState(getSiteUrl(id) || '')
   const [showGoogleSettings, setShowGoogleSettings] = useState(false)
-  const [ga4Input, setGa4Input] = useState(getPropertyId() || '')
-  const [gscInput, setGscInput] = useState(getSiteUrl() || '')
+  const [ga4Input, setGa4Input] = useState(getPropertyId(id) || '')
+  const [gscInput, setGscInput] = useState(getSiteUrl(id) || '')
 
   useEffect(() => {
     fetchData()
@@ -120,8 +120,8 @@ export default function Dashboard() {
       if (e.data?.type === 'GOOGLE_AUTH_SUCCESS') {
         setGoogleConnected(true)
         // 若已有 Property ID / Site URL，直接拉取資料；否則開啟設定視窗
-        const savedPid = getPropertyId()
-        const savedUrl = getSiteUrl()
+        const savedPid = getPropertyId(id)
+        const savedUrl = getSiteUrl(id)
         if (savedPid || savedUrl) {
           fetchGA4GSCData(savedPid, savedUrl)
         } else {
@@ -176,8 +176,8 @@ export default function Dashboard() {
   
   // 儲存 Google 設定並拉取數據
   const handleSaveGoogleSettings = () => {
-    if (ga4Input) { setPropertyId(ga4Input); setGa4PropertyId(ga4Input) }
-    if (gscInput) { setSiteUrl(gscInput); setGscSiteUrl(gscInput) }
+    if (ga4Input) { setPropertyId(id, ga4Input); setGa4PropertyId(ga4Input) }
+    if (gscInput) { setSiteUrl(id, gscInput); setGscSiteUrl(gscInput) }
     setShowGoogleSettings(false)
     fetchGA4GSCData(ga4Input, gscInput)
   }
