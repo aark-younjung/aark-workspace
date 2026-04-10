@@ -134,23 +134,61 @@ function ScanningOverlay({ logs, targetUrl }) {
         <div className="w-full max-w-5xl grid grid-cols-[1fr_300px] gap-5 h-[480px]">
 
           {/* 左側：SVG 節點網路 */}
-          <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 flex items-center justify-center shadow-sm">
+          <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 flex items-center justify-center shadow-sm overflow-hidden">
             <svg width="420" height="420" viewBox="0 0 420 420">
-              {/* 連線 */}
-              {SCAN_NODES.map(node => (
-                <line key={node.id}
-                  x1="210" y1="210" x2={node.x} y2={node.y}
-                  stroke={nodeColor(node.id)} strokeWidth="1.5"
-                  strokeDasharray="5,4" opacity="0.7"
-                />
+              <defs>
+                {/* 掃描線漸層 */}
+                <linearGradient id="scanGradScan" x1="0.5" y1="0.5" x2="1" y2="0.5">
+                  <stop offset="0%" stopColor="rgba(251,146,60,0)" />
+                  <stop offset="100%" stopColor="rgba(251,146,60,0.8)" />
+                </linearGradient>
+                {/* 節點通過光暈 */}
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+
+              {/* 流動虛線連線 */}
+              {SCAN_NODES.map((node) => {
+                const color = nodeColor(node.id)
+                const active = !!nodeStatus[node.id]
+                const dx = node.x - 210, dy = node.y - 210
+                const len = Math.sqrt(dx*dx + dy*dy)
+                return (
+                  <line key={node.id}
+                    x1="210" y1="210" x2={node.x} y2={node.y}
+                    stroke={color} strokeWidth={active ? 2 : 1}
+                    strokeDasharray="6,4" opacity={active ? 0.9 : 0.35}
+                  >
+                    {active && (
+                      <animate attributeName="stroke-dashoffset"
+                        from={len} to={0} dur="1.5s"
+                        repeatCount="indefinite" />
+                    )}
+                  </line>
+                )
+              })}
+
+              {/* 脈衝環：從圓心真正往外擴散 */}
+              {[0, 0.8, 1.6].map((delay, i) => (
+                <circle key={i} cx="210" cy="210" fill="none" stroke="#fb923c" strokeWidth="1.5">
+                  <animate attributeName="r" from="44" to="160" dur="2.4s" begin={`${delay}s`} repeatCount="indefinite" />
+                  <animate attributeName="opacity" from="0.6" to="0" dur="2.4s" begin={`${delay}s`} repeatCount="indefinite" />
+                </circle>
               ))}
 
+              {/* 旋轉掃描臂 */}
+              <g style={{ transformOrigin: '210px 210px', animation: 'radarSpin 3s linear infinite' }}>
+                <line x1="210" y1="210" x2="360" y2="210"
+                  stroke="url(#scanGradScan)" strokeWidth="2.5" opacity="0.85" />
+              </g>
+
               {/* 中心節點（網站） */}
-              <circle cx="210" cy="210" r="44" fill="white" stroke="#fed7aa" strokeWidth="2" />
-              <circle cx="210" cy="210" r="44" fill="none" stroke="#fb923c" strokeWidth="1.5" opacity="0.5"
-                style={{ animation: 'radarPulse 2s ease-out infinite' }} />
-              <text x="210" y="204" textAnchor="middle" fill="#374151" fontSize="18">🌐</text>
-              <text x="210" y="221" textAnchor="middle" fill="#6b7280" fontSize="9" fontWeight="500">
+              <circle cx="210" cy="210" r="44" fill="white" stroke="#fed7aa" strokeWidth="2.5" filter="url(#glow)" />
+              <circle cx="210" cy="210" r="44" fill="none" stroke="#fb923c" strokeWidth="1" opacity="0.4" />
+              <text x="210" y="204" textAnchor="middle" fill="#374151" fontSize="20">🌐</text>
+              <text x="210" y="222" textAnchor="middle" fill="#6b7280" fontSize="9" fontWeight="500">
                 {hostname.length > 20 ? hostname.slice(0, 18) + '…' : hostname}
               </text>
 
@@ -158,11 +196,22 @@ function ScanningOverlay({ logs, targetUrl }) {
               {SCAN_NODES.map(node => {
                 const color = nodeColor(node.id)
                 const active = !!nodeStatus[node.id]
+                const passed = nodeStatus[node.id] === 'pass'
                 return (
                   <g key={node.id}>
-                    <circle cx={node.x} cy={node.y} r="30" fill="white" stroke={color} strokeWidth={active ? 2 : 1} />
-                    {active && <circle cx={node.x} cy={node.y} r="30" fill={color} opacity="0.12" />}
-                    <text x={node.x} y={node.y + 1} textAnchor="middle" fill={color} fontSize="12" fontWeight="700" dominantBaseline="middle">
+                    <circle cx={node.x} cy={node.y} r="30" fill="white"
+                      stroke={color} strokeWidth={active ? 2.5 : 1}
+                      filter={passed ? 'url(#glow)' : undefined} />
+                    {active && <circle cx={node.x} cy={node.y} r="30" fill={color} opacity="0.15" />}
+                    {/* 亮起時的外圈 */}
+                    {passed && (
+                      <circle cx={node.x} cy={node.y} r="30" fill="none" stroke={color} strokeWidth="1" opacity="0.4">
+                        <animate attributeName="r" from="30" to="42" dur="1.2s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" from="0.5" to="0" dur="1.2s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                    <text x={node.x} y={node.y + 1} textAnchor="middle" fill={color}
+                      fontSize="13" fontWeight="800" dominantBaseline="middle">
                       {nodeIcon(node.id)}
                     </text>
                     <text x={node.x} y={node.y + 44} textAnchor="middle" fill="#6b7280" fontSize="8.5" fontWeight="500">
@@ -172,12 +221,14 @@ function ScanningOverlay({ logs, targetUrl }) {
                 )
               })}
 
-              {/* Bot 圖示 */}
+              {/* Bot 圖示（帶光暈） */}
               {SCAN_BOTS.map((bot) => (
                 <g key={bot.name}>
-                  <circle cx={bot.bx} cy={bot.by} r="18" fill="white" stroke={bot.color} strokeWidth="1.5"
-                    style={{ filter: `drop-shadow(0 0 4px ${bot.color}44)` }} />
-                  <text x={bot.bx} y={bot.by + 1} textAnchor="middle" fill={bot.color} fontSize="7.5" fontWeight="700" dominantBaseline="middle">
+                  <circle cx={bot.bx} cy={bot.by} r="20" fill="white" stroke={bot.color} strokeWidth="2"
+                    filter="url(#glow)" />
+                  <circle cx={bot.bx} cy={bot.by} r="20" fill={bot.color} opacity="0.08" />
+                  <text x={bot.bx} y={bot.by + 1} textAnchor="middle" fill={bot.color}
+                    fontSize="7.5" fontWeight="800" dominantBaseline="middle">
                     {bot.name.replace('Bot', '').replace('bot', '')}
                   </text>
                 </g>
