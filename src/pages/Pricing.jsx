@@ -3,14 +3,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const FEATURES_FREE = [
-  '追蹤最多 5 個網站',
+  '追蹤最多 3 個網站',
   'SEO / AEO / GEO / E-E-A-T 基本分析',
   'GA4 流量摘要（6 個數字）',
   'GSC 搜尋成效摘要（4 個數字）',
   'AI 優化建議（5 條通用方向）',
-  'llms.txt 自動生成',
-  '修復碼產生器',
-  '競品比較',
+  '文章內容分析（基本版）',
+  '競品比較（2 個網站）',
   '公開排行榜',
 ]
 
@@ -18,11 +17,14 @@ const FEATURES_PRO = [
   '追蹤最多 15 個網站',
   'AEO 每項檢測逐項修復建議',
   'SEO 詳情頁 3 階段優化路線圖',
+  '修復碼產生器（llms.txt / JSON-LD / FAQ Schema）',
+  '歷史趨勢圖（追蹤每次優化成效）',
   'GA4 進階：趨勢圖 + 智能洞察',
   'GSC 進階：趨勢圖 + 關鍵字排名表 + 建議',
+  '文章內容分析（完整修復建議）',
   'PDF 報告匯出',
   'Email 週報訂閱',
-  '競品比較',
+  '競品比較（最多 4 個網站）',
   'LINE 推播通知（即將推出）',
   '所有免費版功能',
 ]
@@ -280,7 +282,7 @@ export default function Pricing() {
             {[
               {
                 q: '免費版和 Pro 版最大的差別是什麼？',
-                a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」。包含逐項修復建議、3 階段 SEO 優化路線圖、GA4/GSC 進階趨勢圖，以及每週自動寄送 Email 週報。',
+                a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」。包含逐項修復建議、修復碼產生器（可直接複製 llms.txt / JSON-LD / FAQ Schema）、歷史趨勢圖、GA4/GSC 進階圖表，以及每週自動寄送 Email 週報。',
               },
               {
                 q: '可以隨時取消嗎？',
