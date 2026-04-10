@@ -15,6 +15,7 @@ import AdminSeed from './pages/AdminSeed'
 import Pricing from './pages/Pricing'
 import Account from './pages/Account'
 import FAQ from './pages/FAQ'
+import ContentAudit from './pages/ContentAudit'
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/account" element={<Account />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/content-audit" element={<ContentAudit />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

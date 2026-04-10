@@ -180,7 +180,7 @@ Amber: #f59e0b
 
 ## 待開發 / 未完成功能
 
-- `/content-audit`：文章內容分析頁（輸入文章 URL → 分析內容結構、關鍵字、AEO 友善度等），免費基本版 + Pro 完整版
+- ~~`/content-audit`~~：✅ 已完成。15 項檢測（內容結構/字數/Meta/AEO/E-E-A-T/可讀性），免費看分數+清單，Pro 解鎖修復建議
 - `/crawl-check`：爬蟲可達性專項檢測頁（含終端機日誌動畫），對標 washinmura.jp
 - GA4 / GSC 串接：API 已寫好，用戶授權流程待完善
 - Agency 方案升級流程

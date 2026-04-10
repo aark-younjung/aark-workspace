@@ -576,6 +576,7 @@ export default function Home() {
             <Link to="/showcase" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
             <Link to="/compare" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">競品比較</Link>
             <Link to="/pricing" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">定價</Link>
+            <Link to="/content-audit" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">文章分析</Link>
             <Link to="/faq" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">FAQ</Link>
             {user ? (
               <div className="flex items-center gap-3">
