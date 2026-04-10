@@ -366,6 +366,7 @@ export default function Home() {
           const { count } = await supabase
             .from('websites')
             .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
 
           if (count >= WEBSITE_LIMIT) {
             setLoading(false)
