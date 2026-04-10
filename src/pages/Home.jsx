@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -54,15 +54,192 @@ function BotLogo({ domain, color, size = 'md' }) {
   )
 }
 
+// 掃描動畫用的節點與 bot 設定
+const SCAN_NODES = [
+  { id: 'meta',    label: 'Meta 標籤',  x: 210, y: 58,  keys: ['meta', 'Meta'] },
+  { id: 'sitemap', label: 'Sitemap',    x: 316, y: 104, keys: ['sitemap'] },
+  { id: 'jsonld',  label: 'JSON-LD',   x: 358, y: 210, keys: ['JSON-LD', 'schema'] },
+  { id: 'og',      label: 'Open Graph', x: 316, y: 316, keys: ['Open Graph', 'og:'] },
+  { id: 'llms',    label: 'llms.txt',  x: 210, y: 362, keys: ['llms'] },
+  { id: 'robots',  label: 'robots.txt', x: 104, y: 316, keys: ['robots'] },
+  { id: 'h1',      label: 'H1 / Alt',  x: 62,  y: 210, keys: ['H1', 'Alt', '行動', '速度'] },
+  { id: 'eeat',    label: 'E-E-A-T',   x: 104, y: 104, keys: ['E-E-A-T', '作者', '聯絡', '隱私', '社群'] },
+]
+
+const SCAN_BOTS = [
+  { name: 'GPTBot',        color: '#10b981', bx: 278, by: 40  },
+  { name: 'ClaudeBot',     color: '#f59e0b', bx: 380, by: 272 },
+  { name: 'Googlebot',     color: '#3b82f6', bx: 142, by: 372 },
+  { name: 'Bingbot',       color: '#6366f1', bx: 40,  by: 148 },
+  { name: 'PerplexityBot', color: '#06b6d4', bx: 142, by: 40  },
+]
+
+function ScanningOverlay({ logs, targetUrl }) {
+  const logRef = useRef(null)
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
+  }, [logs])
+
+  // 從 log 推算每個節點的狀態
+  const nodeStatus = {}
+  logs.forEach(log => {
+    SCAN_NODES.forEach(node => {
+      if (node.keys.some(k => log.item.includes(k))) {
+        if (!nodeStatus[node.id] || nodeStatus[node.id] === 'checking') {
+          nodeStatus[node.id] = log.status
+        }
+      }
+    })
+  })
+
+  const nodeColor = (id) => {
+    const s = nodeStatus[id]
+    if (s === 'pass') return '#10b981'
+    if (s === 'fail') return '#ef4444'
+    if (s === 'checking') return '#f59e0b'
+    return '#cbd5e1'
+  }
+
+  const nodeIcon = (id) => {
+    const s = nodeStatus[id]
+    if (s === 'pass') return '✓'
+    if (s === 'fail') return '✗'
+    if (s === 'checking') return '…'
+    return '○'
+  }
+
+  const hostname = (() => { try { return new URL(targetUrl).hostname } catch { return targetUrl } })()
+  const botColorMap = Object.fromEntries(SCAN_BOTS.map(b => [b.name, b.color]))
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col" style={{
+      background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)'
+    }}>
+      {/* Header */}
+      <div className="flex items-center justify-center pt-6 pb-4 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">
+            {[0, 150, 300].map(d => (
+              <div key={d} className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+            ))}
+          </div>
+          <span className="text-gray-700 font-medium text-sm">正在掃描</span>
+          <span className="px-3 py-1 bg-white/70 rounded-full text-gray-800 font-semibold text-sm border border-white/80 shadow-sm">{hostname}</span>
+        </div>
+      </div>
+
+      {/* 主畫面 */}
+      <div className="flex-1 flex items-center justify-center px-6 pb-6">
+        <div className="w-full max-w-5xl grid grid-cols-[1fr_300px] gap-5 h-[480px]">
+
+          {/* 左側：SVG 節點網路 */}
+          <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 flex items-center justify-center shadow-sm">
+            <svg width="420" height="420" viewBox="0 0 420 420">
+              {/* 連線 */}
+              {SCAN_NODES.map(node => (
+                <line key={node.id}
+                  x1="210" y1="210" x2={node.x} y2={node.y}
+                  stroke={nodeColor(node.id)} strokeWidth="1.5"
+                  strokeDasharray="5,4" opacity="0.7"
+                />
+              ))}
+
+              {/* 中心節點（網站） */}
+              <circle cx="210" cy="210" r="44" fill="white" stroke="#fed7aa" strokeWidth="2" />
+              <circle cx="210" cy="210" r="44" fill="none" stroke="#fb923c" strokeWidth="1.5" opacity="0.5"
+                style={{ animation: 'radarPulse 2s ease-out infinite' }} />
+              <text x="210" y="204" textAnchor="middle" fill="#374151" fontSize="18">🌐</text>
+              <text x="210" y="221" textAnchor="middle" fill="#6b7280" fontSize="9" fontWeight="500">
+                {hostname.length > 20 ? hostname.slice(0, 18) + '…' : hostname}
+              </text>
+
+              {/* 檢查項目節點 */}
+              {SCAN_NODES.map(node => {
+                const color = nodeColor(node.id)
+                const active = !!nodeStatus[node.id]
+                return (
+                  <g key={node.id}>
+                    <circle cx={node.x} cy={node.y} r="30" fill="white" stroke={color} strokeWidth={active ? 2 : 1} />
+                    {active && <circle cx={node.x} cy={node.y} r="30" fill={color} opacity="0.12" />}
+                    <text x={node.x} y={node.y + 1} textAnchor="middle" fill={color} fontSize="12" fontWeight="700" dominantBaseline="middle">
+                      {nodeIcon(node.id)}
+                    </text>
+                    <text x={node.x} y={node.y + 44} textAnchor="middle" fill="#6b7280" fontSize="8.5" fontWeight="500">
+                      {node.label}
+                    </text>
+                  </g>
+                )
+              })}
+
+              {/* Bot 圖示 */}
+              {SCAN_BOTS.map((bot) => (
+                <g key={bot.name}>
+                  <circle cx={bot.bx} cy={bot.by} r="18" fill="white" stroke={bot.color} strokeWidth="1.5"
+                    style={{ filter: `drop-shadow(0 0 4px ${bot.color}44)` }} />
+                  <text x={bot.bx} y={bot.by + 1} textAnchor="middle" fill={bot.color} fontSize="7.5" fontWeight="700" dominantBaseline="middle">
+                    {bot.name.replace('Bot', '').replace('bot', '')}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          {/* 右側：終端機日誌 */}
+          <div className="bg-gray-950 rounded-2xl border border-gray-800 flex flex-col overflow-hidden shadow-xl">
+            {/* 視窗頂部 */}
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-800 flex-shrink-0">
+              <div className="w-3 h-3 rounded-full bg-red-500/80" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+              <div className="w-3 h-3 rounded-full bg-green-500/80" />
+              <span className="ml-2 text-gray-500 text-xs font-mono">AI Bot Scanner</span>
+              <span className="ml-auto flex items-center gap-1 text-xs text-green-400">
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                LIVE
+              </span>
+            </div>
+
+            {/* 日誌內容 */}
+            <div ref={logRef} className="flex-1 overflow-y-auto p-3 space-y-1.5 font-mono text-xs">
+              {logs.length === 0 ? (
+                <div className="text-gray-600 pt-2">等待分析開始<span className="animate-pulse">_</span></div>
+              ) : logs.map((log, i) => (
+                <div key={i} className="flex items-center gap-2 leading-relaxed">
+                  <span className="text-gray-600 flex-shrink-0 text-[10px]">{log.time}</span>
+                  <span className="flex-shrink-0 font-bold text-[11px]" style={{ color: botColorMap[log.bot] || '#94a3b8' }}>
+                    {log.bot.padEnd(13)}
+                  </span>
+                  <span className={`flex-shrink-0 font-bold ${log.status === 'pass' ? 'text-green-400' : log.status === 'fail' ? 'text-red-400' : 'text-yellow-400'}`}>
+                    {log.status === 'pass' ? '✓' : log.status === 'fail' ? '✗' : '⟳'}
+                  </span>
+                  <span className="text-gray-300 truncate">{log.item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
   const [recentScans, setRecentScans] = useState([])
   const [crawlerStats, setCrawlerStats] = useState(null)
+  const [scanLogs, setScanLogs] = useState([])
   const navigate = useNavigate()
   const { user, isPro, userName, signOut } = useAuth()
   const WEBSITE_LIMIT = isPro ? 15 : 5
+
+  const addLog = (bot, item, status) => {
+    const t = new Date()
+    const time = t.toTimeString().slice(0, 8)
+    setScanLogs(prev => [...prev, { time, bot, item, status, key: Math.random() }])
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -90,6 +267,7 @@ export default function Home() {
     if (!url) return
 
     setLoading(true)
+    setScanLogs([])
     setStatus('正在建立網站記錄...')
 
     try {
@@ -159,6 +337,8 @@ export default function Home() {
       }
 
       // 執行 SEO 分析
+      addLog('GPTBot', 'Meta 標籤', 'checking')
+      addLog('Googlebot', 'H1 結構', 'checking')
       setStatus('正在分析 Meta 標籤...')
       let seoResult = null
       try {
@@ -166,8 +346,14 @@ export default function Home() {
       } catch (seoError) {
         console.warn('SEO analysis failed:', seoError)
       }
+      addLog('GPTBot',        'Meta 標籤',   seoResult?.meta_tags          ? 'pass' : 'fail')
+      addLog('Googlebot',     'H1 結構',      seoResult?.h1_structure       ? 'pass' : 'fail')
+      addLog('Bingbot',       '行動版相容',   seoResult?.mobile_compatible  ? 'pass' : 'fail')
+      addLog('PerplexityBot', '頁面速度',     seoResult?.page_speed         ? 'pass' : 'fail')
 
       // 執行 AEO 分析
+      addLog('ClaudeBot',  'JSON-LD schema', 'checking')
+      addLog('GPTBot',     'Open Graph',     'checking')
       setStatus('正在分析 AEO 技術指標...')
       let aeoResult = null
       try {
@@ -175,8 +361,14 @@ export default function Home() {
       } catch (aeoError) {
         console.warn('AEO analysis failed:', aeoError)
       }
+      addLog('ClaudeBot',     'JSON-LD schema', aeoResult?.json_ld      ? 'pass' : 'fail')
+      addLog('GPTBot',        'FAQ schema',      aeoResult?.faq_schema   ? 'pass' : 'fail')
+      addLog('Googlebot',     'Open Graph',      aeoResult?.open_graph   ? 'pass' : 'fail')
+      addLog('Bingbot',       'Canonical URL',   aeoResult?.canonical    ? 'pass' : 'fail')
 
       // 執行 GEO 分析
+      addLog('GPTBot',    'robots.txt', 'checking')
+      addLog('ClaudeBot', 'llms.txt',   'checking')
       setStatus('正在分析 GEO 生成式 AI 優化...')
       let geoResult = null
       try {
@@ -184,8 +376,13 @@ export default function Home() {
       } catch (geoError) {
         console.warn('GEO analysis failed:', geoError)
       }
+      addLog('GPTBot',        'robots.txt',  geoResult?.robots_ai  ? 'pass' : 'fail')
+      addLog('ClaudeBot',     'llms.txt',    geoResult?.llms_txt   ? 'pass' : 'fail')
+      addLog('Googlebot',     'sitemap.xml', geoResult?.sitemap    ? 'pass' : 'fail')
+      addLog('PerplexityBot', 'HTTPS 安全',  geoResult?.https      ? 'pass' : 'fail')
 
       // 執行 E-E-A-T 分析
+      addLog('Bingbot', 'E-E-A-T 信任指標', 'checking')
       setStatus('正在分析 E-E-A-T 可信度指標...')
       let eeatResult = null
       try {
@@ -193,6 +390,10 @@ export default function Home() {
       } catch (eeatError) {
         console.warn('EEAT analysis failed:', eeatError)
       }
+      addLog('Bingbot',       '作者資訊',  eeatResult?.author_info    ? 'pass' : 'fail')
+      addLog('PerplexityBot', '聯絡頁面',  eeatResult?.contact_page   ? 'pass' : 'fail')
+      addLog('ClaudeBot',     '隱私政策',  eeatResult?.privacy_policy ? 'pass' : 'fail')
+      addLog('GPTBot',        '社群連結',  eeatResult?.social_links   ? 'pass' : 'fail')
 
       setStatus('正在儲存檢測結果...')
 
@@ -276,6 +477,8 @@ export default function Home() {
   }
 
   return (
+    <>
+    {loading && <ScanningOverlay logs={scanLogs} targetUrl={url} />}
     <div className="min-h-screen relative overflow-hidden" style={{
       background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)',
     }}>
@@ -615,5 +818,6 @@ export default function Home() {
         </div>
       </main>
     </div>
+    </>
   )
 }
