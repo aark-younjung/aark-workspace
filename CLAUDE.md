@@ -87,7 +87,7 @@ aark-workspace/
 
 | 資料表 | 用途 |
 |--------|------|
-| `profiles` | 用戶資料，含 `is_pro`（布林值，Pro 方案判斷） |
+| `profiles` | 用戶資料，含 `is_pro`（布林值，Pro 方案判斷）、`marketing_consent` |
 | `websites` | 被分析的網站（url, name） |
 | `seo_audits` | SEO 分析結果（JSONB） |
 | `aeo_audits` | AEO 分析結果 |
@@ -159,7 +159,8 @@ Amber: #f59e0b
 2. **部署：** `git push` 到 `main` 即自動部署 Vercel，無需手動操作
 3. **Pro 判斷：** 使用 `useAuth()` 取得的 `isPro`，來自 `profiles.is_pro`
 4. **SVG 動畫：** SVG 元素內的 pulse 動畫須用 `<animate>` 原生屬性（r、opacity），不可用 CSS scale（transform-origin 會跑位）
-5. **網站分析上限：** 目前已停用（測試中），原為 Free=5 / Pro=15 個網站
+5. **網站分析上限：** Free=3 個、Pro=15 個（Home.jsx 的 `WEBSITE_LIMIT` 已啟用）
+6. **文件同步：** 每次功能變動後，同步更新 `README.md`（版本記錄 + 方案對照表）和 `CLAUDE.md`（待開發功能、商業模式）
 
 ---
 
@@ -167,9 +168,11 @@ Amber: #f59e0b
 
 | 方案 | 月費 | 功能 |
 |------|------|------|
-| 免費版 | $0 | 基本四大面向分析、查看分數 |
-| Pro 版 | $2,000/月 | 完整建議、修復碼產生器、歷史趨勢、競品比較、PDF 匯出 |
+| 免費版 | $0 | 四大分析分數、各項通過/不通過清單、5 條優化建議、競品比較 2 個、文章分析基本版 |
+| Pro 版 | $2,000/月 | 修復碼產生器、歷史趨勢圖、平台別修復指南、競品比較 4 個、PDF 匯出、Email 週報、文章分析完整版 |
 | Agency 版 | 洽談 | 多客戶管理、白標報告 |
+
+**網站追蹤上限：** Free = 3 個、Pro = 15 個
 
 付款流程：Stripe Checkout → Webhook → `profiles.is_pro = true`
 
@@ -177,6 +180,7 @@ Amber: #f59e0b
 
 ## 待開發 / 未完成功能
 
+- `/content-audit`：文章內容分析頁（輸入文章 URL → 分析內容結構、關鍵字、AEO 友善度等），免費基本版 + Pro 完整版
 - `/crawl-check`：爬蟲可達性專項檢測頁（含終端機日誌動畫），對標 washinmura.jp
 - GA4 / GSC 串接：API 已寫好，用戶授權流程待完善
 - Agency 方案升級流程
