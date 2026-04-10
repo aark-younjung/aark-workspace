@@ -304,8 +304,8 @@ export default function Home() {
   const [crawlerStats, setCrawlerStats] = useState(null)
   const [scanLogs, setScanLogs] = useState([])
   const navigate = useNavigate()
-  const { user, userName, signOut } = useAuth()
-  // const WEBSITE_LIMIT = isPro ? 15 : 5  // disabled for testing
+  const { user, isPro, userName, signOut } = useAuth()
+  const WEBSITE_LIMIT = isPro ? 15 : 3
 
   const addLog = (bot, item, status) => {
     const t = new Date()
@@ -363,17 +363,16 @@ export default function Home() {
       } else {
         // 檢查網站數量上限（登入用戶才計算）
         if (user) {
-          await supabase
+          const { count } = await supabase
             .from('websites')
             .select('id', { count: 'exact', head: true })
 
-          // WEBSITE_LIMIT check disabled for testing
-          // if (count >= WEBSITE_LIMIT) {
-          //   setLoading(false)
-          //   setStatus('')
-          //   alert(`您已達到${isPro ? 'Pro' : '免費'}方案上限（${WEBSITE_LIMIT} 個網站）。${!isPro ? '\n升級 Pro 方案可追蹤最多 15 個網站！' : ''}`)
-          //   return
-          // }
+          if (count >= WEBSITE_LIMIT) {
+            setLoading(false)
+            setStatus('')
+            alert(`您已達到${isPro ? 'Pro' : '免費'}方案上限（${WEBSITE_LIMIT} 個網站）。${!isPro ? '\n升級 Pro 方案可追蹤最多 15 個網站！' : ''}`)
+            return
+          }
         }
 
         // 自動抓取網站名稱（og:site_name → title 品牌段 → hostname）
