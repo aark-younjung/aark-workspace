@@ -333,8 +333,7 @@ export default function Home() {
             </p>
 
             <p className="text-base text-slate-500 mb-10 max-w-lg">
-              全面檢測您的網站 SEO、AEO 與 Google 商家表現，
-              讓 AI 搜尋引擎看見您的品牌價值
+              全面檢測您的網站 SEO、AEO 與 GEO，讓 AI 搜尋引擎看見您的品牌價值
             </p>
 
             {/* URL Input Form */}
