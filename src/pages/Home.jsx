@@ -275,6 +275,27 @@ function ScanningOverlay({ logs, targetUrl }) {
   )
 }
 
+function HomeFAQItem({ q, a }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl overflow-hidden shadow-sm">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-6 py-4 text-left gap-4"
+      >
+        <span className="font-semibold text-slate-800 text-sm">{q}</span>
+        <span className={`text-orange-500 flex-shrink-0 text-lg transition-transform duration-200 ${open ? 'rotate-45' : ''}`}>+</span>
+      </button>
+      {open && (
+        <div className="px-6 pb-5">
+          <div className="h-px bg-orange-100 mb-4" />
+          <p className="text-slate-600 text-sm leading-relaxed">{a}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Home() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
@@ -283,8 +304,8 @@ export default function Home() {
   const [crawlerStats, setCrawlerStats] = useState(null)
   const [scanLogs, setScanLogs] = useState([])
   const navigate = useNavigate()
-  const { user, isPro, userName, signOut } = useAuth()
-  const WEBSITE_LIMIT = isPro ? 15 : 5
+  const { user, userName, signOut } = useAuth()
+  // const WEBSITE_LIMIT = isPro ? 15 : 5  // disabled for testing
 
   const addLog = (bot, item, status) => {
     const t = new Date()
@@ -342,16 +363,17 @@ export default function Home() {
       } else {
         // 檢查網站數量上限（登入用戶才計算）
         if (user) {
-          const { count } = await supabase
+          await supabase
             .from('websites')
             .select('id', { count: 'exact', head: true })
 
-          if (count >= WEBSITE_LIMIT) {
-            setLoading(false)
-            setStatus('')
-            alert(`您已達到${isPro ? 'Pro' : '免費'}方案上限（${WEBSITE_LIMIT} 個網站）。${!isPro ? '\n升級 Pro 方案可追蹤最多 15 個網站！' : ''}`)
-            return
-          }
+          // WEBSITE_LIMIT check disabled for testing
+          // if (count >= WEBSITE_LIMIT) {
+          //   setLoading(false)
+          //   setStatus('')
+          //   alert(`您已達到${isPro ? 'Pro' : '免費'}方案上限（${WEBSITE_LIMIT} 個網站）。${!isPro ? '\n升級 Pro 方案可追蹤最多 15 個網站！' : ''}`)
+          //   return
+          // }
         }
 
         // 自動抓取網站名稱（og:site_name → title 品牌段 → hostname）
@@ -555,6 +577,7 @@ export default function Home() {
             <Link to="/showcase" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
             <Link to="/compare" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">競品比較</Link>
             <Link to="/pricing" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">定價</Link>
+            <Link to="/faq" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">FAQ</Link>
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-slate-600 text-sm">👤 {userName}</span>
@@ -866,6 +889,29 @@ export default function Home() {
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-500/25">
             查看 AI 能見度排行榜 →
           </Link>
+        </div>
+
+        {/* FAQ 精簡區塊 */}
+        <div className="mt-16">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">常見問題</h2>
+            <p className="text-slate-500 text-sm">關於 SEO、AEO、GEO 與 E-E-A-T 的快速解答</p>
+          </div>
+          <div className="space-y-3">
+            {[
+              { q: '什麼是 AI 能見度？', a: 'AI 能見度是指你的網站在 ChatGPT、Perplexity、Google AI 等平台中被「看見」並「引用」的能力。傳統 SEO 讓你出現在 Google，AI 能見度讓你出現在 AI 的回答中。' },
+              { q: 'SEO、AEO、GEO、E-E-A-T 有什麼不同？', a: 'SEO 讓搜尋引擎找到你；AEO 讓 AI 直接引用你的答案；GEO 讓生成式 AI 在回答中推薦你；E-E-A-T 建立品牌可信度，影響前三者的評分。四者互補，缺一不可。' },
+              { q: '分析需要多久？需要安裝什麼嗎？', a: '不需要安裝任何東西。輸入網址後約 15–30 秒即可看到完整報告，系統會自動爬取並分析你的網站。' },
+              { q: '分數低要怎麼辦？', a: '儀表板的「AI 優化工具」會根據你的失敗項目，自動列出最重要的 5 條改善行動，並提供可直接複製的修復程式碼（llms.txt、JSON-LD、FAQ Schema）。' },
+            ].map((item, i) => (
+              <HomeFAQItem key={i} q={item.q} a={item.a} />
+            ))}
+          </div>
+          <div className="text-center mt-6">
+            <Link to="/faq" className="text-orange-500 hover:text-orange-600 text-sm font-medium transition-colors">
+              查看所有常見問題 →
+            </Link>
+          </div>
         </div>
       </main>
     </div>

@@ -337,10 +337,10 @@ export default function Dashboard() {
   })
 
   const scoreData = [
-    { name: 'SEO', value: seoScore, color: '#3b82f6' },
-    { name: 'AEO', value: aeoScore, color: '#8b5cf6' },
-    { name: 'GEO', value: geoScore, color: '#10b981' },
-    { name: 'E-E-A-T', value: eeatScore, color: '#f59e0b' },
+    { name: 'SEO', value: seoScore, color: '#3b82f6', icon: '🔍', desc: '讓 Google 搜尋找到你', detail: '搜尋引擎最佳化（SEO）讓你的網站在 Google、Bing 等搜尋結果中排名更高，帶來更多自然流量。' },
+    { name: 'AEO', value: aeoScore, color: '#8b5cf6', icon: '🤖', desc: '讓 AI 直接回答關於你', detail: 'AI 引擎最佳化（AEO）讓 ChatGPT、Siri、Google AI 等助理在回答問題時，能直接引用你的內容或推薦你的品牌。' },
+    { name: 'GEO', value: geoScore, color: '#10b981', icon: '🌐', desc: '讓 AI 生成式搜尋引用你', detail: '生成式引擎最佳化（GEO）讓 ChatGPT、Perplexity、Gemini 等 AI 在生成答案時，能主動提及並連結你的品牌。' },
+    { name: 'E-E-A-T', value: eeatScore, color: '#f59e0b', icon: '🏆', desc: '建立品牌專業度與可信度', detail: '經驗、專業、權威、信任（E-E-A-T）是 Google 評估網站可信度的核心標準，影響你在 AI 時代被推薦的機率。' },
   ]
 
   const eeatChecks = [
@@ -782,21 +782,26 @@ ${siteTitle} — ${siteDesc}
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* 總分數卡片 */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
           {scoreData.map((item) => (
             <div key={item.name} className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-700">{item.name} 分數</h3>
-                <span className={`text-3xl font-bold`} style={{ color: item.color }}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{item.icon}</span>
+                  <h3 className="font-semibold text-slate-700">{item.name}</h3>
+                </div>
+                <span className="text-3xl font-bold" style={{ color: item.color }}>
                   {item.value}
                 </span>
               </div>
-              <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
+              <p className="text-xs font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
+              <div className="h-2 bg-orange-100 rounded-full overflow-hidden mb-3">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${item.value}%`, backgroundColor: item.color }}
                 />
               </div>
+              <p className="text-xs text-slate-400 leading-relaxed">{item.detail}</p>
             </div>
           ))}
         </div>

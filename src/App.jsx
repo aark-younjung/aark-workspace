@@ -14,6 +14,7 @@ import GoogleAuthCallback from './pages/GoogleAuthCallback'
 import AdminSeed from './pages/AdminSeed'
 import Pricing from './pages/Pricing'
 import Account from './pages/Account'
+import FAQ from './pages/FAQ'
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route path="/admin/seed" element={<AdminSeed />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/faq" element={<FAQ />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
