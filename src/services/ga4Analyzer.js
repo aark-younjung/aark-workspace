@@ -44,6 +44,61 @@ function parseGA4Response(response) {
   return { summary, timeline }
 }
 
+async function ga4Request(propertyId, reportType, options = {}) {
+  const token = getAccessToken()
+  if (!token) throw new Error('NOT_AUTHENTICATED')
+  const res = await fetch('/api/ga4-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      propertyId,
+      reportType,
+      startDate: options.startDate || '30daysAgo',
+      endDate: options.endDate || 'today',
+    }),
+  })
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'GA4 fetch failed') }
+  return res.json()
+}
+
+export async function getGA4Channels(propertyId, options = {}) {
+  const raw = await ga4Request(propertyId, 'channels', options)
+  if (!raw.rows) return []
+  return raw.rows.map(row => ({
+    channel: row.dimensionValues[0].value,
+    sessions: parseInt(row.metricValues[0].value) || 0,
+    activeUsers: parseInt(row.metricValues[1].value) || 0,
+    newUsers: parseInt(row.metricValues[2].value) || 0,
+    bounceRate: Math.round(parseFloat(row.metricValues[3].value) * 100) || 0,
+    engagedSessions: parseInt(row.metricValues[4].value) || 0,
+  }))
+}
+
+export async function getGA4TopPages(propertyId, options = {}) {
+  const raw = await ga4Request(propertyId, 'pages', options)
+  if (!raw.rows) return []
+  return raw.rows.map(row => ({
+    path: row.dimensionValues[0].value,
+    title: row.dimensionValues[1].value,
+    pageViews: parseInt(row.metricValues[0].value) || 0,
+    users: parseInt(row.metricValues[1].value) || 0,
+    bounceRate: Math.round(parseFloat(row.metricValues[2].value) * 100) || 0,
+    avgDuration: Math.round(parseFloat(row.metricValues[3].value)),
+    engagedSessions: parseInt(row.metricValues[4].value) || 0,
+  }))
+}
+
+export async function getGA4Devices(propertyId, options = {}) {
+  const raw = await ga4Request(propertyId, 'devices', options)
+  if (!raw.rows) return []
+  return raw.rows.map(row => ({
+    device: row.dimensionValues[0].value,
+    sessions: parseInt(row.metricValues[0].value) || 0,
+    users: parseInt(row.metricValues[1].value) || 0,
+    bounceRate: Math.round(parseFloat(row.metricValues[2].value) * 100) || 0,
+  }))
+}
+
 export async function getGA4Summary(propertyId, options = {}) {
   if (!propertyId) throw new Error('GA4 Property ID is required')
 

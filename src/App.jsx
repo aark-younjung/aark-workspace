@@ -16,6 +16,8 @@ import Pricing from './pages/Pricing'
 import Account from './pages/Account'
 import FAQ from './pages/FAQ'
 import ContentAudit from './pages/ContentAudit'
+import GA4Report from './pages/GA4Report'
+import GSCReport from './pages/GSCReport'
 
 function App() {
   return (
@@ -38,6 +40,8 @@ function App() {
           <Route path="/account" element={<Account />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/content-audit" element={<ContentAudit />} />
+          <Route path="/ga4-report/:id" element={<GA4Report />} />
+          <Route path="/gsc-report/:id" element={<GSCReport />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

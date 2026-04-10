@@ -3,7 +3,7 @@
  * 代理 Google Search Console API 請求
  *
  * Headers: Authorization: Bearer <google_access_token>
- * Body: { siteUrl, startDate?, endDate? }
+ * Body: { siteUrl, startDate?, endDate?, dimensions?, rowLimit? }
  */
 
 function toGSCDate(dateStr) {
@@ -18,7 +18,7 @@ function toGSCDate(dateStr) {
     const d = new Date(now); d.setDate(d.getDate() - parseInt(match[1]))
     return d.toISOString().split('T')[0]
   }
-  return dateStr // 已是 YYYY-MM-DD
+  return dateStr
 }
 
 export default async function handler(req, res) {
@@ -35,7 +35,13 @@ export default async function handler(req, res) {
   }
 
   const accessToken = authHeader.slice(7)
-  const { siteUrl, startDate = '30daysAgo', endDate = 'today' } = req.body
+  const {
+    siteUrl,
+    startDate = '30daysAgo',
+    endDate = 'today',
+    dimensions = ['date', 'query'],
+    rowLimit = 500,
+  } = req.body
 
   if (!siteUrl) return res.status(400).json({ error: 'siteUrl 必填' })
 
@@ -52,8 +58,8 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           startDate: toGSCDate(startDate),
           endDate: toGSCDate(endDate),
-          dimensions: ['date', 'query'],
-          rowLimit: 100,
+          dimensions,
+          rowLimit,
           startRow: 0,
         }),
       }

@@ -80,6 +80,48 @@ function parseGSCResponse(response) {
   return { summary, timeline, topQueries }
 }
 
+async function gscRequest(siteUrl, dimensions, rowLimit, options = {}) {
+  const token = getAccessToken()
+  if (!token) throw new Error('NOT_AUTHENTICATED')
+  const res = await fetch('/api/gsc-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      siteUrl,
+      startDate: options.startDate || '30daysAgo',
+      endDate: options.endDate || 'today',
+      dimensions,
+      rowLimit,
+    }),
+  })
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'GSC fetch failed') }
+  return res.json()
+}
+
+export async function getGSCTopPages(siteUrl, options = {}) {
+  const raw = await gscRequest(siteUrl, ['page'], 50, options)
+  if (!raw.rows) return []
+  return raw.rows.map(row => ({
+    page: row.keys[0],
+    clicks: row.clicks || 0,
+    impressions: row.impressions || 0,
+    ctr: row.ctr || 0,
+    position: row.position || 0,
+  }))
+}
+
+export async function getGSCDevices(siteUrl, options = {}) {
+  const raw = await gscRequest(siteUrl, ['device'], 5, options)
+  if (!raw.rows) return []
+  return raw.rows.map(row => ({
+    device: row.keys[0],
+    clicks: row.clicks || 0,
+    impressions: row.impressions || 0,
+    ctr: row.ctr || 0,
+    position: row.position || 0,
+  }))
+}
+
 export async function getGSCSummary(siteUrl, options = {}) {
   if (!siteUrl) throw new Error('GSC Site URL is required')
 

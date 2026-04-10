@@ -20,43 +20,70 @@ export default async function handler(req, res) {
   }
 
   const accessToken = authHeader.slice(7)
-  const { propertyId, startDate = '30daysAgo', endDate = 'today' } = req.body
+  const { propertyId, startDate = '30daysAgo', endDate = 'today', reportType = 'daily' } = req.body
 
   if (!propertyId) return res.status(400).json({ error: 'propertyId 必填' })
+
+  const CONFIGS = {
+    daily: {
+      dimensions: [{ name: 'date' }],
+      metrics: [
+        { name: 'sessions' }, { name: 'activeUsers' }, { name: 'bounceRate' },
+        { name: 'screenPageViews' }, { name: 'newUsers' }, { name: 'engagedSessions' },
+      ],
+      orderBys: [{ dimension: { dimensionName: 'date' } }],
+      limit: 90,
+    },
+    channels: {
+      dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+      metrics: [
+        { name: 'sessions' }, { name: 'activeUsers' }, { name: 'newUsers' },
+        { name: 'bounceRate' }, { name: 'engagedSessions' },
+      ],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 10,
+    },
+    pages: {
+      dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
+      metrics: [
+        { name: 'screenPageViews' }, { name: 'activeUsers' }, { name: 'bounceRate' },
+        { name: 'averageSessionDuration' }, { name: 'engagedSessions' },
+      ],
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 20,
+    },
+    devices: {
+      dimensions: [{ name: 'deviceCategory' }],
+      metrics: [{ name: 'sessions' }, { name: 'activeUsers' }, { name: 'bounceRate' }],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 5,
+    },
+  }
+
+  const config = CONFIGS[reportType] || CONFIGS.daily
 
   try {
     const response = await fetch(
       `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           dateRanges: [{ startDate, endDate }],
-          dimensions: [{ name: 'date' }],
-          metrics: [
-            { name: 'sessions' },
-            { name: 'activeUsers' },
-            { name: 'bounceRate' },
-            { name: 'screenPageViews' },
-            { name: 'newUsers' },
-            { name: 'engagedSessions' },
-          ],
-          orderBys: [{ dimension: { dimensionName: 'date' } }],
+          dimensions: config.dimensions,
+          metrics: config.metrics,
+          orderBys: config.orderBys,
+          limit: config.limit,
         }),
       }
     )
 
     const data = await response.json()
-
     if (!response.ok) {
       const msg = data.error?.message || 'GA4 API 錯誤'
       console.error('GA4 API error:', msg)
       return res.status(response.status).json({ error: msg })
     }
-
     return res.status(200).json(data)
   } catch (err) {
     console.error('GA4 proxy error:', err)

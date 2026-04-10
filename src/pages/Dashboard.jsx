@@ -959,7 +959,10 @@ ${siteTitle} — ${siteDesc}
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
               <span className="text-xl">📊</span> GA4 網站流量分析<InfoTooltip text={`串接 Google Analytics 4 顯示真實流量數據\n・工作階段：用戶造訪網站的次數\n・活躍使用者：實際與網站互動的人數\n・跳出率：只看一頁就離開的比例（越低越好）\n・互動率：有效互動工作階段的比例（越高越好）\n・新使用者：首次造訪的訪客比例\n系統會根據數據自動給出優化建議`} />
             </h3>
-            {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
+            <div className="flex items-center gap-3">
+              {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
+              {ga4Data && <Link to={`/ga4-report/${id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">查看詳情 →</Link>}
+            </div>
           </div>
           {ga4Error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
@@ -1145,7 +1148,10 @@ ${siteTitle} — ${siteDesc}
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
               <span className="text-xl">🔍</span> Google Search Console 搜尋成效<InfoTooltip text={`顯示網站在 Google 搜尋結果的真實表現\n・曝光次數：網站出現在搜尋結果的次數\n・點擊次數：用戶實際點進網站的次數\n・點擊率 CTR：曝光中有多少人點擊（越高越好）\n・平均排名：關鍵字在 Google 的平均位置\n・機會關鍵字：排名第 4–10 名、稍加優化就能衝進前三的關鍵字`} />
             </h3>
-            {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
+            <div className="flex items-center gap-3">
+              {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
+              {gscData && <Link to={`/gsc-report/${id}`} className="text-green-600 hover:text-green-700 text-sm font-medium">查看詳情 →</Link>}
+            </div>
           </div>
           {gscError && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">

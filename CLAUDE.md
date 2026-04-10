@@ -114,6 +114,9 @@ aark-workspace/
 | `/compare` | Compare | 競品比較 |
 | `/pricing` | Pricing | 定價 |
 | `/faq` | FAQ | 常見問題 |
+| `/content-audit` | ContentAudit | 文章內容分析（15 項檢測，Pro 解鎖修復建議）|
+| `/ga4-report/:id` | GA4Report | GA4 詳細報告（趨勢/流量來源/熱門頁面/建議引擎）|
+| `/gsc-report/:id` | GSCReport | GSC 詳細報告（趨勢/關鍵字分析/機會/建議引擎）|
 | `/login` | Login | 登入 |
 | `/register` | Register | 註冊 |
 | `/account` | Account | 帳號設定 |
@@ -181,8 +184,9 @@ Amber: #f59e0b
 ## 待開發 / 未完成功能
 
 - ~~`/content-audit`~~：✅ 已完成。15 項檢測（內容結構/字數/Meta/AEO/E-E-A-T/可讀性），免費看分數+清單，Pro 解鎖修復建議
+- ~~`/ga4-report/:id`~~：✅ 已完成。GA4 詳細報告（KPI 卡片、健康指標條、5 分頁 Tabs、建議引擎）
+- ~~`/gsc-report/:id`~~：✅ 已完成。GSC 詳細報告（KPI 卡片、健康指標條、5 分頁 Tabs、機會關鍵字、建議引擎）
 - `/crawl-check`：爬蟲可達性專項檢測頁（含終端機日誌動畫），對標 washinmura.jp
-- GA4 / GSC 串接：API 已寫好，用戶授權流程待完善
 - Agency 方案升級流程
 - n8n 自動化排程（設計已完成，待串接）
 - 每週報告 Email（`/api/cron-weekly-reports.js` 已建，每週一 09:00）
