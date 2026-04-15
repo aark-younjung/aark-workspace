@@ -725,8 +725,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           ))}
         </div>
 
-        {/* Tab 導覽列 */}
-        <div className="flex gap-1 mb-8 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-1.5 shadow-sm">
+        {/* Tab 頁籤列 */}
+        <div className="flex border-b border-orange-200 mb-8">
           {[
             { id: 'overview', label: '總覽', icon: '📊' },
             { id: 'traffic', label: '流量數據', icon: '📈' },
@@ -736,10 +736,10 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition-all ${
                 activeTab === tab.id
-                  ? 'bg-white shadow-sm text-slate-800'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
               <span>{tab.icon}</span>
