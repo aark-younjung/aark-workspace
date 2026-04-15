@@ -20,19 +20,22 @@ export default function AdminDashboard() {
       const [
         { count: totalUsers },
         { count: proUsers },
-        { count: totalWebsites },
+        { data: totalWebsites },
         { data: recent },
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_pro', true),
-        supabase.from('websites').select('*', { count: 'exact', head: true }),
+        supabase.from('websites').select('url'),
         supabase.from('profiles').select('id, name, email, is_pro, created_at').order('created_at', { ascending: false }).limit(5),
       ])
+
+      // 依 URL 去重複計算唯一網站數
+      const uniqueWebsites = new Set((totalWebsites || []).map(w => w.url)).size
 
       setStats({
         totalUsers: totalUsers || 0,
         proUsers: proUsers || 0,
-        totalWebsites: totalWebsites || 0,
+        totalWebsites: uniqueWebsites,
         mrr: (proUsers || 0) * PRO_PRICE,
       })
       setRecentUsers(recent || [])

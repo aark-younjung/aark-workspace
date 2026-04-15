@@ -28,7 +28,14 @@ export default function AdminWebsites() {
         `)
         .order('created_at', { ascending: false })
 
-      setWebsites(data || [])
+      // 依 URL 去重複，保留最新一筆
+      const seen = new Set()
+      const deduped = (data || []).filter(site => {
+        if (seen.has(site.url)) return false
+        seen.add(site.url)
+        return true
+      })
+      setWebsites(deduped)
     } catch (e) {
       console.error(e)
     } finally {
