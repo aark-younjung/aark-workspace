@@ -197,35 +197,7 @@ export default function Account() {
           )}
         </section>
 
-        {/* Email 週報 */}
-        <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-1">Email 週報</h3>
-          <p className="text-slate-400 text-xs mb-4">每週一早上自動收到各網站的 AI 能見度報告</p>
-
-          {!isPro ? (
-            <div className="flex items-center justify-between">
-              <p className="text-slate-400 text-sm">Pro 方案限定功能</p>
-              <Link to="/pricing" className="px-3 py-1.5 text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all">
-                升級 Pro
-              </Link>
-            </div>
-          ) : emailSubs.length === 0 ? (
-            <p className="text-slate-400 text-sm">尚未訂閱任何網站的週報。請到各網站的 Dashboard 開啟訂閱。</p>
-          ) : (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-800 text-sm font-medium">已訂閱 {emailSubs.length} 個網站週報</p>
-                <p className="text-slate-400 text-xs mt-0.5">收件信箱：{user.email}</p>
-              </div>
-              <button
-                onClick={handleUnsubscribeAll}
-                disabled={unsubLoading}
-                className="px-4 py-2 text-red-500 border border-red-200 rounded-lg hover:bg-red-50 text-sm transition-colors disabled:opacity-50">
-                {unsubLoading ? '處理中...' : '全部取消'}
-              </button>
-            </div>
-          )}
-        </section>
+        {/* Email 週報 - 暫時停用 */}
 
         {/* 登出 */}
         <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">

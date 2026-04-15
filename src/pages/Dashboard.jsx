@@ -1642,7 +1642,7 @@ ${siteTitle} — ${siteDesc}
           </>
         </div>
 
-        {/* Email 通知訂閱 */}
+        {/* Email 通知訂閱 - 暫時停用
         <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60 mb-8">
           <div className="flex items-center gap-3 mb-1">
             <span className="text-xl">📧</span>
@@ -1736,6 +1736,7 @@ ${siteTitle} — ${siteDesc}
             </>
           )}
         </div>
+        */}
 
       </main>
 
