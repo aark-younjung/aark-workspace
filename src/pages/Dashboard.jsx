@@ -1556,67 +1556,32 @@ ${siteTitle} — ${siteDesc}
               </div>
             )}
 
-            {/* Tab 2: 修復碼產生器 */}
+            {/* Tab 2: 修復碼產生器（免費開放） */}
             {activeFixTab === 'code' && (
-              isPro ? (
-                <div className="space-y-6">
-                  {[{ id: 'llms', label: 'llms.txt', hint: '放到網站根目錄 → /llms.txt', color: 'text-green-400', fn: generateLLMsTxt },
-                    { id: 'jsonld', label: 'JSON-LD 結構化資料', hint: '貼到 <head> 區塊內', color: 'text-blue-400', fn: generateJSONLD },
-                    { id: 'faq', label: 'FAQ Schema', hint: '貼到 <head> 或頁面底部，修改問題後使用', color: 'text-yellow-400', fn: generateFAQSchema },
-                  ].map(({ id, label, hint, color, fn }) => (
-                    <div key={id}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-slate-800">{label}</h4>
-                          <p className="text-xs text-slate-500">{hint}</p>
-                        </div>
-                        <button
-                          onClick={() => copyToClipboard(fn(), id)}
-                          className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors flex-shrink-0"
-                        >
-                          {copiedCode === id ? '✓ 已複製！' : '複製'}
-                        </button>
+              <div className="space-y-6">
+                {[{ id: 'llms', label: 'llms.txt', hint: '放到網站根目錄 → /llms.txt', color: 'text-green-400', fn: generateLLMsTxt },
+                  { id: 'jsonld', label: 'JSON-LD 結構化資料', hint: '貼到 <head> 區塊內', color: 'text-blue-400', fn: generateJSONLD },
+                  { id: 'faq', label: 'FAQ Schema', hint: '貼到 <head> 或頁面底部，修改問題後使用', color: 'text-yellow-400', fn: generateFAQSchema },
+                ].map(({ id, label, hint, color, fn }) => (
+                  <div key={id}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-semibold text-slate-800">{label}</h4>
+                        <p className="text-xs text-slate-500">{hint}</p>
                       </div>
-                      <pre className={`bg-slate-900 ${color} rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48`}>
-                        {fn()}
-                      </pre>
+                      <button
+                        onClick={() => copyToClipboard(fn(), id)}
+                        className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors flex-shrink-0"
+                      >
+                        {copiedCode === id ? '✓ 已複製！' : '複製'}
+                      </button>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="relative">
-                  {/* 模糊預覽 */}
-                  <div className="space-y-6 pointer-events-none select-none blur-sm opacity-60">
-                    {[{ id: 'llms', label: 'llms.txt', color: 'text-green-400' },
-                      { id: 'jsonld', label: 'JSON-LD 結構化資料', color: 'text-blue-400' },
-                      { id: 'faq', label: 'FAQ Schema', color: 'text-yellow-400' },
-                    ].map(({ id, label, color }) => (
-                      <div key={id}>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-slate-800">{label}</h4>
-                          <button className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium">複製</button>
-                        </div>
-                        <pre className={`bg-slate-900 ${color} rounded-xl p-4 text-xs leading-relaxed max-h-48 overflow-hidden`}>
-                          {'# 升級 Pro 即可複製此修復程式碼\n"@context": "https://schema.org",\n"@type": "WebSite",\n"name": "...",\n"url": "...",\n...'}
-                        </pre>
-                      </div>
-                    ))}
+                    <pre className={`bg-slate-900 ${color} rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48`}>
+                      {fn()}
+                    </pre>
                   </div>
-                  {/* 升級覆蓋層 */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl">
-                    <div className="text-3xl mb-3">🔒</div>
-                    <p className="font-bold text-slate-800 mb-1">修復碼產生器為 Pro 功能</p>
-                    <p className="text-sm text-slate-500 mb-5 text-center px-4">升級後可直接複製 llms.txt、JSON-LD、FAQ Schema 程式碼貼上使用</p>
-                    <button
-                      onClick={handleUpgrade}
-                      disabled={upgrading}
-                      className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-200 text-sm"
-                    >
-                      {upgrading ? '跳轉中...' : '升級 Pro 解鎖'}
-                    </button>
-                  </div>
-                </div>
-              )
+                ))}
+              </div>
             )}
 
             {/* Tab 3: AI 搜尋關鍵字 */}
