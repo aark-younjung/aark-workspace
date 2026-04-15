@@ -34,7 +34,7 @@ const timeAgo = (d) => {
 export default function Showcase() {
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
-  const [leaderTab, setLeaderTab] = useState('ai')
+  const [leaderTab, setLeaderTab] = useState('total')
   const [page, setPage] = useState(0)
   const [sortBy, setSortBy] = useState('total_score')
   const [starIndex, setStarIndex] = useState(0)
@@ -99,7 +99,9 @@ export default function Showcase() {
 
   // 排行榜資料
   const leaders = {
-    ai: [...sites].sort((a, b) => b.geo_score - a.geo_score).slice(0, 10),
+    total: [...sites].sort((a, b) => b.total_score - a.total_score).slice(0, 10),
+    ai: [...sites].sort((a, b) => (b.aeo_score + b.geo_score) - (a.aeo_score + a.geo_score)).slice(0, 10),
+    progress: [...sites].filter(s => s.scan_count >= 2 && s.improvement > 0).sort((a, b) => b.improvement - a.improvement).slice(0, 10),
     recent: [...sites].sort((a, b) => new Date(b.last_scanned_at) - new Date(a.last_scanned_at)).slice(0, 10),
     crawled: [...sites].sort((a, b) => b.scan_count - a.scan_count).slice(0, 10),
   }
@@ -250,8 +252,14 @@ export default function Showcase() {
               <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                 🏆 排行榜
               </h2>
-              <div className="flex gap-2 mb-4">
-                {[['ai', '🤖 今日 AI 關注'], ['recent', '📅 最近更新'], ['crawled', '🔍 被爬蟲找到']].map(([key, label]) => (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  ['total',    '🏆 AI 友善度 TOP10'],
+                  ['ai',       '🤖 AI 引用潛力'],
+                  ['progress', '📈 進步最多'],
+                  ['recent',   '📅 最近更新'],
+                  ['crawled',  '🔍 被爬蟲找到'],
+                ].map(([key, label]) => (
                   <button key={key} onClick={() => setLeaderTab(key)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${leaderTab === key
                       ? 'bg-orange-500 text-white'
@@ -275,21 +283,57 @@ export default function Showcase() {
                       <div className="text-gray-800 font-medium truncate">{site.name}</div>
                       <div className="text-gray-400 text-xs truncate">{site.url}</div>
                     </div>
-                    {leaderTab === 'ai' && (
-                      <>
-                        <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
-                          GEO 分數
+
+                    {/* AI 友善度：顯示 SEO + AEO + GEO 三欄 */}
+                    {leaderTab === 'total' && (
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
+                          <div key={label} className="text-center hidden sm:block">
+                            <div className={`text-sm font-bold ${scoreColor(score)}`}>{score}</div>
+                            <div className="text-xs text-gray-400">{label}</div>
+                          </div>
+                        ))}
+                        <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(site.total_score)}`}>
+                          {site.total_score}
                         </div>
-                        <div className={`text-2xl font-bold ml-4 flex-shrink-0 ${scoreColor(site.geo_score)}`}>
-                          {site.geo_score}
-                        </div>
-                      </>
+                      </div>
                     )}
+
+                    {/* AI 引用潛力：AEO + GEO 合計 */}
+                    {leaderTab === 'ai' && (
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="text-center hidden sm:block">
+                          <div className={`text-sm font-bold ${scoreColor(site.aeo_score)}`}>{site.aeo_score}</div>
+                          <div className="text-xs text-gray-400">AEO</div>
+                        </div>
+                        <div className="text-center hidden sm:block">
+                          <div className={`text-sm font-bold ${scoreColor(site.geo_score)}`}>{site.geo_score}</div>
+                          <div className="text-xs text-gray-400">GEO</div>
+                        </div>
+                        <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(Math.round((site.aeo_score + site.geo_score) / 2))}`}>
+                          {Math.round((site.aeo_score + site.geo_score) / 2)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 進步最多：首次 → 現在 + 進步分數 */}
+                    {leaderTab === 'progress' && (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-gray-400 text-sm hidden sm:block">{site.first_total_score} →</span>
+                        <span className={`text-sm font-bold hidden sm:block ${scoreColor(site.total_score)}`}>{site.total_score}</span>
+                        <span className="px-2 py-1 bg-green-100 text-green-600 rounded-lg font-bold text-sm">+{site.improvement}</span>
+                      </div>
+                    )}
+
                     {leaderTab === 'recent' && (
                       <div className="text-gray-500 text-sm flex-shrink-0">{timeAgo(site.last_scanned_at)}</div>
                     )}
+
                     {leaderTab === 'crawled' && (
-                      <div className="text-orange-500 font-bold flex-shrink-0">{site.scan_count} 次</div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-orange-500 font-bold">{site.scan_count}</span>
+                        <span className="text-gray-400 text-xs">次掃描</span>
+                      </div>
                     )}
                   </div>
                 ))}
