@@ -715,7 +715,15 @@ export default function GSCReport() {
                       <tr key={i} className="border-b border-slate-100 hover:bg-white/40">
                         <td className="py-2.5 text-slate-400 text-xs">{i + 1}</td>
                         <td className="py-2.5 max-w-[220px]">
-                          <div className="text-slate-700 truncate text-xs font-mono">{p.page}</div>
+                          <a
+                            href={p.page}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 hover:underline truncate text-xs font-mono block"
+                            title={p.page}
+                          >
+                            {p.page}
+                          </a>
                         </td>
                         <td className="text-right py-2.5 font-medium text-slate-800">{fmt(p.clicks)}</td>
                         <td className="text-right py-2.5 text-slate-600">{fmt(p.impressions)}</td>
