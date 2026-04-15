@@ -95,10 +95,11 @@ export function AuthProvider({ children }) {
   }
 
   const isPro = profile?.is_pro || false
+  const isAdmin = profile?.is_admin || false
   const userName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || ''
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isPro, userName, signIn, signUp, signOut, signInWithGoogle, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, isPro, isAdmin, userName, signIn, signUp, signOut, signInWithGoogle, refreshProfile }}>
       {!loading && children}
     </AuthContext.Provider>
   )

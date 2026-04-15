@@ -18,6 +18,10 @@ import FAQ from './pages/FAQ'
 import ContentAudit from './pages/ContentAudit'
 import GA4Report from './pages/GA4Report'
 import GSCReport from './pages/GSCReport'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminWebsites from './pages/admin/AdminWebsites'
+import AdminRevenue from './pages/admin/AdminRevenue'
 
 function App() {
   return (
@@ -42,6 +46,11 @@ function App() {
           <Route path="/content-audit" element={<ContentAudit />} />
           <Route path="/ga4-report/:id" element={<GA4Report />} />
           <Route path="/gsc-report/:id" element={<GSCReport />} />
+          {/* 後臺管理 */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/websites" element={<AdminWebsites />} />
+          <Route path="/admin/revenue" element={<AdminRevenue />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

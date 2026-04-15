@@ -15,11 +15,9 @@ import {
 import { exportDashboardPDF } from '../services/pdfExport'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, Legend
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, AreaChart, Area, Legend
 } from 'recharts'
-
-const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
 
 const timeAgo = (d) => {
   if (!d) return null
@@ -67,14 +65,10 @@ export default function Dashboard() {
   const [exportingPDF, setExportingPDF] = useState(false)
   const [activeFixTab, setActiveFixTab] = useState('suggestions')
 
-  // Email notification state
-  const [emailInput, setEmailInput] = useState('')
-  const [emailSubscription, setEmailSubscription] = useState(null) // active subscription record
-  const [emailLoading, setEmailLoading] = useState(false)
-  const [emailSending, setEmailSending] = useState(false)
-  const [emailMessage, setEmailMessage] = useState(null) // { type: 'success'|'error', text }
   const [copiedCode, setCopiedCode] = useState(null)
   const [bizInfo, setBizInfo] = useState({ phone: '', address: '', hours: '', description: '' })
+  const [pinging, setPinging] = useState(false)
+  const [pingResult, setPingResult] = useState(null)
   
   // GA4 & GSC 數據
   const [ga4Data, setGa4Data] = useState(null)
@@ -96,23 +90,6 @@ export default function Dashboard() {
     fetchData()
     fetchGA4GSCData()
   }, [id])
-
-  useEffect(() => {
-    if (id) fetchEmailSubscription()
-  }, [id])
-
-  const fetchEmailSubscription = async () => {
-    const { data } = await supabase
-      .from('email_subscriptions')
-      .select('*')
-      .eq('website_id', id)
-      .eq('is_active', true)
-      .maybeSingle()
-    if (data) {
-      setEmailSubscription(data)
-      setEmailInput(data.email)
-    }
-  }
 
   // 監聽 Google OAuth 彈窗成功訊息
   useEffect(() => {
@@ -466,108 +443,23 @@ export default function Dashboard() {
     }
   }
 
-  // ─── Email 訂閱 ─────────────────────────────────────────────────
-  const handleEmailSubscribe = async () => {
-    if (!emailInput || !emailInput.includes('@')) {
-      setEmailMessage({ type: 'error', text: '請輸入有效的 Email 地址' })
-      return
-    }
-    setEmailLoading(true)
-    setEmailMessage(null)
+  // ─── 通知搜尋引擎 ────────────────────────────────────────────────
+  const handlePingEngines = async () => {
+    if (!website?.url || pinging) return
+    setPinging(true)
+    setPingResult(null)
     try {
-      if (emailSubscription) {
-        // Update existing
-        const { error } = await supabase
-          .from('email_subscriptions')
-          .update({ email: emailInput })
-          .eq('id', emailSubscription.id)
-        if (error) throw error
-        setEmailSubscription({ ...emailSubscription, email: emailInput })
-        setEmailMessage({ type: 'success', text: '訂閱 Email 已更新' })
-      } else {
-        // Create new
-        const { data, error } = await supabase
-          .from('email_subscriptions')
-          .insert([{ website_id: id, email: emailInput, frequency: 'weekly', is_active: true }])
-          .select()
-          .single()
-        if (error) throw error
-        setEmailSubscription(data)
-        setEmailMessage({ type: 'success', text: '已訂閱週報，每週一早上自動發送' })
-      }
-    } catch (err) {
-      console.error('Subscribe error:', err)
-      setEmailMessage({ type: 'error', text: '操作失敗，請稍後再試' })
-    } finally {
-      setEmailLoading(false)
-    }
-  }
-
-  const handleEmailUnsubscribe = async () => {
-    if (!emailSubscription) return
-    setEmailLoading(true)
-    setEmailMessage(null)
-    try {
-      const { error } = await supabase
-        .from('email_subscriptions')
-        .update({ is_active: false })
-        .eq('id', emailSubscription.id)
-      if (error) throw error
-      setEmailSubscription(null)
-      setEmailInput('')
-      setEmailMessage({ type: 'success', text: '已取消訂閱' })
-    } catch (err) {
-      setEmailMessage({ type: 'error', text: '取消失敗，請稍後再試' })
-    } finally {
-      setEmailLoading(false)
-    }
-  }
-
-  const handleSendNow = async () => {
-    const targetEmail = emailInput || emailSubscription?.email
-    if (!targetEmail || !targetEmail.includes('@')) {
-      setEmailMessage({ type: 'error', text: '請先填入 Email 地址' })
-      return
-    }
-    setEmailSending(true)
-    setEmailMessage(null)
-    try {
-      const overall = Math.round(((seoAudit?.score || 0) + (aeoAudit?.score || 0) + (geoAudit?.score || 0) + (eeatAudit?.score || 0)) / 4)
-      const res = await fetch('/api/send-report-email', {
+      const res = await fetch('/api/indexnow-ping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: targetEmail,
-          website,
-          scores: {
-            seo: seoAudit?.score || 0,
-            aeo: aeoAudit?.score || 0,
-            geo: geoAudit?.score || 0,
-            eeat: eeatAudit?.score || 0,
-            overall,
-          },
-          checks: {
-            seo: [
-              { name: 'Meta 標題', passed: !!seoAudit?.meta_tags?.hasTitle },
-              { name: 'Meta 描述', passed: !!seoAudit?.meta_tags?.hasDescription },
-              { name: 'H1 標題結構', passed: !!seoAudit?.h1_structure?.hasOnlyOneH1 },
-              { name: '圖片 Alt 屬性', passed: (seoAudit?.alt_tags?.altCoverage || 0) >= 80 },
-              { name: '行動版相容', passed: !!seoAudit?.mobile_compatible?.hasViewport },
-            ],
-            aeo: aeoChecks,
-            geo: geoChecks,
-            eeat: eeatChecks,
-          },
-          dashboardUrl: `${window.location.origin}/dashboard/${id}`,
-        }),
+        body: JSON.stringify({ url: website.url }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed')
-      setEmailMessage({ type: 'success', text: `報告已寄送到 ${targetEmail}` })
-    } catch (err) {
-      setEmailMessage({ type: 'error', text: '發送失敗，請確認 Resend API Key 已設定' })
+      setPingResult({ success: true, pingedAt: data.pingedAt })
+    } catch (e) {
+      setPingResult({ success: false })
     } finally {
-      setEmailSending(false)
+      setPinging(false)
     }
   }
 
@@ -652,21 +544,6 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 }
 <\/script>`
 
-  const getKeywords = () => {
-    const base = siteTitle.replace(/[-|·|–]/g, ' ').trim()
-    return [
-      `${base} 是什麼`,
-      `${base} 怎麼使用`,
-      `${base} 評價`,
-      `${base} 服務內容`,
-      `${base} 費用價格`,
-      `${domain} 可信嗎`,
-      `AI 推薦 ${base}`,
-      `如何找到 ${base}`,
-      `${base} 優缺點比較`,
-      `${base} 常見問題`,
-    ]
-  }
 
   const copyToClipboard = async (text, id) => {
     try {
@@ -1511,7 +1388,6 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             {[
               { id: 'suggestions', label: '💡 優化建議', sub: '5 條具體行動' },
               { id: 'code', label: '⚙️ 修復碼產生器', sub: 'llms.txt · JSON-LD · FAQ' },
-              { id: 'keywords', label: '🔍 AI 搜尋關鍵字', sub: '10 組查詢詞' },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -1610,27 +1486,43 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               </div>
             )}
 
-            {/* Tab 3: AI 搜尋關鍵字 */}
-            {activeFixTab === 'keywords' && (
-              <div>
-                <p className="text-sm text-slate-600 mb-4">用戶可能在 ChatGPT、Claude、Perplexity 或 Gemini 上用以下方式搜尋你的品牌：</p>
-                <div className="grid md:grid-cols-2 gap-3">
-                  {getKeywords().map((kw, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg border border-orange-50">
-                      <span className="w-6 h-6 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        {i + 1}
-                      </span>
-                      <span className="text-sm text-slate-700">{kw}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <p className="text-xs text-blue-700">💡 建議：在你的網站 FAQ 頁面或內容中，自然地回答這些問題，可大幅提升被 AI 引用的機率。</p>
-                </div>
-              </div>
-            )}
           </div>
           </>
+        </div>
+
+        {/* 通知搜尋引擎 */}
+        <div className="mt-6 bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">📡</span>
+              <div>
+                <h3 className="font-bold text-slate-800 mb-1">通知搜尋引擎，讓 AI 更快找到你</h3>
+                <p className="text-sm text-slate-500">向 Google 與 Bing 發送 Sitemap 更新通知，讓 AI 爬蟲優先重新索引你的網站內容。</p>
+                {pingResult && (
+                  <p className={`text-xs mt-2 font-medium ${pingResult.success ? 'text-green-600' : 'text-red-500'}`}>
+                    {pingResult.success
+                      ? `✓ 已成功通知 Google & Bing（${new Date(pingResult.pingedAt).toLocaleTimeString('zh-TW')}）`
+                      : '✗ 通知失敗，請稍後再試'}
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={handlePingEngines}
+              disabled={pinging}
+              className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {pinging ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  通知中...
+                </>
+              ) : '📡 立即通知'}
+            </button>
+          </div>
         </div>
 
         {/* Email 通知訂閱 - 暫時停用

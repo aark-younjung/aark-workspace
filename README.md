@@ -231,5 +231,8 @@ VITE_GOOGLE_CLIENT_ID=...
 | 2026-03-29 | 修正 React #310 錯誤（useEffect 位置問題） |
 | 2026-03-29 | GA4/GSC 串接完成（Google OAuth 隱式流程） |
 | 2026-03-28 | Google OAuth 登入（Supabase Auth） |
+| 2026-04-15 | 後臺管理系統第一階段上線：/admin 總覽、/admin/users 用戶管理（手動升降級 Pro）、/admin/websites 掃描紀錄、/admin/revenue 營收儀表板（MRR 估算 + 圖表） |
+| 2026-04-15 | 移除「AI 搜尋關鍵字」Tab（對用戶無實際幫助）、清除 Email 功能死碼 |
+| 2026-04-15 | 新增「通知搜尋引擎」功能：向 Google & Bing 發送 Sitemap ping |
 | 2026-03-28 | 行銷同意 checkbox（Register 頁） |
 | 2026-03-28 | Stripe 付款流程（Serverless Functions） |

@@ -181,6 +181,41 @@ Amber: #f59e0b
 
 ---
 
+## 後臺管理系統規格書
+
+### 路由（需 `profiles.is_admin = true`）
+
+| 路徑 | 頁面 | 說明 |
+|------|------|------|
+| `/admin` | AdminDashboard | 總覽：用戶數、Pro 數、MRR、最新用戶 |
+| `/admin/users` | AdminUsers | 用戶列表：搜尋、篩選、展開詳情、手動升降級 Pro |
+| `/admin/websites` | AdminWebsites | 掃描紀錄：所有網站 + 四大分數 |
+| `/admin/revenue` | AdminRevenue | 營收：MRR 估算、Pro 用戶列表、近 6 月增長圖 |
+
+### 第一階段（已完成）
+- [x] 用戶管理：列表、搜尋、篩選、手動升降級 Pro、展開查看已分析網站
+- [x] 掃描紀錄：所有網站列表、四大分數、所屬用戶
+- [x] 營收儀表板：MRR 估算、Pro 用戶數、轉換率、近 6 月圖表
+
+### 第二階段（待開發）
+- [ ] 系統監控：API 成功率、錯誤日誌、掃描量統計
+- [ ] 客服工具：補償工具（延長 Pro）、寄送自訂 Email
+- [ ] Stripe 實際訂閱資料整合
+
+### 第三階段（待開發）
+- [ ] 內容管理：公告、FAQ、定價文案
+- [ ] 排行榜管理：Showcase 審核與人工介入
+
+### 認證機制
+- `profiles.is_admin = true` → 允許進入後臺（需在 Supabase 手動設定）
+- `AdminGuard` 組件：非管理員自動重導至首頁
+- Supabase RLS 需設定 admin 可讀取全表（目前依賴 anon key，上線前需加 RLS policy）
+
+### 資料庫需求
+- `profiles` 表需加 `is_admin BOOLEAN DEFAULT false` 欄位
+
+---
+
 ## 待開發 / 未完成功能
 
 - ~~`/content-audit`~~：✅ 已完成。15 項檢測（內容結構/字數/Meta/AEO/E-E-A-T/可讀性），免費看分數+清單，Pro 解鎖修復建議
