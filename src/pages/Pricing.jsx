@@ -90,7 +90,7 @@ export default function Pricing() {
           </Link>
           <nav className="flex items-center gap-6">
             <Link to="/showcase" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">排行榜</Link>
-            <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">免費檢測 →</Link>
+            <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">取得免費報告 →</Link>
           </nav>
         </div>
       </header>
@@ -134,7 +134,7 @@ export default function Pricing() {
           {/* 免費版 */}
           <div className="flex flex-col">
             <div className="flex justify-center mb-2">
-              <span className="px-4 py-1 bg-orange-100 text-gray-500 text-xs font-bold rounded-full border border-orange-200">立即體驗</span>
+              <span className="px-4 py-1 bg-orange-100 text-gray-500 text-xs font-bold rounded-full border border-orange-200">免費取得 3 次分析</span>
             </div>
           <div className="p-8 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 flex flex-col flex-1">
             <div className="mb-6">
@@ -156,7 +156,7 @@ export default function Pricing() {
 
             <Link to="/"
               className="w-full py-3 text-center bg-orange-100 border border-orange-200 text-gray-800 rounded-xl hover:bg-orange-200 transition-colors font-medium block">
-              免費開始使用
+              立即取得 3 個免費分析額度
             </Link>
           </div>
           </div>
@@ -313,11 +313,11 @@ export default function Pricing() {
 
         {/* CTA 底部 */}
         <div className="mt-20 text-center p-12 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60">
-          <h2 className="text-3xl font-bold text-gray-800 mb-3">現在就開始免費使用</h2>
-          <p className="text-gray-500 mb-8">輸入網址，60 秒內取得 AI 能見度完整分析報告</p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">立即取得你的 AI 能見度報告</h2>
+          <p className="text-gray-500 mb-8">輸入網址，60 秒診斷你的網站被 AI 看見的程度，免費使用，不需信用卡</p>
           <Link to="/"
             className="inline-flex items-center gap-2 px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-200 text-lg">
-            免費檢測我的網站 →
+            取得我的免費報告 →
           </Link>
         </div>
 

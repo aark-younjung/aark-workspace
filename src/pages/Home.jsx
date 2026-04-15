@@ -611,7 +611,7 @@ export default function Home() {
             </p>
 
             <p className="text-base text-slate-500 mb-10 max-w-lg">
-              全面檢測您的網站 SEO、AEO 與 GEO，讓 AI 搜尋引擎看見您的品牌價值
+              輸入網址，60 秒內取得你的 AI 能見度完整報告——免費診斷 3 個網站，不需信用卡
             </p>
 
             {/* URL Input Form */}
@@ -638,7 +638,7 @@ export default function Home() {
                       </svg>
                       分析中...
                     </span>
-                  ) : '免費開始分析'}
+                  ) : '立即取得免費分析報告'}
                 </button>
               </div>
               {status && (

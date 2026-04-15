@@ -71,7 +71,7 @@ export default function Register() {
             <span className="text-2xl font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">建立帳號</h1>
-          <p className="text-gray-500">免費開始使用 AI 能見度檢測</p>
+          <p className="text-gray-500">加入即獲得 3 個網站免費分析額度，不需信用卡</p>
         </div>
 
         {/* 表單 */}
@@ -144,7 +144,7 @@ export default function Register() {
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-200">
-              {loading ? '註冊中...' : '免費註冊'}
+              {loading ? '建立中...' : '立即取得免費分析額度'}
             </button>
           </form>
 
