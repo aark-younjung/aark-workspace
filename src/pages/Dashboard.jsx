@@ -725,25 +725,27 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           ))}
         </div>
 
-        {/* Tab 頁籤列 */}
-        <div className="flex border-b border-orange-200 mb-8">
+        {/* Tab 大卡片導覽 */}
+        <div className="grid grid-cols-4 gap-3 mb-8">
           {[
-            { id: 'overview', label: '總覽', icon: '📊' },
-            { id: 'traffic', label: '流量數據', icon: '📈' },
-            { id: 'crawler', label: 'AI 爬蟲追蹤', icon: '🤖' },
-            { id: 'tools', label: '優化工具', icon: '⚙️' },
+            { id: 'overview',  label: '總覽',      icon: '📊', desc: '分析圖表與詳細檢測' },
+            { id: 'traffic',   label: '流量數據',  icon: '📈', desc: 'GA4 · Google Search Console' },
+            { id: 'crawler',   label: 'AI 爬蟲追蹤', icon: '🤖', desc: 'GPTBot · ClaudeBot · Perplexity' },
+            { id: 'tools',     label: '優化工具',  icon: '⚙️', desc: 'AI 修復碼 · 通知搜尋引擎' },
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition-all ${
+              className={`flex flex-col items-center text-center gap-2 px-4 py-5 rounded-2xl border-2 transition-all ${
                 activeTab === tab.id
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  ? 'bg-white border-orange-400 shadow-md shadow-orange-100'
+                  : 'bg-white/40 border-white/60 hover:bg-white/70 hover:border-orange-200'
               }`}
             >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
+              <span className="text-3xl">{tab.icon}</span>
+              <span className={`text-sm font-bold ${activeTab === tab.id ? 'text-orange-600' : 'text-slate-700'}`}>{tab.label}</span>
+              <span className="text-xs text-slate-400 leading-tight">{tab.desc}</span>
+              {activeTab === tab.id && <span className="w-6 h-1 rounded-full bg-orange-400 mt-1" />}
             </button>
           ))}
         </div>
