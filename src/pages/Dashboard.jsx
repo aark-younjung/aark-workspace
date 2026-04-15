@@ -74,6 +74,7 @@ export default function Dashboard() {
   const [emailSending, setEmailSending] = useState(false)
   const [emailMessage, setEmailMessage] = useState(null) // { type: 'success'|'error', text }
   const [copiedCode, setCopiedCode] = useState(null)
+  const [bizInfo, setBizInfo] = useState({ phone: '', address: '', hours: '', description: '' })
   
   // GA4 & GSC 數據
   const [ga4Data, setGa4Data] = useState(null)
@@ -594,16 +595,16 @@ export default function Dashboard() {
   }
 
   const generateLLMsTxt = () => `# ${siteTitle}
-> ${siteDesc}
+> ${bizInfo.description || siteDesc}
 
 ## About
-${siteTitle} — ${siteDesc}
+${siteTitle} — ${bizInfo.description || siteDesc}
 
 ## Services
 - Website: ${website?.url}
 
 ## Contact
-- Website: ${website?.url}
+- Website: ${website?.url}${bizInfo.phone ? `\n- Phone: ${bizInfo.phone}` : ''}${bizInfo.address ? `\n- Address: ${bizInfo.address}` : ''}${bizInfo.hours ? `\n- Hours: ${bizInfo.hours}` : ''}
 
 ## Notes
 本網站內容可由 AI 助理引用和摘要。`
@@ -611,15 +612,10 @@ ${siteTitle} — ${siteDesc}
   const generateJSONLD = () => `<script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebSite",
+  "@type": "LocalBusiness",
   "name": "${siteTitle}",
   "url": "${website?.url}",
-  "description": "${siteDesc}",
-  "publisher": {
-    "@type": "Organization",
-    "name": "${siteTitle}",
-    "url": "${website?.url}"
-  }
+  "description": "${bizInfo.description || siteDesc}"${bizInfo.phone ? `,\n  "telephone": "${bizInfo.phone}"` : ''}${bizInfo.address ? `,\n  "address": {\n    "@type": "PostalAddress",\n    "streetAddress": "${bizInfo.address}"\n  }` : ''}${bizInfo.hours ? `,\n  "openingHours": "${bizInfo.hours}"` : ''}
 }
 <\/script>`
 
@@ -1559,6 +1555,36 @@ ${siteTitle} — ${siteDesc}
             {/* Tab 2: 修復碼產生器（免費開放） */}
             {activeFixTab === 'code' && (
               <div className="space-y-6">
+                {/* 補充資訊輸入區 */}
+                <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-base">✏️</span>
+                    <h4 className="text-sm font-semibold text-slate-700">補充商家資訊（選填）</h4>
+                    <span className="text-xs text-slate-400">填入後程式碼即時更新</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { key: 'phone', label: '電話號碼', placeholder: '例：02-1234-5678', icon: '📞' },
+                      { key: 'address', label: '地址', placeholder: '例：台北市信義區信義路五段7號', icon: '📍' },
+                      { key: 'hours', label: '營業時間', placeholder: '例：Mo-Fr 09:00-18:00', icon: '🕐' },
+                      { key: 'description', label: '品牌描述', placeholder: '簡短說明你的品牌與服務（留空則使用網站描述）', icon: '📝' },
+                    ].map(({ key, label, placeholder, icon }) => (
+                      <div key={key}>
+                        <label className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                          <span>{icon}</span>{label}
+                        </label>
+                        <input
+                          type="text"
+                          value={bizInfo[key]}
+                          onChange={e => setBizInfo(prev => ({ ...prev, [key]: e.target.value }))}
+                          placeholder={placeholder}
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-blue-200 bg-white text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {[{ id: 'llms', label: 'llms.txt', hint: '放到網站根目錄 → /llms.txt', color: 'text-green-400', fn: generateLLMsTxt },
                   { id: 'jsonld', label: 'JSON-LD 結構化資料', hint: '貼到 <head> 區塊內', color: 'text-blue-400', fn: generateJSONLD },
                   { id: 'faq', label: 'FAQ Schema', hint: '貼到 <head> 或頁面底部，修改問題後使用', color: 'text-yellow-400', fn: generateFAQSchema },
