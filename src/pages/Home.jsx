@@ -340,7 +340,8 @@ export default function Home() {
         supabase.from('seo_audits').select('id', { count: 'exact', head: true }).gte('created_at', today + 'T00:00:00'),
         supabase.from('seo_audits').select('created_at').order('created_at', { ascending: false }).limit(1),
       ])
-      if (scansRes.data) {
+      if (scansRes.data && scansRes.data.length >= 5) {
+        // 真實資料足夠才取代假資料
         setRecentScans(scansRes.data.map(d => ({ name: d.websites?.name || '—', scanned_at: d.created_at })))
       }
       const base = 800
