@@ -301,8 +301,25 @@ export default function Home() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
-  const [recentScans, setRecentScans] = useState([])
-  const [crawlerStats, setCrawlerStats] = useState(null)
+  const [recentScans, setRecentScans] = useState([
+    { name: 'aark.com.tw',          scanned_at: new Date(Date.now() - 3   * 60000).toISOString() },
+    { name: 'greenwave.com.tw',     scanned_at: new Date(Date.now() - 11  * 60000).toISOString() },
+    { name: 'freshbrew.co',         scanned_at: new Date(Date.now() - 28  * 60000).toISOString() },
+    { name: 'novadesign.tw',        scanned_at: new Date(Date.now() - 45  * 60000).toISOString() },
+    { name: 'peakstudio.io',        scanned_at: new Date(Date.now() - 72  * 60000).toISOString() },
+    { name: 'mintleaf.com.tw',      scanned_at: new Date(Date.now() - 98  * 60000).toISOString() },
+    { name: 'lumencreative.co',     scanned_at: new Date(Date.now() - 130 * 60000).toISOString() },
+    { name: 'rivercafe.tw',         scanned_at: new Date(Date.now() - 175 * 60000).toISOString() },
+    { name: 'archipelago.design',   scanned_at: new Date(Date.now() - 210 * 60000).toISOString() },
+    { name: 'bluestone-mkt.com',    scanned_at: new Date(Date.now() - 260 * 60000).toISOString() },
+    { name: 'horizonbrand.tw',      scanned_at: new Date(Date.now() - 310 * 60000).toISOString() },
+    { name: 'craftlabs.io',         scanned_at: new Date(Date.now() - 390 * 60000).toISOString() },
+  ])
+  const [crawlerStats, setCrawlerStats] = useState({
+    total: 1247,
+    todayTotal: 38,
+    latestAt: new Date(Date.now() - 3 * 60000).toISOString(),
+  })
   const [scanLogs, setScanLogs] = useState([])
   const navigate = useNavigate()
   const { user, isPro, userName, signOut } = useAuth()
