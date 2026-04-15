@@ -841,6 +841,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             </h3>
             <div className="flex items-center gap-3">
               {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
+              {!ga4Loading && ga4PropertyId && <button onClick={() => fetchGA4GSCData()} className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors" title="重新載入數據">↻</button>}
               <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">⚙️ 修改設定</button>
               {ga4Data && <Link to={`/ga4-report/${id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">查看詳情 →</Link>}
             </div>
@@ -1049,6 +1050,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             </h3>
             <div className="flex items-center gap-3">
               {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
+              {!gscLoading && gscSiteUrl && <button onClick={() => fetchGA4GSCData()} className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors" title="重新載入數據">↻</button>}
               <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">⚙️ 修改設定</button>
               {gscData && <Link to={`/gsc-report/${id}`} className="text-green-600 hover:text-green-700 text-sm font-medium">查看詳情 →</Link>}
             </div>
