@@ -43,11 +43,15 @@ export function initiateGoogleAuth() {
   const left = Math.round((window.screen.width - width) / 2)
   const top = Math.round((window.screen.height - height) / 2)
 
-  window.open(
+  const popup = window.open(
     `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
     'google_auth',
     `width=${width},height=${height},left=${left},top=${top},resizable=yes`
   )
+  if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+    alert('彈窗被瀏覽器封鎖了！\n\n請在網址列旁邊點「允許彈出式視窗」，然後再按一次連接按鈕。')
+  }
+  return popup
 }
 
 /**
