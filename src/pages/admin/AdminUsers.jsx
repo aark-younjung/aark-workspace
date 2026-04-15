@@ -47,7 +47,14 @@ export default function AdminUsers() {
         .select('id, url, name, created_at, seo_audits(score), aeo_audits(score), geo_audits(score), eeat_audits(score)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-      setUserWebsites(prev => ({ ...prev, [userId]: data || [] }))
+      // 依 URL 去重複，保留最新一筆
+      const seen = new Set()
+      const deduped = (data || []).filter(site => {
+        if (seen.has(site.url)) return false
+        seen.add(site.url)
+        return true
+      })
+      setUserWebsites(prev => ({ ...prev, [userId]: deduped }))
     }
   }
 
