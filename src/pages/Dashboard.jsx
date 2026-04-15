@@ -69,6 +69,7 @@ export default function Dashboard() {
   const [bizInfo, setBizInfo] = useState({ phone: '', address: '', hours: '', description: '' })
   const [pinging, setPinging] = useState(false)
   const [pingResult, setPingResult] = useState(null)
+  const [activeTab, setActiveTab] = useState('overview')
   
   // GA4 & GSC 數據
   const [ga4Data, setGa4Data] = useState(null)
@@ -724,6 +725,31 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           ))}
         </div>
 
+        {/* Tab 導覽列 */}
+        <div className="flex gap-1 mb-8 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-1.5 shadow-sm">
+          {[
+            { id: 'overview', label: '總覽', icon: '📊' },
+            { id: 'traffic', label: '流量數據', icon: '📈' },
+            { id: 'crawler', label: 'AI 爬蟲追蹤', icon: '🤖' },
+            { id: 'tools', label: '優化工具', icon: '⚙️' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === tab.id
+                  ? 'bg-white shadow-sm text-slate-800'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Tab: 總覽 ── */}
+        {activeTab === 'overview' && <>
         {/* 圖表區域 */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* 雷達圖 - 5 項 SEO 檢測 */}
@@ -845,6 +871,10 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           </div>
         </div>
 
+        </>}
+
+        {/* ── Tab: 流量數據 ── */}
+        {activeTab === 'traffic' && <>
         {/* GA4 流量數據區塊 */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -1265,6 +1295,10 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           )}
         </div>
 
+        </>}
+
+        {/* ── Tab: 總覽（詳細檢測）── */}
+        {activeTab === 'overview' && <>
         {/* 詳細檢測項目 */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* SEO 基本檢測 */}
@@ -1431,8 +1465,22 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           )}
         </div>
 
+        </>}
+
+        {/* ── Tab: AI 爬蟲追蹤 ── */}
+        {activeTab === 'crawler' && (
+          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-10 shadow-sm border border-white/60 text-center">
+            <div className="text-5xl mb-4">🤖</div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">AI 爬蟲追蹤</h3>
+            <p className="text-slate-500 text-sm mb-1">檢測 GPTBot、ClaudeBot、PerplexityBot 等 AI 爬蟲是否能存取你的網站</p>
+            <p className="text-xs text-orange-500 font-medium mt-4">🚧 開發中，敬請期待</p>
+          </div>
+        )}
+
+        {/* ── Tab: 優化工具 ── */}
+        {activeTab === 'tools' && <>
         {/* AI 優化工具 */}
-        <div className="mt-8 bg-white/40 backdrop-blur-md rounded-2xl shadow-sm border border-white/60 overflow-hidden">
+        <div className="mt-0 bg-white/40 backdrop-blur-md rounded-2xl shadow-sm border border-white/60 overflow-hidden">
           <div className="px-6 py-4 border-b border-orange-100 flex items-center gap-3">
             <span className="text-2xl">🛠️</span>
             <div>
@@ -1583,6 +1631,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             </button>
           </div>
         </div>
+
+        </>}
 
         {/* Email 通知訂閱 - 暫時停用
         <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60 mb-8">
