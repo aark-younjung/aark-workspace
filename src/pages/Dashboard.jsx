@@ -152,18 +152,30 @@ export default function Dashboard() {
     }
   }
   
+  // 解析 GSC 輸入，轉成正確的 siteUrl 格式
+  const parseGscInput = (input) => {
+    const v = input.trim()
+    if (!v) return ''
+    // 已是 sc-domain: 格式（網域資源）→ 直接用
+    if (v.startsWith('sc-domain:')) return v
+    // 已有 https:// → 補結尾 /
+    if (v.startsWith('http://') || v.startsWith('https://')) {
+      return v.endsWith('/') ? v : v + '/'
+    }
+    // 純網域（如 a-ark.com.tw）→ 轉成網域資源格式
+    return `sc-domain:${v}`
+  }
+
   // 儲存 Google 設定並拉取數據
   const handleSaveGoogleSettings = () => {
     if (ga4Input) { setPropertyId(id, ga4Input); setGa4PropertyId(ga4Input) }
     if (gscInput) {
-      // 自動補上 https:// 和結尾 /
-      const domain = gscInput.replace(/^https?:\/\//, '').replace(/\/$/, '')
-      const fullUrl = `https://${domain}/`
+      const fullUrl = parseGscInput(gscInput)
       setSiteUrl(id, fullUrl)
       setGscSiteUrl(fullUrl)
     }
     setShowGoogleSettings(false)
-    const fullGscUrl = gscInput ? `https://${gscInput.replace(/^https?:\/\//, '').replace(/\/$/, '')}/` : gscSiteUrl
+    const fullGscUrl = gscInput ? parseGscInput(gscInput) : gscSiteUrl
     fetchGA4GSCData(ga4Input, fullGscUrl)
   }
 
@@ -1697,21 +1709,22 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  GSC 網域
+                  GSC 屬性網址
                   <span className="ml-1 text-slate-400 font-normal">（需已在 GSC 驗證）</span>
                 </label>
-                <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
-                  <span className="px-3 py-2.5 bg-slate-50 text-slate-400 text-sm border-r border-slate-200 select-none">https://</span>
-                  <input
-                    type="text"
-                    value={gscInput.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                    onChange={e => setGscInput(e.target.value.replace(/^https?:\/\//, '').replace(/\/$/, ''))}
-                    placeholder="example.com"
-                    className="flex-1 px-3 py-2.5 text-sm focus:outline-none"
-                  />
-                  <span className="px-3 py-2.5 bg-slate-50 text-slate-400 text-sm border-l border-slate-200 select-none">/</span>
+                <input
+                  type="text"
+                  value={gscInput}
+                  onChange={e => setGscInput(e.target.value.trim())}
+                  placeholder="https://www.example.com/"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-500 space-y-1">
+                  <p className="font-medium text-slate-600">請依照 GSC 左上角顯示的格式填入：</p>
+                  <p>・<span className="font-mono bg-white px-1 rounded">https://www.example.com/</span>　URL 前置詞（有 www）</p>
+                  <p>・<span className="font-mono bg-white px-1 rounded">https://example.com/</span>　URL 前置詞（無 www）</p>
+                  <p>・<span className="font-mono bg-white px-1 rounded">example.com</span>　網域資源（會自動轉換）</p>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Search Console → 選擇資源 → 複製網址</p>
               </div>
             </div>
 
