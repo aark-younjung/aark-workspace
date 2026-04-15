@@ -365,7 +365,7 @@ export default function Dashboard() {
   const scoreData = [
     { name: 'SEO', value: seoScore, color: '#3b82f6', icon: '🔍', desc: '讓 Google 搜尋找到你', detail: '搜尋引擎最佳化（SEO）讓你的網站在 Google、Bing 等搜尋結果中排名更高，帶來更多自然流量。' },
     { name: 'AEO', value: aeoScore, color: '#8b5cf6', icon: '🤖', desc: '讓 AI 直接回答關於你', detail: 'AI 引擎最佳化（AEO）讓 ChatGPT、Siri、Google AI 等助理在回答問題時，能直接引用你的內容或推薦你的品牌。' },
-    { name: 'GEO', value: geoScore, color: '#10b981', icon: '🌐', desc: '讓 AI 生成式搜尋引用你', detail: '生成式引擎最佳化（GEO）讓 ChatGPT、Perplexity、Gemini 等 AI 在生成答案時，能主動提及並連結你的品牌。' },
+    { name: 'GEO', value: geoScore, color: '#10b981', icon: '🌐', desc: '讓 AI 生成式搜尋引用你', detail: '生成式引擎最佳化（GEO）讓 ChatGPT、Claude、Perplexity、Gemini 等 AI 在生成答案時，能主動提及並連結你的品牌。' },
     { name: 'E-E-A-T', value: eeatScore, color: '#f59e0b', icon: '🏆', desc: '建立品牌專業度與可信度', detail: '經驗、專業、權威、信任（E-E-A-T）是 Google 評估網站可信度的核心標準，影響你在 AI 時代被推薦的機率。' },
   ]
 
@@ -578,7 +578,7 @@ export default function Dashboard() {
   const getImprovementSuggestions = () => {
     const tips = []
     if (!seoAudit?.h1_structure?.hasOnlyOneH1) tips.push({ icon: '🏷️', title: '修正 H1 標題結構', desc: `頁面目前有 ${seoAudit?.h1_structure?.h1Count ?? 0} 個 H1 標題。每個頁面應只有一個 H1，清楚說明頁面主題，幫助 Google 與 AI 理解內容核心。` })
-    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Perplexity 更容易引用你。' })
+    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Claude、Perplexity 更容易引用你。' })
     if (!eeatAudit?.about_page) tips.push({ icon: '🏢', title: '建立關於我們頁面', desc: '缺少品牌介紹頁面。建立 /about 頁面說明公司背景與核心服務，強化 Google 與 AI 對你品牌的「權威性」認知。' })
     if (!eeatAudit?.contact_page) tips.push({ icon: '📞', title: '提供聯絡方式', desc: '找不到聯絡資訊。建立 /contact 頁面或在頁尾加入 email 連結，讓訪客和搜尋引擎確認這是真實存在的機構。' })
     if (!eeatAudit?.privacy_policy) tips.push({ icon: '🔏', title: '建立隱私權政策', desc: '缺少隱私權政策。建立 /privacy-policy 頁面並在頁尾加入連結，是合規與信任的基本要求。' })
@@ -1437,7 +1437,7 @@ ${siteTitle} — ${siteDesc}
               <Link to={`/geo-audit/${id}`} className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">查看詳情 →</Link>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Perplexity、Gemini）</p>
+          <p className="text-xs text-slate-400 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Claude、Perplexity、Gemini）</p>
           {geoAudit ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {geoChecks.map((check) => (
@@ -1587,7 +1587,7 @@ ${siteTitle} — ${siteDesc}
             {/* Tab 3: AI 搜尋關鍵字 */}
             {activeFixTab === 'keywords' && (
               <div>
-                <p className="text-sm text-slate-600 mb-4">用戶可能在 ChatGPT、Perplexity 或 Gemini 上用以下方式搜尋你的品牌：</p>
+                <p className="text-sm text-slate-600 mb-4">用戶可能在 ChatGPT、Claude、Perplexity 或 Gemini 上用以下方式搜尋你的品牌：</p>
                 <div className="grid md:grid-cols-2 gap-3">
                   {getKeywords().map((kw, i) => (
                     <div key={i} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg border border-orange-50">

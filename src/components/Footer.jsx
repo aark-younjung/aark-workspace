@@ -17,7 +17,7 @@ export default function Footer() {
               <span className="font-bold text-slate-800">優勢方舟數位行銷</span>
             </div>
             <p className="text-sm text-slate-500 leading-relaxed">
-              幫助品牌掌握 AI 搜尋時代的能見度，<br />讓 ChatGPT、Gemini、Perplexity 看見你。
+              幫助品牌掌握 AI 搜尋時代的能見度，<br />讓 ChatGPT、Claude、Gemini、Perplexity 看見你。
             </p>
           </div>
 

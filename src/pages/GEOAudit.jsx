@@ -7,7 +7,7 @@ const GEO_CHECKS = [
   {
     id: 'llms_txt',
     name: 'llms.txt',
-    description: '網站根目錄是否有 /llms.txt 檔案，讓 ChatGPT、Perplexity 等 AI 工具能識別你的品牌與服務內容',
+    description: '網站根目錄是否有 /llms.txt 檔案，讓 ChatGPT、Claude、Perplexity 等 AI 工具能識別你的品牌與服務內容',
     icon: '🤖',
     recommendation: '在根目錄建立 /llms.txt，用自然語言描述你的品牌、服務與聯絡方式'
   },

@@ -901,7 +901,7 @@ export default function Home() {
           </div>
           <div className="space-y-3">
             {[
-              { q: '什麼是 AI 能見度？', a: 'AI 能見度是指你的網站在 ChatGPT、Perplexity、Google AI 等平台中被「看見」並「引用」的能力。傳統 SEO 讓你出現在 Google，AI 能見度讓你出現在 AI 的回答中。' },
+              { q: '什麼是 AI 能見度？', a: 'AI 能見度是指你的網站在 ChatGPT、Claude、Perplexity、Google AI 等平台中被「看見」並「引用」的能力。傳統 SEO 讓你出現在 Google，AI 能見度讓你出現在 AI 的回答中。' },
               { q: 'SEO、AEO、GEO、E-E-A-T 有什麼不同？', a: 'SEO 讓搜尋引擎找到你；AEO 讓 AI 直接引用你的答案；GEO 讓生成式 AI 在回答中推薦你；E-E-A-T 建立品牌可信度，影響前三者的評分。四者互補，缺一不可。' },
               { q: '分析需要多久？需要安裝什麼嗎？', a: '不需要安裝任何東西。輸入網址後約 15–30 秒即可看到完整報告，系統會自動爬取並分析你的網站。' },
               { q: '分數低要怎麼辦？', a: '儀表板的「AI 優化工具」會根據你的失敗項目，自動列出最重要的 5 條改善行動，並提供可直接複製的修復程式碼（llms.txt、JSON-LD、FAQ Schema）。' },

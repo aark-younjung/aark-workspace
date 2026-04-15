@@ -21,7 +21,7 @@ const FAQ_ITEMS = [
       },
       {
         q: '什麼是 GEO？',
-        a: '生成式引擎最佳化（Generative Engine Optimization）是針對 ChatGPT、Perplexity、Gemini 等生成式 AI 的優化策略。重點在於讓 AI 在生成長篇回答時，能夠引用並推薦你的品牌，而不是競爭對手。'
+        a: '生成式引擎最佳化（Generative Engine Optimization）是針對 ChatGPT、Claude、Perplexity、Gemini 等生成式 AI 的優化策略。重點在於讓 AI 在生成長篇回答時，能夠引用並推薦你的品牌，而不是競爭對手。'
       },
       {
         q: '什麼是 E-E-A-T？',
