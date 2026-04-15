@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
@@ -915,6 +916,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
     </>
   )

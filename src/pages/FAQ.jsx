@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import Footer from '../components/Footer'
 
 const FAQ_ITEMS = [
   {
@@ -203,18 +204,25 @@ export default function FAQ() {
         <div className="mt-16 p-8 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl text-center shadow-sm">
           <div className="text-3xl mb-3">🚀</div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">還有其他問題？</h2>
-          <p className="text-slate-500 text-sm mb-6">直接用你的網址試試看，30 秒內看到完整 AI 能見度報告</p>
+          <p className="text-slate-500 text-sm mb-4">直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
           <Link to="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200">
-            免費開始分析 →
+            取得我的免費報告 →
           </Link>
+          <p className="mt-4 text-sm text-slate-500">
+            或直接寫信給我們：
+            <a href="mailto:aark.younjung@gmail.com" className="text-orange-500 hover:text-orange-600 font-medium ml-1">
+              aark.younjung@gmail.com
+            </a>
+          </p>
         </div>
 
         {/* Footer nav */}
-        <div className="mt-10 text-center">
+        <div className="mt-6 text-center">
           <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">← 返回首頁</Link>
         </div>
       </main>
+      <Footer />
     </div>
   )
 }
