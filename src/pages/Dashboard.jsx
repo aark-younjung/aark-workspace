@@ -155,9 +155,16 @@ export default function Dashboard() {
   // 儲存 Google 設定並拉取數據
   const handleSaveGoogleSettings = () => {
     if (ga4Input) { setPropertyId(id, ga4Input); setGa4PropertyId(ga4Input) }
-    if (gscInput) { setSiteUrl(id, gscInput); setGscSiteUrl(gscInput) }
+    if (gscInput) {
+      // 自動補上 https:// 和結尾 /
+      const domain = gscInput.replace(/^https?:\/\//, '').replace(/\/$/, '')
+      const fullUrl = `https://${domain}/`
+      setSiteUrl(id, fullUrl)
+      setGscSiteUrl(fullUrl)
+    }
     setShowGoogleSettings(false)
-    fetchGA4GSCData(ga4Input, gscInput)
+    const fullGscUrl = gscInput ? `https://${gscInput.replace(/^https?:\/\//, '').replace(/\/$/, '')}/` : gscSiteUrl
+    fetchGA4GSCData(ga4Input, fullGscUrl)
   }
 
   const handleDisconnectGoogle = () => {
@@ -834,15 +841,34 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             </h3>
             <div className="flex items-center gap-3">
               {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
+              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">⚙️ 修改設定</button>
               {ga4Data && <Link to={`/ga4-report/${id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">查看詳情 →</Link>}
             </div>
           </div>
           {ga4Error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-              <span className="text-red-500 flex-shrink-0">⚠️</span>
-              <div>
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-start gap-3 mb-3">
+                <span className="text-red-500 flex-shrink-0">⚠️</span>
                 <p className="text-sm text-red-700 font-medium">{ga4Error}</p>
-                <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-red-500 underline mt-1">重新設定</button>
+              </div>
+              {ga4PropertyId && (
+                <p className="text-xs text-red-500 mb-2">目前設定的 Property ID：<span className="font-mono bg-red-100 px-1 rounded">{ga4PropertyId}</span></p>
+              )}
+              <div className="flex gap-2 flex-wrap">
+                {ga4Error.includes('授權已過期') || ga4Error.includes('NOT_AUTHENTICATED') ? (
+                  <button
+                    onClick={initiateGoogleAuth}
+                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                  >
+                    🔄 重新連接 Google
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => setShowGoogleSettings(true)}
+                  className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                >
+                  ✏️ 修正 Property ID 設定
+                </button>
               </div>
             </div>
           )}
@@ -985,7 +1011,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <div className="space-y-2">
                     {[
                       { step: '1', text: '點擊「連接 Google 帳號」，選擇有 GA4 管理權限的帳號', done: googleConnected },
-                      { step: '2', text: '前往 GA4 後台 → 左下角「管理」→「資源設定」→ 複製右上角「資源 ID」（純數字）', done: false },
+                      { step: '2', text: '前往 GA4 後台 → 左下角齒輪「管理」→ 中間欄點「資源詳細資料」→ 頁面右上角可看到「資源 ID」（純數字，例如：123456789）', done: false },
                       { step: '3', text: '點擊「設定 GA4 Property ID」填入資源 ID，即可看到流量數據', done: false },
                     ].map(({ step, text, done }) => (
                       <div key={step} className="flex gap-3 items-start">
@@ -1023,15 +1049,34 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             </h3>
             <div className="flex items-center gap-3">
               {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
+              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">⚙️ 修改設定</button>
               {gscData && <Link to={`/gsc-report/${id}`} className="text-green-600 hover:text-green-700 text-sm font-medium">查看詳情 →</Link>}
             </div>
           </div>
           {gscError && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-              <span className="text-red-500 flex-shrink-0">⚠️</span>
-              <div>
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-start gap-3 mb-3">
+                <span className="text-red-500 flex-shrink-0">⚠️</span>
                 <p className="text-sm text-red-700 font-medium">{gscError}</p>
-                <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-red-500 underline mt-1">重新設定</button>
+              </div>
+              {gscSiteUrl && (
+                <p className="text-xs text-red-500 mb-2">目前設定的網域：<span className="font-mono bg-red-100 px-1 rounded">{gscSiteUrl}</span></p>
+              )}
+              <div className="flex gap-2 flex-wrap">
+                {gscError.includes('授權已過期') || gscError.includes('NOT_AUTHENTICATED') ? (
+                  <button
+                    onClick={initiateGoogleAuth}
+                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                  >
+                    🔄 重新連接 Google
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => setShowGoogleSettings(true)}
+                  className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                >
+                  ✏️ 修正網域設定
+                </button>
               </div>
             </div>
           )}
@@ -1650,16 +1695,20 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  GSC Site URL
+                  GSC 網域
                   <span className="ml-1 text-slate-400 font-normal">（需已在 GSC 驗證）</span>
                 </label>
-                <input
-                  type="text"
-                  value={gscInput}
-                  onChange={e => setGscInput(e.target.value)}
-                  placeholder="例：https://example.com"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                  <span className="px-3 py-2.5 bg-slate-50 text-slate-400 text-sm border-r border-slate-200 select-none">https://</span>
+                  <input
+                    type="text"
+                    value={gscInput.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                    onChange={e => setGscInput(e.target.value.replace(/^https?:\/\//, '').replace(/\/$/, ''))}
+                    placeholder="example.com"
+                    className="flex-1 px-3 py-2.5 text-sm focus:outline-none"
+                  />
+                  <span className="px-3 py-2.5 bg-slate-50 text-slate-400 text-sm border-l border-slate-200 select-none">/</span>
+                </div>
                 <p className="text-xs text-slate-400 mt-1">Search Console → 選擇資源 → 複製網址</p>
               </div>
             </div>
