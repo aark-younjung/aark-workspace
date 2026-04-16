@@ -1780,7 +1780,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   </div>
                 ) : (
                   getImprovementSuggestions().map((tip, i) => (
-                    <div key={i} className="flex gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                    <div key={i} className="flex gap-4 p-4 rounded-xl border border-white/15" style={{ background: 'rgba(0,0,0,0.45)' }}>
                       <span className="text-2xl flex-shrink-0">{tip.icon}</span>
                       <div>
                         <p className="font-semibold text-white mb-1">{i + 1}. {tip.title}</p>
