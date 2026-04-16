@@ -113,7 +113,7 @@ function DarkScanningOverlay({ logs, targetUrl }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{
-      background: 'radial-gradient(ellipse at 70% 40%, #c2410c 0%, #431407 20%, #0f0500 45%, #050508 100%)',
+      background: 'linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #000000 60%)',
     }}>
       {/* Grain */}
       <div className="absolute inset-0 pointer-events-none" style={{
