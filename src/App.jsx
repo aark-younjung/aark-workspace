@@ -57,8 +57,8 @@ function AppInner() {
     <>
       {isDark && <GlobalDarkBg />}
       <Routes>
-        <Route path="/" element={<HomeDark />} />
-        <Route path="/dark" element={<Home />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/dark" element={<HomeDark />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/showcase" element={<Showcase />} />
