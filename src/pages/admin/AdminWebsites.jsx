@@ -16,11 +16,11 @@ export default function AdminWebsites() {
   const fetchWebsites = async () => {
     setLoading(true)
     try {
-      const { data } = await supabase
+      // Step 1：取網站 + 分析分數
+      const { data: sitesData, error: sitesError } = await supabase
         .from('websites')
         .select(`
           id, url, name, created_at, user_id,
-          profiles(name, email, is_pro),
           seo_audits(score, created_at),
           aeo_audits(score, created_at),
           geo_audits(score, created_at),
@@ -28,16 +28,35 @@ export default function AdminWebsites() {
         `)
         .order('created_at', { ascending: false })
 
+      if (sitesError) throw sitesError
+
+      // Step 2：取有 user_id 的 profiles
+      const userIds = [...new Set((sitesData || []).map(s => s.user_id).filter(Boolean))]
+      let profilesMap = {}
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, name, email, is_pro')
+          .in('id', userIds)
+        ;(profilesData || []).forEach(p => { profilesMap[p.id] = p })
+      }
+
+      // 合併 profiles 進 websites
+      const merged = (sitesData || []).map(site => ({
+        ...site,
+        profiles: profilesMap[site.user_id] || null,
+      }))
+
       // 依 URL 去重複，保留最新一筆
       const seen = new Set()
-      const deduped = (data || []).filter(site => {
+      const deduped = merged.filter(site => {
         if (seen.has(site.url)) return false
         seen.add(site.url)
         return true
       })
       setWebsites(deduped)
     } catch (e) {
-      console.error(e)
+      console.error('AdminWebsites error:', e)
     } finally {
       setLoading(false)
     }
