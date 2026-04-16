@@ -321,15 +321,47 @@ export default function Home() {
     latestAt: new Date(Date.now() - 3 * 60000).toISOString(),
   })
   const [scanLogs, setScanLogs] = useState([])
+  const [myWebsites, setMyWebsites] = useState([])
   const navigate = useNavigate()
   const { user, isPro, userName, signOut } = useAuth()
   const WEBSITE_LIMIT = isPro ? 15 : 3
+
+  // 載入當前用戶的網站列表
+  const fetchMyWebsites = async () => {
+    if (!user) return
+    const { data: sites } = await supabase
+      .from('websites')
+      .select('id, name, url, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(WEBSITE_LIMIT)
+    if (!sites?.length) return
+
+    const ids = sites.map(s => s.id)
+    const [seoRes, aeoRes, geoRes] = await Promise.all([
+      supabase.from('seo_audits').select('website_id, score, created_at').in('website_id', ids).order('created_at', { ascending: false }),
+      supabase.from('aeo_audits').select('website_id, score, created_at').in('website_id', ids).order('created_at', { ascending: false }),
+      supabase.from('geo_audits').select('website_id, score, created_at').in('website_id', ids).order('created_at', { ascending: false }),
+    ])
+    const latest = (rows, wid) => rows?.find(r => r.website_id === wid)?.score ?? null
+    const latestAt = (rows, wid) => rows?.find(r => r.website_id === wid)?.created_at ?? null
+
+    setMyWebsites(sites.map(s => ({
+      ...s,
+      seo: latest(seoRes.data, s.id),
+      aeo: latest(aeoRes.data, s.id),
+      geo: latest(geoRes.data, s.id),
+      last_scanned_at: latestAt(seoRes.data, s.id) || latestAt(aeoRes.data, s.id) || s.created_at,
+    })))
+  }
 
   const addLog = (bot, item, status) => {
     const t = new Date()
     const time = t.toTimeString().slice(0, 8)
     setScanLogs(prev => [...prev, { time, bot, item, status, key: Math.random() }])
   }
+
+  useEffect(() => { fetchMyWebsites() }, [user])
 
   useEffect(() => {
     const init = async () => {
@@ -561,6 +593,7 @@ export default function Home() {
       }
 
       // 導向儀表板
+      fetchMyWebsites()
       navigate(`/dashboard/${websiteId}`)
     } catch (error) {
       console.error('Error:', error)
@@ -811,6 +844,83 @@ export default function Home() {
           </div>
 
         </div>
+
+        {/* ===== 我的網站（登入後） ===== */}
+        {user && myWebsites.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📂</span>
+                <h2 className="text-base font-bold text-slate-800">我的網站</h2>
+                <span className="text-xs text-slate-400 font-normal">{myWebsites.length} / {WEBSITE_LIMIT} 個</span>
+              </div>
+              {!isPro && (
+                <Link to="/pricing" className="text-xs text-orange-500 hover:text-orange-600 transition-colors">升級解鎖更多 →</Link>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {myWebsites.map(site => {
+                const hasScore = site.seo !== null || site.aeo !== null || site.geo !== null
+                const total = hasScore
+                  ? Math.round(([site.seo, site.aeo, site.geo].filter(v => v !== null).reduce((a, b) => a + b, 0)) / [site.seo, site.aeo, site.geo].filter(v => v !== null).length)
+                  : null
+                const scoreColor = s => s >= 70 ? 'text-green-500' : s >= 40 ? 'text-yellow-500' : 'text-red-400'
+                const barColor = s => s >= 70 ? 'bg-green-400' : s >= 40 ? 'bg-yellow-400' : 'bg-red-400'
+                return (
+                  <Link
+                    key={site.id}
+                    to={`/dashboard/${site.id}`}
+                    className="group block bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-4 hover:border-orange-200 hover:bg-white/70 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-800 text-sm truncate group-hover:text-orange-600 transition-colors">{site.name}</p>
+                        <p className="text-xs text-slate-400 truncate mt-0.5">{site.url}</p>
+                      </div>
+                      {total !== null && (
+                        <span className={`flex-shrink-0 text-xl font-bold ${scoreColor(total)}`}>{total}</span>
+                      )}
+                    </div>
+
+                    {hasScore ? (
+                      <div className="space-y-1.5">
+                        {[['SEO', site.seo], ['AEO', site.aeo], ['GEO', site.geo]].map(([label, score]) => score !== null && (
+                          <div key={label} className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 w-7">{label}</span>
+                            <div className="flex-1 h-1.5 bg-orange-100 rounded-full overflow-hidden">
+                              <div className={`h-1.5 rounded-full ${barColor(score)}`} style={{ width: `${score}%` }} />
+                            </div>
+                            <span className={`text-xs font-bold w-6 text-right ${scoreColor(score)}`}>{score}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400">尚未分析</p>
+                    )}
+
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-orange-50">
+                      <span className="text-xs text-slate-400">
+                        🤖 {timeAgo(site.last_scanned_at)}
+                      </span>
+                      <span className="text-xs text-orange-500 font-medium group-hover:underline">查看報告 →</span>
+                    </div>
+                  </Link>
+                )
+              })}
+
+              {/* 新增網站卡片（未達上限時顯示） */}
+              {myWebsites.length < WEBSITE_LIMIT && (
+                <button
+                  onClick={() => document.querySelector('input[type="text"]')?.focus()}
+                  className="flex flex-col items-center justify-center gap-2 bg-white/30 border-2 border-dashed border-orange-200 rounded-2xl p-4 hover:border-orange-400 hover:bg-white/50 transition-all text-slate-400 hover:text-orange-500 min-h-[120px]"
+                >
+                  <span className="text-2xl">＋</span>
+                  <span className="text-xs font-medium">新增網站</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 🤖 AI 即時讀取跑馬燈 */}
         {recentScans.length > 0 && (
