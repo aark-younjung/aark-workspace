@@ -82,7 +82,7 @@ export default function Pricing() {
       {/* Header */}
       <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to={isDark ? "/" : "/dark"} className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -92,7 +92,7 @@ export default function Pricing() {
           </Link>
           <nav className="flex items-center gap-6">
             <Link to="/showcase" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">排行榜</Link>
-            <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">取得免費報告 →</Link>
+            <Link to={isDark ? "/" : "/dark"} className="text-slate-600 hover:text-slate-900 text-sm transition-colors">取得免費報告 →</Link>
           </nav>
         </div>
       </header>
@@ -156,7 +156,7 @@ export default function Pricing() {
               ))}
             </ul>
 
-            <Link to="/"
+            <Link to={isDark ? "/" : "/dark"}
               className="w-full py-3 text-center bg-orange-100 border border-orange-200 text-gray-800 rounded-xl hover:bg-orange-200 transition-colors font-medium block">
               立即取得 3 個免費分析額度
             </Link>
@@ -317,7 +317,7 @@ export default function Pricing() {
         <div className="mt-20 text-center p-12 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60">
           <h2 className="text-3xl font-bold text-gray-800 mb-3">立即取得你的 AI 能見度報告</h2>
           <p className="text-gray-500 mb-8">輸入網址，60 秒診斷你的網站被 AI 看見的程度，免費使用，不需信用卡</p>
-          <Link to="/"
+          <Link to={isDark ? "/" : "/dark"}
             className="inline-flex items-center gap-2 px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-200 text-lg">
             取得我的免費報告 →
           </Link>
