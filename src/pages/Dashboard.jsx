@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -87,6 +87,12 @@ export default function Dashboard() {
   const [ga4Input, setGa4Input] = useState(getPropertyId(id) || '')
   const [gscInput, setGscInput] = useState(getSiteUrl(id) || '')
 
+  // AI 爬蟲追蹤
+  const [crawlerResults, setCrawlerResults] = useState(null)
+  const [crawlerScanning, setCrawlerScanning] = useState(false)
+  const [terminalLogs, setTerminalLogs] = useState([])
+  const terminalRef = useRef(null)
+
   useEffect(() => {
     fetchData()
     fetchGA4GSCData()
@@ -123,6 +129,20 @@ export default function Dashboard() {
       setTimeout(() => setUpgradeSuccess(false), 6000)
     }
   }, [])
+
+  // 自動滾動 terminal
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight
+    }
+  }, [terminalLogs])
+
+  // 切到 crawler tab 時自動掃描
+  useEffect(() => {
+    if (activeTab === 'crawler' && website && !crawlerResults && !crawlerScanning) {
+      runCrawlerScan()
+    }
+  }, [activeTab, website])
 
   const handleUpgrade = async () => {
     if (!user) {
@@ -564,6 +584,100 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 }
 <\/script>`
 
+
+  // ── AI 爬蟲追蹤 ──────────────────────────────────────────────────────
+  const AI_CRAWLERS = [
+    { id: 'gptbot', name: 'GPTBot', company: 'OpenAI', emoji: '🟢' },
+    { id: 'claudebot', name: 'ClaudeBot', company: 'Anthropic', emoji: '🟠' },
+    { id: 'anthropic-ai', name: 'anthropic-ai', company: 'Anthropic', emoji: '🟠' },
+    { id: 'perplexitybot', name: 'PerplexityBot', company: 'Perplexity AI', emoji: '🔵' },
+    { id: 'google-extended', name: 'Google-Extended', company: 'Google AI', emoji: '🔴' },
+    { id: 'bytespider', name: 'Bytespider', company: 'ByteDance', emoji: '🕷️' },
+    { id: 'ccbot', name: 'CCBot', company: 'Common Crawl', emoji: '📦' },
+  ]
+
+  const runCrawlerScan = async () => {
+    if (!website?.url || crawlerScanning) return
+    setCrawlerScanning(true)
+    setTerminalLogs([])
+    setCrawlerResults(null)
+
+    const logs = []
+    const addLog = (text, type = 'info') => {
+      const entry = { text, type, id: Date.now() + Math.random() }
+      logs.push(entry)
+      setTerminalLogs([...logs])
+    }
+    const delay = ms => new Promise(r => setTimeout(r, ms))
+
+    try {
+      addLog(`> 初始化 AI 爬蟲追蹤掃描...`)
+      await delay(350)
+      addLog(`> 目標：${website.url}`)
+      await delay(300)
+      addLog(`> 正在請求 robots.txt...`)
+      await delay(400)
+
+      let robotsContent = ''
+      let hasRobotsTxt = false
+      try {
+        const baseUrl = new URL(website.url).origin
+        const res = await fetch(`/api/fetch-url?url=${encodeURIComponent(baseUrl + '/robots.txt')}`)
+        const data = await res.json()
+        if (data.success && data.content) {
+          robotsContent = data.content
+          hasRobotsTxt = true
+          addLog(`✓ 取得 robots.txt (${data.content.length} bytes)`, 'success')
+        } else {
+          addLog(`— robots.txt 不存在（所有爬蟲預設允許）`, 'warn')
+        }
+      } catch {
+        addLog(`— 無法取得 robots.txt`, 'warn')
+      }
+
+      await delay(400)
+      addLog(`> 逐一解析 AI 爬蟲規則...`)
+      await delay(300)
+
+      const text = robotsContent.toLowerCase()
+      const robotsResults = {}
+
+      for (const bot of AI_CRAWLERS) {
+        await delay(180)
+        const idx = text.indexOf(`user-agent: ${bot.id}`)
+        if (idx === -1) {
+          robotsResults[bot.id] = 'not_mentioned'
+          addLog(`  ${bot.name.padEnd(18)} 未設定（預設允許）`)
+        } else {
+          const section = text.substring(idx, idx + 300)
+          if (section.includes('disallow: /') && !section.includes('disallow: \n') && !section.includes('disallow: \r')) {
+            robotsResults[bot.id] = 'blocked'
+            addLog(`  ${bot.name.padEnd(18)} ✗ 封鎖 (Disallow: /)`, 'error')
+          } else {
+            robotsResults[bot.id] = 'allowed'
+            addLog(`  ${bot.name.padEnd(18)} ✓ 明確允許`, 'success')
+          }
+        }
+      }
+
+      await delay(400)
+      addLog(`> 檢查 AI 可見度信號...`)
+      await delay(300)
+      addLog(`  llms.txt      ${geoAudit?.llms_txt ? '✓ 存在' : '✗ 未找到'}`, geoAudit?.llms_txt ? 'success' : 'error')
+      await delay(200)
+      addLog(`  sitemap.xml   ${geoAudit?.sitemap ? '✓ 存在' : '✗ 未找到'}`, geoAudit?.sitemap ? 'success' : 'error')
+      await delay(200)
+      addLog(`  HTTPS         ${geoAudit?.https ? '✓ 啟用' : '✗ 未啟用'}`, geoAudit?.https ? 'success' : 'error')
+      await delay(400)
+      addLog(`> ✓ 掃描完成`, 'success')
+
+      setCrawlerResults({ robots: robotsResults, hasRobotsTxt })
+    } catch (e) {
+      addLog(`✗ 掃描失敗：${e.message}`, 'error')
+    } finally {
+      setCrawlerScanning(false)
+    }
+  }
 
   const copyToClipboard = async (text, id) => {
     try {
@@ -1482,11 +1596,141 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
         {/* ── Tab: AI 爬蟲追蹤 ── */}
         {activeTab === 'crawler' && (
-          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-10 shadow-sm border border-white/60 text-center">
-            <div className="text-5xl mb-4">🤖</div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">AI 爬蟲追蹤</h3>
-            <p className="text-slate-500 text-sm mb-1">檢測 GPTBot、ClaudeBot、PerplexityBot 等 AI 爬蟲是否能存取你的網站</p>
-            <p className="text-xs text-orange-500 font-medium mt-4">🚧 開發中，敬請期待</p>
+          <div className="space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">AI 爬蟲追蹤</h3>
+                <p className="text-slate-500 text-sm mt-0.5">檢測 AI 爬蟲是否能存取你的網站，以及 robots.txt 設定狀況</p>
+              </div>
+              <button
+                onClick={runCrawlerScan}
+                disabled={crawlerScanning}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+              >
+                {crawlerScanning
+                  ? <><span className="inline-block animate-spin">↻</span> 掃描中...</>
+                  : <><span>🔍</span> 重新掃描</>}
+              </button>
+            </div>
+
+            {/* Terminal */}
+            <div className="bg-slate-950 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
+              <div className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border-b border-slate-700">
+                <span className="w-3 h-3 rounded-full bg-red-500/80"></span>
+                <span className="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+                <span className="w-3 h-3 rounded-full bg-green-500/80"></span>
+                <span className="text-slate-500 text-xs ml-3 font-mono truncate">crawler-scan ~ {website?.url}</span>
+              </div>
+              <div ref={terminalRef} className="p-4 h-52 overflow-y-auto font-mono text-xs space-y-0.5 scrollbar-hide">
+                {terminalLogs.length === 0 ? (
+                  <span className="text-slate-600">等待掃描...</span>
+                ) : terminalLogs.map(log => (
+                  <div key={log.id} className={
+                    log.type === 'success' ? 'text-green-400' :
+                    log.type === 'error' ? 'text-red-400' :
+                    log.type === 'warn' ? 'text-yellow-400' :
+                    'text-slate-400'
+                  }>{log.text}</div>
+                ))}
+                {crawlerScanning && <span className="text-green-400 animate-pulse">█</span>}
+              </div>
+            </div>
+
+            {/* Crawler Status Grid */}
+            {crawlerResults && (
+              <>
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">AI 爬蟲存取權限</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {AI_CRAWLERS.map(bot => {
+                      const status = crawlerResults.robots[bot.id]
+                      return (
+                        <div key={bot.id} className={`p-3 rounded-xl border backdrop-blur-sm ${
+                          status === 'blocked'
+                            ? 'bg-red-50/80 border-red-200'
+                            : status === 'allowed'
+                            ? 'bg-green-50/80 border-green-200'
+                            : 'bg-white/60 border-white/60'
+                        }`}>
+                          <div className="flex items-start justify-between mb-2">
+                            <span className="text-xl leading-none">{bot.emoji}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                              status === 'blocked'
+                                ? 'bg-red-100 text-red-600'
+                                : status === 'allowed'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {status === 'blocked' ? '封鎖' : status === 'allowed' ? '允許' : '預設'}
+                            </span>
+                          </div>
+                          <p className="text-slate-800 font-semibold text-sm leading-tight">{bot.name}</p>
+                          <p className="text-slate-400 text-xs mt-0.5">{bot.company}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2">「預設」代表 robots.txt 未特別設定，爬蟲預設可存取</p>
+                </div>
+
+                {/* AI Visibility Signals */}
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">AI 可見度信號</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { label: 'llms.txt', desc: '讓 AI 了解你的品牌與服務', passed: !!geoAudit?.llms_txt, icon: '📄', fix: '在根目錄建立 /llms.txt' },
+                      { label: 'sitemap.xml', desc: '協助 AI 探索所有頁面', passed: !!geoAudit?.sitemap, icon: '🗺️', fix: '提交 sitemap 至 GSC' },
+                      { label: 'robots.txt', desc: '爬蟲規則文件', passed: crawlerResults.hasRobotsTxt, icon: '🤖', fix: '建立 /robots.txt 明確設定規則' },
+                    ].map(item => (
+                      <div key={item.label} className={`flex items-center gap-3 p-4 rounded-xl border ${
+                        item.passed ? 'bg-green-50/80 border-green-200' : 'bg-orange-50/80 border-orange-200'
+                      }`}>
+                        <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-800 text-sm">{item.label}</p>
+                          <p className="text-xs text-slate-500 truncate">{item.passed ? item.desc : item.fix}</p>
+                        </div>
+                        <span className={`text-xl flex-shrink-0 ${item.passed ? 'text-green-500' : 'text-orange-400'}`}>
+                          {item.passed ? '✓' : '✗'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                {(Object.values(crawlerResults.robots).some(v => v === 'blocked') || !geoAudit?.llms_txt || !geoAudit?.sitemap) && (
+                  <div className="p-5 bg-amber-50/80 border border-amber-200 rounded-xl">
+                    <h4 className="font-semibold text-amber-800 mb-3">⚠️ 優化建議</h4>
+                    <ul className="space-y-2 text-sm text-amber-700">
+                      {Object.entries(crawlerResults.robots)
+                        .filter(([, v]) => v === 'blocked')
+                        .map(([botId]) => {
+                          const bot = AI_CRAWLERS.find(b => b.id === botId)
+                          return <li key={botId}>• robots.txt 封鎖了 <strong>{bot?.name}</strong>，建議移除封鎖或改為 <code className="bg-amber-100 px-1 rounded">Allow: /</code></li>
+                        })
+                      }
+                      {!geoAudit?.llms_txt && (
+                        <li>• 尚未建立 <strong>llms.txt</strong>，AI 無法識別你的品牌服務，前往「優化工具」Tab 產生修復碼</li>
+                      )}
+                      {!geoAudit?.sitemap && (
+                        <li>• 尚未偵測到 <strong>sitemap.xml</strong>，AI 爬蟲可能無法完整索引你的頁面</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
+                {/* All Good */}
+                {!Object.values(crawlerResults.robots).some(v => v === 'blocked') && geoAudit?.llms_txt && geoAudit?.sitemap && (
+                  <div className="p-5 bg-green-50/80 border border-green-200 rounded-xl text-center">
+                    <span className="text-3xl">🎉</span>
+                    <p className="font-semibold text-green-700 mt-2">太棒了！所有 AI 爬蟲都可以存取你的網站</p>
+                    <p className="text-sm text-green-600 mt-1">llms.txt、sitemap.xml 齊備，AI 引用能見度最佳化</p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
