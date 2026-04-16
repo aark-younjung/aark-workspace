@@ -875,7 +875,7 @@ export default function HomeDark() {
         </div>
       </main>
 
-      <Footer />
+      <Footer dark />
     </div>
     </>
   )
