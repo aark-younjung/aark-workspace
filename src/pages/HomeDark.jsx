@@ -441,7 +441,7 @@ export default function HomeDark() {
     <>
     {loading && <DarkScanningOverlay logs={scanLogs} targetUrl={url} />}
     <div className="min-h-screen relative overflow-hidden" style={{
-      background: 'linear-gradient(135deg, #c2410c 0%, #7c1d06 22%, #1c0500 45%, #050508 72%, #000000 100%)',
+      background: 'linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #000000 60%)',
     }}>
 
       {/* 顆粒感疊層 */}
@@ -457,10 +457,10 @@ export default function HomeDark() {
           <div key={i} className="absolute rounded-full" style={{
             width: r * 2,
             height: r * 2,
-            left: '70%',
-            top: '68px',
+            left: '76%',
+            top: '30px',
             transform: 'translate(-50%, -50%)',
-            border: '1px solid #000000',
+            border: '2px solid #000000',
             opacity: Math.max(0.12, 0.5 - i * 0.025),
           }} />
         ))}
@@ -536,7 +536,7 @@ export default function HomeDark() {
               <span className="text-orange-300 text-sm font-medium">AI 搜尋優化新時代</span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl font-bold mb-3 leading-tight bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-6xl font-bold mb-3 leading-tight bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">
               讓AI看見你
             </h1>
 
@@ -585,7 +585,7 @@ export default function HomeDark() {
               <svg
                 width="560" height="320"
                 viewBox="0 0 560 320"
-                style={{ overflow: 'visible', position: 'absolute', left: '-30px', top: 0 }}
+                style={{ overflow: 'visible', position: 'absolute', left: '20px', top: 0 }}
               >
                 <defs>
                   {/* 掃描線：圓心白色 → 外圍藍色 */}
@@ -610,9 +610,9 @@ export default function HomeDark() {
 
                 {/* 脈衝擴散圓 — 藍色 */}
                 {[0, 1.2, 2.4].map((delay, i) => (
-                  <circle key={i} cx="310" cy="0" fill="none" stroke="rgba(96,165,250,0.65)" strokeWidth="1.5">
+                  <circle key={i} cx="310" cy="0" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5">
                     <animate attributeName="r" from="18" to="460" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
-                    <animate attributeName="opacity" from="0.65" to="0" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
+                    <animate attributeName="opacity" from="0.6" to="0" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
                   </circle>
                 ))}
 
