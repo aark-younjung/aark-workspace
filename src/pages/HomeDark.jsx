@@ -515,8 +515,8 @@ export default function HomeDark() {
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-24 overflow-visible">
         {/* 背景同心圓：圓心對齊雷達圓心，left = 50% + 350px，zIndex: -1 確保在內容後面 */}
         <div className="absolute pointer-events-none overflow-visible" style={{
-          left: 'calc(50% + 335px)',
-          top: '45px',
+          left: 'calc(50% + 340px)',
+          top: '43px',
           width: 0, height: 0,
           zIndex: -1,
         }}>
