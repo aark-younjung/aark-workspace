@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
 
 const FAQ_ITEMS = [
@@ -114,6 +115,7 @@ const FAQ_ITEMS = [
 ]
 
 export default function FAQ() {
+  const { user, isPro, userName, signOut } = useAuth()
   const [openItems, setOpenItems] = useState({})
 
   const toggle = (catIdx, qIdx) => {
@@ -147,10 +149,28 @@ export default function FAQ() {
             </div>
             <span className="text-lg font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
-          <nav className="flex items-center gap-6">
-            <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
-            <Link to="/pricing" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">定價</Link>
-            <Link to="/login" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">登入</Link>
+          <nav className="flex items-center gap-4">
+            <Link to="/" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
+            <Link to="/pricing" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">定價</Link>
+            {user ? (
+              <>
+                {!isPro && (
+                  <Link to="/pricing" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
+                )}
+                <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title={userName || user.email}>
+                  {user?.user_metadata?.avatar_url ? (
+                    <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                      {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </Link>
+                <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-xs sm:text-sm transition-colors">登出</button>
+              </>
+            ) : (
+              <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
+            )}
           </nav>
         </div>
       </header>

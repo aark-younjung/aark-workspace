@@ -614,8 +614,10 @@ export default function Home() {
             <div className="flex items-center gap-2 flex-shrink-0">
               {user ? (
                 <>
-                  <Link to="/account" className="hidden sm:block text-slate-600 text-sm">👤 {userName}</Link>
-                  <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity sm:hidden" title="帳號設定">
+                  {!isPro && (
+                    <Link to="/pricing" className="hidden sm:block px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded-lg transition-colors font-medium">升級 Pro</Link>
+                  )}
+                  <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title={userName || user.email}>
                     {user?.user_metadata?.avatar_url ? (
                       <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                     ) : (

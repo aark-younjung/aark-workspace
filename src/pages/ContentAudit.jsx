@@ -243,8 +243,7 @@ export default function ContentAudit() {
                 {!isPro && (
                   <Link to="/pricing" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
                 )}
-                <Link to="/account" className="hidden sm:block text-slate-600 text-sm hover:text-slate-900 transition-colors">👤 {userName}</Link>
-                <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity sm:hidden" title="帳號設定">
+                <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title={userName || user.email}>
                   {user?.user_metadata?.avatar_url ? (
                     <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                   ) : (
