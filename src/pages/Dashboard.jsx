@@ -344,7 +344,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
         <div className="text-center">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">找不到網站</h2>
-          <Link to={isDark ? "/" : "/dark"} className="text-orange-500 hover:underline">返回首頁</Link>
+          <Link to={isDark ? "/dark" : "/"} className="text-orange-500 hover:underline">返回首頁</Link>
         </div>
       </div>
     )
@@ -708,7 +708,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           {/* 第一列：返回 + 標題 + 頭像 */}
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3 min-w-0">
-              <Link to={isDark ? "/" : "/dark"} className="text-slate-500 hover:text-slate-700 flex-shrink-0">
+              <Link to={isDark ? "/dark" : "/"} className="text-slate-500 hover:text-slate-700 flex-shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
