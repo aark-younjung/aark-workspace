@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import Home from './pages/Home'
+import HomeDark from './pages/HomeDark'
 import Dashboard from './pages/Dashboard'
 import SEOAudit from './pages/SEOAudit'
 import AEOAudit from './pages/AEOAudit'
@@ -29,6 +30,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/dark" element={<HomeDark />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/showcase" element={<Showcase />} />
