@@ -179,7 +179,7 @@ function ScoreRing({ score }) {
 }
 
 export default function ContentAudit() {
-  const { isPro } = useAuth()
+  const { user, isPro, userName } = useAuth()
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -238,7 +238,20 @@ export default function ContentAudit() {
           <nav className="flex items-center gap-5">
             <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
             <Link to="/faq" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">FAQ</Link>
-            <Link to="/pricing" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
+            {user ? (
+              isPro ? (
+                <Link to="/account" className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-bold">
+                    {(userName || user.email || '?').slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="hidden sm:inline">帳號</span>
+                </Link>
+              ) : (
+                <Link to="/pricing" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
+              )
+            ) : (
+              <Link to="/login" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">登入</Link>
+            )}
           </nav>
         </div>
       </header>
