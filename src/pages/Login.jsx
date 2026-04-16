@@ -8,7 +8,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
-  const { signIn, signInWithGoogle } = useAuth()
+  const { signIn, signInWithGoogle, user } = useAuth()
+
+  if (user) { navigate('/'); return null }
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
