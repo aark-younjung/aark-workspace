@@ -328,13 +328,15 @@ export default function Home() {
 
   // 載入當前用戶的網站列表
   const fetchMyWebsites = async () => {
-    if (!user) return
-    const { data: sites } = await supabase
+    if (!user) { console.log('[MyWebsites] no user'); return }
+    console.log('[MyWebsites] fetching for user:', user.id)
+    const { data: sites, error } = await supabase
       .from('websites')
       .select('id, name, url, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(WEBSITE_LIMIT)
+    console.log('[MyWebsites] result:', { sites, error })
     if (!sites?.length) return
 
     const ids = sites.map(s => s.id)
