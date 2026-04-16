@@ -2,6 +2,108 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
+// ── 樣板資料：日本與台灣知名品牌（真實掃描結果會自動取代同網址的樣板） ──
+const SAMPLE_SITES = [
+  // ── 日本品牌 ──
+  {
+    id: 'sample-jp-01', isSample: true,
+    name: 'ユニクロ公式サイト', url: 'https://www.uniqlo.com/jp/',
+    seo_score: 82, aeo_score: 71, geo_score: 65, total_score: 73, first_total_score: 55, improvement: 18,
+    scan_count: 4, last_scanned_at: '2026-04-14T08:21:00Z',
+  },
+  {
+    id: 'sample-jp-02', isSample: true,
+    name: '無印良品 MUJI', url: 'https://www.muji.com/jp/',
+    seo_score: 78, aeo_score: 74, geo_score: 70, total_score: 74, first_total_score: 56, improvement: 18,
+    scan_count: 3, last_scanned_at: '2026-04-13T14:05:00Z',
+  },
+  {
+    id: 'sample-jp-03', isSample: true,
+    name: '楽天市場', url: 'https://www.rakuten.co.jp/',
+    seo_score: 88, aeo_score: 76, geo_score: 72, total_score: 79, first_total_score: 61, improvement: 18,
+    scan_count: 5, last_scanned_at: '2026-04-15T09:10:00Z',
+  },
+  {
+    id: 'sample-jp-04', isSample: true,
+    name: 'ソニー株式会社', url: 'https://www.sony.co.jp/',
+    seo_score: 85, aeo_score: 80, geo_score: 78, total_score: 81, first_total_score: 66, improvement: 15,
+    scan_count: 4, last_scanned_at: '2026-04-12T11:30:00Z',
+  },
+  {
+    id: 'sample-jp-05', isSample: true,
+    name: 'トヨタ自動車', url: 'https://www.toyota.co.jp/',
+    seo_score: 80, aeo_score: 75, geo_score: 68, total_score: 74, first_total_score: 60, improvement: 14,
+    scan_count: 3, last_scanned_at: '2026-04-11T07:44:00Z',
+  },
+  {
+    id: 'sample-jp-06', isSample: true,
+    name: 'パナソニック', url: 'https://www.panasonic.com/jp/',
+    seo_score: 76, aeo_score: 72, geo_score: 67, total_score: 72, first_total_score: 58, improvement: 14,
+    scan_count: 2, last_scanned_at: '2026-04-10T15:55:00Z',
+  },
+  {
+    id: 'sample-jp-07', isSample: true,
+    name: 'メルカリ', url: 'https://www.mercari.com/jp/',
+    seo_score: 83, aeo_score: 77, geo_score: 74, total_score: 78, first_total_score: 63, improvement: 15,
+    scan_count: 4, last_scanned_at: '2026-04-14T17:22:00Z',
+  },
+  {
+    id: 'sample-jp-08', isSample: true,
+    name: 'リクルートキャリア', url: 'https://www.recruit.co.jp/',
+    seo_score: 79, aeo_score: 73, geo_score: 69, total_score: 74, first_total_score: 59, improvement: 15,
+    scan_count: 3, last_scanned_at: '2026-04-09T10:18:00Z',
+  },
+  // ── 台灣品牌 ──
+  {
+    id: 'sample-tw-01', isSample: true,
+    name: '台灣大哥大', url: 'https://www.taiwanmobile.com/',
+    seo_score: 72, aeo_score: 58, geo_score: 52, total_score: 61, first_total_score: 43, improvement: 18,
+    scan_count: 3, last_scanned_at: '2026-04-15T06:30:00Z',
+  },
+  {
+    id: 'sample-tw-02', isSample: true,
+    name: '統一超商 7-ELEVEN', url: 'https://www.7-11.com.tw/',
+    seo_score: 68, aeo_score: 55, geo_score: 48, total_score: 57, first_total_score: 38, improvement: 19,
+    scan_count: 4, last_scanned_at: '2026-04-13T08:45:00Z',
+  },
+  {
+    id: 'sample-tw-03', isSample: true,
+    name: '富邦金控', url: 'https://www.fubon.com/',
+    seo_score: 75, aeo_score: 62, geo_score: 56, total_score: 64, first_total_score: 49, improvement: 15,
+    scan_count: 2, last_scanned_at: '2026-04-12T13:20:00Z',
+  },
+  {
+    id: 'sample-tw-04', isSample: true,
+    name: '中華電信', url: 'https://www.cht.com.tw/',
+    seo_score: 70, aeo_score: 61, geo_score: 54, total_score: 62, first_total_score: 47, improvement: 15,
+    scan_count: 3, last_scanned_at: '2026-04-11T16:00:00Z',
+  },
+  {
+    id: 'sample-tw-05', isSample: true,
+    name: 'momo購物網', url: 'https://www.momoshop.com.tw/',
+    seo_score: 74, aeo_score: 65, geo_score: 58, total_score: 66, first_total_score: 51, improvement: 15,
+    scan_count: 3, last_scanned_at: '2026-04-10T09:55:00Z',
+  },
+  {
+    id: 'sample-tw-06', isSample: true,
+    name: '蝦皮購物台灣', url: 'https://shopee.tw/',
+    seo_score: 77, aeo_score: 68, geo_score: 62, total_score: 69, first_total_score: 54, improvement: 15,
+    scan_count: 4, last_scanned_at: '2026-04-14T11:10:00Z',
+  },
+  {
+    id: 'sample-tw-07', isSample: true,
+    name: '遠東百貨', url: 'https://www.feds.com.tw/',
+    seo_score: 62, aeo_score: 49, geo_score: 42, total_score: 51, first_total_score: 34, improvement: 17,
+    scan_count: 2, last_scanned_at: '2026-04-08T14:30:00Z',
+  },
+  {
+    id: 'sample-tw-08', isSample: true,
+    name: '欣葉台灣料理', url: 'https://www.shinyeh.com.tw/',
+    seo_score: 58, aeo_score: 46, geo_score: 38, total_score: 47, first_total_score: 29, improvement: 18,
+    scan_count: 2, last_scanned_at: '2026-04-07T12:00:00Z',
+  },
+]
+
 // 將各資料表的審計紀錄（依 created_at ASC）轉成 map：website_id → { first_score, latest_score, count, latest_at }
 const buildStats = (audits) => {
   const map = {}
@@ -77,7 +179,12 @@ export default function Showcase() {
         }
       }).filter(Boolean)
 
-      setSites(combined)
+      // 合併樣板資料：真實掃描結果覆蓋同網址的樣板
+      const realUrls = new Set(combined.map(s => s.url.replace(/\/$/, '').toLowerCase()))
+      const filteredSamples = SAMPLE_SITES.filter(
+        s => !realUrls.has(s.url.replace(/\/$/, '').toLowerCase())
+      )
+      setSites([...combined, ...filteredSamples])
     } catch (e) {
       console.error(e)
     } finally {
@@ -187,14 +294,6 @@ export default function Showcase() {
             </svg>
             <span className="text-gray-500">載入中...</span>
           </div>
-        ) : sites.length === 0 ? (
-          <div className="text-center py-32">
-            <div className="text-6xl mb-4">🔍</div>
-            <div className="text-gray-500 text-lg">尚無檢測紀錄</div>
-            <Link to="/" className="mt-6 inline-block px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors">
-              立即檢測您的網站
-            </Link>
-          </div>
         ) : (
           <>
             {/* ===== Section 1: 進步之星 ===== */}
@@ -280,7 +379,10 @@ export default function Showcase() {
                         <span className="text-gray-400 text-sm font-mono">{i + 1}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-gray-800 font-medium truncate">{site.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-800 font-medium truncate">{site.name}</span>
+                        {site.isSample && <span className="flex-shrink-0 text-xs px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">範例</span>}
+                      </div>
                       <div className="text-gray-400 text-xs truncate">{site.url}</div>
                     </div>
 
@@ -421,7 +523,10 @@ export default function Showcase() {
                     className="grid grid-cols-12 gap-2 px-6 py-4 border-b border-orange-50 last:border-0 hover:bg-white/30 transition-colors items-center">
                     <div className="col-span-1 text-gray-400 text-sm font-mono">{page * PAGE_SIZE + i + 1}</div>
                     <div className="col-span-4 min-w-0">
-                      <div className="text-gray-800 font-medium text-sm truncate">{site.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-gray-800 font-medium text-sm truncate">{site.name}</span>
+                        {site.isSample && <span className="flex-shrink-0 text-xs px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">範例</span>}
+                      </div>
                       <div className="flex items-center gap-1 mt-0.5">
                         <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full">
                           🤖 AI 已讀取 {timeAgo(site.last_scanned_at)}
