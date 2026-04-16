@@ -179,7 +179,7 @@ function ScoreRing({ score }) {
 }
 
 export default function ContentAudit() {
-  const { user, isPro, userName } = useAuth()
+  const { user, isPro, userName, signOut } = useAuth()
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -235,22 +235,28 @@ export default function ContentAudit() {
             </div>
             <span className="text-lg font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
-          <nav className="flex items-center gap-5">
-            <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
-            <Link to="/faq" className="text-slate-600 hover:text-slate-900 text-sm transition-colors">FAQ</Link>
+          <nav className="flex items-center gap-4">
+            <Link to="/" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
+            <Link to="/faq" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">FAQ</Link>
             {user ? (
-              isPro ? (
-                <Link to="/account" className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                  <span className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-bold">
-                    {(userName || user.email || '?').slice(0, 2).toUpperCase()}
-                  </span>
-                  <span className="hidden sm:inline">帳號</span>
+              <>
+                {!isPro && (
+                  <Link to="/pricing" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
+                )}
+                <Link to="/account" className="hidden sm:block text-slate-600 text-sm hover:text-slate-900 transition-colors">👤 {userName}</Link>
+                <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity sm:hidden" title="帳號設定">
+                  {user?.user_metadata?.avatar_url ? (
+                    <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                      {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                 </Link>
-              ) : (
-                <Link to="/pricing" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
-              )
+                <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-xs sm:text-sm transition-colors">登出</button>
+              </>
             ) : (
-              <Link to="/login" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">登入</Link>
+              <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
             )}
           </nav>
         </div>
