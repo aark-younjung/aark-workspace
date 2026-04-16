@@ -7,8 +7,17 @@ import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 
-const scoreColor = (s) => s >= 70 ? 'text-green-400' : s >= 40 ? 'text-yellow-400' : 'text-red-400'
+const scoreColor = (s) => s >= 70 ? 'text-green-500' : s >= 40 ? 'text-yellow-500' : 'text-red-400'
 const scoreBg = (s) => s >= 70 ? 'bg-green-500/20 border-green-500/30' : s >= 40 ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-red-500/20 border-red-500/30'
+const scoreBar = (s) => s >= 70 ? 'bg-green-400' : s >= 40 ? 'bg-yellow-400' : 'bg-red-400'
+
+// 每個網站的主色（最多4個）
+const SITE_COLORS = [
+  { border: 'border-orange-400', bg: 'bg-orange-50', badge: 'bg-orange-500', text: 'text-orange-600', bar: 'bg-orange-400', ring: 'ring-orange-300' },
+  { border: 'border-blue-400',   bg: 'bg-blue-50',   badge: 'bg-blue-500',   text: 'text-blue-600',   bar: 'bg-blue-400',   ring: 'ring-blue-300' },
+  { border: 'border-violet-400', bg: 'bg-violet-50', badge: 'bg-violet-500', text: 'text-violet-600', bar: 'bg-violet-400', ring: 'ring-violet-300' },
+  { border: 'border-emerald-400',bg: 'bg-emerald-50',badge: 'bg-emerald-500',text: 'text-emerald-600',bar: 'bg-emerald-400',ring: 'ring-emerald-300' },
+]
 
 const SEO_CHECKS = [
   { key: 'meta_tags',         label: 'Meta 標籤',       getValue: r => r.seo?.meta_tags?.hasTitle && r.seo?.meta_tags?.hasDescription },
@@ -287,26 +296,57 @@ export default function Compare() {
         {analyzed && results.length > 0 && (
           <>
             {/* 總分概覽 */}
-            <div className={`grid gap-4 mb-10 ${results.length === 2 ? 'grid-cols-2' : results.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
-              {results.map((r, i) => (
-                <div key={i} className={`p-6 rounded-2xl border ${totalWinners[i] ? 'border-yellow-500/40 bg-yellow-500/5' : 'border-white/60 bg-white/40 backdrop-blur-md'}`}>
-                  {totalWinners[i] && (
-                    <div className="text-yellow-600 text-xs font-bold mb-2">🏆 最高分</div>
-                  )}
-                  <div className="text-gray-400 text-xs mb-1 truncate">{r.hostname}</div>
-                  <div className={`text-4xl font-bold mb-4 ${scoreColor(r.total)}`}>{r.total}</div>
-                  <div className="space-y-2">
-                    {[['SEO', r.seo?.score || 0, seoWinners[i]], ['AEO', r.aeo?.score || 0, aeoWinners[i]], ['GEO', r.geo?.score || 0, geoWinners[i]], ['E-E-A-T', r.eeat?.score || 0, eeatWinners[i]]].map(([label, score, winner]) => (
-                      <div key={label} className="flex items-center justify-between">
-                        <span className="text-gray-400 text-sm">{label}</span>
-                        <span className={`text-sm font-bold ${scoreColor(score)} ${winner ? 'underline decoration-dotted' : ''}`}>
-                          {score} {winner ? '↑' : ''}
-                        </span>
+            <div className={`grid gap-4 mb-10 ${results.length === 2 ? 'sm:grid-cols-2' : results.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-4'} grid-cols-1`}>
+              {results.map((r, i) => {
+                const c = SITE_COLORS[i % SITE_COLORS.length]
+                return (
+                  <div key={i} className={`relative rounded-2xl border-2 ${totalWinners[i] ? 'border-yellow-400 shadow-lg shadow-yellow-100' : c.border} bg-white/70 backdrop-blur-md overflow-hidden`}>
+                    {/* 頂部色條 */}
+                    <div className={`h-1.5 w-full ${totalWinners[i] ? 'bg-gradient-to-r from-yellow-400 to-amber-400' : c.badge}`} />
+                    <div className="p-5">
+                      {/* 名稱 + 名次 */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={`flex-shrink-0 w-6 h-6 rounded-full ${c.badge} text-white text-xs font-bold flex items-center justify-center`}>{i + 1}</span>
+                        <span className="text-slate-600 text-xs font-medium truncate">{r.hostname}</span>
+                        {totalWinners[i] && <span className="ml-auto text-xs">🏆</span>}
                       </div>
-                    ))}
+
+                      {/* 大總分 */}
+                      <div className="flex items-end gap-2 mb-4">
+                        <span className={`text-5xl font-black ${scoreColor(r.total)}`}>{r.total}</span>
+                        <span className="text-slate-400 text-sm mb-1">/ 100</span>
+                      </div>
+
+                      {/* 圓弧進度條 */}
+                      <div className="w-full bg-slate-100 rounded-full h-2 mb-4">
+                        <div className={`h-2 rounded-full transition-all duration-700 ${scoreBar(r.total)}`} style={{ width: `${r.total}%` }} />
+                      </div>
+
+                      {/* 四項分數 */}
+                      <div className="space-y-2.5">
+                        {[
+                          ['SEO', r.seo?.score || 0, seoWinners[i]],
+                          ['AEO', r.aeo?.score || 0, aeoWinners[i]],
+                          ['GEO', r.geo?.score || 0, geoWinners[i]],
+                          ['E-E-A-T', r.eeat?.score || 0, eeatWinners[i]],
+                        ].map(([label, score, winner]) => (
+                          <div key={label}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className={`text-xs font-medium ${winner ? c.text : 'text-slate-400'}`}>
+                                {label} {winner ? '↑' : ''}
+                              </span>
+                              <span className={`text-xs font-bold ${scoreColor(score)}`}>{score}</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-1.5">
+                              <div className={`h-1.5 rounded-full ${winner ? c.bar : scoreBar(score)}`} style={{ width: `${score}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* 詳細比較表 */}
@@ -320,12 +360,20 @@ export default function Compare() {
                 <h2 className="text-xl font-bold text-gray-800 mb-4">{title}</h2>
                 <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 overflow-hidden">
                   {/* 表頭 */}
-                  <div className={`grid gap-2 px-6 py-3 border-b border-orange-100 text-gray-400 text-xs font-medium`}
+                  <div className={`grid gap-2 px-6 py-3 border-b border-orange-100 text-xs font-medium`}
                     style={{ gridTemplateColumns: `1fr ${results.map(() => '1fr').join(' ')}` }}>
-                    <div>檢測項目</div>
-                    {results.map((r, i) => (
-                      <div key={i} className="text-center truncate">{r.hostname}</div>
-                    ))}
+                    <div className="text-gray-400">檢測項目</div>
+                    {results.map((r, i) => {
+                      const c = SITE_COLORS[i % SITE_COLORS.length]
+                      return (
+                        <div key={i} className="flex justify-center">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${c.bg} ${c.text} truncate max-w-full`}>
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${c.badge}`} />
+                            <span className="truncate">{r.hostname}</span>
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
                   {/* 每一列 */}
                   {checks.map(({ key, label, getValue }) => {
@@ -336,14 +384,17 @@ export default function Compare() {
                         className="grid gap-2 px-6 py-3 border-b border-orange-50 last:border-0 hover:bg-white/30 transition-colors items-center"
                         style={{ gridTemplateColumns: `1fr ${results.map(() => '1fr').join(' ')}` }}>
                         <div className="text-gray-500 text-sm">{label}</div>
-                        {vals.map((v, i) => (
-                          <div key={i} className="flex justify-center">
-                            {v
-                              ? <span className="text-green-400 text-lg">✓</span>
-                              : <span className="text-red-400/50 text-lg">✗</span>
-                            }
-                          </div>
-                        ))}
+                        {vals.map((v, i) => {
+                          const c = SITE_COLORS[i % SITE_COLORS.length]
+                          return (
+                            <div key={i} className="flex justify-center">
+                              {v
+                                ? <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 text-green-600 text-sm font-bold`}>✓</span>
+                                : <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-300 text-sm">✗</span>
+                              }
+                            </div>
+                          )
+                        })}
                       </div>
                     )
                   })}
