@@ -127,7 +127,7 @@ function DarkScanningOverlay({ logs, targetUrl }) {
               <div key={d} className="w-2 h-2 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
             ))}
           </div>
-          <span className="text-slate-300 font-medium text-sm">正在掃描</span>
+          <span className="text-white font-medium text-sm">正在掃描</span>
           <span className="px-3 py-1 bg-white/10 rounded-full text-white font-semibold text-sm border border-white/20 shadow-sm">{hostname}</span>
         </div>
       </div>
@@ -211,12 +211,12 @@ function DarkScanningOverlay({ logs, targetUrl }) {
           <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-4 flex flex-col gap-3 overflow-hidden">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
-              <span className="text-slate-300 font-semibold text-sm">掃描日誌</span>
+              <span className="text-white font-semibold text-sm">掃描日誌</span>
             </div>
             <div ref={logRef} className="flex-1 overflow-y-auto space-y-1 scrollbar-hide">
               {logs.map((log) => (
                 <div key={log.key} className="text-xs flex items-start gap-2">
-                  <span className="text-slate-600 flex-shrink-0">{log.time}</span>
+                  <span className="text-white/40 flex-shrink-0">{log.time}</span>
                   <span style={{ color: botColorMap[log.bot] || '#94a3b8' }} className="flex-shrink-0 font-medium">{log.bot}</span>
                   <span className={`flex-1 ${log.status === 'pass' ? 'text-green-400' : log.status === 'fail' ? 'text-red-400' : 'text-orange-400'}`}>
                     {log.status === 'pass' ? '✓' : log.status === 'fail' ? '✗' : '…'} {log.item}
@@ -240,10 +240,10 @@ function HomeFAQItem({ q, a }) {
       onClick={() => setOpen(v => !v)}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-slate-200 text-sm">{q}</span>
-        <span className={`text-slate-400 text-lg flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>↓</span>
+        <span className="font-medium text-white text-sm">{q}</span>
+        <span className={`text-white/80 text-lg flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>↓</span>
       </div>
-      {open && <p className="mt-3 text-slate-400 text-sm leading-relaxed border-t border-white/10 pt-3">{a}</p>}
+      {open && <p className="mt-3 text-white/80 text-sm leading-relaxed border-t border-white/10 pt-3">{a}</p>}
     </div>
   )
 }
@@ -515,7 +515,7 @@ export default function HomeDark() {
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-24 overflow-visible">
         {/* 背景同心圓：圓心對齊雷達圓心，left = 50% + 350px，zIndex: -1 確保在內容後面 */}
         <div className="absolute pointer-events-none overflow-visible" style={{
-          left: 'calc(50% + 380px)',
+          left: 'calc(50% + 310px)',
           top: '30px',
           width: 0, height: 0,
           zIndex: -1,
@@ -524,7 +524,7 @@ export default function HomeDark() {
             <div key={i} style={{
               position: 'absolute', left: -r, top: -r,
               width: r * 2, height: r * 2, borderRadius: '50%',
-              border: '3px solid rgba(0,0,0,0.45)',
+              border: '3px solid #000000',
               opacity: Math.max(0.10, 0.50 - i * 0.025),
             }} />
           ))}
@@ -543,11 +543,11 @@ export default function HomeDark() {
               讓AI看見你
             </h1>
 
-            <p className="text-xl md:text-2xl font-semibold text-slate-200 mb-8 leading-snug">
+            <p className="text-xl md:text-2xl font-semibold text-white mb-8 leading-snug">
               掌握 AI 能見度<br />贏在搜尋未來
             </p>
 
-            <p className="text-base text-slate-400 mb-10 max-w-lg">
+            <p className="text-base text-white/80 mb-10 max-w-lg">
               輸入網址，60 秒內取得你的 AI 能見度完整報告——免費診斷 3 個網站，不需信用卡
             </p>
 
@@ -558,7 +558,7 @@ export default function HomeDark() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="輸入您的網址 (例如: example.com)"
-                  className="flex-1 px-6 py-4 rounded-xl border border-orange-400/40 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all backdrop-blur-sm"
+                  className="flex-1 px-6 py-4 rounded-xl border border-orange-400/40 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all backdrop-blur-sm"
                   disabled={loading}
                   style={{ background: 'rgba(255,255,255,0.10)' }}
                 />
@@ -578,7 +578,7 @@ export default function HomeDark() {
                   ) : '立即取得免費分析報告'}
                 </button>
               </div>
-              {status && <p className="mt-3 text-slate-400 text-sm">{status}</p>}
+              {status && <p className="mt-3 text-white/80 text-sm">{status}</p>}
             </form>
           </div>
 
@@ -664,7 +664,7 @@ export default function HomeDark() {
               <div className="flex items-center gap-2">
                 <span className="text-lg">📂</span>
                 <h2 className="text-base font-bold text-white">我的網站</h2>
-                <span className="text-xs text-slate-500 font-normal">{myWebsites.length} / {WEBSITE_LIMIT} 個</span>
+                <span className="text-xs text-white/60 font-normal">{myWebsites.length} / {WEBSITE_LIMIT} 個</span>
               </div>
               {!isPro && <Link to="/pricing" className="text-xs text-orange-400 hover:text-orange-300 transition-colors">升級解鎖更多 →</Link>}
             </div>
@@ -683,8 +683,8 @@ export default function HomeDark() {
                   >
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-200 text-sm truncate group-hover:text-orange-400 transition-colors">{site.name}</p>
-                        <p className="text-xs text-slate-500 truncate mt-0.5">{site.url}</p>
+                        <p className="font-semibold text-white text-sm truncate group-hover:text-orange-400 transition-colors">{site.name}</p>
+                        <p className="text-xs text-white/60 truncate mt-0.5">{site.url}</p>
                       </div>
                       {total !== null && <span className={`flex-shrink-0 text-xl font-bold ${scoreColor(total)}`}>{total}</span>}
                     </div>
@@ -692,7 +692,7 @@ export default function HomeDark() {
                       <div className="space-y-1.5">
                         {[['SEO', site.seo], ['AEO', site.aeo], ['GEO', site.geo]].map(([label, score]) => score !== null && (
                           <div key={label} className="flex items-center gap-2">
-                            <span className="text-xs text-slate-500 w-7">{label}</span>
+                            <span className="text-xs text-white/60 w-7">{label}</span>
                             <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                               <div className={`h-1.5 rounded-full ${barColor(score)}`} style={{ width: `${score}%` }} />
                             </div>
@@ -700,9 +700,9 @@ export default function HomeDark() {
                           </div>
                         ))}
                       </div>
-                    ) : <p className="text-xs text-slate-500">尚未分析</p>}
+                    ) : <p className="text-xs text-white/60">尚未分析</p>}
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/8">
-                      <span className="text-xs text-slate-500">🤖 {timeAgo(site.last_scanned_at)}</span>
+                      <span className="text-xs text-white/60">🤖 {timeAgo(site.last_scanned_at)}</span>
                       <span className="text-xs text-orange-400 font-medium group-hover:underline">查看報告 →</span>
                     </div>
                   </Link>
@@ -710,7 +710,7 @@ export default function HomeDark() {
               })}
               {myWebsites.length < WEBSITE_LIMIT && (
                 <button onClick={() => document.querySelector('input[type="text"]')?.focus()}
-                  className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-2xl p-4 transition-all text-slate-500 hover:text-orange-400 hover:border-orange-500/40 min-h-[120px]"
+                  className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-2xl p-4 transition-all text-white/60 hover:text-orange-400 hover:border-orange-500/40 min-h-[120px]"
                   style={{ borderColor: 'rgba(255,255,255,0.15)' }}
                 >
                   <span className="text-2xl">＋</span>
@@ -726,16 +726,16 @@ export default function HomeDark() {
           <div className="mt-10">
             <div className="flex items-center gap-2 mb-2 justify-center">
               <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
-              <span className="text-slate-500 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
+              <span className="text-white/60 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
             </div>
             <div className="overflow-hidden rounded-xl border py-3" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' }}>
               <div className="flex whitespace-nowrap" style={{ animation: 'tickerScroll 25s linear infinite' }}>
                 {[...recentScans, ...recentScans].map((item, i) => (
                   <span key={i} className="inline-flex items-center gap-2 px-6 text-sm">
                     <span className="text-purple-400 text-base">🤖</span>
-                    <span className="font-medium text-slate-300">{item.name}</span>
-                    <span className="text-slate-600 text-xs">{timeAgo(item.scanned_at)}</span>
-                    <span className="text-slate-700 mx-3">·</span>
+                    <span className="font-medium text-white">{item.name}</span>
+                    <span className="text-white/40 text-xs">{timeAgo(item.scanned_at)}</span>
+                    <span className="text-white/25 mx-3">·</span>
                   </span>
                 ))}
               </div>
@@ -755,13 +755,13 @@ export default function HomeDark() {
                     <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>即時
                   </span>
                 </div>
-                <p className="text-slate-500 text-xs mt-0.5">分析日誌衍生・每次檢測即更新</p>
+                <p className="text-white/60 text-xs mt-0.5">分析日誌衍生・每次檢測即更新</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 mb-3">
               <span>🤖</span>
-              <span className="text-slate-400 text-sm font-medium">AI 爬蟲</span>
+              <span className="text-white/80 text-sm font-medium">AI 爬蟲</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
               {AI_BOTS.map((bot, i) => {
@@ -775,8 +775,8 @@ export default function HomeDark() {
                     <div className="flex items-center gap-3 mb-3">
                       <BotLogo domain={bot.domain} color={bot.color} size="md" />
                       <div className="min-w-0">
-                        <div className="font-bold text-slate-200 text-sm truncate">{bot.name}</div>
-                        <div className="text-slate-500 text-xs">{bot.company}</div>
+                        <div className="font-bold text-white text-sm truncate">{bot.name}</div>
+                        <div className="text-white/60 text-xs">{bot.company}</div>
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
@@ -784,7 +784,7 @@ export default function HomeDark() {
                         <div className="text-green-400 font-bold text-xl">{count.toLocaleString()}</div>
                         <div className="text-green-500/70 text-xs">+{todayCount} 今日</div>
                       </div>
-                      <div className="text-slate-500 text-xs text-right">{timeAgo(lastSeen)}</div>
+                      <div className="text-white/60 text-xs text-right">{timeAgo(lastSeen)}</div>
                     </div>
                   </div>
                 )
@@ -793,7 +793,7 @@ export default function HomeDark() {
 
             <div className="flex items-center gap-2 mb-3">
               <span>🔍</span>
-              <span className="text-slate-400 text-sm font-medium">搜尋引擎爬蟲</span>
+              <span className="text-white/80 text-sm font-medium">搜尋引擎爬蟲</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {SE_BOTS.map((bot, i) => {
@@ -807,8 +807,8 @@ export default function HomeDark() {
                     <div className="flex items-center gap-2 mb-3">
                       <BotLogo domain={bot.domain} color={bot.color} size="sm" />
                       <div className="min-w-0">
-                        <div className="font-bold text-slate-200 text-xs truncate">{bot.name}</div>
-                        <div className="text-slate-500 text-xs">{bot.company}</div>
+                        <div className="font-bold text-white text-xs truncate">{bot.name}</div>
+                        <div className="text-white/60 text-xs">{bot.company}</div>
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
@@ -816,7 +816,7 @@ export default function HomeDark() {
                         <div className="text-green-400 font-bold text-lg">{count.toLocaleString()}</div>
                         <div className="text-green-500/70 text-xs">+{todayCount} 今日</div>
                       </div>
-                      <div className="text-slate-500 text-xs">{timeAgo(lastSeen)}</div>
+                      <div className="text-white/60 text-xs">{timeAgo(lastSeen)}</div>
                     </div>
                   </div>
                 )
@@ -836,7 +836,7 @@ export default function HomeDark() {
               style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
               <div className="text-4xl mb-4">{item.icon}</div>
               <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-              <p className="text-slate-400">{item.desc}</p>
+              <p className="text-white/80">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -846,7 +846,7 @@ export default function HomeDark() {
           style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
           <div className="text-3xl mb-3">🏆</div>
           <h2 className="text-xl font-bold text-white mb-2">想知道其他網站的 AI 能見度表現？</h2>
-          <p className="text-slate-400 mb-6 text-sm">查看進步之星、排行榜與成功案例，了解優化前後的差異</p>
+          <p className="text-white/80 mb-6 text-sm">查看進步之星、排行榜與成功案例，了解優化前後的差異</p>
           <Link to="/showcase"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-900/40">
             查看 AI 能見度排行榜 →
@@ -857,7 +857,7 @@ export default function HomeDark() {
         <div className="mt-16">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-white mb-2">常見問題</h2>
-            <p className="text-slate-500 text-sm">關於 SEO、AEO、GEO 與 E-E-A-T 的快速解答</p>
+            <p className="text-white/60 text-sm">關於 SEO、AEO、GEO 與 E-E-A-T 的快速解答</p>
           </div>
           <div className="space-y-3">
             {[
