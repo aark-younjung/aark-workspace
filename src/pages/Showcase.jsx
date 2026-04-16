@@ -135,6 +135,7 @@ const timeAgo = (d) => {
 }
 
 export default function Showcase() {
+  const { isDark } = useTheme()
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
   const [leaderTab, setLeaderTab] = useState('total')
