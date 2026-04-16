@@ -558,7 +558,7 @@ export default function HomeDark() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="輸入您的網址 (例如: example.com)"
-                  className="flex-1 px-6 py-4 rounded-xl border border-orange-400/40 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all backdrop-blur-sm"
+                  className="flex-1 px-6 py-4 rounded-xl border border-white/60 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent shadow-sm transition-all backdrop-blur-sm"
                   disabled={loading}
                   style={{ background: 'rgba(255,255,255,0.10)' }}
                 />
