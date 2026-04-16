@@ -406,13 +406,17 @@ export default function Home() {
       // 檢查是否已存在
       const { data: existing } = await supabase
         .from('websites')
-        .select('id')
+        .select('id, user_id')
         .eq('url', cleanUrl)
         .maybeSingle()
 
       let websiteId
       if (existing) {
         websiteId = existing.id
+        // 若已登入且此網站尚無 user_id，則更新為當前使用者
+        if (user && !existing.user_id) {
+          await supabase.from('websites').update({ user_id: user.id }).eq('id', existing.id)
+        }
         setStatus('網站已存在，正在執行 SEO 檢測...')
       } else {
         // 檢查網站數量上限（登入用戶才計算）
@@ -453,7 +457,8 @@ export default function Home() {
           .from('websites')
           .insert([{
             url: cleanUrl,
-            name: siteName
+            name: siteName,
+            user_id: user?.id || null
           }])
           .select()
           .single()
