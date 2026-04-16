@@ -113,7 +113,7 @@ export default function AdminSeed() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-8">
+    <div className="min-h-screen  p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-white mb-2">Admin Seed Tool</h1>
         <p className="text-slate-400 text-sm mb-6">寫入 20 個日本小品牌網站的模擬分析數據（每站 3 輪歷史記錄）</p>

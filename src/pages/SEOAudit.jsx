@@ -149,7 +149,7 @@ export default function SEOAudit() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-slate-600">載入資料中...</p>
@@ -159,7 +159,7 @@ export default function SEOAudit() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen ">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
         <div className="max-w-7xl mx-auto px-6 py-6">

@@ -194,7 +194,7 @@ export default function GA4Report() {
   }, [id])
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+    <div className="min-h-screen flex items-center justify-center" >
       <div className="text-center">
         <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
         <p className="text-slate-600">載入 GA4 數據中...</p>
@@ -203,7 +203,7 @@ export default function GA4Report() {
   )
 
   if (error === 'NOT_AUTHENTICATED') return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+    <div className="min-h-screen flex items-center justify-center" >
       <div className="bg-white/60 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/60">
         <div className="text-4xl mb-4">🔑</div>
         <h2 className="font-bold text-slate-800 mb-2">需要 Google 授權</h2>
@@ -215,7 +215,7 @@ export default function GA4Report() {
   )
 
   if (error === 'NO_PROPERTY') return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+    <div className="min-h-screen flex items-center justify-center" >
       <div className="bg-white/60 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/60">
         <div className="text-4xl mb-4">⚙️</div>
         <h2 className="font-bold text-slate-800 mb-2">尚未設定 GA4 Property ID</h2>
@@ -226,7 +226,7 @@ export default function GA4Report() {
   )
 
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+    <div className="min-h-screen flex items-center justify-center" >
       <div className="bg-white/60 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/60">
         <div className="text-4xl mb-4">⚠️</div>
         <p className="text-red-600 text-sm mb-4">{error}</p>
@@ -250,7 +250,7 @@ export default function GA4Report() {
   ]
 
   return (
-    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+    <div className="min-h-screen relative" >
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
 
       <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/30">

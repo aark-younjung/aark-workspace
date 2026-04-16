@@ -40,7 +40,7 @@ export default function GoogleAuthCallback() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen  flex items-center justify-center">
       <div className="text-center bg-white rounded-2xl shadow-sm border border-slate-100 p-10 max-w-sm w-full mx-4">
         {status === 'processing' && (
           <>

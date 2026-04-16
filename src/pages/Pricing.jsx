@@ -74,7 +74,7 @@ export default function Pricing() {
   }
 
   return (
-    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+    <div className="min-h-screen relative" >
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div className="relative">
       {/* Header */}
@@ -119,7 +119,10 @@ export default function Pricing() {
               onClick={() => setIsYearly(v => !v)}
               className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${isYearly ? 'bg-purple-600' : 'bg-orange-400'}`}
             >
-              <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${isYearly ? 'translate-x-7' : 'translate-x-0'}`}></span>
+              <span
+                className="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow"
+                style={{ transform: isYearly ? 'translateX(28px)' : 'translateX(0)', transition: 'transform 300ms ease' }}
+              ></span>
             </button>
             <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-400'}`}>
               年繳
