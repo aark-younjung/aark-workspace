@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 const scoreColor = (s) => s >= 70 ? 'text-green-400' : s >= 40 ? 'text-yellow-400' : 'text-red-400'
 const scoreBg = (s) => s >= 70 ? 'bg-green-500/20 border-green-500/30' : s >= 40 ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-red-500/20 border-red-500/30'
@@ -61,12 +62,30 @@ const getHostname = (url) => {
 }
 
 export default function Compare() {
-  const { isPro } = useAuth()
+  const { user, isPro, userName, signOut } = useAuth()
   const MAX_URLS = isPro ? 4 : 2
   const [urls, setUrls] = useState(['', ''])
   const [results, setResults] = useState([])
   const [loadingStates, setLoadingStates] = useState([])
   const [analyzed, setAnalyzed] = useState(false)
+  const [myWebsites, setMyWebsites] = useState([])
+
+  // 載入使用者的網站，自動帶入第一格
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('websites')
+      .select('id, name, url')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(15)
+      .then(({ data }) => {
+        if (!data?.length) return
+        setMyWebsites(data)
+        // 第一格還沒填時，自動帶入最近分析的網站
+        setUrls(prev => prev[0] === '' ? [data[0].url, ...prev.slice(1)] : prev)
+      })
+  }, [user])
 
   const addUrl = () => { if (urls.length < MAX_URLS) setUrls([...urls, '']) }
   const removeUrl = (i) => { if (urls.length > 2) setUrls(urls.filter((_, idx) => idx !== i)) }
@@ -134,9 +153,23 @@ export default function Compare() {
             </div>
             <span className="text-xl font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
-          <nav className="flex items-center gap-6">
-            <Link to="/showcase" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
-            <Link to="/" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">免費檢測</Link>
+          <nav className="flex items-center gap-4">
+            <Link to="/showcase" className="hidden sm:block text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
+            <Link to="/" className="hidden sm:block text-slate-600 hover:text-slate-900 transition-colors text-sm">免費檢測</Link>
+            {user ? (
+              <>
+                {!isPro && <Link to="/pricing" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded-lg transition-colors font-medium">升級 Pro</Link>}
+                <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title={userName || user.email}>
+                  {user?.user_metadata?.avatar_url
+                    ? <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">{(userName || user?.email || '?').slice(0, 2).toUpperCase()}</div>
+                  }
+                </Link>
+                <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-xs sm:text-sm transition-colors">登出</button>
+              </>
+            ) : (
+              <Link to="/login" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
+            )}
           </nav>
         </div>
       </header>
@@ -175,6 +208,35 @@ export default function Compare() {
               </div>
             ))}
           </div>
+
+          {/* 我的網站快速選擇 */}
+          {myWebsites.length > 0 && (
+            <div className="mb-5 pb-5 border-b border-orange-100">
+              <p className="text-xs text-slate-400 mb-2">📂 快速填入我的網站</p>
+              <div className="flex flex-wrap gap-2">
+                {myWebsites.map((site, i) => (
+                  <button
+                    key={site.id}
+                    disabled={isLoading}
+                    onClick={() => {
+                      // 找第一個空格填入，否則填入第一格
+                      const emptyIdx = urls.findIndex(u => !u.trim())
+                      const targetIdx = emptyIdx !== -1 ? emptyIdx : 0
+                      setUrls(prev => prev.map((u, idx) => idx === targetIdx ? site.url : u))
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all disabled:opacity-40 ${
+                      urls.includes(site.url)
+                        ? 'bg-orange-100 border-orange-300 text-orange-700'
+                        : 'bg-white/60 border-orange-100 text-slate-600 hover:border-orange-300 hover:text-orange-600'
+                    }`}
+                  >
+                    {urls.includes(site.url) && <span className="text-orange-400">✓</span>}
+                    <span className="max-w-[140px] truncate">{site.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-4 flex-wrap">
             {urls.length < MAX_URLS && (
