@@ -13,6 +13,9 @@ export default function AdminUsers() {
   const [expandedId, setExpandedId] = useState(null)
   const [toggling, setToggling] = useState(null)
   const [userWebsites, setUserWebsites] = useState({})
+  const [grantEmail, setGrantEmail] = useState('')
+  const [granting, setGranting] = useState(false)
+  const [grantResult, setGrantResult] = useState(null) // { type: 'success'|'error'|'info', msg }
 
   useEffect(() => {
     fetchUsers()
@@ -76,6 +79,42 @@ export default function AdminUsers() {
     }
   }
 
+  const handleGrantPro = async (grantAsPro) => {
+    const email = grantEmail.trim().toLowerCase()
+    if (!email) return
+    setGranting(true)
+    setGrantResult(null)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, is_pro')
+        .ilike('email', email)
+        .maybeSingle()
+      if (error) throw error
+      if (!data) {
+        setGrantResult({ type: 'error', msg: `找不到帳號：${email}` })
+        return
+      }
+      if (data.is_pro === grantAsPro) {
+        setGrantResult({ type: 'info', msg: `${data.email} 目前已是 ${grantAsPro ? 'Pro' : 'Free'} 方案，無需變更` })
+        return
+      }
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ is_pro: grantAsPro })
+        .eq('id', data.id)
+      if (updateError) throw updateError
+      // 同步更新列表（如果該用戶在當前列表中）
+      setUsers(prev => prev.map(u => u.id === data.id ? { ...u, is_pro: grantAsPro } : u))
+      setGrantResult({ type: 'success', msg: `✅ ${data.email}（${data.name || '未填姓名'}）已${grantAsPro ? '升級為 Pro' : '降回 Free'}` })
+      setGrantEmail('')
+    } catch (e) {
+      setGrantResult({ type: 'error', msg: '操作失敗：' + e.message })
+    } finally {
+      setGranting(false)
+    }
+  }
+
   const filtered = users.filter(u =>
     u.email?.toLowerCase().includes(search.toLowerCase()) ||
     u.name?.toLowerCase().includes(search.toLowerCase())
@@ -90,6 +129,46 @@ export default function AdminUsers() {
               <h1 className="text-2xl font-bold text-white">用戶管理</h1>
               <p className="text-slate-400 text-sm mt-1">共 {users.length} 位用戶</p>
             </div>
+          </div>
+
+          {/* 指定帳號授權 Pro */}
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 mb-6">
+            <h2 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+              <span className="text-orange-400">⭐</span> 指定帳號授權 Pro
+            </h2>
+            <div className="flex gap-2 flex-wrap">
+              <input
+                type="email"
+                placeholder="輸入用戶 Email..."
+                value={grantEmail}
+                onChange={e => { setGrantEmail(e.target.value); setGrantResult(null) }}
+                onKeyDown={e => e.key === 'Enter' && handleGrantPro(true)}
+                className="flex-1 min-w-48 bg-slate-900 border border-slate-600 text-slate-200 placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"
+              />
+              <button
+                onClick={() => handleGrantPro(true)}
+                disabled={granting || !grantEmail.trim()}
+                className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {granting ? '處理中...' : '授予 Pro'}
+              </button>
+              <button
+                onClick={() => handleGrantPro(false)}
+                disabled={granting || !grantEmail.trim()}
+                className="px-4 py-2.5 bg-slate-600 hover:bg-slate-500 text-slate-300 text-sm font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                取消 Pro
+              </button>
+            </div>
+            {grantResult && (
+              <div className={`mt-3 px-4 py-2.5 rounded-lg text-sm font-medium ${
+                grantResult.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                grantResult.type === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                'bg-slate-700 text-slate-300 border border-slate-600'
+              }`}>
+                {grantResult.msg}
+              </div>
+            )}
           </div>
 
           {/* 搜尋 + 篩選 */}
