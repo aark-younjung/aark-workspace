@@ -381,7 +381,6 @@ export default function Showcase() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-gray-800 font-medium truncate">{site.name}</span>
-                        {site.isSample && <span className="flex-shrink-0 text-xs px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">範例</span>}
                       </div>
                       <div className="text-gray-400 text-xs truncate">{site.url}</div>
                     </div>
@@ -525,7 +524,6 @@ export default function Showcase() {
                     <div className="col-span-4 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-gray-800 font-medium text-sm truncate">{site.name}</span>
-                        {site.isSample && <span className="flex-shrink-0 text-xs px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full">範例</span>}
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
                         <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full">
