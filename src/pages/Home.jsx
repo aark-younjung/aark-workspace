@@ -336,7 +336,7 @@ export default function Home() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(WEBSITE_LIMIT)
-    console.log('[MyWebsites] result:', { sites, error })
+    console.log('[MyWebsites] sites count:', sites?.length ?? 'null', '| error:', error?.message ?? 'none', '| data:', JSON.stringify(sites))
     if (!sites?.length) return
 
     const ids = sites.map(s => s.id)
