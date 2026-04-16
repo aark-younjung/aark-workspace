@@ -8,6 +8,8 @@ export default function AdminWebsites() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('created_at')
+  const [deletingId, setDeletingId] = useState(null)
+  const [confirmId, setConfirmId] = useState(null)
 
   useEffect(() => {
     fetchWebsites()
@@ -78,6 +80,21 @@ export default function AdminWebsites() {
     return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
   }
 
+  const handleDelete = async (siteId) => {
+    setDeletingId(siteId)
+    try {
+      const { error } = await supabase.from('websites').delete().eq('id', siteId)
+      if (error) throw error
+      setWebsites(prev => prev.filter(w => w.id !== siteId))
+    } catch (e) {
+      console.error('Delete failed:', e)
+      alert('刪除失敗：' + e.message)
+    } finally {
+      setDeletingId(null)
+      setConfirmId(null)
+    }
+  }
+
   const ScoreBadge = ({ score, color }) => {
     if (score === null) return <span className="text-slate-600">—</span>
     return <span className={`font-semibold ${color}`}>{score}</span>
@@ -125,7 +142,7 @@ export default function AdminWebsites() {
           {/* 列表 */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-xs text-slate-500 font-semibold uppercase tracking-wider">
-              <div className="col-span-4">網站</div>
+              <div className="col-span-3">網站</div>
               <div className="col-span-2">所屬用戶</div>
               <div className="col-span-4 grid grid-cols-4 text-center">
                 <span className="text-blue-500">SEO</span>
@@ -134,6 +151,7 @@ export default function AdminWebsites() {
                 <span className="text-amber-500">E-E-A-T</span>
               </div>
               <div className="col-span-2 text-right">分析時間</div>
+              <div className="col-span-1 text-right">操作</div>
             </div>
 
             {loading ? (
@@ -150,16 +168,12 @@ export default function AdminWebsites() {
             ) : (
               <div className="divide-y divide-slate-700">
                 {filtered.map(site => (
-                  <div key={site.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-750 transition-colors">
-                    <div className="col-span-4">
+                  <div key={site.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-700/30 transition-colors">
+                    <div className="col-span-3">
                       <p className="text-slate-200 text-sm font-medium truncate">{site.name || site.url}</p>
-                      <a
-                        href={site.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <a href={site.url} target="_blank" rel="noopener noreferrer"
                         className="text-slate-500 text-xs hover:text-slate-300 transition-colors truncate block"
-                        onClick={e => e.stopPropagation()}
-                      >
+                        onClick={e => e.stopPropagation()}>
                         {site.url}
                       </a>
                     </div>
@@ -180,6 +194,36 @@ export default function AdminWebsites() {
                     </div>
                     <div className="col-span-2 text-right text-slate-500 text-xs">
                       {new Date(site.created_at).toLocaleDateString('zh-TW')}
+                    </div>
+                    {/* 刪除操作 */}
+                    <div className="col-span-1 flex justify-end">
+                      {confirmId === site.id ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleDelete(site.id)}
+                            disabled={deletingId === site.id}
+                            className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded font-medium disabled:opacity-50"
+                          >
+                            {deletingId === site.id ? '刪除中...' : '確認'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmId(null)}
+                            className="px-2 py-1 bg-slate-600 hover:bg-slate-500 text-slate-300 text-xs rounded"
+                          >
+                            取消
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmId(site.id)}
+                          className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                          title="刪除此網站及所有分析紀錄"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
