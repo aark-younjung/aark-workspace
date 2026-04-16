@@ -635,14 +635,14 @@ export default function HomeDark() {
 
               {/* Bot 標籤 — 以雷達圓心(330,0)為基準，各角度+半徑亂數分散，最近距圓心200px */}
               {[
-                /* angle=20°  r=230 */ { label: 'GPTBot',        color: '#10b981', style: { top:  '68px', left: '518px' } },
+                /* angle=20°  r=230 */ { label: 'GPTBot',        color: '#7dd3fc', style: { top:  '68px', left: '518px' } },
                 /* angle=162° r=200 */ { label: 'Meta AI',       color: '#6366f1', style: { top:  '58px', left: '115px' } },
-                /* angle=42°  r=295 */ { label: 'ChatGPT',       color: '#14b8a6', style: { top: '165px', left: '530px' } },
+                /* angle=42°  r=295 */ { label: 'ChatGPT',       color: '#ffffff', style: { top: '165px', left: '530px' } },
                 /* angle=128° r=260 */ { label: 'PerplexityBot', color: '#06b6d4', style: { top: '183px', left: '130px' } },
-                /* angle=68°  r=345 */ { label: 'Googlebot',     color: '#10b981', style: { top: '278px', left: '455px' } },
+                /* angle=68°  r=345 */ { label: 'Googlebot',     color: '#ef4444', style: { top: '278px', left: '455px' } },
                 /* angle=115° r=280 */ { label: 'ClaudeBot',     color: '#f59e0b', style: { top: '252px', left: '195px' } },
                 /* angle=8°   r=310 */ { label: 'Bingbot',       color: '#3b82f6', style: { top:  '42px', left: '605px' } },
-                /* angle=173° r=265 */ { label: 'Amazonbot',     color: '#f97316', style: { top:  '38px', left:  '35px' } },
+                /* angle=173° r=310 */ { label: 'Amazonbot',     color: '#f97316', style: { top:  '35px', left: '-18px' } },
               ].map(({ label, color, style }) => (
                 <div key={label} className="absolute" style={style}>
                   <div className="px-2.5 py-1 rounded-full backdrop-blur-sm whitespace-nowrap" style={{
