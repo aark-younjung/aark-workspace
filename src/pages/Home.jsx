@@ -390,7 +390,7 @@ export default function Home() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!user) { navigate('/login'); return }
+    if (!user) { navigate('/login', { state: { from: '/' } }); return }
     if (!url) return
 
     setLoading(true)
@@ -714,7 +714,7 @@ export default function Home() {
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  onFocus={() => { if (!user) navigate('/login') }}
+                  onFocus={() => { if (!user) navigate('/login', { state: { from: '/' } }) }}
                   placeholder={user ? '輸入您的網址 (例如: example.com)' : '請先登入以開始分析'}
                   className="flex-1 px-6 py-4 rounded-xl bg-white border border-orange-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent shadow-sm transition-all"
                   disabled={loading}

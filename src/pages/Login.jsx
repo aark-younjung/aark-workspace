@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
@@ -9,15 +9,17 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const { signIn, signInWithGoogle, user } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from || '/'
 
-  if (user) { navigate('/'); return null }
+  if (user) { navigate(from, { replace: true }); return null }
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
     await signInWithGoogle()
     setTimeout(() => setGoogleLoading(false), 3000)
   }
-  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -29,7 +31,7 @@ export default function Login() {
       setError(error.message === 'Invalid login credentials' ? '帳號或密碼錯誤' : error.message)
       setLoading(false)
     } else {
-      navigate('/')
+      navigate(from, { replace: true })
     }
   }
 
