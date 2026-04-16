@@ -883,13 +883,13 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* 雷達圖 - 5 項 SEO 檢測 */}
           <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
-            <h3 className="font-semibold text-slate-800 mb-2">SEO 5 項檢測分析<InfoTooltip text={`以雷達圖呈現 5 項 SEO 核心指標得分\n・Meta 標籤：標題與描述是否完整且長度符合規範\n・H1 結構：頁面是否只有一個清晰的主標題\n・Alt 屬性：圖片是否都有描述文字\n・行動版相容：是否適合手機瀏覽（Google 行動優先索引）\n・載入速度：頁面回應時間，影響排名與跳出率`} /></h3>
-            <p className="text-sm text-slate-500 mb-4">Meta · H1 · Alt · Mobile · Speed</p>
+            <h3 className={`font-semibold mb-2 ${isDark ? "text-white" : "text-slate-800"}`}>SEO 5 項檢測分析<InfoTooltip text={`以雷達圖呈現 5 項 SEO 核心指標得分\n・Meta 標籤：標題與描述是否完整且長度符合規範\n・H1 結構：頁面是否只有一個清晰的主標題\n・Alt 屬性：圖片是否都有描述文字\n・行動版相容：是否適合手機瀏覽（Google 行動優先索引）\n・載入速度：頁面回應時間，影響排名與跳出率`} /></h3>
+            <p className={`text-sm mb-4 ${isDark ? "text-white/60" : "text-slate-500"}`}>Meta · H1 · Alt · Mobile · Speed</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: '#64748b' }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: isDark ? '#ffffff' : '#64748b' }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: isDark ? 'rgba(255,255,255,0.5)' : '#94a3b8' }} />
                 <Radar
                   name="SEO 檢測"
                   dataKey="score"
@@ -904,8 +904,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <div className="grid grid-cols-5 gap-2 mt-2">
               {radarData.map((item) => (
                 <div key={item.subject} className="text-center">
-                  <div className="text-lg font-bold text-slate-800">{item.score}</div>
-                  <div className="text-xs text-slate-500">{item.subject}</div>
+                  <div className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-800"}`}>{item.score}</div>
+                  <div className={`text-xs ${isDark ? "text-white/60" : "text-slate-500"}`}>{item.subject}</div>
                 </div>
               ))}
             </div>
