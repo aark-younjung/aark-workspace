@@ -441,7 +441,7 @@ export default function HomeDark() {
     <>
     {loading && <DarkScanningOverlay logs={scanLogs} targetUrl={url} />}
     <div className="min-h-screen relative overflow-hidden" style={{
-      background: 'linear-gradient(to bottom, #c2410c 0%, #7c1d06 18%, #1c0500 40%, #080810 70%, #04040a 100%)',
+      background: 'linear-gradient(135deg, #c2410c 0%, #7c1d06 22%, #1c0500 45%, #050508 72%, #000000 100%)',
     }}>
 
       {/* 顆粒感疊層 */}
@@ -451,16 +451,17 @@ export default function HomeDark() {
         mixBlendMode: 'overlay',
       }} />
 
-      {/* 背景同心圓 — 固定黑色線條，圓心在頂部右側 */}
+      {/* 背景同心圓 — 純黑線條，圓心對齊雷達，間距緊密 */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {[80, 175, 285, 408, 542, 688, 845, 1010, 1185].map((r, i) => (
+        {[65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157].map((r, i) => (
           <div key={i} className="absolute rounded-full" style={{
             width: r * 2,
             height: r * 2,
-            left: '72%',
+            left: '70%',
             top: '68px',
             transform: 'translate(-50%, -50%)',
-            border: `1px solid rgba(0, 0, 0, ${0.35 - i * 0.03})`,
+            border: '1px solid #000000',
+            opacity: Math.max(0.12, 0.5 - i * 0.025),
           }} />
         ))}
       </div>
@@ -578,18 +579,20 @@ export default function HomeDark() {
             </form>
           </div>
 
-          {/* 右欄：雷達 — 圓心在頂部，高度壓縮 */}
+          {/* 右欄：雷達 — 圓心在頂部，對齊背景 left:70% */}
           <div className="hidden md:block overflow-visible pt-0">
             <div className="relative" style={{ height: '320px', overflow: 'visible' }}>
               <svg
                 width="560" height="320"
                 viewBox="0 0 560 320"
-                style={{ overflow: 'visible', position: 'absolute', left: '0px', top: 0 }}
+                style={{ overflow: 'visible', position: 'absolute', left: '-30px', top: 0 }}
               >
                 <defs>
+                  {/* 掃描線：圓心白色 → 外圍藍色 */}
                   <linearGradient id="scanGradTop" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="rgba(147,197,253,0)" />
-                    <stop offset="100%" stopColor="rgba(147,197,253,0.9)" />
+                    <stop offset="0%"   stopColor="rgba(255,255,255,1)" />
+                    <stop offset="30%"  stopColor="rgba(186,230,253,0.9)" />
+                    <stop offset="100%" stopColor="rgba(96,165,250,0.5)" />
                   </linearGradient>
                   <filter id="glowTop">
                     <feGaussianBlur stdDeviation="3" result="blur"/>
@@ -597,46 +600,46 @@ export default function HomeDark() {
                   </filter>
                 </defs>
 
-                {/* 靜態同心圓 — 圓心在 (280, 0) */}
-                {[55, 115, 185, 260, 345, 440].map((r, i) => (
-                  <circle key={i} cx="280" cy="0" r={r} fill="none"
-                    stroke={`rgba(147,197,253,${0.22 - i * 0.03})`}
+                {/* 靜態同心圓 — 圓心在 (310, 0)，配合 left:-30px 讓視覺圓心在 70% */}
+                {[65, 130, 200, 275, 360, 450].map((r, i) => (
+                  <circle key={i} cx="310" cy="0" r={r} fill="none"
+                    stroke={`rgba(147,197,253,${0.25 - i * 0.03})`}
                     strokeWidth="1"
                   />
                 ))}
 
                 {/* 脈衝擴散圓 — 藍色 */}
                 {[0, 1.2, 2.4].map((delay, i) => (
-                  <circle key={i} cx="280" cy="0" fill="none" stroke="rgba(96,165,250,0.65)" strokeWidth="1.5">
-                    <animate attributeName="r" from="18" to="450" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
+                  <circle key={i} cx="310" cy="0" fill="none" stroke="rgba(96,165,250,0.65)" strokeWidth="1.5">
+                    <animate attributeName="r" from="18" to="460" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
                     <animate attributeName="opacity" from="0.65" to="0" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
                   </circle>
                 ))}
 
-                {/* 掃描線 — 藍色 */}
-                <g style={{ transformOrigin: '280px 0px', animation: 'radarSpin 4s linear infinite' }}>
-                  <line x1="280" y1="0" x2="720" y2="0" stroke="url(#scanGradTop)" strokeWidth="2"/>
+                {/* 掃描線 — 繞 (310,0) 旋轉 */}
+                <g style={{ transformOrigin: '310px 0px', animation: 'radarSpin 4s linear infinite' }}>
+                  <line x1="310" y1="0" x2="770" y2="0" stroke="url(#scanGradTop)" strokeWidth="2"/>
                 </g>
 
-                {/* 中心點 — 藍色 */}
-                <circle cx="280" cy="0" r="12" fill="rgba(96,165,250,0.15)" filter="url(#glowTop)"/>
-                <circle cx="280" cy="0" r="5" fill="#3b82f6" filter="url(#glowTop)"/>
-                <circle cx="280" cy="0" r="5" fill="#93c5fd" opacity="0.7">
-                  <animate attributeName="r" values="5;16;5" dur="1.5s" repeatCount="indefinite"/>
-                  <animate attributeName="opacity" values="0.7;0;0.7" dur="1.5s" repeatCount="indefinite"/>
+                {/* 中心點：白色核心 + 藍色光暈 */}
+                <circle cx="310" cy="0" r="14" fill="rgba(96,165,250,0.15)" filter="url(#glowTop)"/>
+                <circle cx="310" cy="0" r="4" fill="#ffffff" filter="url(#glowTop)"/>
+                <circle cx="310" cy="0" r="4" fill="#93c5fd" opacity="0.8">
+                  <animate attributeName="r" values="4;16;4" dur="1.5s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0.8;0;0.8" dur="1.5s" repeatCount="indefinite"/>
                 </circle>
               </svg>
 
-              {/* Bot 標籤 — 白底半透明，緊湊排列 */}
+              {/* Bot 標籤 — 白底半透明，以 (310,0) 為圓心展開 */}
               {[
-                { label: 'GPTBot',        style: { top: '-10px', left: '330px' } },
-                { label: 'Meta AI',       style: { top: '-10px', left: '160px' } },
-                { label: 'ChatGPT',       style: { top: '70px',  left: '440px' } },
-                { label: 'PerplexityBot', style: { top: '70px',  left: '30px'  } },
-                { label: 'Googlebot',     style: { top: '170px', left: '460px' } },
-                { label: 'ClaudeBot',     style: { top: '170px', left: '10px'  } },
-                { label: 'Bingbot',       style: { top: '270px', left: '390px' } },
-                { label: 'Amazonbot',     style: { top: '270px', left: '80px'  } },
+                { label: 'GPTBot',        style: { top: '-10px', left: '360px' } },
+                { label: 'Meta AI',       style: { top: '-10px', left: '180px' } },
+                { label: 'ChatGPT',       style: { top: '72px',  left: '465px' } },
+                { label: 'PerplexityBot', style: { top: '72px',  left: '45px'  } },
+                { label: 'Googlebot',     style: { top: '175px', left: '480px' } },
+                { label: 'ClaudeBot',     style: { top: '175px', left: '20px'  } },
+                { label: 'Bingbot',       style: { top: '275px', left: '410px' } },
+                { label: 'Amazonbot',     style: { top: '275px', left: '95px'  } },
               ].map(({ label, style }) => (
                 <div key={label} className="absolute" style={style}>
                   <div className="px-2.5 py-1 rounded-full backdrop-blur-sm whitespace-nowrap" style={{
