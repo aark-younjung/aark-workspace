@@ -451,21 +451,6 @@ export default function HomeDark() {
         mixBlendMode: 'overlay',
       }} />
 
-      {/* 背景同心圓 — 純黑線條，圓心對齊雷達，間距緊密 */}
-      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {[65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157].map((r, i) => (
-          <div key={i} className="absolute rounded-full" style={{
-            width: r * 2,
-            height: r * 2,
-            left: '76%',
-            top: '30px',
-            transform: 'translate(-50%, -50%)',
-            border: '2px solid #000000',
-            opacity: Math.max(0.12, 0.5 - i * 0.025),
-          }} />
-        ))}
-      </div>
-
       {/* Header */}
       <header className="relative z-10 border-b border-white/8 bg-black/50 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -527,6 +512,23 @@ export default function HomeDark() {
 
       {/* Hero */}
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-24 overflow-visible">
+        {/* 背景同心圓：圓心對齊雷達圓心，left = 50% + (右欄偏移≈310px) */}
+        <div className="absolute pointer-events-none overflow-visible" style={{
+          left: 'calc(50% + 310px)',
+          top: '0px',
+          width: 0, height: 0,
+          zIndex: 0,
+        }}>
+          {[65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157].map((r, i) => (
+            <div key={i} style={{
+              position: 'absolute', left: -r, top: -r,
+              width: r * 2, height: r * 2, borderRadius: '50%',
+              border: '3px solid rgba(0,0,0,0.45)',
+              opacity: Math.max(0.10, 0.50 - i * 0.025),
+            }} />
+          ))}
+        </div>
+
         <div className="grid md:grid-cols-2 gap-6 items-start overflow-visible">
 
           {/* 左欄 */}
@@ -610,7 +612,7 @@ export default function HomeDark() {
 
                 {/* 脈衝擴散圓 — 藍色 */}
                 {[0, 1.2, 2.4].map((delay, i) => (
-                  <circle key={i} cx="310" cy="0" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5">
+                  <circle key={i} cx="310" cy="0" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5">
                     <animate attributeName="r" from="18" to="460" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
                     <animate attributeName="opacity" from="0.6" to="0" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
                   </circle>
@@ -630,23 +632,23 @@ export default function HomeDark() {
                 </circle>
               </svg>
 
-              {/* Bot 標籤 — 白底半透明，以 (310,0) 為圓心展開 */}
+              {/* Bot 標籤 — 半透明底，各自品牌色文字 */}
               {[
-                { label: 'GPTBot',        style: { top: '-10px', left: '360px' } },
-                { label: 'Meta AI',       style: { top: '-10px', left: '180px' } },
-                { label: 'ChatGPT',       style: { top: '72px',  left: '465px' } },
-                { label: 'PerplexityBot', style: { top: '72px',  left: '45px'  } },
-                { label: 'Googlebot',     style: { top: '175px', left: '480px' } },
-                { label: 'ClaudeBot',     style: { top: '175px', left: '20px'  } },
-                { label: 'Bingbot',       style: { top: '275px', left: '410px' } },
-                { label: 'Amazonbot',     style: { top: '275px', left: '95px'  } },
-              ].map(({ label, style }) => (
+                { label: 'GPTBot',        color: '#10b981', style: { top: '-10px', left: '360px' } },
+                { label: 'Meta AI',       color: '#6366f1', style: { top: '-10px', left: '180px' } },
+                { label: 'ChatGPT',       color: '#14b8a6', style: { top: '72px',  left: '465px' } },
+                { label: 'PerplexityBot', color: '#06b6d4', style: { top: '72px',  left: '45px'  } },
+                { label: 'Googlebot',     color: '#10b981', style: { top: '175px', left: '480px' } },
+                { label: 'ClaudeBot',     color: '#f59e0b', style: { top: '175px', left: '20px'  } },
+                { label: 'Bingbot',       color: '#3b82f6', style: { top: '275px', left: '410px' } },
+                { label: 'Amazonbot',     color: '#f97316', style: { top: '275px', left: '95px'  } },
+              ].map(({ label, color, style }) => (
                 <div key={label} className="absolute" style={style}>
                   <div className="px-2.5 py-1 rounded-full backdrop-blur-sm whitespace-nowrap" style={{
                     background: 'rgba(255,255,255,0.15)',
-                    border: '1px solid rgba(255,255,255,0.35)',
+                    border: `1px solid ${color}66`,
                   }}>
-                    <span className="text-xs font-semibold text-white">{label}</span>
+                    <span className="text-xs font-semibold" style={{ color }}>{label}</span>
                   </div>
                 </div>
               ))}
