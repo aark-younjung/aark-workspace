@@ -515,8 +515,8 @@ export default function HomeDark() {
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-24 overflow-visible">
         {/* 背景同心圓：圓心對齊雷達圓心，left = 50% + 350px，zIndex: -1 確保在內容後面 */}
         <div className="absolute pointer-events-none overflow-visible" style={{
-          left: 'calc(50% + 345px)',
-          top: '30px',
+          left: 'calc(50% + 335px)',
+          top: '45px',
           width: 0, height: 0,
           zIndex: -1,
         }}>
@@ -633,16 +633,16 @@ export default function HomeDark() {
                 </circle>
               </svg>
 
-              {/* Bot 標籤 — 以雷達圓心(330,0)為基準，不均勻分散，距圓心 200–350px */}
+              {/* Bot 標籤 — 以雷達圓心(330,0)為基準，各角度+半徑亂數分散，最近距圓心200px */}
               {[
-                { label: 'GPTBot',        color: '#10b981', style: { top:  '25px', left: '545px' } }, /* 右偏上，r≈220 */
-                { label: 'Meta AI',       color: '#6366f1', style: { top:  '15px', left:  '88px' } }, /* 左偏上，r≈245 */
-                { label: 'ChatGPT',       color: '#14b8a6', style: { top: '120px', left: '578px' } }, /* 右中，r≈280 */
-                { label: 'PerplexityBot', color: '#06b6d4', style: { top:  '80px', left:  '18px' } }, /* 左偏，r≈320 */
-                { label: 'Googlebot',     color: '#10b981', style: { top: '230px', left: '525px' } }, /* 右下，r≈305 */
-                { label: 'ClaudeBot',     color: '#f59e0b', style: { top: '195px', left:  '42px' } }, /* 左下，r≈340 */
-                { label: 'Bingbot',       color: '#3b82f6', style: { top: '288px', left: '448px' } }, /* 右底，r≈320 */
-                { label: 'Amazonbot',     color: '#f97316', style: { top: '255px', left: '100px' } }, /* 左底，r≈345 */
+                /* angle=20°  r=230 */ { label: 'GPTBot',        color: '#10b981', style: { top:  '68px', left: '518px' } },
+                /* angle=162° r=200 */ { label: 'Meta AI',       color: '#6366f1', style: { top:  '58px', left: '115px' } },
+                /* angle=42°  r=295 */ { label: 'ChatGPT',       color: '#14b8a6', style: { top: '165px', left: '530px' } },
+                /* angle=128° r=260 */ { label: 'PerplexityBot', color: '#06b6d4', style: { top: '183px', left: '130px' } },
+                /* angle=68°  r=345 */ { label: 'Googlebot',     color: '#10b981', style: { top: '278px', left: '455px' } },
+                /* angle=115° r=280 */ { label: 'ClaudeBot',     color: '#f59e0b', style: { top: '252px', left: '195px' } },
+                /* angle=8°   r=310 */ { label: 'Bingbot',       color: '#3b82f6', style: { top:  '42px', left: '605px' } },
+                /* angle=173° r=265 */ { label: 'Amazonbot',     color: '#f97316', style: { top:  '38px', left:  '35px' } },
               ].map(({ label, color, style }) => (
                 <div key={label} className="absolute" style={style}>
                   <div className="px-2.5 py-1 rounded-full backdrop-blur-sm whitespace-nowrap" style={{
