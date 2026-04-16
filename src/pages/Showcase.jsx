@@ -236,11 +236,11 @@ export default function Showcase() {
   const maxScore = sites.length ? Math.max(...sites.map(s => s.total_score)) : 0
 
   return (
-    <div className="min-h-screen relative" >
+    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div className="relative">
       {/* Header */}
-      <header className="border-b border-orange-100 bg-white/12 backdrop-blur-xl">
+      <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
@@ -248,10 +248,10 @@ export default function Showcase() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-white">優勢方舟數位行銷</span>
+            <span className="text-xl font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
           <nav className="flex items-center gap-6">
-            <Link to="/" className="text-white/80 hover:text-white transition-colors text-sm">免費檢測 →</Link>
+            <Link to="/" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">免費檢測 →</Link>
           </nav>
         </div>
       </header>
@@ -261,26 +261,26 @@ export default function Showcase() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 border border-orange-200 rounded-full mb-6">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            <span className="text-white/60 text-sm">即時更新</span>
+            <span className="text-gray-500 text-sm">即時更新</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-3">AI 能見度排行榜</h1>
-          <p className="text-white/60">查看所有網站的 SEO + AEO + GEO 綜合表現</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-3">AI 能見度排行榜</h1>
+          <p className="text-gray-500">查看所有網站的 SEO + AEO + GEO 綜合表現</p>
 
           {!loading && sites.length > 0 && (
             <div className="flex items-center justify-center gap-12 mt-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">{sites.length}</div>
-                <div className="text-white/60 text-sm mt-1">已檢測網站</div>
+                <div className="text-3xl font-bold text-gray-800">{sites.length}</div>
+                <div className="text-gray-400 text-sm mt-1">已檢測網站</div>
               </div>
-              <div className="w-px h-10 bg-white/10"></div>
+              <div className="w-px h-10 bg-gray-200"></div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">{avgScore}</div>
-                <div className="text-white/60 text-sm mt-1">平均綜合分數</div>
+                <div className="text-3xl font-bold text-gray-800">{avgScore}</div>
+                <div className="text-gray-400 text-sm mt-1">平均綜合分數</div>
               </div>
-              <div className="w-px h-10 bg-white/10"></div>
+              <div className="w-px h-10 bg-gray-200"></div>
               <div className="text-center">
                 <div className={`text-3xl font-bold ${scoreColor(maxScore)}`}>{maxScore}</div>
-                <div className="text-white/60 text-sm mt-1">最高分數</div>
+                <div className="text-gray-400 text-sm mt-1">最高分數</div>
               </div>
             </div>
           )}
@@ -292,42 +292,42 @@ export default function Showcase() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            <span className="text-white/60">載入中...</span>
+            <span className="text-gray-500">載入中...</span>
           </div>
         ) : (
           <>
             {/* ===== Section 1: 進步之星 ===== */}
             {progressStars.length > 0 && star && (
               <section className="mb-14">
-                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                   🌟 進步之星
-                  <span className="text-sm font-normal text-white/60">分析後分數進步最多的網站</span>
+                  <span className="text-sm font-normal text-gray-400">分析後分數進步最多的網站</span>
                 </h2>
                 <div className="relative rounded-2xl border border-yellow-500/20 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 p-8">
                   <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
                     <div className="flex-1">
-                      <div className="text-white/60 text-sm mb-2">#{starIndex + 1} 進步之星 · 共 {progressStars.length} 個</div>
-                      <h3 className="text-2xl font-bold text-white mb-1 truncate">{star.name}</h3>
+                      <div className="text-gray-400 text-sm mb-2">#{starIndex + 1} 進步之星 · 共 {progressStars.length} 個</div>
+                      <h3 className="text-2xl font-bold text-gray-800 mb-1 truncate">{star.name}</h3>
                       <a href={star.url} target="_blank" rel="noopener noreferrer"
                         className="text-blue-500 hover:text-blue-400 text-sm break-all transition-colors">
                         {star.url}
                       </a>
                       <div className="flex items-center gap-6 mt-6">
                         <div className="text-center">
-                          <div className="text-3xl font-bold text-white/60">{star.first_total_score}</div>
-                          <div className="text-xs text-white/60 mt-1">首次分數</div>
+                          <div className="text-3xl font-bold text-gray-400">{star.first_total_score}</div>
+                          <div className="text-xs text-gray-400 mt-1">首次分數</div>
                         </div>
-                        <div className="text-white text-3xl">→</div>
+                        <div className="text-gray-300 text-3xl">→</div>
                         <div className="text-center">
                           <div className={`text-3xl font-bold ${scoreColor(star.total_score)}`}>{star.total_score}</div>
-                          <div className="text-xs text-white/60 mt-1">最新分數</div>
+                          <div className="text-xs text-gray-400 mt-1">最新分數</div>
                         </div>
                         <div className="px-5 py-3 bg-green-500/20 rounded-xl border border-green-500/30 ml-2">
                           <div className="text-green-500 font-bold text-2xl">+{star.improvement}</div>
                           <div className="text-green-500/50 text-xs mt-1">進步分數</div>
                         </div>
                       </div>
-                      <div className="text-white/60 text-sm mt-4">已掃描 {star.scan_count} 次</div>
+                      <div className="text-gray-400 text-sm mt-4">已掃描 {star.scan_count} 次</div>
                     </div>
 
                     {/* 輪播指示點 */}
@@ -348,7 +348,7 @@ export default function Showcase() {
 
             {/* ===== Section 2: 排行榜 ===== */}
             <section className="mb-14">
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                 🏆 排行榜
               </h2>
               <div className="flex flex-wrap gap-2 mb-4">
@@ -362,27 +362,27 @@ export default function Showcase() {
                   <button key={key} onClick={() => setLeaderTab(key)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${leaderTab === key
                       ? 'bg-orange-500 text-white'
-                      : 'bg-orange-100 border border-orange-200 text-white/60 hover:text-white hover:bg-orange-200'}`}>
+                      : 'bg-orange-100 border border-orange-200 text-gray-500 hover:text-gray-800 hover:bg-orange-200'}`}>
                     {label}
                   </button>
                 ))}
               </div>
 
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 overflow-hidden">
+              <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 overflow-hidden">
                 {leaders[leaderTab].length === 0 ? (
-                  <div className="text-center py-12 text-white/60">尚無資料</div>
+                  <div className="text-center py-12 text-gray-400">尚無資料</div>
                 ) : leaders[leaderTab].map((site, i) => (
                   <div key={site.id}
-                    className="flex items-center gap-4 px-6 py-4 border-b border-orange-50 last:border-0 hover:bg-white/8 transition-colors">
+                    className="flex items-center gap-4 px-6 py-4 border-b border-orange-50 last:border-0 hover:bg-white/30 transition-colors">
                     <div className="w-8 text-center flex-shrink-0">
                       {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' :
-                        <span className="text-white/60 text-sm font-mono">{i + 1}</span>}
+                        <span className="text-gray-400 text-sm font-mono">{i + 1}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-white font-medium truncate">{site.name}</span>
+                        <span className="text-gray-800 font-medium truncate">{site.name}</span>
                       </div>
-                      <div className="text-white/60 text-xs truncate">{site.url}</div>
+                      <div className="text-gray-400 text-xs truncate">{site.url}</div>
                     </div>
 
                     {/* AI 友善度：顯示 SEO + AEO + GEO 三欄 */}
@@ -391,7 +391,7 @@ export default function Showcase() {
                         {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
                           <div key={label} className="text-center hidden sm:block">
                             <div className={`text-sm font-bold ${scoreColor(score)}`}>{score}</div>
-                            <div className="text-xs text-white/60">{label}</div>
+                            <div className="text-xs text-gray-400">{label}</div>
                           </div>
                         ))}
                         <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(site.total_score)}`}>
@@ -405,11 +405,11 @@ export default function Showcase() {
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <div className="text-center hidden sm:block">
                           <div className={`text-sm font-bold ${scoreColor(site.aeo_score)}`}>{site.aeo_score}</div>
-                          <div className="text-xs text-white/60">AEO</div>
+                          <div className="text-xs text-gray-400">AEO</div>
                         </div>
                         <div className="text-center hidden sm:block">
                           <div className={`text-sm font-bold ${scoreColor(site.geo_score)}`}>{site.geo_score}</div>
-                          <div className="text-xs text-white/60">GEO</div>
+                          <div className="text-xs text-gray-400">GEO</div>
                         </div>
                         <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(Math.round((site.aeo_score + site.geo_score) / 2))}`}>
                           {Math.round((site.aeo_score + site.geo_score) / 2)}
@@ -420,20 +420,20 @@ export default function Showcase() {
                     {/* 進步最多：首次 → 現在 + 進步分數 */}
                     {leaderTab === 'progress' && (
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-white/60 text-sm hidden sm:block">{site.first_total_score} →</span>
+                        <span className="text-gray-400 text-sm hidden sm:block">{site.first_total_score} →</span>
                         <span className={`text-sm font-bold hidden sm:block ${scoreColor(site.total_score)}`}>{site.total_score}</span>
                         <span className="px-2 py-1 bg-green-100 text-green-600 rounded-lg font-bold text-sm">+{site.improvement}</span>
                       </div>
                     )}
 
                     {leaderTab === 'recent' && (
-                      <div className="text-white/60 text-sm flex-shrink-0">{timeAgo(site.last_scanned_at)}</div>
+                      <div className="text-gray-500 text-sm flex-shrink-0">{timeAgo(site.last_scanned_at)}</div>
                     )}
 
                     {leaderTab === 'crawled' && (
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-orange-500 font-bold">{site.scan_count}</span>
-                        <span className="text-white/60 text-xs">次掃描</span>
+                        <span className="text-gray-400 text-xs">次掃描</span>
                       </div>
                     )}
                   </div>
@@ -444,26 +444,26 @@ export default function Showcase() {
             {/* ===== Section 3: 成功案例 ===== */}
             {successStories.length > 0 && (
               <section className="mb-14">
-                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                   📖 成功案例
-                  <span className="text-sm font-normal text-white/60">分數進步 20 分以上</span>
+                  <span className="text-sm font-normal text-gray-400">分數進步 20 分以上</span>
                 </h2>
                 <div className="flex gap-4 overflow-x-auto pb-4"
                   style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(249,115,22,0.3) transparent' }}>
                   {successStories.map(site => (
                     <div key={site.id}
-                      className="flex-shrink-0 w-72 p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 hover:border-orange-200 transition-colors">
-                      <div className="text-white font-semibold mb-1 truncate">{site.name}</div>
-                      <div className="text-white/60 text-xs mb-5 truncate">{site.url}</div>
+                      className="flex-shrink-0 w-72 p-6 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 hover:border-orange-200 transition-colors">
+                      <div className="text-gray-800 font-semibold mb-1 truncate">{site.name}</div>
+                      <div className="text-gray-400 text-xs mb-5 truncate">{site.url}</div>
                       <div className="flex items-center gap-3 mb-5">
                         <div className="text-center">
-                          <div className="text-xl font-bold text-white/60">{site.first_total_score}</div>
-                          <div className="text-xs text-white/60 mt-1">首次</div>
+                          <div className="text-xl font-bold text-gray-400">{site.first_total_score}</div>
+                          <div className="text-xs text-gray-400 mt-1">首次</div>
                         </div>
-                        <div className="text-white text-lg">→</div>
+                        <div className="text-gray-300 text-lg">→</div>
                         <div className="text-center">
                           <div className={`text-xl font-bold ${scoreColor(site.total_score)}`}>{site.total_score}</div>
-                          <div className="text-xs text-white/60 mt-1">現在</div>
+                          <div className="text-xs text-gray-400 mt-1">現在</div>
                         </div>
                         <div className="ml-auto px-3 py-1.5 bg-green-500/20 rounded-lg border border-green-500/30 flex-shrink-0">
                           <span className="text-green-500 font-bold text-lg">+{site.improvement}</span>
@@ -490,13 +490,13 @@ export default function Showcase() {
             {/* ===== Section 4: 全部目錄 ===== */}
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                   📋 全部網站
                 </h2>
                 <div className="flex items-center gap-3">
-                  <span className="text-white/60 text-sm hidden sm:block">排序：</span>
+                  <span className="text-gray-400 text-sm hidden sm:block">排序：</span>
                   <select value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(0) }}
-                    className="bg-white/12 border border-orange-100 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
+                    className="bg-white/60 border border-orange-100 text-gray-800 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
                     <option value="total_score">總分</option>
                     <option value="last_scanned_at">最近更新</option>
                     <option value="scan_count">掃描次數</option>
@@ -504,9 +504,9 @@ export default function Showcase() {
                 </div>
               </div>
 
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 overflow-hidden">
+              <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 overflow-hidden">
                 {/* 表頭 */}
-                <div className="grid grid-cols-12 gap-2 px-6 py-3 border-b border-orange-100 text-white/60 text-xs font-medium uppercase tracking-wide">
+                <div className="grid grid-cols-12 gap-2 px-6 py-3 border-b border-orange-100 text-gray-400 text-xs font-medium uppercase tracking-wide">
                   <div className="col-span-1">#</div>
                   <div className="col-span-4">網站</div>
                   <div className="col-span-2 text-center">SEO</div>
@@ -516,17 +516,17 @@ export default function Showcase() {
                 </div>
 
                 {paged.length === 0 ? (
-                  <div className="text-center py-12 text-white/60">尚無資料</div>
+                  <div className="text-center py-12 text-gray-400">尚無資料</div>
                 ) : paged.map((site, i) => (
                   <div key={site.id}
-                    className="grid grid-cols-12 gap-2 px-6 py-4 border-b border-orange-50 last:border-0 hover:bg-white/8 transition-colors items-center">
-                    <div className="col-span-1 text-white/60 text-sm font-mono">{page * PAGE_SIZE + i + 1}</div>
+                    className="grid grid-cols-12 gap-2 px-6 py-4 border-b border-orange-50 last:border-0 hover:bg-white/30 transition-colors items-center">
+                    <div className="col-span-1 text-gray-400 text-sm font-mono">{page * PAGE_SIZE + i + 1}</div>
                     <div className="col-span-4 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-white font-medium text-sm truncate">{site.name}</span>
+                        <span className="text-gray-800 font-medium text-sm truncate">{site.name}</span>
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-orange-100 text-orange-400 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full">
                           🤖 AI 已讀取 {timeAgo(site.last_scanned_at)}
                         </span>
                       </div>
@@ -534,7 +534,7 @@ export default function Showcase() {
                     {[site.seo_score, site.aeo_score, site.geo_score].map((score, si) => (
                       <div key={si} className="col-span-2 flex flex-col items-center gap-1.5">
                         <span className={`text-sm font-bold ${scoreColor(score)}`}>{score}</span>
-                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                           <div className={`h-1.5 rounded-full ${scoreBgColor(score)}`} style={{ width: `${score}%` }} />
                         </div>
                       </div>
@@ -549,12 +549,12 @@ export default function Showcase() {
               {/* 分頁 */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-5">
-                  <span className="text-white/60 text-sm">
+                  <span className="text-gray-400 text-sm">
                     目前展示 {Math.min((page + 1) * PAGE_SIZE, sites.length)} 筆 · 共 {sites.length} 筆
                   </span>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                      className="px-3 py-1.5 bg-orange-100 border border-orange-200 text-white/60 rounded-lg disabled:opacity-30 hover:bg-orange-200 transition-colors text-sm">
+                      className="px-3 py-1.5 bg-orange-100 border border-orange-200 text-gray-500 rounded-lg disabled:opacity-30 hover:bg-orange-200 transition-colors text-sm">
                       ← 上一頁
                     </button>
                     {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -563,13 +563,13 @@ export default function Showcase() {
                         <button key={p} onClick={() => setPage(p)}
                           className={`w-8 h-8 rounded-lg text-sm transition-colors ${p === page
                             ? 'bg-orange-500 text-white'
-                            : 'bg-orange-100 border border-orange-200 text-white/60 hover:bg-orange-200'}`}>
+                            : 'bg-orange-100 border border-orange-200 text-gray-500 hover:bg-orange-200'}`}>
                           {p + 1}
                         </button>
                       )
                     })}
                     <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                      className="px-3 py-1.5 bg-orange-100 border border-orange-200 text-white/60 rounded-lg disabled:opacity-30 hover:bg-orange-200 transition-colors text-sm">
+                      className="px-3 py-1.5 bg-orange-100 border border-orange-200 text-gray-500 rounded-lg disabled:opacity-30 hover:bg-orange-200 transition-colors text-sm">
                       下一頁 →
                     </button>
                   </div>
@@ -577,7 +577,7 @@ export default function Showcase() {
               )}
 
               {totalPages <= 1 && sites.length > 0 && (
-                <div className="mt-4 text-white/60 text-sm text-center">
+                <div className="mt-4 text-gray-400 text-sm text-center">
                   共 {sites.length} 筆
                 </div>
               )}

@@ -40,26 +40,26 @@ export default function GoogleAuthCallback() {
   }, [])
 
   return (
-    <div className="min-h-screen  flex items-center justify-center">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="text-center bg-white rounded-2xl shadow-sm border border-slate-100 p-10 max-w-sm w-full mx-4">
         {status === 'processing' && (
           <>
             <div className="text-4xl mb-4 animate-spin">⏳</div>
-            <p className="text-white/80">正在完成 Google 授權...</p>
+            <p className="text-slate-600">正在完成 Google 授權...</p>
           </>
         )}
         {status === 'success' && (
           <>
             <div className="text-4xl mb-4">✅</div>
-            <p className="text-white font-semibold">授權成功！</p>
-            <p className="text-white/60 text-sm mt-2">視窗即將關閉...</p>
+            <p className="text-slate-700 font-semibold">授權成功！</p>
+            <p className="text-slate-400 text-sm mt-2">視窗即將關閉...</p>
           </>
         )}
         {status === 'error' && (
           <>
             <div className="text-4xl mb-4">❌</div>
-            <p className="text-white font-semibold">授權失敗</p>
-            <p className="text-white/60 text-sm mt-2">請關閉此視窗後重試</p>
+            <p className="text-slate-700 font-semibold">授權失敗</p>
+            <p className="text-slate-400 text-sm mt-2">請關閉此視窗後重試</p>
           </>
         )}
       </div>

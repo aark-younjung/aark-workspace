@@ -113,18 +113,18 @@ export default function AdminSeed() {
   }
 
   return (
-    <div className="min-h-screen  p-8">
+    <div className="min-h-screen bg-slate-900 p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-white mb-2">Admin Seed Tool</h1>
-        <p className="text-white/60 text-sm mb-6">寫入 20 個日本小品牌網站的模擬分析數據（每站 3 輪歷史記錄）</p>
+        <p className="text-slate-400 text-sm mb-6">寫入 20 個日本小品牌網站的模擬分析數據（每站 3 輪歷史記錄）</p>
 
         <div className="bg-slate-800 rounded-xl p-4 mb-6">
-          <div className="grid grid-cols-2 gap-2 text-sm text-white/60 mb-4">
+          <div className="grid grid-cols-2 gap-2 text-sm text-slate-400 mb-4">
             {SEED_SITES.map((s, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-white/80 font-mono text-xs w-4">{i + 1}</span>
+                <span className="text-slate-600 font-mono text-xs w-4">{i + 1}</span>
                 <span className="text-white">{s.name}</span>
-                <span className="text-white/60 text-xs">{s.category}</span>
+                <span className="text-slate-500 text-xs">{s.category}</span>
               </div>
             ))}
           </div>
@@ -141,8 +141,8 @@ export default function AdminSeed() {
         {log.length > 0 && (
           <div className="bg-black rounded-xl p-4 font-mono text-xs max-h-96 overflow-y-auto">
             {log.map((l, i) => (
-              <div key={i} className={`mb-0.5 ${l.type === 'success' ? 'text-green-400' : l.type === 'error' ? 'text-red-400' : 'text-white/60'}`}>
-                <span className="text-white/80 mr-2">{l.ts}</span>{l.msg}
+              <div key={i} className={`mb-0.5 ${l.type === 'success' ? 'text-green-400' : l.type === 'error' ? 'text-red-400' : 'text-slate-400'}`}>
+                <span className="text-slate-600 mr-2">{l.ts}</span>{l.msg}
               </div>
             ))}
           </div>

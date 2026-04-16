@@ -172,7 +172,7 @@ function ScoreRing({ score }) {
       </svg>
       <div className="text-center">
         <div className="text-4xl font-bold" style={{ color }}>{score}</div>
-        <div className="text-xs text-white/60">/ 100</div>
+        <div className="text-xs text-slate-500">/ 100</div>
       </div>
     </div>
   )
@@ -221,11 +221,11 @@ export default function ContentAudit() {
   }, {})
 
   return (
-    <div className="min-h-screen relative" >
+    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
 
       {/* Header */}
-      <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/8">
+      <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/30">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200">
@@ -233,11 +233,11 @@ export default function ContentAudit() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-lg font-bold text-white">優勢方舟數位行銷</span>
+            <span className="text-lg font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
           <nav className="flex items-center gap-4">
-            <Link to="/" className="hidden sm:block text-white/80 hover:text-white text-sm transition-colors">首頁</Link>
-            <Link to="/faq" className="hidden sm:block text-white/80 hover:text-white text-sm transition-colors">FAQ</Link>
+            <Link to="/" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
+            <Link to="/faq" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">FAQ</Link>
             {user ? (
               <>
                 {!isPro && (
@@ -252,7 +252,7 @@ export default function ContentAudit() {
                     </div>
                   )}
                 </Link>
-                <button onClick={signOut} className="text-white/60 hover:text-white text-xs sm:text-sm transition-colors">登出</button>
+                <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-xs sm:text-sm transition-colors">登出</button>
               </>
             ) : (
               <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
@@ -264,16 +264,16 @@ export default function ContentAudit() {
       <main className="relative max-w-4xl mx-auto px-6 py-12">
         {/* Hero */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-100 text-orange-400 rounded-full text-sm font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-100 text-orange-600 rounded-full text-sm font-medium mb-5">
             📄 文章內容分析
           </div>
-          <h1 className="text-4xl font-bold text-white mb-3">讓你的文章被 AI 看見</h1>
-          <p className="text-white/60 text-lg">輸入任一篇文章或頁面網址，立即分析 AI 能見度、AEO 友善度與內容品質</p>
+          <h1 className="text-4xl font-bold text-slate-800 mb-3">讓你的文章被 AI 看見</h1>
+          <p className="text-slate-500 text-lg">輸入任一篇文章或頁面網址，立即分析 AI 能見度、AEO 友善度與內容品質</p>
         </div>
 
         {/* 輸入框 */}
-        <form onSubmit={handleAnalyze} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm mb-8">
-          <label className="block text-sm font-medium text-white mb-2">文章或頁面網址</label>
+        <form onSubmit={handleAnalyze} className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm mb-8">
+          <label className="block text-sm font-medium text-slate-700 mb-2">文章或頁面網址</label>
           <div className="flex gap-3">
             <input
               type="url"
@@ -281,7 +281,7 @@ export default function ContentAudit() {
               onChange={e => setUrl(e.target.value)}
               placeholder="https://yourblog.com/your-article"
               disabled={loading}
-              className="flex-1 px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+              className="flex-1 px-4 py-3 rounded-xl bg-white/80 border border-orange-100 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
             />
             <button
               type="submit"
@@ -292,17 +292,17 @@ export default function ContentAudit() {
             </button>
           </div>
           {error && <p className="mt-3 text-red-500 text-sm">{error}</p>}
-          <p className="mt-3 text-xs text-white/60">支援部落格文章、產品頁、服務介紹頁等任意公開網址・分析約需 10–20 秒</p>
+          <p className="mt-3 text-xs text-slate-400">支援部落格文章、產品頁、服務介紹頁等任意公開網址・分析約需 10–20 秒</p>
         </form>
 
         {/* 載入動畫 */}
         {loading && (
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-10 text-center shadow-sm mb-8">
+          <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-10 text-center shadow-sm mb-8">
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
             </div>
-            <p className="text-white/80 font-medium">正在分析文章內容...</p>
-            <p className="text-white/60 text-sm mt-1">檢查標題結構、字數、Meta 標籤、AEO 友善度等 15 項指標</p>
+            <p className="text-slate-600 font-medium">正在分析文章內容...</p>
+            <p className="text-slate-400 text-sm mt-1">檢查標題結構、字數、Meta 標籤、AEO 友善度等 15 項指標</p>
           </div>
         )}
 
@@ -310,14 +310,14 @@ export default function ContentAudit() {
         {result && (
           <>
             {/* 總分卡 */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm mb-6">
+            <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm mb-6">
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 <ScoreRing score={result.score} />
                 <div className="flex-1 text-center sm:text-left">
-                  <h2 className="text-xl font-bold text-white mb-1">
+                  <h2 className="text-xl font-bold text-slate-800 mb-1">
                     {result.score >= 70 ? '🎉 內容品質良好' : result.score >= 50 ? '⚠️ 有改善空間' : '🔴 需要優化'}
                   </h2>
-                  <p className="text-white/60 text-sm mb-3 break-all">{result.url}</p>
+                  <p className="text-slate-500 text-sm mb-3 break-all">{result.url}</p>
                   <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
                     <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">✅ 通過 {passedCount} 項</span>
                     <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">❌ 待改善 {CHECKS.length - passedCount} 項</span>
@@ -330,9 +330,9 @@ export default function ContentAudit() {
                     const { passed, total } = categoryCounts[cat] || {}
                     const color = passed === total ? 'text-green-600' : passed >= total / 2 ? 'text-amber-500' : 'text-red-500'
                     return (
-                      <div key={cat} className="text-center bg-white/12 rounded-xl px-3 py-2">
+                      <div key={cat} className="text-center bg-white/60 rounded-xl px-3 py-2">
                         <div className={`text-lg font-bold ${color}`}>{passed}/{total}</div>
-                        <div className="text-xs text-white/60 leading-tight">{cat.replace('（E-E-A-T）', '')}</div>
+                        <div className="text-xs text-slate-500 leading-tight">{cat.replace('（E-E-A-T）', '')}</div>
                       </div>
                     )
                   })}
@@ -349,7 +349,7 @@ export default function ContentAudit() {
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                     activeCategory === cat
                       ? 'bg-orange-500 text-white'
-                      : 'bg-white/10 text-white/80 hover:bg-white/12'
+                      : 'bg-white/50 text-slate-600 hover:bg-white/80'
                   }`}
                 >
                   {cat === '全部' ? `全部（${CHECKS.length}）` : `${cat.replace('（E-E-A-T）', '')} ${categoryCounts[cat]?.passed}/${categoryCounts[cat]?.total}`}
@@ -362,7 +362,7 @@ export default function ContentAudit() {
               {visibleChecks.map(check => {
                 const passed = check.get(result)
                 return (
-                  <div key={check.id} className={`bg-white/10 backdrop-blur-md border rounded-2xl p-5 shadow-sm ${passed ? 'border-green-200' : 'border-red-200'}`}>
+                  <div key={check.id} className={`bg-white/50 backdrop-blur-md border rounded-2xl p-5 shadow-sm ${passed ? 'border-green-200' : 'border-red-200'}`}>
                     <div className="flex items-start gap-3">
                       <span className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm ${passed ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>
                         {passed ? '✓' : '✗'}
@@ -370,10 +370,10 @@ export default function ContentAudit() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span>{check.icon}</span>
-                          <span className="font-semibold text-white text-sm">{check.label}</span>
-                          <span className="text-xs text-white/60 bg-white/5 px-2 py-0.5 rounded-full">{check.category}</span>
+                          <span className="font-semibold text-slate-800 text-sm">{check.label}</span>
+                          <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{check.category}</span>
                         </div>
-                        <p className="text-xs text-white/60 mb-1">{check.desc}</p>
+                        <p className="text-xs text-slate-500 mb-1">{check.desc}</p>
                         <p className={`text-sm font-medium ${passed ? 'text-green-600' : 'text-red-500'}`}>
                           {check.detail(result)}
                         </p>
@@ -381,12 +381,12 @@ export default function ContentAudit() {
                         {!passed && (
                           isPro ? (
                             <div className="mt-2 p-3 bg-orange-50 border border-orange-100 rounded-xl">
-                              <p className="text-xs text-orange-400 leading-relaxed">💡 {check.fix}</p>
+                              <p className="text-xs text-orange-700 leading-relaxed">💡 {check.fix}</p>
                             </div>
                           ) : (
-                            <div className="mt-2 p-3 bg-white/5 border border-slate-100 rounded-xl flex items-center justify-between gap-3">
-                              <p className="text-xs text-white/60 blur-sm select-none flex-1 leading-relaxed">{check.fix}</p>
-                              <Link to="/pricing" className="text-xs bg-orange-100 text-orange-400 px-2 py-1 rounded-full font-semibold flex-shrink-0 whitespace-nowrap">🔒 升級 Pro</Link>
+                            <div className="mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between gap-3">
+                              <p className="text-xs text-slate-400 blur-sm select-none flex-1 leading-relaxed">{check.fix}</p>
+                              <Link to="/pricing" className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-semibold flex-shrink-0 whitespace-nowrap">🔒 升級 Pro</Link>
                             </div>
                           )
                         )}
@@ -399,16 +399,16 @@ export default function ContentAudit() {
 
             {/* 待改善重點（免費版提示 / Pro 版完整） */}
             {failedChecks.length > 0 && (
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm mb-6">
-                <h3 className="font-bold text-white mb-4">🎯 優先改善項目</h3>
+              <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm mb-6">
+                <h3 className="font-bold text-slate-800 mb-4">🎯 優先改善項目</h3>
                 {isPro ? (
                   <div className="space-y-3">
                     {failedChecks.slice(0, 5).map((check, i) => (
                       <div key={check.id} className="flex gap-3 p-3 bg-orange-50 rounded-xl border border-orange-100">
                         <span className="text-orange-500 font-bold flex-shrink-0">{i + 1}.</span>
                         <div>
-                          <p className="font-medium text-white text-sm">{check.icon} {check.label}</p>
-                          <p className="text-xs text-white/80 mt-0.5">{check.fix}</p>
+                          <p className="font-medium text-slate-800 text-sm">{check.icon} {check.label}</p>
+                          <p className="text-xs text-slate-600 mt-0.5">{check.fix}</p>
                         </div>
                       </div>
                     ))}
@@ -417,18 +417,18 @@ export default function ContentAudit() {
                   <div>
                     <div className="space-y-2 mb-4">
                       {failedChecks.slice(0, 3).map((check, i) => (
-                        <div key={check.id} className="flex gap-2 items-center text-sm text-white/80">
+                        <div key={check.id} className="flex gap-2 items-center text-sm text-slate-600">
                           <span className="text-red-400">•</span>
                           {check.icon} {check.label}
                         </div>
                       ))}
                       {failedChecks.length > 3 && (
-                        <p className="text-sm text-white/60">⋯ 還有 {failedChecks.length - 3} 個項目需要改善</p>
+                        <p className="text-sm text-slate-400">⋯ 還有 {failedChecks.length - 3} 個項目需要改善</p>
                       )}
                     </div>
                     <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl text-center">
-                      <p className="text-sm font-semibold text-white mb-1">🔒 升級 Pro，查看每項的具體修復方法</p>
-                      <p className="text-xs text-white/60 mb-3">包含步驟說明與可直接複製的程式碼</p>
+                      <p className="text-sm font-semibold text-slate-800 mb-1">🔒 升級 Pro，查看每項的具體修復方法</p>
+                      <p className="text-xs text-slate-500 mb-3">包含步驟說明與可直接複製的程式碼</p>
                       <Link to="/pricing" className="inline-block px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-all">
                         升級 Pro 方案 →
                       </Link>
@@ -442,7 +442,7 @@ export default function ContentAudit() {
             <div className="text-center">
               <button
                 onClick={() => { setResult(null); setUrl('') }}
-                className="text-white/60 hover:text-white text-sm transition-colors"
+                className="text-slate-500 hover:text-slate-700 text-sm transition-colors"
               >
                 ← 分析其他文章
               </button>
@@ -458,10 +458,10 @@ export default function ContentAudit() {
               { icon: '🤖', title: 'AEO 友善度', desc: '分析 FAQ Schema、直接回答段落，提升被 AI 引用為答案的機率' },
               { icon: '🏆', title: '可信度指標', desc: '確認作者資訊、發布日期、內部連結，強化 E-E-A-T 評分' },
             ].map((item, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 text-center shadow-sm">
+              <div key={i} className="bg-white/40 backdrop-blur-md border border-white/60 rounded-2xl p-5 text-center shadow-sm">
                 <div className="text-3xl mb-3">{item.icon}</div>
-                <h3 className="font-semibold text-white mb-1">{item.title}</h3>
-                <p className="text-white/60 text-sm">{item.desc}</p>
+                <h3 className="font-semibold text-slate-800 mb-1">{item.title}</h3>
+                <p className="text-slate-500 text-sm">{item.desc}</p>
               </div>
             ))}
           </div>

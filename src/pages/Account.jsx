@@ -80,10 +80,10 @@ export default function Account() {
 
   if (!user) {
     return (
-      <div className="min-h-screen relative flex items-center justify-center" >
+      <div className="min-h-screen relative flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
         <div className="text-center relative">
-          <p className="text-white/60 mb-4">請先登入</p>
+          <p className="text-slate-500 mb-4">請先登入</p>
           <Link to="/login" className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors">
             前往登入
           </Link>
@@ -96,25 +96,25 @@ export default function Account() {
   const avatarUrl = user?.user_metadata?.avatar_url
 
   return (
-    <div className="min-h-screen relative" >
+    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div className="relative">
       {/* Header */}
-      <header className="border-b border-orange-100 bg-white/12 backdrop-blur-xl">
+      <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-2xl mx-auto px-6 py-4 flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="text-white/60 hover:text-white/80 transition-colors">
+          <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold text-white">帳號設定</h1>
+          <h1 className="text-lg font-bold text-slate-900">帳號設定</h1>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-6 py-10 space-y-6">
 
         {/* 用戶資訊 */}
-        <section className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
+        <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
               {avatarUrl ? (
@@ -126,8 +126,8 @@ export default function Account() {
               )}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">{userName}</h2>
-              <p className="text-white/60 text-sm">{user.email}</p>
+              <h2 className="text-lg font-bold text-slate-900">{userName}</h2>
+              <p className="text-slate-500 text-sm">{user.email}</p>
               <div className="mt-1.5">
                 {isPro ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
@@ -135,7 +135,7 @@ export default function Account() {
                     Pro 方案
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-orange-100 text-orange-400 text-xs font-semibold rounded-full">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-orange-100 text-orange-600 text-xs font-semibold rounded-full">
                     免費版
                   </span>
                 )}
@@ -145,15 +145,15 @@ export default function Account() {
         </section>
 
         {/* 方案管理 */}
-        <section className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
-          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4">方案管理</h3>
+        <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">
+          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">方案管理</h3>
 
           {isPro ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between py-3 border-b border-orange-50">
                 <div>
-                  <p className="text-white font-medium">目前方案</p>
-                  <p className="text-white/60 text-sm">
+                  <p className="text-slate-900 font-medium">目前方案</p>
+                  <p className="text-slate-400 text-sm">
                     Pro 方案・自動續約
                     {profile?.subscribed_at && (
                       <span className="ml-2">・訂閱於 {new Date(profile.subscribed_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -170,8 +170,8 @@ export default function Account() {
               ) : (
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white text-sm font-medium">取消訂閱</p>
-                    <p className="text-white/60 text-xs mt-0.5">取消後可用到當前週期結束，之後降回免費版</p>
+                    <p className="text-slate-700 text-sm font-medium">取消訂閱</p>
+                    <p className="text-slate-400 text-xs mt-0.5">取消後可用到當前週期結束，之後降回免費版</p>
                   </div>
                   <button
                     onClick={handleCancel}
@@ -185,8 +185,8 @@ export default function Account() {
           ) : (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-medium">免費版</p>
-                <p className="text-white/60 text-sm">升級 Pro 解鎖完整功能</p>
+                <p className="text-slate-900 font-medium">免費版</p>
+                <p className="text-slate-400 text-sm">升級 Pro 解鎖完整功能</p>
               </div>
               <Link
                 to="/pricing"
@@ -200,8 +200,8 @@ export default function Account() {
         {/* Email 週報 - 暫時停用 */}
 
         {/* 登出 */}
-        <section className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6">
-          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4">帳號操作</h3>
+        <section className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-6">
+          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">帳號操作</h3>
           <button
             onClick={handleSignOut}
             className="flex items-center gap-2 text-red-500 hover:text-red-600 font-medium text-sm transition-colors">

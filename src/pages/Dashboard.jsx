@@ -33,10 +33,10 @@ function InfoTooltip({ text }) {
   const lines = text.split('\n')
   return (
     <span className="relative group inline-flex items-center ml-1.5 align-middle">
-      <span className="w-4 h-4 rounded-full bg-slate-200 text-white/60 text-xs flex items-center justify-center cursor-help font-bold leading-none">?</span>
+      <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-xs flex items-center justify-center cursor-help font-bold leading-none">?</span>
       <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-slate-800 text-white text-xs rounded-lg px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
         {lines.map((line, i) => (
-          <span key={i} className={`block ${line.startsWith('・') ? 'mt-1 text-white' : 'font-medium mb-1'}`}>{line}</span>
+          <span key={i} className={`block ${line.startsWith('・') ? 'mt-1 text-slate-300' : 'font-medium mb-1'}`}>{line}</span>
         ))}
         <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></span>
       </span>
@@ -328,10 +328,10 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" >
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-white/80">載入資料中...</p>
+          <p className="text-slate-600">載入資料中...</p>
         </div>
       </div>
     )
@@ -339,9 +339,9 @@ export default function Dashboard() {
 
   if (!website) {
     return (
-      <div className="min-h-screen flex items-center justify-center" >
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">找不到網站</h2>
+          <h2 className="text-2xl font-bold text-slate-800 mb-4">找不到網站</h2>
           <Link to="/" className="text-orange-500 hover:underline">返回首頁</Link>
         </div>
       </div>
@@ -691,7 +691,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
   // ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen relative" >
+    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div className="relative">
       {/* 升級成功提示 */}
@@ -701,25 +701,25 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         </div>
       )}
       {/* Header */}
-      <header className="border-b border-orange-100 bg-white/12 backdrop-blur-xl">
+      <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* 第一列：返回 + 標題 + 頭像 */}
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3 min-w-0">
-              <Link to="/" className="text-white/60 hover:text-white flex-shrink-0">
+              <Link to="/" className="text-slate-500 hover:text-slate-700 flex-shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-bold text-white truncate">{website.name}</h1>
+                <h1 className="text-base sm:text-xl font-bold text-slate-900 truncate">{website.name}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-white/60 truncate hidden sm:block">{website.url}</p>
+                  <p className="text-xs text-slate-500 truncate hidden sm:block">{website.url}</p>
                   {(seoAudit || aeoAudit || geoAudit || eeatAudit) && (() => {
                     const ts = seoAudit?.created_at || aeoAudit?.created_at || geoAudit?.created_at || eeatAudit?.created_at
                     const ago = timeAgo(ts)
                     return ago ? (
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-orange-50 text-orange-400 border border-orange-200 rounded-full font-medium whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-orange-50 text-orange-600 border border-orange-200 rounded-full font-medium whitespace-nowrap">
                         🤖 {ago}
                       </span>
                     ) : null
@@ -754,7 +754,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             ) : (
               <button
                 onClick={initiateGoogleAuth}
-                className="flex-shrink-0 px-3 py-1.5 bg-white/12 text-white/80 border border-orange-100 rounded-lg text-xs font-medium hover:bg-white/12 transition-colors flex items-center gap-1.5"
+                className="flex-shrink-0 px-3 py-1.5 bg-white/60 text-slate-600 border border-orange-100 rounded-lg text-xs font-medium hover:bg-white/80 transition-colors flex items-center gap-1.5"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block"></span>
                 連接 Google
@@ -817,7 +817,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               </button>
             )}
             {!isPro && (
-              <Link to="/pricing" className="flex-shrink-0 px-3 py-1.5 text-xs text-orange-500 hover:text-orange-400 border border-orange-200 rounded-lg hover:border-orange-400 transition-colors whitespace-nowrap">
+              <Link to="/pricing" className="flex-shrink-0 px-3 py-1.5 text-xs text-orange-500 hover:text-orange-600 border border-orange-200 rounded-lg hover:border-orange-400 transition-colors whitespace-nowrap">
                 查看方案 →
               </Link>
             )}
@@ -829,11 +829,11 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* 總分數卡片 */}
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
           {scoreData.map((item) => (
-            <div key={item.name} className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+            <div key={item.name} className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{item.icon}</span>
-                  <h3 className="font-semibold text-white">{item.name}</h3>
+                  <h3 className="font-semibold text-slate-700">{item.name}</h3>
                 </div>
                 <span className="text-3xl font-bold" style={{ color: item.color }}>
                   {item.value}
@@ -846,7 +846,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   style={{ width: `${item.value}%`, backgroundColor: item.color }}
                 />
               </div>
-              <p className="text-xs text-white leading-relaxed">{item.detail}</p>
+              <p className="text-xs text-slate-700 leading-relaxed">{item.detail}</p>
             </div>
           ))}
         </div>
@@ -864,8 +864,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 -mb-px transition-all whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'border-orange-500 text-orange-400'
-                  : 'border-transparent text-white/60 hover:text-white hover:border-white/20'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
               }`}
             >
               <span>{tab.icon}</span>
@@ -880,9 +880,9 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* 圖表區域 */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* 雷達圖 - 5 項 SEO 檢測 */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
-            <h3 className="font-semibold text-white mb-2">SEO 5 項檢測分析<InfoTooltip text={`以雷達圖呈現 5 項 SEO 核心指標得分\n・Meta 標籤：標題與描述是否完整且長度符合規範\n・H1 結構：頁面是否只有一個清晰的主標題\n・Alt 屬性：圖片是否都有描述文字\n・行動版相容：是否適合手機瀏覽（Google 行動優先索引）\n・載入速度：頁面回應時間，影響排名與跳出率`} /></h3>
-            <p className="text-sm text-white/60 mb-4">Meta · H1 · Alt · Mobile · Speed</p>
+          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+            <h3 className="font-semibold text-slate-800 mb-2">SEO 5 項檢測分析<InfoTooltip text={`以雷達圖呈現 5 項 SEO 核心指標得分\n・Meta 標籤：標題與描述是否完整且長度符合規範\n・H1 結構：頁面是否只有一個清晰的主標題\n・Alt 屬性：圖片是否都有描述文字\n・行動版相容：是否適合手機瀏覽（Google 行動優先索引）\n・載入速度：頁面回應時間，影響排名與跳出率`} /></h3>
+            <p className="text-sm text-slate-500 mb-4">Meta · H1 · Alt · Mobile · Speed</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
@@ -902,20 +902,20 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <div className="grid grid-cols-5 gap-2 mt-2">
               {radarData.map((item) => (
                 <div key={item.subject} className="text-center">
-                  <div className="text-lg font-bold text-white">{item.score}</div>
-                  <div className="text-xs text-white/60">{item.subject}</div>
+                  <div className="text-lg font-bold text-slate-800">{item.score}</div>
+                  <div className="text-xs text-slate-500">{item.subject}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* 趨勢圖 */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-semibold text-white">歷史趨勢<InfoTooltip text={`每次重新檢測後自動記錄，最多顯示近 10 次\n・折線圖追蹤 SEO、AEO、GEO、E-E-A-T 四項分數變化\n・綜合分數為四項平均值\n・可觀察優化動作是否有效提升分數\n・卡片上的 +/- 數字代表與上次相比的變化`} /></h3>
-              {!isPro && <span className="text-xs px-2 py-1 bg-orange-100 text-orange-400 rounded-full font-semibold">🔒 Pro 功能</span>}
+              <h3 className="font-semibold text-slate-800">歷史趨勢<InfoTooltip text={`每次重新檢測後自動記錄，最多顯示近 10 次\n・折線圖追蹤 SEO、AEO、GEO、E-E-A-T 四項分數變化\n・綜合分數為四項平均值\n・可觀察優化動作是否有效提升分數\n・卡片上的 +/- 數字代表與上次相比的變化`} /></h3>
+              {!isPro && <span className="text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full font-semibold">🔒 Pro 功能</span>}
             </div>
-            <p className="text-xs text-white/60 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
+            <p className="text-xs text-slate-400 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
 
             {!isPro ? (
               <div className="relative">
@@ -927,10 +927,10 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     </div>
                   ))}
                 </div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/12 backdrop-blur-sm rounded-xl">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl">
                   <div className="text-3xl mb-3">📈</div>
-                  <p className="font-bold text-white mb-1">歷史趨勢圖為 Pro 功能</p>
-                  <p className="text-sm text-white/60 mb-5 text-center px-4">追蹤每次優化後分數的變化，確認行動是否有效</p>
+                  <p className="font-bold text-slate-800 mb-1">歷史趨勢圖為 Pro 功能</p>
+                  <p className="text-sm text-slate-500 mb-5 text-center px-4">追蹤每次優化後分數的變化，確認行動是否有效</p>
                   <button
                     onClick={handleUpgrade}
                     disabled={upgrading}
@@ -956,9 +956,9 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     const diff = last - first
                     return (
                       <div key={key} style={{ background: bg }} className="rounded-xl p-3 text-center">
-                        <div className="text-xs text-white/60 mb-1">{key}</div>
+                        <div className="text-xs text-slate-500 mb-1">{key}</div>
                         <div className="text-xl font-bold" style={{ color }}>{last}</div>
-                        <div className={`text-xs font-medium mt-0.5 ${diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-500' : 'text-white/60'}`}>
+                        <div className={`text-xs font-medium mt-0.5 ${diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-500' : 'text-slate-400'}`}>
                           {diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '持平'}
                         </div>
                       </div>
@@ -985,12 +985,12 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 </ResponsiveContainer>
               </>
             ) : trendData.length === 1 ? (
-              <div className="h-[280px] flex flex-col items-center justify-center text-white/60 gap-2">
+              <div className="h-[280px] flex flex-col items-center justify-center text-slate-400 gap-2">
                 <div className="text-3xl">📈</div>
                 <p className="text-sm">已有 1 筆記錄，再次「重新檢測」後即可顯示趨勢圖</p>
               </div>
             ) : (
-              <div className="h-[280px] flex flex-col items-center justify-center text-white/60 gap-2">
+              <div className="h-[280px] flex flex-col items-center justify-center text-slate-400 gap-2">
                 <div className="text-3xl">📊</div>
                 <p className="text-sm">尚無歷史資料，執行「重新檢測」建立記錄</p>
               </div>
@@ -1005,13 +1005,13 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* GA4 流量數據區塊 */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
               <span className="text-xl">📊</span> GA4 網站流量分析<InfoTooltip text={`串接 Google Analytics 4 顯示真實流量數據\n・工作階段：用戶造訪網站的次數\n・活躍使用者：實際與網站互動的人數\n・跳出率：只看一頁就離開的比例（越低越好）\n・互動率：有效互動工作階段的比例（越高越好）\n・新使用者：首次造訪的訪客比例\n系統會根據數據自動給出優化建議`} />
             </h3>
             <div className="flex items-center gap-3">
-              {ga4Loading && <span className="text-sm text-white/60">載入中...</span>}
-              {!ga4Loading && ga4PropertyId && <button onClick={() => fetchGA4GSCData()} className="text-xs text-white/60 hover:text-white/80 px-2 py-1.5 rounded-lg border border-white/15 hover:border-white/20 transition-colors" title="重新載入數據">↻</button>}
-              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-white/60 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-white/20 transition-colors">⚙️ 修改設定</button>
+              {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
+              {!ga4Loading && ga4PropertyId && <button onClick={() => fetchGA4GSCData()} className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors" title="重新載入數據">↻</button>}
+              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">⚙️ 修改設定</button>
               {ga4Data && <Link to={`/ga4-report/${id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">查看詳情 →</Link>}
             </div>
           </div>
@@ -1080,8 +1080,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               </div>
               {isPro ? (
               <div className="grid md:grid-cols-2 gap-6 mb-4">
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
-                  <h4 className="font-semibold text-white mb-4">流量趨勢 (近30天)</h4>
+                <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+                  <h4 className="font-semibold text-slate-800 mb-4">流量趨勢 (近30天)</h4>
                   <ResponsiveContainer width="100%" height={240}>
                     <AreaChart data={ga4Data.timeline || []}>
                       <defs>
@@ -1103,8 +1103,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
-                  <h4 className="font-semibold text-white mb-4">📊 流量洞察與建議</h4>
+                <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+                  <h4 className="font-semibold text-slate-800 mb-4">📊 流量洞察與建議</h4>
                   <div className="space-y-3">
                     {ga4Data.bounceRate > 70 ? (
                       <div className="flex gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
@@ -1155,7 +1155,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               </div>
               ) : (
               <div className="bg-orange-50/80 rounded-2xl p-4 border border-orange-100 text-center mb-4">
-                <p className="text-sm text-orange-400 font-medium">🔒 趨勢圖與流量洞察建議為 Pro 功能</p>
+                <p className="text-sm text-orange-700 font-medium">🔒 趨勢圖與流量洞察建議為 Pro 功能</p>
                 <button onClick={handleUpgrade} disabled={upgrading} className="mt-2 px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60">
                   {upgrading ? '跳轉中...' : '升級 Pro 解鎖'}
                 </button>
@@ -1163,14 +1163,14 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               )}
             </>
           ) : (
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+            <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">📊</span>
                     <div>
-                      <h4 className="font-semibold text-white">串接 Google Analytics 4</h4>
-                      <p className="text-sm text-white/60">了解你的網站流量與用戶行為</p>
+                      <h4 className="font-semibold text-slate-800">串接 Google Analytics 4</h4>
+                      <p className="text-sm text-slate-500">了解你的網站流量與用戶行為</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mb-4">
@@ -1185,17 +1185,17 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       { step: '3', text: '點擊「設定 GA4 Property ID」填入資源 ID，即可看到流量數據', done: false },
                     ].map(({ step, text, done }) => (
                       <div key={step} className="flex gap-3 items-start">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-slate-200 text-white/80'}`}>
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
                           {done ? '✓' : step}
                         </span>
-                        <p className="text-sm text-white/80 leading-relaxed">{text}</p>
+                        <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="flex flex-col justify-center items-center gap-3 md:w-44">
                   {!googleConnected ? (
-                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-orange-100 rounded-xl shadow-sm hover:shadow-md text-white font-medium text-sm transition-all">
+                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-orange-100 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all">
                       <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                       步驟 1：連接帳號
                     </button>
@@ -1214,13 +1214,13 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* GSC 搜尋數據區塊 */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
               <span className="text-xl">🔍</span> Google Search Console 搜尋成效<InfoTooltip text={`顯示網站在 Google 搜尋結果的真實表現\n・曝光次數：網站出現在搜尋結果的次數\n・點擊次數：用戶實際點進網站的次數\n・點擊率 CTR：曝光中有多少人點擊（越高越好）\n・平均排名：關鍵字在 Google 的平均位置\n・機會關鍵字：排名第 4–10 名、稍加優化就能衝進前三的關鍵字`} />
             </h3>
             <div className="flex items-center gap-3">
-              {gscLoading && <span className="text-sm text-white/60">載入中...</span>}
-              {!gscLoading && gscSiteUrl && <button onClick={() => fetchGA4GSCData()} className="text-xs text-white/60 hover:text-white/80 px-2 py-1.5 rounded-lg border border-white/15 hover:border-white/20 transition-colors" title="重新載入數據">↻</button>}
-              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-white/60 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-white/20 transition-colors">⚙️ 修改設定</button>
+              {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
+              {!gscLoading && gscSiteUrl && <button onClick={() => fetchGA4GSCData()} className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors" title="重新載入數據">↻</button>}
+              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">⚙️ 修改設定</button>
               {gscData && <Link to={`/gsc-report/${id}`} className="text-green-600 hover:text-green-700 text-sm font-medium">查看詳情 →</Link>}
             </div>
           </div>
@@ -1278,8 +1278,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               {isPro ? (
               <>
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
-                  <h4 className="font-semibold text-white mb-4">搜尋曝光與點擊趨勢</h4>
+                <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+                  <h4 className="font-semibold text-slate-800 mb-4">搜尋曝光與點擊趨勢</h4>
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={gscData.timeline || []}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -1291,9 +1291,9 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
-                  <h4 className="font-semibold text-white mb-3">熱門搜尋關鍵字</h4>
-                  <div className="flex gap-4 text-xs text-white/60 mb-2 px-3">
+                <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+                  <h4 className="font-semibold text-slate-800 mb-3">熱門搜尋關鍵字</h4>
+                  <div className="flex gap-4 text-xs text-slate-400 mb-2 px-3">
                     <span className="flex-1">關鍵字</span>
                     <span className="w-10 text-right">點擊</span>
                     <span className="w-12 text-right">CTR</span>
@@ -1304,9 +1304,9 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       const isOpportunity = item.position >= 4 && item.position <= 10
                       const posColor = item.position <= 3 ? 'text-green-600' : item.position <= 10 ? 'text-amber-600' : 'text-red-500'
                       return (
-                        <div key={index} className="flex items-center gap-2 p-2.5 bg-white/10 rounded-lg">
-                          <span className="w-5 h-5 bg-orange-100 text-orange-400 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{index + 1}</span>
-                          <span className="text-sm text-white font-medium truncate flex-1">{item.query}</span>
+                        <div key={index} className="flex items-center gap-2 p-2.5 bg-white/50 rounded-lg">
+                          <span className="w-5 h-5 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{index + 1}</span>
+                          <span className="text-sm text-slate-700 font-medium truncate flex-1">{item.query}</span>
                           {isOpportunity && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">機會</span>}
                           <span className="w-10 text-right text-xs text-green-600 font-medium flex-shrink-0">{item.clicks}</span>
                           <span className="w-12 text-right text-xs text-blue-600 font-medium flex-shrink-0">{(item.ctr * 100).toFixed(1)}%</span>
@@ -1315,13 +1315,13 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       )
                     })}
                     {(gscData.topQueries || []).length === 0 && (
-                      <div className="text-center text-white/60 text-sm py-6">尚無搜尋關鍵字數據</div>
+                      <div className="text-center text-slate-400 text-sm py-6">尚無搜尋關鍵字數據</div>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20 mt-4">
-                <h4 className="font-semibold text-white mb-4">🎯 搜尋優化建議</h4>
+              <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60 mt-4">
+                <h4 className="font-semibold text-slate-800 mb-4">🎯 搜尋優化建議</h4>
                 <div className="grid md:grid-cols-2 gap-3">
                   {gscData.position > 10 && (
                     <div className="flex gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
@@ -1366,7 +1366,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               </>
               ) : (
               <div className="bg-orange-50/80 rounded-2xl p-4 border border-orange-100 text-center mt-4">
-                <p className="text-sm text-orange-400 font-medium">🔒 趨勢圖、熱門關鍵字與搜尋建議為 Pro 功能</p>
+                <p className="text-sm text-orange-700 font-medium">🔒 趨勢圖、熱門關鍵字與搜尋建議為 Pro 功能</p>
                 <button onClick={handleUpgrade} disabled={upgrading} className="mt-2 px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60">
                   {upgrading ? '跳轉中...' : '升級 Pro 解鎖'}
                 </button>
@@ -1374,14 +1374,14 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               )}
             </>
           ) : (
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+            <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">🔍</span>
                     <div>
-                      <h4 className="font-semibold text-white">串接 Google Search Console</h4>
-                      <p className="text-sm text-white/60">掌握網站在 Google 搜尋的真實成效</p>
+                      <h4 className="font-semibold text-slate-800">串接 Google Search Console</h4>
+                      <p className="text-sm text-slate-500">掌握網站在 Google 搜尋的真實成效</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mb-4">
@@ -1396,17 +1396,17 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       { step: '3', text: '點擊「設定 GSC Site URL」，填入 GSC 中的網站網址（如 https://example.com/）', done: false },
                     ].map(({ step, text, done }) => (
                       <div key={step} className="flex gap-3 items-start">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-slate-200 text-white/80'}`}>
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
                           {done ? '✓' : step}
                         </span>
-                        <p className="text-sm text-white/80 leading-relaxed">{text}</p>
+                        <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="flex flex-col justify-center items-center gap-3 md:w-44">
                   {!googleConnected ? (
-                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-orange-100 rounded-xl shadow-sm hover:shadow-md text-white font-medium text-sm transition-all">
+                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-orange-100 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all">
                       <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                       步驟 2：連接帳號
                     </button>
@@ -1429,9 +1429,9 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* 詳細檢測項目 */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* SEO 基本檢測 */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-semibold text-white">SEO 基本檢測<InfoTooltip text={`搜尋引擎排名的基礎要素，共 5 項\n・Meta 標題：建議 30–60 字，包含目標關鍵字\n・Meta 描述：建議 70–155 字，吸引用戶點擊\n・H1 結構：每頁應只有一個 H1，明確傳達主題\n・圖片 Alt：所有圖片需有描述文字（SEO + 無障礙）\n・載入速度：回應時間越短，排名與用戶體驗越好`} /></h3>
+              <h3 className="font-semibold text-slate-800">SEO 基本檢測<InfoTooltip text={`搜尋引擎排名的基礎要素，共 5 項\n・Meta 標題：建議 30–60 字，包含目標關鍵字\n・Meta 描述：建議 70–155 字，吸引用戶點擊\n・H1 結構：每頁應只有一個 H1，明確傳達主題\n・圖片 Alt：所有圖片需有描述文字（SEO + 無障礙）\n・載入速度：回應時間越短，排名與用戶體驗越好`} /></h3>
               <Link to={`/seo-audit/${id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                 查看詳情 →
               </Link>
@@ -1479,13 +1479,13 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   passed: seoAudit?.page_speed?.passed
                 },
               ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
+                <div key={i} className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-white block">{item.name}</span>
-                    <span className="text-xs text-white/60 truncate block">{item.value}</span>
+                    <span className="text-sm font-medium text-slate-700 block">{item.name}</span>
+                    <span className="text-xs text-slate-500 truncate block">{item.value}</span>
                   </div>
                   <div className="flex items-center gap-3 ml-4">
-                    <span className="text-sm font-bold text-white">{item.score}</span>
+                    <span className="text-sm font-bold text-slate-700">{item.score}</span>
                     <span className={`w-3 h-3 rounded-full flex-shrink-0 ${
                       item.passed ? 'bg-green-500' : 'bg-yellow-500'
                     }`}></span>
@@ -1496,17 +1496,17 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           </div>
 
           {/* AEO 技術檢測 */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-white">AEO 技術檢測<InfoTooltip text={`AEO（答案引擎優化）共 8 項技術指標\n・JSON-LD：結構化資料，幫助 AI 理解網頁內容\n・FAQ Schema：問答格式，提升被 AI 直接引用的機率\n・Canonical：避免重複內容，集中 SEO 權重\n・麵包屑：網站層級結構，改善索引效率\n・Open Graph：社群分享時的標題與圖片預覽\n・問句式標題：以問題形式撰寫標題，符合 AI 搜尋行為\n・Meta 描述長度：控制在適當範圍內\n・結構化答案：直接在頁面上給出清晰答案`} /></h3>
+              <h3 className="font-semibold text-slate-800">AEO 技術檢測<InfoTooltip text={`AEO（答案引擎優化）共 8 項技術指標\n・JSON-LD：結構化資料，幫助 AI 理解網頁內容\n・FAQ Schema：問答格式，提升被 AI 直接引用的機率\n・Canonical：避免重複內容，集中 SEO 權重\n・麵包屑：網站層級結構，改善索引效率\n・Open Graph：社群分享時的標題與圖片預覽\n・問句式標題：以問題形式撰寫標題，符合 AI 搜尋行為\n・Meta 描述長度：控制在適當範圍內\n・結構化答案：直接在頁面上給出清晰答案`} /></h3>
               <Link to={`/aeo-audit/${id}`} className="text-purple-600 hover:text-purple-700 text-sm font-medium">
                 查看詳情 →
               </Link>
             </div>
-            <p className="text-xs text-white/60 mb-4">Answer Engine — 傳統 Google 問答優化</p>
+            <p className="text-xs text-slate-400 mb-4">Answer Engine — 傳統 Google 問答優化</p>
             <div className="grid grid-cols-2 gap-3">
               {aeoChecks.map((check) => (
-                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
+                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
                     check.passed
                       ? 'bg-green-100 text-green-700'
@@ -1514,7 +1514,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   }`}>
                     {check.passed ? '✓' : '✗'}
                   </span>
-                  <span className="text-sm text-white">{check.name}</span>
+                  <span className="text-sm text-slate-700">{check.name}</span>
                 </div>
               ))}
             </div>
@@ -1522,19 +1522,19 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         </div>
 
         {/* GEO 生成式 AI 優化檢測 */}
-        <div className="mt-6 bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+        <div className="mt-6 bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-white">GEO 生成式 AI 優化<InfoTooltip text={`GEO（生成式引擎優化）共 8 項指標\n・llms.txt：專為 AI 爬蟲設計的說明文件\n・AI 爬蟲開放：robots.txt 是否允許 GPTBot 等爬取\n・Sitemap：網站地圖，幫助搜尋引擎完整索引\n・Open Graph：頁面的標題、描述、圖片標記\n・Twitter Card：社群預覽卡片設定\n・JSON-LD 引用信號：提供 AI 引用所需的結構化資訊\n・Canonical：告知搜尋引擎頁面的標準版本\n・HTTPS：安全連線，影響排名與用戶信任`} /></h3>
+            <h3 className="font-semibold text-slate-800">GEO 生成式 AI 優化<InfoTooltip text={`GEO（生成式引擎優化）共 8 項指標\n・llms.txt：專為 AI 爬蟲設計的說明文件\n・AI 爬蟲開放：robots.txt 是否允許 GPTBot 等爬取\n・Sitemap：網站地圖，幫助搜尋引擎完整索引\n・Open Graph：頁面的標題、描述、圖片標記\n・Twitter Card：社群預覽卡片設定\n・JSON-LD 引用信號：提供 AI 引用所需的結構化資訊\n・Canonical：告知搜尋引擎頁面的標準版本\n・HTTPS：安全連線，影響排名與用戶信任`} /></h3>
             <div className="flex items-center gap-2">
               <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">Generative Engine</span>
               <Link to={`/geo-audit/${id}`} className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">查看詳情 →</Link>
             </div>
           </div>
-          <p className="text-xs text-white/60 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Claude、Perplexity、Gemini）</p>
+          <p className="text-xs text-slate-400 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Claude、Perplexity、Gemini）</p>
           {geoAudit ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {geoChecks.map((check) => (
-                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
+                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
                     check.passed
                       ? 'bg-green-100 text-green-700'
@@ -1542,43 +1542,43 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   }`}>
                     {check.passed ? '✓' : '✗'}
                   </span>
-                  <span className="text-sm text-white">{check.name}</span>
+                  <span className="text-sm text-slate-700">{check.name}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 text-white/60 text-sm">
+            <div className="text-center py-6 text-slate-400 text-sm">
               點擊「重新檢測」以執行 GEO 分析
             </div>
           )}
         </div>
 
         {/* E-E-A-T 可信度 */}
-        <div className="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+        <div className="mt-8 bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-white">E-E-A-T 可信度<InfoTooltip text={`Google 品質評分核心：經驗、專業、權威、可信度\n・作者資訊：頁面是否標示作者姓名與專業背景\n・關於我們：是否有介紹公司/團隊的頁面\n・聯絡方式：是否提供可驗證的聯絡資訊\n・隱私權政策：必備的法律合規頁面\n・Organization Schema：結構化的組織資訊標記\n・發布日期：文章是否標示發布與更新時間\n・社群媒體連結：提升品牌可信度與權威性\n・外部權威連結：引用可信來源，增加內容可信度`} /></h3>
+            <h3 className="font-semibold text-slate-800">E-E-A-T 可信度<InfoTooltip text={`Google 品質評分核心：經驗、專業、權威、可信度\n・作者資訊：頁面是否標示作者姓名與專業背景\n・關於我們：是否有介紹公司/團隊的頁面\n・聯絡方式：是否提供可驗證的聯絡資訊\n・隱私權政策：必備的法律合規頁面\n・Organization Schema：結構化的組織資訊標記\n・發布日期：文章是否標示發布與更新時間\n・社群媒體連結：提升品牌可信度與權威性\n・外部權威連結：引用可信來源，增加內容可信度`} /></h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-1 bg-orange-100 text-orange-400 rounded-full font-medium">Trust Signals</span>
-              <Link to={`/eeat-audit/${id}`} className="text-orange-500 hover:text-orange-400 text-sm font-medium">查看詳情 →</Link>
+              <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">Trust Signals</span>
+              <Link to={`/eeat-audit/${id}`} className="text-orange-500 hover:text-orange-600 text-sm font-medium">查看詳情 →</Link>
             </div>
           </div>
-          <p className="text-xs text-white/60 mb-4">檢測作者資訊、組織可信度與外部權威連結（Experience · Expertise · Authoritativeness · Trustworthiness）</p>
+          <p className="text-xs text-slate-400 mb-4">檢測作者資訊、組織可信度與外部權威連結（Experience · Expertise · Authoritativeness · Trustworthiness）</p>
           {eeatAudit ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {eeatChecks.map((check) => (
-                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
+                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
                     check.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                   }`}>
                     {check.passed ? '✓' : '✗'}
                   </span>
-                  <span className="text-sm text-white">{check.name}</span>
+                  <span className="text-sm text-slate-700">{check.name}</span>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-white/60 text-sm mb-2">點擊「重新檢測」以執行 E-E-A-T 分析</p>
+              <p className="text-slate-400 text-sm mb-2">點擊「重新檢測」以執行 E-E-A-T 分析</p>
               {!isPro && (
                 <button
                   onClick={handleUpgrade}
@@ -1600,8 +1600,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 className="text-xl font-bold text-white">AI 爬蟲追蹤</h3>
-                <p className="text-white/60 text-sm mt-0.5">檢測 AI 爬蟲是否能存取你的網站，以及 robots.txt 設定狀況</p>
+                <h3 className="text-xl font-bold text-slate-800">AI 爬蟲追蹤</h3>
+                <p className="text-slate-500 text-sm mt-0.5">檢測 AI 爬蟲是否能存取你的網站，以及 robots.txt 設定狀況</p>
               </div>
               <button
                 onClick={runCrawlerScan}
@@ -1620,17 +1620,17 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 <span className="w-3 h-3 rounded-full bg-red-500/80"></span>
                 <span className="w-3 h-3 rounded-full bg-yellow-500/80"></span>
                 <span className="w-3 h-3 rounded-full bg-green-500/80"></span>
-                <span className="text-white/60 text-xs ml-3 font-mono truncate">crawler-scan ~ {website?.url}</span>
+                <span className="text-slate-500 text-xs ml-3 font-mono truncate">crawler-scan ~ {website?.url}</span>
               </div>
               <div ref={terminalRef} className="p-4 h-52 overflow-y-auto font-mono text-xs space-y-0.5 scrollbar-hide">
                 {terminalLogs.length === 0 ? (
-                  <span className="text-white/80">等待掃描...</span>
+                  <span className="text-slate-600">等待掃描...</span>
                 ) : terminalLogs.map(log => (
                   <div key={log.id} className={
                     log.type === 'success' ? 'text-green-400' :
                     log.type === 'error' ? 'text-red-400' :
                     log.type === 'warn' ? 'text-yellow-400' :
-                    'text-white/60'
+                    'text-slate-400'
                   }>{log.text}</div>
                 ))}
                 {crawlerScanning && <span className="text-green-400 animate-pulse">█</span>}
@@ -1641,7 +1641,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             {crawlerResults && (
               <>
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-3">AI 爬蟲存取權限</h4>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">AI 爬蟲存取權限</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {AI_CRAWLERS.map(bot => {
                       const status = crawlerResults.robots[bot.id]
@@ -1651,7 +1651,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                             ? 'bg-red-50/80 border-red-200'
                             : status === 'allowed'
                             ? 'bg-green-50/80 border-green-200'
-                            : 'bg-white/12 border-white/20'
+                            : 'bg-white/60 border-white/60'
                         }`}>
                           <div className="flex items-start justify-between mb-2">
                             <span className="text-xl leading-none">{bot.emoji}</span>
@@ -1660,23 +1660,23 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                                 ? 'bg-red-100 text-red-600'
                                 : status === 'allowed'
                                 ? 'bg-green-100 text-green-700'
-                                : 'bg-white/5 text-white/60'
+                                : 'bg-slate-100 text-slate-500'
                             }`}>
                               {status === 'blocked' ? '封鎖' : status === 'allowed' ? '允許' : '預設'}
                             </span>
                           </div>
-                          <p className="text-white font-semibold text-sm leading-tight">{bot.name}</p>
-                          <p className="text-white/60 text-xs mt-0.5">{bot.company}</p>
+                          <p className="text-slate-800 font-semibold text-sm leading-tight">{bot.name}</p>
+                          <p className="text-slate-400 text-xs mt-0.5">{bot.company}</p>
                         </div>
                       )
                     })}
                   </div>
-                  <p className="text-xs text-white/60 mt-2">「預設」代表 robots.txt 未特別設定，爬蟲預設可存取</p>
+                  <p className="text-xs text-slate-400 mt-2">「預設」代表 robots.txt 未特別設定，爬蟲預設可存取</p>
                 </div>
 
                 {/* AI Visibility Signals */}
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-3">AI 可見度信號</h4>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">AI 可見度信號</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { label: 'llms.txt', desc: '讓 AI 了解你的品牌與服務', passed: !!geoAudit?.llms_txt, icon: '📄', fix: '在根目錄建立 /llms.txt' },
@@ -1688,8 +1688,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       }`}>
                         <span className="text-2xl flex-shrink-0">{item.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-white text-sm">{item.label}</p>
-                          <p className="text-xs text-white/60 truncate">{item.passed ? item.desc : item.fix}</p>
+                          <p className="font-semibold text-slate-800 text-sm">{item.label}</p>
+                          <p className="text-xs text-slate-500 truncate">{item.passed ? item.desc : item.fix}</p>
                         </div>
                         <span className={`text-xl flex-shrink-0 ${item.passed ? 'text-green-500' : 'text-orange-400'}`}>
                           {item.passed ? '✓' : '✗'}
@@ -1737,12 +1737,12 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* ── Tab: 優化工具 ── */}
         {activeTab === 'tools' && <>
         {/* AI 優化工具 */}
-        <div className="mt-0 bg-white/10 backdrop-blur-md rounded-2xl shadow-sm border border-white/20 overflow-hidden">
+        <div className="mt-0 bg-white/40 backdrop-blur-md rounded-2xl shadow-sm border border-white/60 overflow-hidden">
           <div className="px-6 py-4 border-b border-orange-100 flex items-center gap-3">
             <span className="text-2xl">🛠️</span>
             <div>
-              <h3 className="font-bold text-white">AI 優化工具</h3>
-              <p className="text-sm text-white/60">根據檢測結果自動產生優化建議與修復碼</p>
+              <h3 className="font-bold text-slate-800">AI 優化工具</h3>
+              <p className="text-sm text-slate-500">根據檢測結果自動產生優化建議與修復碼</p>
             </div>
           </div>
 
@@ -1758,8 +1758,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 onClick={() => setActiveFixTab(tab.id)}
                 className={`flex-1 px-3 py-3 text-sm font-medium transition-colors ${
                   activeFixTab === tab.id
-                    ? 'text-orange-400 border-b-2 border-orange-500 bg-orange-50/50'
-                    : 'text-white/60 hover:text-white'
+                    ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/50'
+                    : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <div>{tab.label}</div>
@@ -1775,16 +1775,16 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 {getImprovementSuggestions().length === 0 ? (
                   <div className="text-center py-10">
                     <span className="text-5xl">🎉</span>
-                    <p className="text-white mt-3 font-semibold">太棒了！所有 AI 優化項目都通過了</p>
-                    <p className="text-sm text-white/60 mt-1">繼續保持，定期重新掃描以確保持續優化</p>
+                    <p className="text-slate-700 mt-3 font-semibold">太棒了！所有 AI 優化項目都通過了</p>
+                    <p className="text-sm text-slate-500 mt-1">繼續保持，定期重新掃描以確保持續優化</p>
                   </div>
                 ) : (
                   getImprovementSuggestions().map((tip, i) => (
                     <div key={i} className="flex gap-4 p-4 rounded-xl border border-white/15" style={{ background: 'rgba(0,0,0,0.45)' }}>
                       <span className="text-2xl flex-shrink-0">{tip.icon}</span>
                       <div>
-                        <p className="font-semibold text-white mb-1">{i + 1}. {tip.title}</p>
-                        <p className="text-sm text-white/80 leading-relaxed">{tip.desc}</p>
+                        <p className="font-semibold text-slate-800 mb-1">{i + 1}. {tip.title}</p>
+                        <p className="text-sm text-slate-600 leading-relaxed">{tip.desc}</p>
                       </div>
                     </div>
                   ))
@@ -1799,8 +1799,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-base">✏️</span>
-                    <h4 className="text-sm font-semibold text-white">補充商家資訊（選填）</h4>
-                    <span className="text-xs text-white/60">填入後程式碼即時更新</span>
+                    <h4 className="text-sm font-semibold text-slate-700">補充商家資訊（選填）</h4>
+                    <span className="text-xs text-slate-400">填入後程式碼即時更新</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
@@ -1810,7 +1810,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       { key: 'description', label: '品牌描述', placeholder: '簡短說明你的品牌與服務（留空則使用網站描述）', icon: '📝' },
                     ].map(({ key, label, placeholder, icon }) => (
                       <div key={key}>
-                        <label className="text-xs text-white/60 mb-1 flex items-center gap-1">
+                        <label className="text-xs text-slate-500 mb-1 flex items-center gap-1">
                           <span>{icon}</span>{label}
                         </label>
                         <input
@@ -1818,7 +1818,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                           value={bizInfo[key]}
                           onChange={e => setBizInfo(prev => ({ ...prev, [key]: e.target.value }))}
                           placeholder={placeholder}
-                          className="w-full px-3 py-2 text-xs rounded-lg border border-blue-200 bg-white text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-blue-200 bg-white text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
                         />
                       </div>
                     ))}
@@ -1832,12 +1832,12 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <div key={id}>
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <h4 className="font-semibold text-white">{label}</h4>
-                        <p className="text-xs text-white/60">{hint}</p>
+                        <h4 className="font-semibold text-slate-800">{label}</h4>
+                        <p className="text-xs text-slate-500">{hint}</p>
                       </div>
                       <button
                         onClick={() => copyToClipboard(fn(), id)}
-                        className="px-3 py-1.5 bg-orange-100 text-orange-400 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors flex-shrink-0"
+                        className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors flex-shrink-0"
                       >
                         {copiedCode === id ? '✓ 已複製！' : '複製'}
                       </button>
@@ -1855,13 +1855,13 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         </div>
 
         {/* 通知搜尋引擎 */}
-        <div className="mt-6 bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20">
+        <div className="mt-6 bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-start gap-3">
               <span className="text-2xl">📡</span>
               <div>
-                <h3 className="font-bold text-white mb-1">通知搜尋引擎，讓 AI 更快找到你</h3>
-                <p className="text-sm text-white/60">向 Google 與 Bing 發送 Sitemap 更新通知，讓 AI 爬蟲優先重新索引你的網站內容。</p>
+                <h3 className="font-bold text-slate-800 mb-1">通知搜尋引擎，讓 AI 更快找到你</h3>
+                <p className="text-sm text-slate-500">向 Google 與 Bing 發送 Sitemap 更新通知，讓 AI 爬蟲優先重新索引你的網站內容。</p>
                 {pingResult && (
                   <p className={`text-xs mt-2 font-medium ${pingResult.success ? 'text-green-600' : 'text-red-500'}`}>
                     {pingResult.success
@@ -1892,20 +1892,20 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         </>}
 
         {/* Email 通知訂閱 - 暫時停用
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/20 mb-8">
+        <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60 mb-8">
           <div className="flex items-center gap-3 mb-1">
             <span className="text-xl">📧</span>
-            <h3 className="font-semibold text-white">Email 通知</h3>
+            <h3 className="font-semibold text-slate-800">Email 通知</h3>
             {isPro && emailSubscription && (
               <span className="ml-auto text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
                 已訂閱週報
               </span>
             )}
             {!isPro && (
-              <span className="ml-auto text-xs px-2 py-1 bg-orange-100 text-orange-400 rounded-full font-semibold">Pro 功能</span>
+              <span className="ml-auto text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full font-semibold">Pro 功能</span>
             )}
           </div>
-          <p className="text-sm text-white/60 mb-5">
+          <p className="text-sm text-slate-500 mb-5">
             訂閱後每週一早上自動收到本網站的 AI 能見度週報，或立即發送一份報告到信箱。
           </p>
 
@@ -1927,7 +1927,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   value={emailInput}
                   onChange={e => setEmailInput(e.target.value)}
                   placeholder="your@email.com"
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm bg-white/12"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-orange-100 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm bg-white/60"
                 />
                 <div className="flex gap-2">
                   <button
@@ -1975,7 +1975,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               )}
 
               {emailSubscription && (
-                <p className="text-xs text-white/60 mt-3">
+                <p className="text-xs text-slate-400 mt-3">
                   訂閱信箱：{emailSubscription.email} ·
                   上次發送：{emailSubscription.last_sent_at
                     ? new Date(emailSubscription.last_sent_at).toLocaleDateString('zh-TW')
@@ -1994,40 +1994,40 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-white">設定 Google 串接</h3>
-              <button onClick={() => setShowGoogleSettings(false)} className="text-white/60 hover:text-white/80 text-xl">✕</button>
+              <h3 className="text-lg font-bold text-slate-800">設定 Google 串接</h3>
+              <button onClick={() => setShowGoogleSettings(false)} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-white mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   GA4 Property ID
-                  <span className="ml-1 text-white/60 font-normal">（格式：123456789）</span>
+                  <span className="ml-1 text-slate-400 font-normal">（格式：123456789）</span>
                 </label>
                 <input
                   type="text"
                   value={ga4Input}
                   onChange={e => setGa4Input(e.target.value)}
                   placeholder="例：123456789"
-                  className="w-full px-4 py-2.5 border border-white/15 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="text-xs text-white/60 mt-1">GA4 後台 → 管理 → 資源設定 → 資源 ID</p>
+                <p className="text-xs text-slate-400 mt-1">GA4 後台 → 管理 → 資源設定 → 資源 ID</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   GSC 屬性網址
-                  <span className="ml-1 text-white/60 font-normal">（需已在 GSC 驗證）</span>
+                  <span className="ml-1 text-slate-400 font-normal">（需已在 GSC 驗證）</span>
                 </label>
                 <input
                   type="text"
                   value={gscInput}
                   onChange={e => setGscInput(e.target.value.trim())}
                   placeholder="https://www.example.com/"
-                  className="w-full px-4 py-2.5 border border-white/15 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <div className="mt-2 p-3 bg-white/5 rounded-lg text-xs text-white/60 space-y-1">
-                  <p className="font-medium text-white/80">請依照 GSC 左上角顯示的格式填入：</p>
+                <div className="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-500 space-y-1">
+                  <p className="font-medium text-slate-600">請依照 GSC 左上角顯示的格式填入：</p>
                   <p>・<span className="font-mono bg-white px-1 rounded">https://www.example.com/</span>　URL 前置詞（有 www）</p>
                   <p>・<span className="font-mono bg-white px-1 rounded">https://example.com/</span>　URL 前置詞（無 www）</p>
                   <p>・<span className="font-mono bg-white px-1 rounded">example.com</span>　網域資源（會自動轉換）</p>

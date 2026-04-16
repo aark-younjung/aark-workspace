@@ -24,40 +24,12 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminWebsites from './pages/admin/AdminWebsites'
 import AdminRevenue from './pages/admin/AdminRevenue'
 
-const DARK_CIRCLES = [65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157]
 
-function GlobalDarkBg() {
-  return (
-    <>
-      {/* 漸層底色 */}
-      <div className="fixed inset-0 -z-20" style={{
-        background: 'linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #000000 60%)',
-      }} />
-      {/* 顆粒感 */}
-      <div className="fixed inset-0 -z-20 pointer-events-none" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
-        opacity: 0.12, mixBlendMode: 'overlay',
-      }} />
-      {/* 同心圓 — 右側偏上，純裝飾 */}
-      <div className="fixed pointer-events-none -z-20 overflow-visible" style={{ left: '72%', top: '8vh', width: 0, height: 0 }}>
-        {DARK_CIRCLES.map((r, i) => (
-          <div key={i} style={{
-            position: 'absolute', left: -r, top: -r,
-            width: r * 2, height: r * 2, borderRadius: '50%',
-            border: '3px solid #000000',
-            opacity: Math.max(0.10, 0.50 - i * 0.025),
-          }} />
-        ))}
-      </div>
-    </>
-  )
-}
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <GlobalDarkBg />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dark" element={<HomeDark />} />

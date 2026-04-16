@@ -194,40 +194,40 @@ export default function GA4Report() {
   }, [id])
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" >
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="text-center">
         <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-white/80">載入 GA4 數據中...</p>
+        <p className="text-slate-600">載入 GA4 數據中...</p>
       </div>
     </div>
   )
 
   if (error === 'NOT_AUTHENTICATED') return (
-    <div className="min-h-screen flex items-center justify-center" >
-      <div className="bg-white/12 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/20">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/60">
         <div className="text-4xl mb-4">🔑</div>
-        <h2 className="font-bold text-white mb-2">需要 Google 授權</h2>
-        <p className="text-white/60 text-sm mb-5">請先在儀表板連接 Google 帳號</p>
+        <h2 className="font-bold text-slate-800 mb-2">需要 Google 授權</h2>
+        <p className="text-slate-500 text-sm mb-5">請先在儀表板連接 Google 帳號</p>
         <button onClick={initiateGoogleAuth} className="px-6 py-2.5 bg-orange-500 text-white rounded-xl font-semibold mr-3">連接 Google</button>
-        <Link to={`/dashboard/${id}`} className="text-white/60 text-sm">← 返回儀表板</Link>
+        <Link to={`/dashboard/${id}`} className="text-slate-500 text-sm">← 返回儀表板</Link>
       </div>
     </div>
   )
 
   if (error === 'NO_PROPERTY') return (
-    <div className="min-h-screen flex items-center justify-center" >
-      <div className="bg-white/12 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/20">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/60">
         <div className="text-4xl mb-4">⚙️</div>
-        <h2 className="font-bold text-white mb-2">尚未設定 GA4 Property ID</h2>
-        <p className="text-white/60 text-sm mb-5">請回儀表板設定 GA4 Property ID</p>
+        <h2 className="font-bold text-slate-800 mb-2">尚未設定 GA4 Property ID</h2>
+        <p className="text-slate-500 text-sm mb-5">請回儀表板設定 GA4 Property ID</p>
         <Link to={`/dashboard/${id}`} className="px-6 py-2.5 bg-orange-500 text-white rounded-xl font-semibold">← 返回設定</Link>
       </div>
     </div>
   )
 
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center" >
-      <div className="bg-white/12 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/20">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+      <div className="bg-white/60 backdrop-blur-md rounded-2xl p-8 max-w-sm text-center border border-white/60">
         <div className="text-4xl mb-4">⚠️</div>
         <p className="text-red-600 text-sm mb-4">{error}</p>
         <Link to={`/dashboard/${id}`} className="text-orange-500 text-sm">← 返回儀表板</Link>
@@ -250,20 +250,20 @@ export default function GA4Report() {
   ]
 
   return (
-    <div className="min-h-screen relative" >
+    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
 
-      <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/8">
+      <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to={`/dashboard/${id}`} className="text-white/60 hover:text-white text-sm transition-colors">← 返回儀表板</Link>
-            <span className="text-white">|</span>
+            <Link to={`/dashboard/${id}`} className="text-slate-500 hover:text-slate-700 text-sm transition-colors">← 返回儀表板</Link>
+            <span className="text-slate-300">|</span>
             <div>
-              <span className="font-bold text-white">📊 GA4 流量深度分析</span>
-              {website && <span className="text-white/60 text-sm ml-2">{website.name}</span>}
+              <span className="font-bold text-slate-800">📊 GA4 流量深度分析</span>
+              {website && <span className="text-slate-500 text-sm ml-2">{website.name}</span>}
             </div>
           </div>
-          <span className="text-xs text-white/60">過去 30 天</span>
+          <span className="text-xs text-slate-400">過去 30 天</span>
         </div>
       </header>
 
@@ -279,8 +279,8 @@ export default function GA4Report() {
             { label: '互動率', value: `${engRate}%`, sub: rateColor(engRate, BENCHMARKS.engagementRate).label, color: rateColor(engRate, BENCHMARKS.engagementRate).color },
             { label: '頁/工作階段', value: pvPerSession, sub: '內容深度', color: '#f59e0b' },
           ].map((kpi, i) => (
-            <div key={i} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-sm">
-              <div className="text-xs text-white/60 mb-1">{kpi.label}</div>
+            <div key={i} className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-4 shadow-sm">
+              <div className="text-xs text-slate-500 mb-1">{kpi.label}</div>
               <div className="text-2xl font-bold" style={{ color: kpi.color }}>{kpi.value}</div>
               <div className="text-xs mt-0.5" style={{ color: kpi.color }}>{kpi.sub}</div>
             </div>
@@ -288,8 +288,8 @@ export default function GA4Report() {
         </div>
 
         {/* 指標健康條 */}
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 shadow-sm mb-6">
-          <h3 className="font-semibold text-white mb-4">指標健康度</h3>
+        <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-5 shadow-sm mb-6">
+          <h3 className="font-semibold text-slate-800 mb-4">指標健康度</h3>
           <div className="grid md:grid-cols-3 gap-4">
             {[
               { label: '跳出率', value: summary.bounceRate.toFixed(1) + '%', desc: '產業平均 50–60%', score: Math.max(0, 100 - summary.bounceRate), ...rateColor(summary.bounceRate, BENCHMARKS.bounceRate, true) },
@@ -298,13 +298,13 @@ export default function GA4Report() {
             ].map((item, i) => (
               <div key={i}>
                 <div className="flex justify-between mb-1">
-                  <span className="text-sm text-white/80">{item.label}</span>
+                  <span className="text-sm text-slate-600">{item.label}</span>
                   <span className="text-sm font-bold" style={{ color: item.color }}>{item.value} · {item.label || item.label2}</span>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-1">
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-1">
                   <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(item.score, 100)}%`, backgroundColor: item.color }} />
                 </div>
-                <div className="text-xs text-white/60">{item.desc}</div>
+                <div className="text-xs text-slate-400">{item.desc}</div>
               </div>
             ))}
           </div>
@@ -314,7 +314,7 @@ export default function GA4Report() {
         <div className="flex gap-2 mb-6 flex-wrap">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-orange-500 text-white' : 'bg-white/10 text-white/80 hover:bg-white/12'}`}>
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-orange-500 text-white' : 'bg-white/50 text-slate-600 hover:bg-white/80'}`}>
               {tab.icon} {tab.label}
             </button>
           ))}
@@ -325,18 +325,18 @@ export default function GA4Report() {
           <div className="space-y-6">
             {/* 裝置分布 */}
             {devices.length > 0 && (
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm">
-                <h3 className="font-semibold text-white mb-4">裝置分布</h3>
+              <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm">
+                <h3 className="font-semibold text-slate-800 mb-4">裝置分布</h3>
                 <div className="grid grid-cols-3 gap-4">
                   {devices.map((d, i) => {
                     const pct = totalChSessions > 0 ? Math.round(d.sessions / summary.sessions * 100) : 0
                     const icons = { mobile: '📱', desktop: '💻', tablet: '📟' }
                     return (
-                      <div key={i} className="text-center p-4 bg-white/12 rounded-xl border border-orange-50">
+                      <div key={i} className="text-center p-4 bg-white/60 rounded-xl border border-orange-50">
                         <div className="text-2xl mb-2">{icons[d.device] || '💻'}</div>
-                        <div className="text-lg font-bold text-white">{pct}%</div>
-                        <div className="text-sm text-white/60 capitalize">{d.device}</div>
-                        <div className="text-xs text-white/60 mt-1">{d.sessions.toLocaleString()} 工作階段</div>
+                        <div className="text-lg font-bold text-slate-800">{pct}%</div>
+                        <div className="text-sm text-slate-500 capitalize">{d.device}</div>
+                        <div className="text-xs text-slate-400 mt-1">{d.sessions.toLocaleString()} 工作階段</div>
                         <div className="text-xs mt-1" style={{ color: rateColor(d.bounceRate, BENCHMARKS.bounceRate, true).color }}>
                           跳出率 {d.bounceRate}%
                         </div>
@@ -348,15 +348,15 @@ export default function GA4Report() {
             )}
 
             {/* 新舊用戶 */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-white mb-4">新用戶 vs 回訪用戶</h3>
+            <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-semibold text-slate-800 mb-4">新用戶 vs 回訪用戶</h3>
               <div className="flex items-center gap-4 mb-3">
                 <div className="flex-1">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-blue-600">新用戶</span>
                     <span className="font-medium">{newRate}% · {summary.newUsers.toLocaleString()} 人</span>
                   </div>
-                  <div className="h-4 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-500 rounded-full" style={{ width: `${newRate}%` }} />
                   </div>
                 </div>
@@ -367,12 +367,12 @@ export default function GA4Report() {
                     <span className="text-emerald-600">回訪用戶</span>
                     <span className="font-medium">{100 - newRate}% · {(summary.activeUsers - summary.newUsers).toLocaleString()} 人</span>
                   </div>
-                  <div className="h-4 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${100 - newRate}%` }} />
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-white/60 mt-3">
+              <p className="text-xs text-slate-400 mt-3">
                 {newRate > 75 ? '⚠️ 回訪率偏低，建議加強內容訂閱和再行銷策略' :
                  newRate < 30 ? '⚠️ 新用戶偏少，建議擴大 SEO 和社群曝光' :
                  '✅ 新舊用戶比例健康，代表既有流量又有品牌黏著度'}
@@ -384,8 +384,8 @@ export default function GA4Report() {
         {/* ── Tab: 趨勢 ── */}
         {activeTab === 'trends' && summary.timeline?.length > 0 && (
           <div className="space-y-6">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-white mb-4">流量趨勢（近 30 天）</h3>
+            <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-semibold text-slate-800 mb-4">流量趨勢（近 30 天）</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={summary.timeline}>
                   <defs>
@@ -409,8 +409,8 @@ export default function GA4Report() {
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-white mb-4">跳出率趨勢</h3>
+            <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-semibold text-slate-800 mb-4">跳出率趨勢</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={summary.timeline}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -431,8 +431,8 @@ export default function GA4Report() {
             {channels.length > 0 ? (
               <>
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm">
-                    <h3 className="font-semibold text-white mb-4">流量來源分布</h3>
+                  <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 mb-4">流量來源分布</h3>
                     <ResponsiveContainer width="100%" height={240}>
                       <PieChart>
                         <Pie data={channels} dataKey="sessions" nameKey="channel" cx="50%" cy="50%" outerRadius={80} label={({ channel, percent }) => `${channel} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
@@ -442,8 +442,8 @@ export default function GA4Report() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-sm">
-                    <h3 className="font-semibold text-white mb-4">各來源跳出率比較</h3>
+                  <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl p-6 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 mb-4">各來源跳出率比較</h3>
                     <ResponsiveContainer width="100%" height={240}>
                       <BarChart data={channels} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -458,16 +458,16 @@ export default function GA4Report() {
                   </div>
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl overflow-hidden shadow-sm">
                   <div className="px-6 py-4 border-b border-orange-100">
-                    <h3 className="font-semibold text-white">流量來源詳細數據</h3>
+                    <h3 className="font-semibold text-slate-800">流量來源詳細數據</h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-orange-50/50">
                         <tr>
                           {['來源管道', '工作階段', '活躍用戶', '新用戶', '跳出率', '互動率'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-white/80">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-600">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -477,15 +477,15 @@ export default function GA4Report() {
                           const chEngRate = c.sessions > 0 ? Math.round(c.engagedSessions / c.sessions * 100) : 0
                           return (
                             <tr key={i} className="hover:bg-orange-50/30">
-                              <td className="px-4 py-3 font-medium text-white">
+                              <td className="px-4 py-3 font-medium text-slate-800">
                                 <div className="flex items-center gap-2">
                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
                                   {c.channel}
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-white/80">{c.sessions.toLocaleString()} <span className="text-white/60 text-xs">({pct}%)</span></td>
-                              <td className="px-4 py-3 text-white/80">{c.activeUsers.toLocaleString()}</td>
-                              <td className="px-4 py-3 text-white/80">{c.newUsers.toLocaleString()}</td>
+                              <td className="px-4 py-3 text-slate-600">{c.sessions.toLocaleString()} <span className="text-slate-400 text-xs">({pct}%)</span></td>
+                              <td className="px-4 py-3 text-slate-600">{c.activeUsers.toLocaleString()}</td>
+                              <td className="px-4 py-3 text-slate-600">{c.newUsers.toLocaleString()}</td>
                               <td className="px-4 py-3">
                                 <span className="font-medium" style={{ color: rateColor(c.bounceRate, BENCHMARKS.bounceRate, true).color }}>{c.bounceRate}%</span>
                               </td>
@@ -500,16 +500,16 @@ export default function GA4Report() {
                   </div>
                 </div>
               </>
-            ) : <div className="text-center py-12 text-white/60">無流量來源資料</div>}
+            ) : <div className="text-center py-12 text-slate-400">無流量來源資料</div>}
           </div>
         )}
 
         {/* ── Tab: 熱門頁面 ── */}
         {activeTab === 'pages' && (
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-orange-100">
-              <h3 className="font-semibold text-white">熱門頁面 Top 20</h3>
-              <p className="text-xs text-white/60 mt-0.5">依瀏覽量排序・標紅代表跳出率 ≥ 70% 需要注意</p>
+              <h3 className="font-semibold text-slate-800">熱門頁面 Top 20</h3>
+              <p className="text-xs text-slate-400 mt-0.5">依瀏覽量排序・標紅代表跳出率 ≥ 70% 需要注意</p>
             </div>
             {pages.length > 0 ? (
               <div className="overflow-x-auto">
@@ -517,30 +517,30 @@ export default function GA4Report() {
                   <thead className="bg-orange-50/50">
                     <tr>
                       {['#', '頁面', '瀏覽量', '用戶數', '跳出率', '平均停留（秒）'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-white/80">{h}</th>
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-600">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-50">
                     {pages.map((p, i) => (
                       <tr key={i} className={`hover:bg-orange-50/30 ${p.bounceRate > 70 ? 'bg-red-50/20' : ''}`}>
-                        <td className="px-4 py-3 text-white/60 text-xs">{i + 1}</td>
+                        <td className="px-4 py-3 text-slate-400 text-xs">{i + 1}</td>
                         <td className="px-4 py-3 max-w-xs">
-                          <div className="font-medium text-white truncate text-xs">{p.title || p.path}</div>
-                          <div className="text-white/60 text-xs truncate">{p.path}</div>
+                          <div className="font-medium text-slate-800 truncate text-xs">{p.title || p.path}</div>
+                          <div className="text-slate-400 text-xs truncate">{p.path}</div>
                         </td>
-                        <td className="px-4 py-3 font-semibold text-white">{p.pageViews.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-white/80">{p.users.toLocaleString()}</td>
+                        <td className="px-4 py-3 font-semibold text-slate-700">{p.pageViews.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-slate-600">{p.users.toLocaleString()}</td>
                         <td className="px-4 py-3">
                           <span className="font-medium text-sm" style={{ color: rateColor(p.bounceRate, BENCHMARKS.bounceRate, true).color }}>{p.bounceRate}%</span>
                         </td>
-                        <td className="px-4 py-3 text-white/80">{p.avgDuration}s</td>
+                        <td className="px-4 py-3 text-slate-600">{p.avgDuration}s</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            ) : <div className="text-center py-12 text-white/60">無頁面資料</div>}
+            ) : <div className="text-center py-12 text-slate-400">無頁面資料</div>}
           </div>
         )}
 
@@ -551,24 +551,24 @@ export default function GA4Report() {
               💡 以下建議根據你的 GA4 實際數據自動生成，依優先級排序。
             </div>
             {recs.map((rec, i) => (
-              <div key={i} className={`bg-white/12 backdrop-blur-md border rounded-2xl p-6 shadow-sm ${rec.priority === 'high' ? 'border-red-200' : rec.priority === 'good' ? 'border-green-200' : 'border-orange-200'}`}>
+              <div key={i} className={`bg-white/60 backdrop-blur-md border rounded-2xl p-6 shadow-sm ${rec.priority === 'high' ? 'border-red-200' : rec.priority === 'good' ? 'border-green-200' : 'border-orange-200'}`}>
                 <div className="flex items-start gap-3 mb-3">
                   <span className="text-2xl flex-shrink-0">{rec.icon}</span>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-bold text-white">{rec.title}</h4>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${rec.priority === 'high' ? 'bg-red-100 text-red-600' : rec.priority === 'good' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-400'}`}>
+                      <h4 className="font-bold text-slate-800">{rec.title}</h4>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${rec.priority === 'high' ? 'bg-red-100 text-red-600' : rec.priority === 'good' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
                         {rec.priority === 'high' ? '優先處理' : rec.priority === 'good' ? '表現良好' : '建議改善'}
                       </span>
                     </div>
-                    <p className="text-white/80 text-sm leading-relaxed">{rec.detail}</p>
+                    <p className="text-slate-600 text-sm leading-relaxed">{rec.detail}</p>
                   </div>
                 </div>
                 <div className="ml-9">
-                  <p className="text-xs font-semibold text-white/60 mb-2">具體行動：</p>
+                  <p className="text-xs font-semibold text-slate-500 mb-2">具體行動：</p>
                   <ul className="space-y-1">
                     {rec.actions.map((a, j) => (
-                      <li key={j} className="flex items-start gap-2 text-sm text-white/80">
+                      <li key={j} className="flex items-start gap-2 text-sm text-slate-600">
                         <span className="text-orange-400 flex-shrink-0 mt-0.5">→</span>{a}
                       </li>
                     ))}

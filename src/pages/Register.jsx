@@ -40,13 +40,13 @@ export default function Register() {
 
   if (success) {
     return (
-      <div className="min-h-screen relative flex items-center justify-center px-4" >
+      <div className="min-h-screen relative flex items-center justify-center px-4" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
         <div className="w-full max-w-md text-center relative">
           <div className="text-6xl mb-6">🎉</div>
-          <h2 className="text-3xl font-bold text-white mb-3">註冊成功！</h2>
-          <p className="text-white/60 mb-2">請查看您的信箱並點擊確認連結</p>
-          <p className="text-white/60 text-sm mb-8">（確認後即可登入使用）</p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">註冊成功！</h2>
+          <p className="text-gray-500 mb-2">請查看您的信箱並點擊確認連結</p>
+          <p className="text-gray-400 text-sm mb-8">（確認後即可登入使用）</p>
           <Link to="/login"
             className="inline-block px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all">
             前往登入
@@ -57,7 +57,7 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-4" >
+    <div className="min-h-screen relative flex items-center justify-center px-4" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div className="w-full max-w-md relative">
         {/* Logo */}
@@ -68,57 +68,57 @@ export default function Register() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold text-white">優勢方舟數位行銷</span>
+            <span className="text-2xl font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">建立帳號</h1>
-          <p className="text-white/60">加入即獲得 3 個網站免費分析額度，不需信用卡</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">建立帳號</h1>
+          <p className="text-gray-500">加入即獲得 3 個網站免費分析額度，不需信用卡</p>
         </div>
 
         {/* 表單 */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8">
+        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-white/60 text-sm mb-2">姓名</label>
+              <label className="block text-gray-500 text-sm mb-2">姓名</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="您的姓名"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-white/60 text-sm mb-2">電子郵件</label>
+              <label className="block text-gray-500 text-sm mb-2">電子郵件</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-white/60 text-sm mb-2">密碼</label>
+              <label className="block text-gray-500 text-sm mb-2">密碼</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="至少 6 個字元"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-white/60 text-sm mb-2">確認密碼</label>
+              <label className="block text-gray-500 text-sm mb-2">確認密碼</label>
               <input
                 type="password"
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
                 placeholder="再輸入一次密碼"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
 
@@ -135,7 +135,7 @@ export default function Register() {
                 onChange={e => setMarketingConsent(e.target.checked)}
                 className="mt-0.5 w-4 h-4 rounded accent-orange-500 cursor-pointer"
               />
-              <span className="text-white/60 text-xs leading-relaxed">
+              <span className="text-gray-400 text-xs leading-relaxed">
                 我同意接收 AARK 的產品更新、優化建議與行銷資訊（可隨時取消）
               </span>
             </label>
@@ -149,15 +149,15 @@ export default function Register() {
           </form>
 
           <div className="mt-6 text-center">
-            <span className="text-white/60 text-sm">已有帳號？</span>
-            <Link to="/login" className="text-orange-500 hover:text-orange-400 text-sm ml-1 font-medium">
+            <span className="text-gray-400 text-sm">已有帳號？</span>
+            <Link to="/login" className="text-orange-500 hover:text-orange-600 text-sm ml-1 font-medium">
               直接登入
             </Link>
           </div>
 
           <div className="flex items-center gap-3 mt-6">
             <div className="flex-1 h-px bg-orange-100"></div>
-            <span className="text-white/60 text-xs">或</span>
+            <span className="text-gray-400 text-xs">或</span>
             <div className="flex-1 h-px bg-orange-100"></div>
           </div>
 
@@ -165,11 +165,11 @@ export default function Register() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading || googleLoading}
-            className="w-full flex items-center justify-center gap-3 py-3 bg-white text-white font-semibold rounded-xl hover:bg-white/5 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 active:translate-y-0 transition-all shadow-md mt-4 disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-3 py-3 bg-white text-slate-700 font-semibold rounded-xl hover:bg-slate-100 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 active:translate-y-0 transition-all shadow-md mt-4 disabled:opacity-60"
           >
             {googleLoading ? (
               <>
-                <svg className="animate-spin w-5 h-5 text-white/60" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
@@ -190,7 +190,7 @@ export default function Register() {
         </div>
 
         <div className="mt-6 text-center">
-          <Link to="/" className="text-white/60 hover:text-white/80 text-sm transition-colors">
+          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
             ← 返回首頁
           </Link>
         </div>
