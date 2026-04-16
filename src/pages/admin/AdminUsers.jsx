@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from './AdminLayout'
 import AdminGuard from './AdminGuard'
+import * as XLSX from 'xlsx'
 
 export default function AdminUsers() {
   const [searchParams] = useSearchParams()
@@ -79,6 +80,37 @@ export default function AdminUsers() {
     }
   }
 
+  const handleExportExcel = async () => {
+    // 取全部用戶（不受目前 filter 限制）
+    const { data: allUsers } = await supabase
+      .from('profiles')
+      .select('id, name, email, is_pro, is_admin, created_at, marketing_consent')
+      .order('created_at', { ascending: false })
+
+    const rows = (allUsers || []).map((u, i) => ({
+      '#': i + 1,
+      '姓名': u.name || '',
+      'Email': u.email || '',
+      '方案': u.is_pro ? 'Pro' : 'Free',
+      '管理員': u.is_admin ? '是' : '否',
+      '行銷同意': u.marketing_consent ? '是' : '否',
+      '註冊時間': u.created_at ? new Date(u.created_at).toLocaleString('zh-TW') : '',
+      '用戶 ID': u.id,
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+    // 欄寬
+    ws['!cols'] = [
+      { wch: 4 }, { wch: 16 }, { wch: 30 }, { wch: 8 },
+      { wch: 8 }, { wch: 10 }, { wch: 20 }, { wch: 38 },
+    ]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '用戶名單')
+
+    const date = new Date().toISOString().slice(0, 10)
+    XLSX.writeFile(wb, `aark_users_${date}.xlsx`)
+  }
+
   const handleGrantPro = async (grantAsPro) => {
     const email = grantEmail.trim().toLowerCase()
     if (!email) return
@@ -129,6 +161,15 @@ export default function AdminUsers() {
               <h1 className="text-2xl font-bold text-white">用戶管理</h1>
               <p className="text-slate-400 text-sm mt-1">共 {users.length} 位用戶</p>
             </div>
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              匯出 Excel
+            </button>
           </div>
 
           {/* 指定帳號授權 Pro */}
