@@ -1785,8 +1785,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     <div key={i} className="flex gap-4 p-4 rounded-xl border border-white/15" style={{ background: 'rgba(0,0,0,0.45)' }}>
                       <span className="text-2xl flex-shrink-0">{tip.icon}</span>
                       <div>
-                        <p className="font-semibold text-slate-800 mb-1">{i + 1}. {tip.title}</p>
-                        <p className="text-sm text-slate-600 leading-relaxed">{tip.desc}</p>
+                        <p className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{i + 1}. {tip.title}</p>
+                        <p className={`text-sm leading-relaxed ${isDark ? 'text-white/70' : 'text-slate-600'}`}>{tip.desc}</p>
                       </div>
                     </div>
                   ))
