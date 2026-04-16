@@ -236,7 +236,7 @@ function HomeFAQItem({ q, a }) {
   return (
     <div
       className="p-5 backdrop-blur-md rounded-xl border border-white/10 cursor-pointer hover:border-orange-500/30 transition-all"
-      style={{ background: 'rgba(10,2,8,0.72)' }}
+      style={{ background: 'rgba(255,255,255,0.10)' }}
       onClick={() => setOpen(v => !v)}
     >
       <div className="flex items-center justify-between gap-3">
@@ -469,11 +469,11 @@ export default function HomeDark() {
             </div>
 
             <nav className="hidden md:flex items-center gap-5">
-              <Link to="/showcase" className="text-slate-400 hover:text-white transition-colors text-sm">排行榜</Link>
-              <Link to="/compare" className="text-slate-400 hover:text-white transition-colors text-sm">競品比較</Link>
-              <Link to="/pricing" className="text-slate-400 hover:text-white transition-colors text-sm">定價</Link>
-              <Link to="/content-audit" className="text-slate-400 hover:text-white transition-colors text-sm">文章分析</Link>
-              <Link to="/faq" className="text-slate-400 hover:text-white transition-colors text-sm">FAQ</Link>
+              <Link to="/showcase" className="text-white hover:text-orange-300 transition-colors text-sm">排行榜</Link>
+              <Link to="/compare" className="text-white hover:text-orange-300 transition-colors text-sm">競品比較</Link>
+              <Link to="/pricing" className="text-white hover:text-orange-300 transition-colors text-sm">定價</Link>
+              <Link to="/content-audit" className="text-white hover:text-orange-300 transition-colors text-sm">文章分析</Link>
+              <Link to="/faq" className="text-white hover:text-orange-300 transition-colors text-sm">FAQ</Link>
             </nav>
 
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -491,7 +491,7 @@ export default function HomeDark() {
                       </div>
                     )}
                   </Link>
-                  <button onClick={signOut} className="text-slate-500 hover:text-slate-300 text-xs sm:text-sm transition-colors">登出</button>
+                  <button onClick={signOut} className="text-white/70 hover:text-white text-xs sm:text-sm transition-colors">登出</button>
                 </>
               ) : (
                 <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
@@ -505,7 +505,7 @@ export default function HomeDark() {
               ['/showcase', '排行榜'], ['/compare', '競品比較'],
               ['/pricing', '定價'], ['/content-audit', '文章分析'], ['/faq', 'FAQ'],
             ].map(([to, label]) => (
-              <Link key={to} to={to} className="flex-shrink-0 px-3 py-1 text-xs text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap">{label}</Link>
+              <Link key={to} to={to} className="flex-shrink-0 px-3 py-1 text-xs text-white hover:text-orange-300 hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap">{label}</Link>
             ))}
           </div>
         </div>
@@ -515,7 +515,7 @@ export default function HomeDark() {
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-24 overflow-visible">
         {/* 背景同心圓：圓心對齊雷達圓心，left = 50% + 350px，zIndex: -1 確保在內容後面 */}
         <div className="absolute pointer-events-none overflow-visible" style={{
-          left: 'calc(50% + 350px)',
+          left: 'calc(50% + 380px)',
           top: '30px',
           width: 0, height: 0,
           zIndex: -1,
@@ -560,7 +560,7 @@ export default function HomeDark() {
                   placeholder="輸入您的網址 (例如: example.com)"
                   className="flex-1 px-6 py-4 rounded-xl border border-orange-400/40 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all backdrop-blur-sm"
                   disabled={loading}
-                  style={{ background: 'rgba(10,2,8,0.75)' }}
+                  style={{ background: 'rgba(255,255,255,0.10)' }}
                 />
                 <button
                   type="submit"
@@ -679,7 +679,7 @@ export default function HomeDark() {
                 return (
                   <Link key={site.id} to={`/dashboard/${site.id}`}
                     className="group block backdrop-blur-md border rounded-2xl p-4 hover:border-orange-500/40 transition-all"
-                    style={{ background: 'rgba(10,2,8,0.72)', borderColor: 'rgba(255,255,255,0.12)' }}
+                    style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}
                   >
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="min-w-0">
@@ -728,7 +728,7 @@ export default function HomeDark() {
               <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
               <span className="text-slate-500 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
             </div>
-            <div className="overflow-hidden rounded-xl border py-3" style={{ background: 'rgba(10,2,8,0.70)', borderColor: 'rgba(255,255,255,0.10)' }}>
+            <div className="overflow-hidden rounded-xl border py-3" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' }}>
               <div className="flex whitespace-nowrap" style={{ animation: 'tickerScroll 25s linear infinite' }}>
                 {[...recentScans, ...recentScans].map((item, i) => (
                   <span key={i} className="inline-flex items-center gap-2 px-6 text-sm">
@@ -771,7 +771,7 @@ export default function HomeDark() {
                 const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
                 return (
                   <div key={i} className="p-4 backdrop-blur-md rounded-xl border hover:border-orange-500/30 transition-all"
-                    style={{ background: 'rgba(10,2,8,0.72)', borderColor: 'rgba(255,255,255,0.12)' }}>
+                    style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
                     <div className="flex items-center gap-3 mb-3">
                       <BotLogo domain={bot.domain} color={bot.color} size="md" />
                       <div className="min-w-0">
@@ -803,7 +803,7 @@ export default function HomeDark() {
                 const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
                 return (
                   <div key={i} className="p-4 backdrop-blur-md rounded-xl border hover:border-orange-500/30 transition-all"
-                    style={{ background: 'rgba(10,2,8,0.72)', borderColor: 'rgba(255,255,255,0.12)' }}>
+                    style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <BotLogo domain={bot.domain} color={bot.color} size="sm" />
                       <div className="min-w-0">
@@ -833,7 +833,7 @@ export default function HomeDark() {
             { icon: '🤖', title: 'GEO 優化', desc: '8 項 Generative Engine 指標：llms.txt、AI 爬蟲開放性、引用信號' },
           ].map((item, i) => (
             <div key={i} className="p-6 backdrop-blur-md rounded-2xl border hover:border-orange-500/30 transition-all"
-              style={{ background: 'rgba(10,2,8,0.72)', borderColor: 'rgba(255,255,255,0.12)' }}>
+              style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
               <div className="text-4xl mb-4">{item.icon}</div>
               <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
               <p className="text-slate-400">{item.desc}</p>
@@ -843,7 +843,7 @@ export default function HomeDark() {
 
         {/* 排行榜入口 */}
         <div className="mt-16 p-8 rounded-2xl border text-center"
-          style={{ background: 'rgba(10,2,8,0.72)', borderColor: 'rgba(255,255,255,0.12)' }}>
+          style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
           <div className="text-3xl mb-3">🏆</div>
           <h2 className="text-xl font-bold text-white mb-2">想知道其他網站的 AI 能見度表現？</h2>
           <p className="text-slate-400 mb-6 text-sm">查看進步之星、排行榜與成功案例，了解優化前後的差異</p>
