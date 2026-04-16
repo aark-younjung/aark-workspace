@@ -586,35 +586,65 @@ export default function Home() {
 
       {/* Header */}
       <header className="relative z-10 border-b border-orange-100 bg-white/60 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="text-xl font-bold text-slate-800">優勢方舟數位行銷</span>
-          </div>
-          <nav className="flex items-center gap-6">
-            <Link to="/showcase" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
-            <Link to="/compare" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">競品比較</Link>
-            <Link to="/pricing" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">定價</Link>
-            <Link to="/content-audit" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">文章分析</Link>
-            <Link to="/faq" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">FAQ</Link>
-            {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-slate-600 text-sm">👤 {userName}</span>
-                <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-sm transition-colors">登出</button>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between py-3 sm:py-4">
+            {/* Logo + 品牌名 */}
+            <div className="flex items-center gap-2.5 flex-shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
-            ) : (
-              <Link to="/login" className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">登入</Link>
-            )}
-          </nav>
+              <span className="text-base sm:text-xl font-bold text-slate-800 leading-tight">
+                <span className="sm:hidden">優勢方舟</span>
+                <span className="hidden sm:inline">優勢方舟數位行銷</span>
+              </span>
+            </div>
+
+            {/* 桌面版導覽列 */}
+            <nav className="hidden md:flex items-center gap-5">
+              <Link to="/showcase" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
+              <Link to="/compare" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">競品比較</Link>
+              <Link to="/pricing" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">定價</Link>
+              <Link to="/content-audit" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">文章分析</Link>
+              <Link to="/faq" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">FAQ</Link>
+            </nav>
+
+            {/* 右側：登入/帳號 */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {user ? (
+                <>
+                  <Link to="/account" className="hidden sm:block text-slate-600 text-sm">👤 {userName}</Link>
+                  <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity sm:hidden" title="帳號設定">
+                    {user?.user_metadata?.avatar_url ? (
+                      <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                        {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </Link>
+                  <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-xs sm:text-sm transition-colors">登出</button>
+                </>
+              ) : (
+                <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
+              )}
+            </div>
+          </div>
+
+          {/* 手機版導覽列（橫向捲動） */}
+          <div className="md:hidden flex items-center gap-1 pb-2 overflow-x-auto scrollbar-hide">
+            <Link to="/showcase" className="flex-shrink-0 px-3 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">排行榜</Link>
+            <Link to="/compare" className="flex-shrink-0 px-3 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">競品比較</Link>
+            <Link to="/pricing" className="flex-shrink-0 px-3 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">定價</Link>
+            <Link to="/content-audit" className="flex-shrink-0 px-3 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">文章分析</Link>
+            <Link to="/faq" className="flex-shrink-0 px-3 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">FAQ</Link>
+          </div>
         </div>
       </header>
 
       {/* Hero Section — 雙欄佈局 */}
-      <main className="relative z-10 max-w-6xl mx-auto px-6 pt-10 pb-24 overflow-visible">
+      <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-24 overflow-visible">
         <div className="grid md:grid-cols-2 gap-6 items-center overflow-visible">
 
           {/* 左欄：文字 + 輸入框 */}
