@@ -604,12 +604,7 @@ export default function HomeDark() {
                 </defs>
 
                 {/* 靜態同心圓 — 圓心在 (310, 0)，配合 left:-30px 讓視覺圓心在 70% */}
-                {[97, 163, 231, 301, 373, 447, 523, 601].map((r, i) => (
-                  <circle key={i} cx="310" cy="0" r={r} fill="none"
-                    stroke={`rgba(147,197,253,${0.26 - i * 0.025})`}
-                    strokeWidth="1"
-                  />
-                ))}
+                {/* 靜態同心圓已移除 */}
 
                 {/* 脈衝擴散圓 — 藍色 */}
                 {[0, 1.2, 2.4].map((delay, i) => (
