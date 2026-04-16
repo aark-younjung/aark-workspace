@@ -1788,7 +1788,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   </div>
                 ) : (
                   getImprovementSuggestions().map((tip, i) => (
-                    <div key={i} className="flex gap-4 p-4 rounded-xl border border-white/15" style={{ background: 'rgba(0,0,0,0.45)' }}>
+                    <div key={i} className="flex gap-4 p-4 rounded-xl" style={isDark ? { background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' } : { background: 'rgba(200,200,210,0.18)', border: '1px solid rgba(180,180,200,0.3)' }}>
                       <span className="text-2xl flex-shrink-0">{tip.icon}</span>
                       <div>
                         <p className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{i + 1}. {tip.title}</p>
