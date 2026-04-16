@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useTheme } from '../context/ThemeContext'
 
 // ── 樣板資料：日本與台灣中小企業（真實掃描結果會自動取代同網址的樣板） ──
 const SAMPLE_SITES = [

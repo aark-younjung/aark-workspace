@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useTheme } from '../context/ThemeContext'
 import { getGA4Summary, getGA4Channels, getGA4TopPages, getGA4Devices } from '../services/ga4Analyzer'
 import { getPropertyId, isAuthenticated, initiateGoogleAuth } from '../services/googleAuth'
 import {
@@ -160,6 +161,7 @@ const PIE_COLORS = ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#06b6d4','#ef4444',
 
 export default function GA4Report() {
   const { id } = useParams()
+  const { isDark } = useTheme()
   const [website, setWebsite] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')

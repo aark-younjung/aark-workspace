@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useTheme } from '../context/ThemeContext'
 import { getGSCSummary, getGSCTopPages, getGSCDevices } from '../services/gscAnalyzer'
 import { getSiteUrl, isAuthenticated, initiateGoogleAuth } from '../services/googleAuth'
 import {
@@ -201,6 +202,7 @@ const TABS = [
 
 export default function GSCReport() {
   const { id } = useParams()
+  const { isDark } = useTheme()
   const [website, setWebsite] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
