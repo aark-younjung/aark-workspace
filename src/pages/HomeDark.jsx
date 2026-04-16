@@ -337,6 +337,7 @@ export default function HomeDark() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!user) { navigate('/login'); return }
     if (!url) return
     setLoading(true)
     setScanLogs([])
@@ -557,7 +558,8 @@ export default function HomeDark() {
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="輸入您的網址 (例如: example.com)"
+                  onFocus={() => { if (!user) navigate('/login') }}
+                  placeholder={user ? '輸入您的網址 (例如: example.com)' : '請先登入以開始分析'}
                   className="flex-1 px-6 py-4 rounded-xl border border-white/60 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent shadow-sm transition-all backdrop-blur-sm"
                   disabled={loading}
                   style={{ background: 'rgba(255,255,255,0.10)' }}
@@ -579,6 +581,11 @@ export default function HomeDark() {
                 </button>
               </div>
               {status && <p className="mt-3 text-white/80 text-sm">{status}</p>}
+              {!user && (
+                <p className="mt-3 text-white/50 text-xs">
+                  <Link to="/login" className="text-orange-400 hover:text-orange-300 underline font-medium">登入</Link> 或 <Link to="/register" className="text-orange-400 hover:text-orange-300 underline font-medium">免費註冊</Link> 後即可開始分析
+                </p>
+              )}
             </form>
           </div>
 
