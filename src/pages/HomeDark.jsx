@@ -604,7 +604,7 @@ export default function HomeDark() {
                 </defs>
 
                 {/* 靜態同心圓 — 圓心在 (310, 0)，配合 left:-30px 讓視覺圓心在 70% */}
-                {[65, 130, 200, 275, 360, 450].map((r, i) => (
+                {[90, 175, 265, 360, 460, 570].map((r, i) => (
                   <circle key={i} cx="310" cy="0" r={r} fill="none"
                     stroke={`rgba(147,197,253,${0.25 - i * 0.03})`}
                     strokeWidth="1"
