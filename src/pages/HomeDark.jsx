@@ -116,8 +116,8 @@ function DarkScanningOverlay({ logs, targetUrl }) {
     }}>
       {/* Grain */}
       <div className="absolute inset-0 pointer-events-none" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
-        opacity: 0.07, mixBlendMode: 'overlay',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+        opacity: 0.18, mixBlendMode: 'overlay',
       }} />
 
       <div className="flex items-center justify-center pt-6 pb-4 flex-shrink-0">
@@ -446,21 +446,21 @@ export default function HomeDark() {
 
       {/* 顆粒感疊層 */}
       <div className="absolute inset-0 pointer-events-none z-0" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
-        opacity: 0.10,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.45' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+        opacity: 0.18,
         mixBlendMode: 'overlay',
       }} />
 
-      {/* 背景同心圓 — 圓心在頂部，向下擴散 */}
+      {/* 背景同心圓 — 固定黑色線條，圓心在頂部右側 */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {[90, 200, 330, 475, 630, 800, 980, 1170].map((r, i) => (
+        {[80, 175, 285, 408, 542, 688, 845, 1010, 1185].map((r, i) => (
           <div key={i} className="absolute rounded-full" style={{
             width: r * 2,
             height: r * 2,
             left: '72%',
             top: '68px',
             transform: 'translate(-50%, -50%)',
-            border: `1px solid rgba(120, 40, 5, ${0.28 - i * 0.028})`,
+            border: `1px solid rgba(0, 0, 0, ${0.35 - i * 0.03})`,
           }} />
         ))}
       </div>
@@ -578,75 +578,72 @@ export default function HomeDark() {
             </form>
           </div>
 
-          {/* 右欄：雷達 — 圓心在頂部 */}
-          <div className="hidden md:block overflow-visible pt-2">
-            {/* 雷達 SVG：圓心在 (320, 0)，向下擴散 */}
-            <div className="relative" style={{ height: '580px', overflow: 'visible' }}>
+          {/* 右欄：雷達 — 圓心在頂部，高度壓縮 */}
+          <div className="hidden md:block overflow-visible pt-0">
+            <div className="relative" style={{ height: '320px', overflow: 'visible' }}>
               <svg
-                width="640" height="580"
-                viewBox="0 0 640 580"
-                style={{ overflow: 'visible', position: 'absolute', left: '-40px', top: 0 }}
+                width="560" height="320"
+                viewBox="0 0 560 320"
+                style={{ overflow: 'visible', position: 'absolute', left: '0px', top: 0 }}
               >
                 <defs>
                   <linearGradient id="scanGradTop" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="rgba(249,115,22,0)" />
-                    <stop offset="100%" stopColor="rgba(249,115,22,0.85)" />
+                    <stop offset="0%" stopColor="rgba(147,197,253,0)" />
+                    <stop offset="100%" stopColor="rgba(147,197,253,0.9)" />
                   </linearGradient>
                   <filter id="glowTop">
-                    <feGaussianBlur stdDeviation="4" result="blur"/>
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
                     <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
                   </filter>
                 </defs>
 
-                {/* 靜態同心圓 — 圓心在 (320, 0) */}
-                {[60, 130, 210, 300, 400, 510].map((r, i) => (
-                  <circle key={i} cx="320" cy="0" r={r} fill="none"
-                    stroke={`rgba(249,115,22,${0.35 - i * 0.05})`}
+                {/* 靜態同心圓 — 圓心在 (280, 0) */}
+                {[55, 115, 185, 260, 345, 440].map((r, i) => (
+                  <circle key={i} cx="280" cy="0" r={r} fill="none"
+                    stroke={`rgba(147,197,253,${0.22 - i * 0.03})`}
                     strokeWidth="1"
                   />
                 ))}
 
-                {/* 脈衝擴散圓 */}
+                {/* 脈衝擴散圓 — 藍色 */}
                 {[0, 1.2, 2.4].map((delay, i) => (
-                  <circle key={i} cx="320" cy="0" fill="none" stroke="rgba(249,115,22,0.7)" strokeWidth="1.5">
-                    <animate attributeName="r" from="20" to="520" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
-                    <animate attributeName="opacity" from="0.7" to="0" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
+                  <circle key={i} cx="280" cy="0" fill="none" stroke="rgba(96,165,250,0.65)" strokeWidth="1.5">
+                    <animate attributeName="r" from="18" to="450" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
+                    <animate attributeName="opacity" from="0.65" to="0" dur="3.6s" begin={`${delay}s`} repeatCount="indefinite"/>
                   </circle>
                 ))}
 
-                {/* 掃描線 — 繞圓心 (320,0) 旋轉 */}
-                <g style={{ transformOrigin: '320px 0px', animation: 'radarSpin 4s linear infinite' }}>
-                  <line x1="320" y1="0" x2="830" y2="0" stroke="url(#scanGradTop)" strokeWidth="2.5"/>
+                {/* 掃描線 — 藍色 */}
+                <g style={{ transformOrigin: '280px 0px', animation: 'radarSpin 4s linear infinite' }}>
+                  <line x1="280" y1="0" x2="720" y2="0" stroke="url(#scanGradTop)" strokeWidth="2"/>
                 </g>
 
-                {/* 中心點光暈 */}
-                <circle cx="320" cy="0" r="14" fill="rgba(249,115,22,0.15)" filter="url(#glowTop)"/>
-                <circle cx="320" cy="0" r="6" fill="#f97316" filter="url(#glowTop)"/>
-                <circle cx="320" cy="0" r="6" fill="#fbbf24" opacity="0.6">
-                  <animate attributeName="r" values="6;18;6" dur="1.5s" repeatCount="indefinite"/>
-                  <animate attributeName="opacity" values="0.6;0;0.6" dur="1.5s" repeatCount="indefinite"/>
+                {/* 中心點 — 藍色 */}
+                <circle cx="280" cy="0" r="12" fill="rgba(96,165,250,0.15)" filter="url(#glowTop)"/>
+                <circle cx="280" cy="0" r="5" fill="#3b82f6" filter="url(#glowTop)"/>
+                <circle cx="280" cy="0" r="5" fill="#93c5fd" opacity="0.7">
+                  <animate attributeName="r" values="5;16;5" dur="1.5s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0.7;0;0.7" dur="1.5s" repeatCount="indefinite"/>
                 </circle>
               </svg>
 
-              {/* Bot 標籤 — 分佈在圓心周圍，向下展開 */}
+              {/* Bot 標籤 — 白底半透明，緊湊排列 */}
               {[
-                { label: 'GPTBot',        style: { top: '-8px',  left: '370px' },  color: '#10b981', bg: 'rgba(16,185,129,0.12)',  border: 'rgba(16,185,129,0.35)' },
-                { label: 'Meta AI',       style: { top: '-8px',  left: '200px' },  color: '#6366f1', bg: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.35)' },
-                { label: 'ChatGPT',       style: { top: '80px',  left: '490px' },  color: '#14b8a6', bg: 'rgba(20,184,166,0.12)',  border: 'rgba(20,184,166,0.35)' },
-                { label: 'PerplexityBot', style: { top: '80px',  left: '50px'  },  color: '#06b6d4', bg: 'rgba(6,182,212,0.12)',   border: 'rgba(6,182,212,0.35)'  },
-                { label: 'Googlebot',     style: { top: '200px', left: '530px' },  color: '#f97316', bg: 'rgba(249,115,22,0.12)',  border: 'rgba(249,115,22,0.35)' },
-                { label: 'ClaudeBot',     style: { top: '200px', left: '20px'  },  color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.35)' },
-                { label: 'Bingbot',       style: { top: '340px', left: '490px' },  color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',  border: 'rgba(59,130,246,0.35)' },
-                { label: 'Amazonbot',     style: { top: '340px', left: '60px'  },  color: '#f97316', bg: 'rgba(249,115,22,0.12)',  border: 'rgba(249,115,22,0.35)' },
-                { label: 'YandexBot',     style: { top: '480px', left: '270px' },  color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   border: 'rgba(239,68,68,0.35)'  },
-              ].map(({ label, style, color, bg, border }) => (
+                { label: 'GPTBot',        style: { top: '-10px', left: '330px' } },
+                { label: 'Meta AI',       style: { top: '-10px', left: '160px' } },
+                { label: 'ChatGPT',       style: { top: '70px',  left: '440px' } },
+                { label: 'PerplexityBot', style: { top: '70px',  left: '30px'  } },
+                { label: 'Googlebot',     style: { top: '170px', left: '460px' } },
+                { label: 'ClaudeBot',     style: { top: '170px', left: '10px'  } },
+                { label: 'Bingbot',       style: { top: '270px', left: '390px' } },
+                { label: 'Amazonbot',     style: { top: '270px', left: '80px'  } },
+              ].map(({ label, style }) => (
                 <div key={label} className="absolute" style={style}>
-                  <div className="px-3 py-1.5 rounded-full backdrop-blur-sm whitespace-nowrap" style={{
-                    background: bg,
-                    border: `1px solid ${border}`,
-                    boxShadow: `0 0 10px ${bg}`,
+                  <div className="px-2.5 py-1 rounded-full backdrop-blur-sm whitespace-nowrap" style={{
+                    background: 'rgba(255,255,255,0.15)',
+                    border: '1px solid rgba(255,255,255,0.35)',
                   }}>
-                    <span className="text-xs font-semibold" style={{ color }}>{label}</span>
+                    <span className="text-xs font-semibold text-white">{label}</span>
                   </div>
                 </div>
               ))}
