@@ -340,7 +340,7 @@ export default function HomeDark() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!user) { navigate('/login', { state: { from: '/' } }); return }
+    if (!user) { navigate('/login', { state: { from: '/dark' } }); return }
     if (!url) return
     setLoading(true)
     setScanLogs([])
@@ -561,7 +561,7 @@ export default function HomeDark() {
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  onFocus={() => { if (!user) navigate('/login', { state: { from: '/' } }) }}
+                  onFocus={() => { if (!user) navigate('/login', { state: { from: '/dark' } }) }}
                   placeholder={user ? '輸入您的網址 (例如: example.com)' : '請先登入以開始分析'}
                   className="flex-1 px-6 py-4 rounded-xl border border-white/60 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent shadow-sm transition-all backdrop-blur-sm"
                   disabled={loading}

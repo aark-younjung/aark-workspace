@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useTheme } from '../context/ThemeContext'
 import { analyzeGEO } from '../services/geoAnalyzer'
 
 const GEO_CHECKS = [
@@ -64,6 +65,7 @@ const GEO_CHECKS = [
 
 export default function GEOAudit() {
   const { id } = useParams()
+  const { isDark } = useTheme()
   const [website, setWebsite] = useState(null)
   const [geoAudit, setGeoAudit] = useState(null)
   const [loading, setLoading] = useState(true)
