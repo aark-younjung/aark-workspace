@@ -17,7 +17,7 @@ export default function Login() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
-    await signInWithGoogle()
+    await signInWithGoogle(from)
     setTimeout(() => setGoogleLoading(false), 3000)
   }
 
