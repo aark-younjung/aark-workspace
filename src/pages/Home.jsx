@@ -704,7 +704,7 @@ export default function Home() {
             </p>
 
             <p className="text-base text-slate-500 mb-10 max-w-lg">
-              輸入網址，60 秒內取得你的 AI 能見度完整報告——免費診斷 3 個網站，不需信用卡
+              輸入網址，60 秒內取得你的 AI 能見度完整報告——免費診斷你的網站
             </p>
 
             {/* URL Input Form */}
