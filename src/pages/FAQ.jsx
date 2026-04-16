@@ -139,7 +139,7 @@ export default function FAQ() {
       }) }} />
 
       {/* Header */}
-      <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/30">
+      <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/8">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200">
@@ -147,11 +147,11 @@ export default function FAQ() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-lg font-bold text-slate-800">優勢方舟數位行銷</span>
+            <span className="text-lg font-bold text-white">優勢方舟數位行銷</span>
           </Link>
           <nav className="flex items-center gap-4">
-            <Link to="/" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
-            <Link to="/pricing" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">定價</Link>
+            <Link to="/" className="hidden sm:block text-white/80 hover:text-white text-sm transition-colors">首頁</Link>
+            <Link to="/pricing" className="hidden sm:block text-white/80 hover:text-white text-sm transition-colors">定價</Link>
             {user ? (
               <>
                 {!isPro && (
@@ -166,7 +166,7 @@ export default function FAQ() {
                     </div>
                   )}
                 </Link>
-                <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-xs sm:text-sm transition-colors">登出</button>
+                <button onClick={signOut} className="text-white/60 hover:text-white text-xs sm:text-sm transition-colors">登出</button>
               </>
             ) : (
               <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
@@ -178,11 +178,11 @@ export default function FAQ() {
       <main className="relative max-w-3xl mx-auto px-6 py-16">
         {/* Hero */}
         <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-100 text-orange-600 rounded-full text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-100 text-orange-400 rounded-full text-sm font-medium mb-6">
             💬 常見問題
           </div>
-          <h1 className="text-4xl font-bold text-slate-800 mb-4">有任何問題嗎？</h1>
-          <p className="text-slate-500 text-lg">關於 AI 能見度、工具使用與方案的常見問題解答</p>
+          <h1 className="text-4xl font-bold text-white mb-4">有任何問題嗎？</h1>
+          <p className="text-white/60 text-lg">關於 AI 能見度、工具使用與方案的常見問題解答</p>
         </div>
 
         {/* FAQ 分類 */}
@@ -191,25 +191,25 @@ export default function FAQ() {
             <div key={catIdx}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xl">{cat.icon}</span>
-                <h2 className="text-lg font-bold text-slate-700">{cat.category}</h2>
+                <h2 className="text-lg font-bold text-white">{cat.category}</h2>
               </div>
               <div className="space-y-3">
                 {cat.questions.map((item, qIdx) => {
                   const key = `${catIdx}-${qIdx}`
                   const isOpen = openItems[key]
                   return (
-                    <div key={qIdx} className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl overflow-hidden shadow-sm">
+                    <div key={qIdx} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden shadow-sm">
                       <button
                         onClick={() => toggle(catIdx, qIdx)}
                         className="w-full flex items-center justify-between px-6 py-4 text-left gap-4"
                       >
-                        <span className="font-semibold text-slate-800 text-sm leading-relaxed">{item.q}</span>
+                        <span className="font-semibold text-white text-sm leading-relaxed">{item.q}</span>
                         <span className={`text-orange-500 flex-shrink-0 text-lg transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`}>+</span>
                       </button>
                       {isOpen && (
                         <div className="px-6 pb-5">
                           <div className="h-px bg-orange-100 mb-4" />
-                          <p className="text-slate-600 text-sm leading-relaxed">{item.a}</p>
+                          <p className="text-white/80 text-sm leading-relaxed">{item.a}</p>
                         </div>
                       )}
                     </div>
@@ -221,17 +221,17 @@ export default function FAQ() {
         </div>
 
         {/* CTA */}
-        <div className="mt-16 p-8 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl text-center shadow-sm">
+        <div className="mt-16 p-8 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-center shadow-sm">
           <div className="text-3xl mb-3">🚀</div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">還有其他問題？</h2>
-          <p className="text-slate-500 text-sm mb-4">直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
+          <h2 className="text-xl font-bold text-white mb-2">還有其他問題？</h2>
+          <p className="text-white/60 text-sm mb-4">直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
           <Link to="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200">
             取得我的免費報告 →
           </Link>
-          <p className="mt-4 text-sm text-slate-500">
+          <p className="mt-4 text-sm text-white/60">
             或直接寫信給我們：
-            <a href="mailto:aark.younjung@gmail.com" className="text-orange-500 hover:text-orange-600 font-medium ml-1">
+            <a href="mailto:aark.younjung@gmail.com" className="text-orange-500 hover:text-orange-400 font-medium ml-1">
               aark.younjung@gmail.com
             </a>
           </p>
@@ -239,7 +239,7 @@ export default function FAQ() {
 
         {/* Footer nav */}
         <div className="mt-6 text-center">
-          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">← 返回首頁</Link>
+          <Link to="/" className="text-white/60 hover:text-white/80 text-sm transition-colors">← 返回首頁</Link>
         </div>
       </main>
       <Footer />

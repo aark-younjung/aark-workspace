@@ -43,24 +43,24 @@ export default function Login() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold text-slate-800">優勢方舟數位行銷</span>
+            <span className="text-2xl font-bold text-white">優勢方舟數位行銷</span>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">歡迎回來</h1>
-          <p className="text-gray-500">登入以查看您的 AI 能見度報告</p>
+          <h1 className="text-3xl font-bold text-white mb-2">歡迎回來</h1>
+          <p className="text-white/60">登入以查看您的 AI 能見度報告</p>
         </div>
 
         {/* 表單 */}
-        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-8">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8">
           {/* Google 登入 */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading || googleLoading}
-            className="w-full flex items-center justify-center gap-3 py-3 bg-white text-slate-700 font-semibold rounded-xl hover:bg-slate-100 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 active:translate-y-0 transition-all shadow-md mb-5 disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-3 py-3 bg-white text-white font-semibold rounded-xl hover:bg-white/5 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 active:translate-y-0 transition-all shadow-md mb-5 disabled:opacity-60"
           >
             {googleLoading ? (
               <>
-                <svg className="animate-spin w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin w-5 h-5 text-white/60" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
@@ -81,31 +81,31 @@ export default function Login() {
 
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-orange-100"></div>
-            <span className="text-gray-400 text-xs">或使用 Email 登入</span>
+            <span className="text-white/60 text-xs">或使用 Email 登入</span>
             <div className="flex-1 h-px bg-orange-100"></div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-gray-500 text-sm mb-2">電子郵件</label>
+              <label className="block text-white/60 text-sm mb-2">電子郵件</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-gray-500 text-sm mb-2">密碼</label>
+              <label className="block text-white/60 text-sm mb-2">密碼</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/60 border border-orange-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
               />
             </div>
 
@@ -124,15 +124,15 @@ export default function Login() {
           </form>
 
           <div className="mt-6 text-center">
-            <span className="text-gray-400 text-sm">還沒有帳號？</span>
-            <Link to="/register" className="text-orange-500 hover:text-orange-600 text-sm ml-1 font-medium">
+            <span className="text-white/60 text-sm">還沒有帳號？</span>
+            <Link to="/register" className="text-orange-500 hover:text-orange-400 text-sm ml-1 font-medium">
               立即註冊
             </Link>
           </div>
         </div>
 
         <div className="mt-6 text-center">
-          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
+          <Link to="/" className="text-white/60 hover:text-white/80 text-sm transition-colors">
             ← 返回首頁
           </Link>
         </div>

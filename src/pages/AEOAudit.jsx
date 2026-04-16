@@ -140,7 +140,7 @@ export default function AEOAudit() {
       <div className="min-h-screen  flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">載入資料中...</p>
+          <p className="text-white/80">載入資料中...</p>
         </div>
       </div>
     )
@@ -171,14 +171,14 @@ export default function AEOAudit() {
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 mb-8">
           <div className="flex items-center justify-between flex-wrap gap-6">
             <div>
-              <h2 className="text-lg font-semibold text-slate-700 mb-2">AEO 技術檢測得分</h2>
+              <h2 className="text-lg font-semibold text-white mb-2">AEO 技術檢測得分</h2>
               <div className="flex items-baseline gap-3">
                 <span className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   {score}
                 </span>
-                <span className="text-slate-500">/ 100</span>
+                <span className="text-white/60">/ 100</span>
               </div>
-              <p className="text-slate-500 mt-2">
+              <p className="text-white/60 mt-2">
                 通過 {passedCount} / {totalCount} 項檢測
               </p>
             </div>
@@ -199,7 +199,7 @@ export default function AEOAudit() {
                   </>
                 ) : '重新檢測'}
               </button>
-              <button className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors font-medium">
+              <button className="px-6 py-3 bg-white/5 text-white rounded-xl hover:bg-slate-200 transition-colors font-medium">
                 匯出報告
               </button>
             </div>
@@ -207,7 +207,7 @@ export default function AEOAudit() {
 
           {/* 進度條 */}
           <div className="mt-8">
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-3 bg-white/5 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full transition-all duration-500"
                 style={{ width: `${score}%` }}
@@ -236,26 +236,26 @@ export default function AEOAudit() {
                   <div className="text-4xl">{check.icon}</div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-slate-800">{check.name}</h3>
+                      <h3 className="font-semibold text-white">{check.name}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         status === 'pass' 
                           ? 'bg-green-100 text-green-700' 
                           : status === 'fail'
                           ? 'bg-red-100 text-red-700'
-                          : 'bg-slate-100 text-slate-500'
+                          : 'bg-white/5 text-white/60'
                       }`}>
                         {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-600 mb-4">{check.description}</p>
+                    <p className="text-sm text-white/80 mb-4">{check.description}</p>
                     
                     {status === 'fail' && (
                       isPro ? (
                         <FixGuide checkId={check.id} />
                       ) : (
-                        <div className="p-3 bg-slate-100 rounded-lg flex items-center justify-between gap-3">
-                          <p className="text-xs text-slate-400 blur-sm select-none flex-1">升級 Pro 查看平台別修復指南升級 Pro 查看平台別修復指南</p>
-                          <Link to="/pricing" className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">🔒 升級 Pro</Link>
+                        <div className="p-3 bg-white/5 rounded-lg flex items-center justify-between gap-3">
+                          <p className="text-xs text-white/60 blur-sm select-none flex-1">升級 Pro 查看平台別修復指南升級 Pro 查看平台別修復指南</p>
+                          <Link to="/pricing" className="text-xs bg-orange-100 text-orange-400 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">🔒 升級 Pro</Link>
                         </div>
                       )
                     )}
@@ -269,22 +269,22 @@ export default function AEOAudit() {
         {/* AI 搜尋優化建議 */}
         <div className="mt-8 bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 border border-purple-100">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-slate-800">🚀 AI 搜尋優化建議</h3>
-            {!isPro && <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-semibold">Pro 功能</span>}
+            <h3 className="text-xl font-bold text-white">🚀 AI 搜尋優化建議</h3>
+            {!isPro && <span className="text-xs bg-orange-100 text-orange-400 px-2 py-1 rounded-full font-semibold">Pro 功能</span>}
           </div>
           {isPro ? (
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
-                <ul className="space-y-2 text-sm text-slate-600">
+                <h4 className="font-semibold text-white mb-3">短期目標 (1-2週)</h4>
+                <ul className="space-y-2 text-sm text-white/80">
                   <li className="flex items-start gap-2"><span className="text-purple-500">•</span>補齊所有缺少的 Open Graph 標籤</li>
                   <li className="flex items-start gap-2"><span className="text-purple-500">•</span>建立網站的 LLMs.txt 檔案</li>
                   <li className="flex items-start gap-2"><span className="text-purple-500">•</span>修復 canonical 標籤問題</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
-                <ul className="space-y-2 text-sm text-slate-600">
+                <h4 className="font-semibold text-white mb-3">中期目標 (1-3月)</h4>
+                <ul className="space-y-2 text-sm text-white/80">
                   <li className="flex items-start gap-2"><span className="text-blue-500">•</span>建立完整的 JSON-LD 結構化資料</li>
                   <li className="flex items-start gap-2"><span className="text-blue-500">•</span>為常見問題頁面添加 FAQ Schema</li>
                   <li className="flex items-start gap-2"><span className="text-blue-500">•</span>優化麵包屑導航結構</li>
@@ -293,7 +293,7 @@ export default function AEOAudit() {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-slate-500 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的優化路線圖</p>
+              <p className="text-white/60 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的優化路線圖</p>
               <Link
                 to="/dashboard"
                 className="inline-block px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all"
