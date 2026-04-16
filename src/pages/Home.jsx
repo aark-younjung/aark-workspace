@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
@@ -324,6 +325,8 @@ export default function Home() {
   const [myWebsites, setMyWebsites] = useState([])
   const navigate = useNavigate()
   const { user, isPro, userName, signOut } = useAuth()
+  const { setDark } = useTheme()
+  useEffect(() => { setDark(false) }, [])
   const WEBSITE_LIMIT = isPro ? 15 : 3
 
   // 載入當前用戶的網站列表

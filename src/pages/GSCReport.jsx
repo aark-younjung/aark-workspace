@@ -234,9 +234,7 @@ export default function GSCReport() {
     load()
   }, [id])
 
-  const bg = {
-    background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)',
-  }
+  const bg = isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={bg}>

@@ -8,7 +8,7 @@
 
 **產品名稱：** AI 能見度儀表板  
 **公司名稱：** 優勢方舟數位行銷  
-**線上網址：** https://aark-dashboard.vercel.app/  
+**線上網址：** https://aark-workspace.vercel.app/  
 **GitHub：** https://github.com/aark-younjung/aark-workspace  
 
 幫助品牌主與行銷人員檢測網站在 AI 搜尋引擎（ChatGPT、Perplexity、Google AI）中的「被看見程度」，提供 SEO、AEO、GEO、E-E-A-T 四大面向分析與具體修復建議。

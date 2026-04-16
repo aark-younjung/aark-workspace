@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 
 export default function Account() {
   const { user, profile, isPro, userName, signOut } = useAuth()
+  const { isDark } = useTheme()
   const navigate = useNavigate()
   const [cancelling, setCancelling] = useState(false)
   const [cancelDone, setCancelDone] = useState(false)
@@ -80,7 +82,7 @@ export default function Account() {
 
   if (!user) {
     return (
-      <div className="min-h-screen relative flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+      <div className="min-h-screen relative flex items-center justify-center" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
         <div className="text-center relative">
           <p className="text-slate-500 mb-4">請先登入</p>
@@ -96,7 +98,7 @@ export default function Account() {
   const avatarUrl = user?.user_metadata?.avatar_url
 
   return (
-    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+    <div className="min-h-screen relative" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div className="relative">
       {/* Header */}

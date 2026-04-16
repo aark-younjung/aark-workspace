@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
@@ -275,6 +276,8 @@ export default function HomeDark() {
   const [myWebsites, setMyWebsites] = useState([])
   const navigate = useNavigate()
   const { user, isPro, userName, signOut } = useAuth()
+  const { setDark } = useTheme()
+  useEffect(() => { setDark(true) }, [])
   const WEBSITE_LIMIT = isPro ? 15 : 3
 
   const fetchMyWebsites = async () => {

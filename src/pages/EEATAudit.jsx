@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import FixGuide from '../components/FixGuide'
 
 const EEAT_CHECKS = [
@@ -123,6 +124,7 @@ export default function EEATAudit() {
   }
 
   const { isPro, user } = useAuth()
+  const { isDark } = useTheme()
   const [upgrading, setUpgrading] = useState(false)
 
   const handleUpgrade = async () => {
@@ -159,7 +161,7 @@ export default function EEATAudit() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? '' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className="text-slate-600">載入資料中...</p>
@@ -169,7 +171,7 @@ export default function EEATAudit() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className={`min-h-screen ${isDark ? '' : 'bg-slate-50'}`}>
       {/* Header */}
       <header className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
         <div className="max-w-7xl mx-auto px-6 py-6">

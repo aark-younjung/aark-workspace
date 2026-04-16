@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import FixGuide from '../components/FixGuide'
 
 const AEO_CHECKS = [
@@ -67,6 +68,7 @@ const AEO_CHECKS = [
 export default function AEOAudit() {
   const { id } = useParams()
   const { isPro } = useAuth()
+  const { isDark } = useTheme()
   const [website, setWebsite] = useState(null)
   const [aeoAudit, setAeoAudit] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -137,7 +139,7 @@ export default function AEOAudit() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? '' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className="text-slate-600">載入資料中...</p>
@@ -147,7 +149,7 @@ export default function AEOAudit() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className={`min-h-screen ${isDark ? '' : 'bg-slate-50'}`}>
       {/* Header */}
       <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
         <div className="max-w-7xl mx-auto px-6 py-6">

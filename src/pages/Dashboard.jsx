@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
@@ -49,6 +50,7 @@ export default function Dashboard() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isPro, userName, refreshProfile } = useAuth()
+  const { isDark } = useTheme()
   const [upgradeSuccess, setUpgradeSuccess] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
   const [website, setWebsite] = useState(null)
@@ -328,7 +330,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className="text-slate-600">載入資料中...</p>
@@ -339,7 +341,7 @@ export default function Dashboard() {
 
   if (!website) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
         <div className="text-center">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">找不到網站</h2>
           <Link to="/" className="text-orange-500 hover:underline">返回首頁</Link>
@@ -691,7 +693,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
   // ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen relative" style={{ background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
+    <div className="min-h-screen relative" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
       <div className="relative">
       {/* 升級成功提示 */}
