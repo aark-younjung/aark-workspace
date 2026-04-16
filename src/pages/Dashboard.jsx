@@ -823,6 +823,12 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 查看方案 →
               </Link>
             )}
+            <div className="flex-shrink-0 w-px h-4 bg-orange-100 mx-1" />
+            <Link to="/showcase" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">排行榜</Link>
+            <Link to="/compare" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">競品比較</Link>
+            <Link to="/pricing" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">定價</Link>
+            <Link to="/content-audit" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">文章分析</Link>
+            <Link to="/faq" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">FAQ</Link>
           </div>
         </div>
       </header>
