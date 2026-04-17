@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
 import Home from './pages/Home'
@@ -53,6 +54,9 @@ function GlobalDarkBg() {
 
 function AppInner() {
   const { isDark } = useTheme()
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark-theme', isDark)
+  }, [isDark])
   return (
     <>
       {isDark && <GlobalDarkBg />}
