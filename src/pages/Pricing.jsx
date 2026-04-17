@@ -169,7 +169,7 @@ export default function Pricing() {
             <div className="flex justify-center mb-2">
               <span className="px-4 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold rounded-full">最多人選擇</span>
             </div>
-          <div className="p-8 bg-gradient-to-b from-purple-100 to-blue-50 rounded-2xl border border-purple-300 flex flex-col flex-1">
+          <div className={isDark ? "p-8 rounded-2xl border flex flex-col flex-1" : "p-8 bg-gradient-to-b from-purple-100 to-blue-50 rounded-2xl border border-purple-300 flex flex-col flex-1"} style={isDark ? { background: 'rgba(255,255,255,0.22)', borderColor: 'rgba(255,255,255,0.35)' } : {}}>
 
             <div className="mb-6">
               <div className="text-purple-600 text-sm font-medium mb-2">Pro 方案</div>

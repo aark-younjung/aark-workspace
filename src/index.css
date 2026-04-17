@@ -140,3 +140,8 @@ html.dark-theme .border-gray-300 { border-color: rgba(255, 255, 255, 0.18) !impo
 html.dark-theme .overflow-hidden > [style*="--ticker-fade"] {
   --ticker-fade: rgba(5, 2, 8, 0.95);
 }
+
+/* Pricing Pro card accent colors in dark mode */
+html.dark-theme .text-purple-600 { color: rgba(196, 181, 253, 1) !important; }
+html.dark-theme .text-purple-500 { color: rgba(216, 180, 254, 1) !important; }
+html.dark-theme .border-purple-300 { border-color: rgba(216, 180, 254, 0.4) !important; }
