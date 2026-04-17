@@ -104,3 +104,22 @@ html.dark-theme input::placeholder, html.dark-theme textarea::placeholder {
 html.dark-theme .bg-white\/60.backdrop-blur-sm {
   background-color: rgba(0, 0, 0, 0.5) !important;
 }
+
+/* gray-* text (used in Showcase and some other pages) */
+html.dark-theme .text-gray-900 { color: rgba(255, 255, 255, 1) !important; }
+html.dark-theme .text-gray-800 { color: rgba(255, 255, 255, 0.95) !important; }
+html.dark-theme .text-gray-700 { color: rgba(255, 255, 255, 0.85) !important; }
+html.dark-theme .text-gray-600 { color: rgba(255, 255, 255, 0.65) !important; }
+html.dark-theme .text-gray-500 { color: rgba(255, 255, 255, 0.50) !important; }
+html.dark-theme .text-gray-400 { color: rgba(255, 255, 255, 0.38) !important; }
+html.dark-theme .text-gray-300 { color: rgba(255, 255, 255, 0.28) !important; }
+
+/* gray-* backgrounds */
+html.dark-theme .bg-gray-50  { background-color: rgba(255, 255, 255, 0.04) !important; }
+html.dark-theme .bg-gray-100 { background-color: rgba(255, 255, 255, 0.07) !important; }
+html.dark-theme .bg-gray-200 { background-color: rgba(255, 255, 255, 0.10) !important; }
+
+/* gray-* borders */
+html.dark-theme .border-gray-100 { border-color: rgba(255, 255, 255, 0.08) !important; }
+html.dark-theme .border-gray-200 { border-color: rgba(255, 255, 255, 0.12) !important; }
+html.dark-theme .border-gray-300 { border-color: rgba(255, 255, 255, 0.18) !important; }
