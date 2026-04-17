@@ -123,3 +123,20 @@ html.dark-theme .bg-gray-200 { background-color: rgba(255, 255, 255, 0.10) !impo
 html.dark-theme .border-gray-100 { border-color: rgba(255, 255, 255, 0.08) !important; }
 html.dark-theme .border-gray-200 { border-color: rgba(255, 255, 255, 0.12) !important; }
 html.dark-theme .border-gray-300 { border-color: rgba(255, 255, 255, 0.18) !important; }
+
+/* ── Success stories ticker ── */
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker 30s linear infinite;
+}
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* Dark mode: fade edges match dark background */
+html.dark-theme .overflow-hidden > [style*="--ticker-fade"] {
+  --ticker-fade: rgba(5, 2, 8, 0.95);
+}

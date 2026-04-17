@@ -451,41 +451,47 @@ export default function Showcase() {
                   📖 成功案例
                   <span className="text-sm font-normal text-gray-400">分數進步 20 分以上</span>
                 </h2>
-                <div className="flex gap-4 overflow-x-auto pb-4"
-                  style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(249,115,22,0.3) transparent' }}>
-                  {successStories.map(site => (
-                    <div key={site.id}
-                      className="flex-shrink-0 w-72 p-6 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 hover:border-orange-200 transition-colors">
-                      <div className="text-gray-800 font-semibold mb-1 truncate">{site.name}</div>
-                      <div className="text-gray-400 text-xs mb-5 truncate">{site.url}</div>
-                      <div className="flex items-center gap-3 mb-5">
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-gray-400">{site.first_total_score}</div>
-                          <div className="text-xs text-gray-400 mt-1">首次</div>
+                <div className="overflow-hidden relative">
+                  {/* fade edges */}
+                  <div className="absolute left-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
+                    style={{ background: isDark ? 'linear-gradient(to right, rgba(5,2,8,0.98), transparent)' : 'linear-gradient(to right, rgba(255,250,245,0.98), transparent)' }} />
+                  <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
+                    style={{ background: isDark ? 'linear-gradient(to left, rgba(5,2,8,0.98), transparent)' : 'linear-gradient(to left, rgba(255,250,245,0.98), transparent)' }} />
+                  <div className="flex gap-4 pb-4 animate-ticker" style={{ width: 'max-content' }}>
+                    {[...successStories, ...successStories].map((site, idx) => (
+                      <div key={idx}
+                        className="flex-shrink-0 w-72 p-6 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60">
+                        <div className="text-gray-800 font-semibold mb-1 truncate">{site.name}</div>
+                        <div className="text-gray-400 text-xs mb-5 truncate">{site.url}</div>
+                        <div className="flex items-center gap-3 mb-5">
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-gray-400">{site.first_total_score}</div>
+                            <div className="text-xs text-gray-400 mt-1">首次</div>
+                          </div>
+                          <div className="text-gray-300 text-lg">→</div>
+                          <div className="text-center">
+                            <div className={`text-xl font-bold ${scoreColor(site.total_score)}`}>{site.total_score}</div>
+                            <div className="text-xs text-gray-400 mt-1">現在</div>
+                          </div>
+                          <div className="ml-auto px-3 py-1.5 bg-green-500/20 rounded-lg border border-green-500/30 flex-shrink-0">
+                            <span className="text-green-500 font-bold text-lg">+{site.improvement}</span>
+                          </div>
                         </div>
-                        <div className="text-gray-300 text-lg">→</div>
-                        <div className="text-center">
-                          <div className={`text-xl font-bold ${scoreColor(site.total_score)}`}>{site.total_score}</div>
-                          <div className="text-xs text-gray-400 mt-1">現在</div>
-                        </div>
-                        <div className="ml-auto px-3 py-1.5 bg-green-500/20 rounded-lg border border-green-500/30 flex-shrink-0">
-                          <span className="text-green-500 font-bold text-lg">+{site.improvement}</span>
+                        <div className="flex gap-2 flex-wrap">
+                          {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
+                            <span key={label}
+                              className={`text-xs px-2 py-1 rounded-full font-medium ${score >= 70
+                                ? 'bg-green-500/20 text-green-500'
+                                : score >= 40
+                                ? 'bg-yellow-500/20 text-yellow-600'
+                                : 'bg-red-500/20 text-red-500'}`}>
+                              {label} {score}
+                            </span>
+                          ))}
                         </div>
                       </div>
-                      <div className="flex gap-2 flex-wrap">
-                        {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
-                          <span key={label}
-                            className={`text-xs px-2 py-1 rounded-full font-medium ${score >= 70
-                              ? 'bg-green-500/20 text-green-500'
-                              : score >= 40
-                              ? 'bg-yellow-500/20 text-yellow-600'
-                              : 'bg-red-500/20 text-red-500'}`}>
-                            {label} {score}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </section>
             )}
