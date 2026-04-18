@@ -382,6 +382,40 @@ export default function Dashboard() {
     }
   })
 
+  const getVerdict = (name, score) => {
+    const v = {
+      SEO: [
+        [20, '搜尋排名極為困難'],
+        [40, '搜尋能見度偏弱'],
+        [60, '搜尋排名尚可'],
+        [80, '搜尋能見度良好'],
+        [100, '搜尋排名優異'],
+      ],
+      AEO: [
+        [20, 'AI 幾乎無法直接回答關於你'],
+        [40, 'AI 回答能力偏弱'],
+        [60, 'AI 偶爾能回答關於你'],
+        [80, 'AI 回答能力良好'],
+        [100, 'AI 能精準回答關於你'],
+      ],
+      GEO: [
+        [20, '目前幾乎不會被 AI 引用'],
+        [40, 'AI 引用機率偏低'],
+        [60, '偶爾可能被 AI 引用'],
+        [80, 'AI 引用機率良好'],
+        [100, '極有可能被 AI 主動引用'],
+      ],
+      'E-E-A-T': [
+        [20, '品牌可信度極低'],
+        [40, '品牌可信度待加強'],
+        [60, '品牌可信度尚可'],
+        [80, '品牌可信度良好'],
+        [100, '品牌具高度可信度'],
+      ],
+    }[name] || []
+    return v.find(([max]) => score <= max)?.[1] || ''
+  }
+
   const scoreData = [
     { name: 'SEO', value: seoScore, color: '#3b82f6', icon: '🔍', desc: '讓 Google 搜尋找到你', detail: '搜尋引擎最佳化（SEO）讓你的網站在 Google、Bing 等搜尋結果中排名更高，帶來更多自然流量。' },
     { name: 'AEO', value: aeoScore, color: '#8b5cf6', icon: '🤖', desc: '讓 AI 直接回答關於你', detail: 'AI 引擎最佳化（AEO）讓 ChatGPT、Siri、Google AI 等助理在回答問題時，能直接引用你的內容或推薦你的品牌。' },
@@ -844,9 +878,10 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <span className="text-lg">{item.icon}</span>
                   <h3 className="font-semibold text-slate-700">{item.name}</h3>
                 </div>
-                <span className="text-3xl font-bold" style={{ color: item.color }}>
-                  {item.value}
-                </span>
+                <div className="text-right">
+                  <span className="text-3xl font-bold" style={{ color: item.color }}>{item.value}</span>
+                  <p className="text-xs text-slate-400 leading-tight">{getVerdict(item.name, item.value)}</p>
+                </div>
               </div>
               <p className="text-xs font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
               <div className="h-2 bg-orange-100 rounded-full overflow-hidden mb-3">
