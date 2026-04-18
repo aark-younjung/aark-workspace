@@ -903,7 +903,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{item.icon}</span>
-                  <h3 className="font-semibold text-slate-700">{item.name}</h3>
+                  <h3 className={`font-semibold ${isDark ? 'text-white/90' : 'text-slate-700'}`}>{item.name}</h3>
                 </div>
                 <div className="text-right">
                   {item.loading ? (
@@ -911,22 +911,63 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   ) : (
                     <>
                       <span className="text-3xl font-bold" style={{ color: item.color }}>{item.value ?? '—'}</span>
-                      <p className="text-xs text-slate-400 leading-tight">{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
+                      <p className={`text-xs leading-tight ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
                     </>
                   )}
                 </div>
               </div>
               <p className="text-xs font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
-              <div className="h-2 bg-orange-100 rounded-full overflow-hidden mb-3">
+              <div className={`h-2 rounded-full overflow-hidden mb-3 ${isDark ? 'bg-white/10' : 'bg-orange-100'}`}>
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${item.value ?? 0}%`, backgroundColor: item.color }}
                 />
               </div>
-              <p className="text-xs text-slate-700 leading-relaxed">{item.detail}</p>
+              <p className={`text-xs leading-relaxed ${isDark ? 'text-white/60' : 'text-slate-700'}`}>{item.detail}</p>
             </div>
           ))}
         </div>
+
+        {/* 被 AI 引用的關鍵條件 checklist */}
+        {(seoAudit || aeoAudit || geoAudit || eeatAudit) && (() => {
+          const conditions = [
+            { label: 'llms.txt 已建立', desc: '讓 AI 爬蟲識別你的品牌與服務', pass: !!geoAudit?.llms_txt },
+            { label: '結構化資料（JSON-LD）', desc: 'Schema.org 標記幫助 AI 理解頁面語意', pass: !!aeoAudit?.json_ld },
+            { label: '明確的作者資訊', desc: 'E-E-A-T 信賴度基礎，AI 引用優先考量', pass: !!eeatAudit?.author_info },
+            { label: 'FAQ / Q&A 結構', desc: 'AI 偏好能直接回答問題的頁面格式', pass: !!aeoAudit?.faq_schema },
+            { label: 'Open Graph 標籤', desc: 'AI 摘要引用時獲取標準化標題與描述', pass: !!aeoAudit?.open_graph },
+            { label: '關於我們頁面', desc: '品牌真實性與可信度的必要條件', pass: !!eeatAudit?.about_page },
+            { label: '聯絡資訊可見', desc: '確認為真實機構，提升 AI 引用信心', pass: !!eeatAudit?.contact_page },
+            { label: 'Canonical 標籤', desc: '避免 AI 引用錯誤或重複版本的頁面', pass: !!aeoAudit?.canonical },
+          ]
+          const passCount = conditions.filter(c => c.pass).length
+          return (
+            <div className="mb-8 rounded-2xl p-6 shadow-sm border" style={isDark ? { background: 'rgba(0,0,0,0.35)', borderColor: 'rgba(255,255,255,0.1)' } : { background: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.6)' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>被 AI 引用的關鍵條件</h3>
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-white/50' : 'text-slate-400'}`}>ChatGPT · Perplexity · Claude · Gemini 引用網站通常需具備這些條件</p>
+                </div>
+                <div className="text-right flex-shrink-0 ml-4">
+                  <span className="text-2xl font-bold" style={{ color: passCount >= 6 ? '#10b981' : passCount >= 4 ? '#f59e0b' : '#ef4444' }}>{passCount}</span>
+                  <span className={`text-sm ${isDark ? 'text-white/40' : 'text-slate-400'}`}> / {conditions.length}</span>
+                  <p className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{passCount >= 6 ? '具備引用條件' : passCount >= 4 ? '部分達標' : '引用機率偏低'}</p>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {conditions.map((c, i) => (
+                  <div key={i} className="flex items-start gap-3 px-3 py-2.5 rounded-xl" style={isDark ? { background: c.pass ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)' } : { background: c.pass ? 'rgba(16,185,129,0.08)' : 'rgba(0,0,0,0.03)' }}>
+                    <span className="text-base flex-shrink-0 mt-0.5">{c.pass ? '✅' : '❌'}</span>
+                    <div>
+                      <p className={`text-sm font-medium leading-tight ${isDark ? 'text-white/90' : 'text-slate-700'}`}>{c.label}</p>
+                      <p className={`text-xs mt-0.5 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{c.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Tab 頁籤列 */}
         <div className="flex border-b border-orange-200 mb-8 overflow-x-auto scrollbar-hide">
