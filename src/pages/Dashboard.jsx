@@ -7,6 +7,7 @@ import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
+import { analyzeContent } from '../services/contentAnalyzer'
 import { getGA4Summary } from '../services/ga4Analyzer'
 import { getGSCSummary } from '../services/gscAnalyzer'
 import {
@@ -73,6 +74,9 @@ export default function Dashboard() {
   const [pingResult, setPingResult] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
   
+  const [contentScore, setContentScore] = useState(null)
+  const [contentLoading, setContentLoading] = useState(false)
+
   // GA4 & GSC 數據
   const [ga4Data, setGa4Data] = useState(null)
   const [gscData, setGscData] = useState(null)
@@ -261,6 +265,19 @@ export default function Dashboard() {
   }
   
 
+  const loadContentScore = async (url) => {
+    if (!url) return
+    setContentLoading(true)
+    try {
+      const result = await analyzeContent(url)
+      setContentScore(result.score ?? null)
+    } catch {
+      setContentScore(null)
+    } finally {
+      setContentLoading(false)
+    }
+  }
+
   const fetchData = async () => {
     try {
       // 獲取網站資料
@@ -272,6 +289,7 @@ export default function Dashboard() {
 
       if (websiteData) {
         setWebsite(websiteData)
+        loadContentScore(websiteData.url)
 
         // 獲取 SEO 審計
         const { data: seoData } = await supabase
@@ -412,6 +430,13 @@ export default function Dashboard() {
         [80, '品牌可信度良好'],
         [100, '品牌具高度可信度'],
       ],
+      '內容品質': [
+        [20, '內容幾乎無法被 AI 引用'],
+        [40, '內容品質待改善'],
+        [60, '內容品質尚可'],
+        [80, '內容品質良好'],
+        [100, '內容極具 AI 引用價值'],
+      ],
     }[name] || []
     return v.find(([max]) => score <= max)?.[1] || ''
   }
@@ -421,6 +446,7 @@ export default function Dashboard() {
     { name: 'AEO', value: aeoScore, color: '#8b5cf6', icon: '🤖', desc: '讓 AI 直接回答關於你', detail: 'AI 引擎最佳化（AEO）讓 ChatGPT、Siri、Google AI 等助理在回答問題時，能直接引用你的內容或推薦你的品牌。' },
     { name: 'GEO', value: geoScore, color: '#10b981', icon: '🌐', desc: '讓 AI 生成式搜尋引用你', detail: '生成式引擎最佳化（GEO）讓 ChatGPT、Claude、Perplexity、Gemini 等 AI 在生成答案時，能主動提及並連結你的品牌。' },
     { name: 'E-E-A-T', value: eeatScore, color: '#f59e0b', icon: '🏆', desc: '建立品牌專業度與可信度', detail: '經驗、專業、權威、信任（E-E-A-T）是 Google 評估網站可信度的核心標準，影響你在 AI 時代被推薦的機率。' },
+    { name: '內容品質', value: contentScore, color: '#ec4899', icon: '📝', desc: '文章結構與 AI 引用適合度', detail: '檢測頁面標題結構、字數深度、Meta 標籤、FAQ Schema、作者資訊等 15 項指標，評估內容被 AI 引用的機率。', loading: contentLoading },
   ]
 
   const eeatChecks = [
@@ -498,6 +524,7 @@ export default function Dashboard() {
       ])
 
       fetchData()
+      loadContentScore(website.url)
     } catch (error) {
       console.error('Error reanalyzing:', error)
       alert('檢測失敗，請稍後再試')
@@ -879,15 +906,21 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <h3 className="font-semibold text-slate-700">{item.name}</h3>
                 </div>
                 <div className="text-right">
-                  <span className="text-3xl font-bold" style={{ color: item.color }}>{item.value}</span>
-                  <p className="text-xs text-slate-400 leading-tight">{getVerdict(item.name, item.value)}</p>
+                  {item.loading ? (
+                    <div className="w-8 h-8 rounded-full border-2 border-pink-200 border-t-pink-500 animate-spin ml-auto" />
+                  ) : (
+                    <>
+                      <span className="text-3xl font-bold" style={{ color: item.color }}>{item.value ?? '—'}</span>
+                      <p className="text-xs text-slate-400 leading-tight">{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
+                    </>
+                  )}
                 </div>
               </div>
               <p className="text-xs font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
               <div className="h-2 bg-orange-100 rounded-full overflow-hidden mb-3">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${item.value}%`, backgroundColor: item.color }}
+                  style={{ width: `${item.value ?? 0}%`, backgroundColor: item.color }}
                 />
               </div>
               <p className="text-xs text-slate-700 leading-relaxed">{item.detail}</p>
