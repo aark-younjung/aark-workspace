@@ -512,19 +512,19 @@ export default function Dashboard() {
 
   const getImprovementSuggestions = () => {
     const tips = []
-    if (!seoAudit?.h1_structure?.hasOnlyOneH1) tips.push({ icon: '🏷️', title: '修正 H1 標題結構', desc: `頁面目前有 ${seoAudit?.h1_structure?.h1Count ?? 0} 個 H1 標題。每個頁面應只有一個 H1，清楚說明頁面主題，幫助 Google 與 AI 理解內容核心。` })
-    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Claude、Perplexity 更容易引用你。' })
-    if (!eeatAudit?.about_page) tips.push({ icon: '🏢', title: '建立關於我們頁面', desc: '缺少品牌介紹頁面。建立 /about 頁面說明公司背景與核心服務，強化 Google 與 AI 對你品牌的「權威性」認知。' })
-    if (!eeatAudit?.contact_page) tips.push({ icon: '📞', title: '提供聯絡方式', desc: '找不到聯絡資訊。建立 /contact 頁面或在頁尾加入 email 連結，讓訪客和搜尋引擎確認這是真實存在的機構。' })
-    if (!eeatAudit?.privacy_policy) tips.push({ icon: '🔏', title: '建立隱私權政策', desc: '缺少隱私權政策。建立 /privacy-policy 頁面並在頁尾加入連結，是合規與信任的基本要求。' })
-    if (!eeatAudit?.organization_schema) tips.push({ icon: '🏷️', title: '加入 Organization Schema', desc: '缺少機構結構化資料。在 JSON-LD 加入 Organization schema（含 name、url、logo），讓 Google 和 AI 明確識別你的品牌。' })
-    if (!aeoAudit?.json_ld) tips.push({ icon: '📋', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 Google 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
-    if (!aeoAudit?.faq_schema) tips.push({ icon: '❓', title: '新增 FAQ Schema', desc: '缺少 FAQPage schema 讓 Google 無法將你的問答內容顯示為精選摘要，為 FAQ 區塊添加結構化資料可大幅提升能見度。' })
-    if (!aeoAudit?.open_graph) tips.push({ icon: '🔗', title: '補充 Open Graph 標籤', desc: '缺少 og:title、og:description 會讓 AI 引用時無法獲取標準化資訊，影響在 AI 摘要中呈現的品質。' })
-    if (!aeoAudit?.canonical) tips.push({ icon: '🔒', title: '設置 Canonical 標籤', desc: '未設置 canonical 可能導致 AI 引用錯誤版本的頁面，在每頁 <head> 加入 <link rel="canonical" href="..."> 即可修正。' })
-    if (!aeoAudit?.question_headings) tips.push({ icon: '💬', title: '使用問句式 H2/H3 標題', desc: '問答式標題更容易被 Google 選為精選摘要來源，將部分標題改為「什麼是...？」「如何...？」格式。' })
-    if (!aeoAudit?.breadcrumbs) tips.push({ icon: '🍞', title: '加入麵包屑導航 Schema', desc: '麵包屑導航幫助 AI 理解你網站的資訊架構，使用 BreadcrumbList schema 可提升出現在精選摘要的機率。' })
-    if ((seoAudit?.alt_tags?.altCoverage || 100) < 80) tips.push({ icon: '🖼️', title: '補充圖片 Alt 文字', desc: `目前僅 ${seoAudit?.alt_tags?.altCoverage || 0}% 的圖片有 Alt 描述，AI 爬蟲無法理解沒有 Alt 的圖片，建議全部補齊。` })
+    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', priority: 'P1', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Claude、Perplexity 更容易引用你。' })
+    if (!aeoAudit?.json_ld) tips.push({ icon: '📋', priority: 'P1', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 Google 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
+    if (!eeatAudit?.about_page) tips.push({ icon: '🏢', priority: 'P1', title: '建立關於我們頁面', desc: '缺少品牌介紹頁面。建立 /about 頁面說明公司背景與核心服務，強化 Google 與 AI 對你品牌的「權威性」認知。' })
+    if (!seoAudit?.h1_structure?.hasOnlyOneH1) tips.push({ icon: '🏷️', priority: 'P1', title: '修正 H1 標題結構', desc: `頁面目前有 ${seoAudit?.h1_structure?.h1Count ?? 0} 個 H1 標題。每個頁面應只有一個 H1，清楚說明頁面主題，幫助 Google 與 AI 理解內容核心。` })
+    if (!aeoAudit?.faq_schema) tips.push({ icon: '❓', priority: 'P2', title: '新增 FAQ Schema', desc: '缺少 FAQPage schema 讓 Google 無法將你的問答內容顯示為精選摘要，為 FAQ 區塊添加結構化資料可大幅提升能見度。' })
+    if (!aeoAudit?.open_graph) tips.push({ icon: '🔗', priority: 'P2', title: '補充 Open Graph 標籤', desc: '缺少 og:title、og:description 會讓 AI 引用時無法獲取標準化資訊，影響在 AI 摘要中呈現的品質。' })
+    if (!eeatAudit?.contact_page) tips.push({ icon: '📞', priority: 'P2', title: '提供聯絡方式', desc: '找不到聯絡資訊。建立 /contact 頁面或在頁尾加入 email 連結，讓訪客和搜尋引擎確認這是真實存在的機構。' })
+    if (!eeatAudit?.privacy_policy) tips.push({ icon: '🔏', priority: 'P2', title: '建立隱私權政策', desc: '缺少隱私權政策。建立 /privacy-policy 頁面並在頁尾加入連結，是合規與信任的基本要求。' })
+    if (!aeoAudit?.question_headings) tips.push({ icon: '💬', priority: 'P2', title: '使用問句式 H2/H3 標題', desc: '問答式標題更容易被 Google 選為精選摘要來源，將部分標題改為「什麼是...？」「如何...？」格式。' })
+    if (!eeatAudit?.organization_schema) tips.push({ icon: '🏷️', priority: 'P3', title: '加入 Organization Schema', desc: '缺少機構結構化資料。在 JSON-LD 加入 Organization schema（含 name、url、logo），讓 Google 和 AI 明確識別你的品牌。' })
+    if (!aeoAudit?.canonical) tips.push({ icon: '🔒', priority: 'P3', title: '設置 Canonical 標籤', desc: '未設置 canonical 可能導致 AI 引用錯誤版本的頁面，在每頁 <head> 加入 <link rel="canonical" href="..."> 即可修正。' })
+    if (!aeoAudit?.breadcrumbs) tips.push({ icon: '🍞', priority: 'P3', title: '加入麵包屑導航 Schema', desc: '麵包屑導航幫助 AI 理解你網站的資訊架構，使用 BreadcrumbList schema 可提升出現在精選摘要的機率。' })
+    if ((seoAudit?.alt_tags?.altCoverage || 100) < 80) tips.push({ icon: '🖼️', priority: 'P3', title: '補充圖片 Alt 文字', desc: `目前僅 ${seoAudit?.alt_tags?.altCoverage || 0}% 的圖片有 Alt 描述，AI 爬蟲無法理解沒有 Alt 的圖片，建議全部補齊。` })
     return tips.slice(0, 5)
   }
 
@@ -1802,15 +1802,25 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     <p className="text-sm text-slate-500 mt-1">繼續保持，定期重新掃描以確保持續優化</p>
                   </div>
                 ) : (
-                  getImprovementSuggestions().map((tip, i) => (
-                    <div key={i} className="flex gap-4 p-4 rounded-xl" style={isDark ? { background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' } : { background: 'rgba(200,200,210,0.18)', border: '1px solid rgba(180,180,200,0.3)' }}>
-                      <span className="text-2xl flex-shrink-0">{tip.icon}</span>
-                      <div>
-                        <p className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{i + 1}. {tip.title}</p>
-                        <p className={`text-sm leading-relaxed ${isDark ? 'text-white/70' : 'text-slate-600'}`}>{tip.desc}</p>
+                  getImprovementSuggestions().map((tip, i) => {
+                    const priorityStyle = {
+                      P1: { bg: '#FCEBEB', color: '#A32D2D', label: 'P1 立即處理' },
+                      P2: { bg: '#FAEEDA', color: '#854F0B', label: 'P2 重要' },
+                      P3: { bg: '#EAF3DE', color: '#3B6D11', label: 'P3 優化' },
+                    }[tip.priority] || { bg: '#F1F5F9', color: '#64748b', label: tip.priority }
+                    return (
+                      <div key={i} className="flex gap-4 p-4 rounded-xl" style={isDark ? { background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' } : { background: 'rgba(200,200,210,0.18)', border: '1px solid rgba(180,180,200,0.3)' }}>
+                        <span className="text-2xl flex-shrink-0">{tip.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: priorityStyle.bg, color: priorityStyle.color }}>{priorityStyle.label}</span>
+                            <p className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{tip.title}</p>
+                          </div>
+                          <p className={`text-sm leading-relaxed ${isDark ? 'text-white/70' : 'text-slate-600'}`}>{tip.desc}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             )}
