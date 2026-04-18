@@ -357,11 +357,11 @@ export default function Dashboard() {
 
   // 雷達圖數據 - 5 項 SEO 檢測
   const radarData = [
-    { subject: 'Meta 標籤', score: seoAudit?.meta_tags?.score || 0, fullMark: 100 },
-    { subject: 'H1 結構', score: seoAudit?.h1_structure?.score || 0, fullMark: 100 },
-    { subject: 'Alt 屬性', score: seoAudit?.alt_tags?.score || 0, fullMark: 100 },
-    { subject: '行動版相容', score: seoAudit?.mobile_compatible?.score || 0, fullMark: 100 },
-    { subject: '載入速度', score: seoAudit?.page_speed?.score || 0, fullMark: 100 },
+    { subject: 'Meta 標籤', score: seoAudit?.meta_tags?.score || 0, target: 80, fullMark: 100 },
+    { subject: 'H1 結構', score: seoAudit?.h1_structure?.score || 0, target: 80, fullMark: 100 },
+    { subject: 'Alt 屬性', score: seoAudit?.alt_tags?.score || 0, target: 75, fullMark: 100 },
+    { subject: '行動版相容', score: seoAudit?.mobile_compatible?.score || 0, target: 85, fullMark: 100 },
+    { subject: '載入速度', score: seoAudit?.page_speed?.score || 0, target: 75, fullMark: 100 },
   ]
 
   // 歷史趨勢數據（從最新紀錄對齊，避免各模組筆數不同時錯位）
@@ -894,17 +894,31 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <p className={`text-sm mb-4 ${isDark ? "text-white/60" : "text-slate-500"}`}>Meta · H1 · Alt · Mobile · Speed</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData}>
-                <PolarGrid stroke="#e2e8f0" />
+                <PolarGrid stroke={isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'} />
                 <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: isDark ? '#ffffff' : '#64748b' }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: isDark ? 'rgba(255,255,255,0.5)' : '#94a3b8' }} />
                 <Radar
-                  name="SEO 檢測"
+                  name="目標"
+                  dataKey="target"
+                  stroke="#10b981"
+                  fill="#10b981"
+                  fillOpacity={0.08}
+                  strokeDasharray="5 3"
+                  strokeWidth={1.5}
+                />
+                <Radar
+                  name="現況"
                   dataKey="score"
                   stroke="#8b5cf6"
                   fill="#8b5cf6"
                   fillOpacity={0.3}
+                  strokeWidth={2}
                 />
-                <Tooltip formatter={(v) => [`${v} 分`, '分數']} />
+                <Legend
+                  iconType="line"
+                  formatter={(value) => <span style={{ fontSize: 12, color: isDark ? 'rgba(255,255,255,0.7)' : '#64748b' }}>{value}</span>}
+                />
+                <Tooltip formatter={(v, name) => [`${v} 分`, name]} />
               </RadarChart>
             </ResponsiveContainer>
             {/* 檢測結果說明 */}
