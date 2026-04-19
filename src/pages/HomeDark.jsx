@@ -113,7 +113,7 @@ function DarkScanningOverlay({ logs, targetUrl }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{
-      background: 'linear-gradient(135deg, #18c590 0%, #0d7a58 18%, #053d2c 32%, #021a13 46%, #000000 60%)',
+      background: 'linear-gradient(135deg, #18c590 0%, #0d7a58 18%, #053d2c 30%, #084773 48%, #021a13 62%, #000000 76%)',
     }}>
       {/* Grain */}
       <div className="absolute inset-0 pointer-events-none" style={{
@@ -446,7 +446,7 @@ export default function HomeDark() {
     <>
     {loading && <DarkScanningOverlay logs={scanLogs} targetUrl={url} />}
     <div className="min-h-screen relative overflow-hidden" style={{
-      background: 'linear-gradient(135deg, #18c590 0%, #0d7a58 18%, #053d2c 32%, #021a13 46%, #000000 60%)',
+      background: 'linear-gradient(135deg, #18c590 0%, #0d7a58 18%, #053d2c 30%, #084773 48%, #021a13 62%, #000000 76%)',
     }}>
 
       {/* 顆粒感疊層 */}
