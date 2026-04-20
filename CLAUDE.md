@@ -151,8 +151,29 @@ Amber: #f59e0b
 - AEO：`#8b5cf6`（紫）
 - GEO：`#10b981`（綠）
 - E-E-A-T：`#f59e0b`（琥珀）
+- 內容品質：`#ec4899`（粉紅，第五分數）
 
 **公司 Logo：** 橘色漸層方塊 + 閃電 SVG icon + 文字「優勢方舟數位行銷」
+
+### 暗色版（HomeDark）背景漸層
+
+**目前使用（紅色版）：**
+```
+linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #000000 60%)
+```
+
+**備用（青綠版）：**
+```
+linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)
+```
+
+### 雜訊（Grain）數值
+
+**暗色版 HomeDark：**
+- `baseFrequency='0.65'` `numOctaves='4'` `opacity: 0.18` `mixBlendMode: 'soft-light'`
+
+**橘白版（所有淺色頁面）：**
+- `baseFrequency='0.65'` `numOctaves='3'` `opacity: 0.25` `mixBlendMode: 'overlay'`
 
 ---
 
@@ -213,6 +234,23 @@ Amber: #f59e0b
 
 ### 資料庫需求
 - `profiles` 表需加 `is_admin BOOLEAN DEFAULT false` 欄位
+
+---
+
+## 工作日誌
+
+### 2026-04-19
+**Dashboard 儀表板強化（參考競品分析報告借鏡）：**
+- ✅ SEO 雷達圖加入第二條虛線「建議目標」（綠色），與現況對比
+- ✅ 優化建議卡片加入 P1／P2／P3 優先級標籤（紅/橘/綠色）
+- ✅ 四大分數卡加入白話判定語（如「目前幾乎不會被 AI 引用」）
+- ✅ 新增第五張分數卡「📝 內容品質」（粉紅色，`#ec4899`），Dashboard 載入時自動對首頁跑 `analyzeContent`，無需改資料庫
+- ✅ 新增「被 AI 引用的關鍵條件」checklist（8 項，含通過/未通過狀態與計數）
+
+**視覺調整：**
+- ✅ 橘白版所有頁面雜訊調整：`baseFrequency 0.65`、`overlay`、`opacity 0.25`（修正灰色偏色問題）
+- ✅ 暗色版雜訊調整：`baseFrequency 0.65`、`numOctaves 4`、`soft-light`、`opacity 0.18`（接近 Lightspark 質感）
+- ✅ HomeDark 背景漸層實驗青綠版（`#18c590`），最終保留紅色版
 
 ---
 
