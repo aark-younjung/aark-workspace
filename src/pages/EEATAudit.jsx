@@ -164,7 +164,7 @@ export default function EEATAudit() {
       <div className={`min-h-screen flex items-center justify-center ${isDark ? '' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-900">載入資料中...</p>
+          <p className="text-black">載入資料中...</p>
         </div>
       </div>
     )
@@ -269,7 +269,7 @@ export default function EEATAudit() {
                         {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-900 mb-4">{check.description}</p>
+                    <p className="text-sm text-black mb-4">{check.description}</p>
                     {status === 'fail' && (
                       isPro ? (
                         <FixGuide checkId={check.id} />
@@ -307,7 +307,7 @@ export default function EEATAudit() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-semibold text-black mb-3">短期目標 (1-2週)</h4>
-                  <ul className="space-y-2 text-sm text-gray-900">
+                  <ul className="space-y-2 text-sm text-black">
                     <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
                     <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
                     <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
@@ -315,7 +315,7 @@ export default function EEATAudit() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-black mb-3">中期目標 (1-3月)</h4>
-                  <ul className="space-y-2 text-sm text-gray-900">
+                  <ul className="space-y-2 text-sm text-black">
                     <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
                     <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
                     <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>
@@ -330,7 +330,7 @@ export default function EEATAudit() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <h4 className="font-semibold text-black mb-3">短期目標 (1-2週)</h4>
-                    <ul className="space-y-2 text-sm text-gray-900">
+                    <ul className="space-y-2 text-sm text-black">
                       <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
                       <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
                       <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
@@ -338,7 +338,7 @@ export default function EEATAudit() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-black mb-3">中期目標 (1-3月)</h4>
-                    <ul className="space-y-2 text-sm text-gray-900">
+                    <ul className="space-y-2 text-sm text-black">
                       <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
                       <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
                       <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>

@@ -142,7 +142,7 @@ export default function AEOAudit() {
       <div className={`min-h-screen flex items-center justify-center ${isDark ? '' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-900">載入資料中...</p>
+          <p className="text-black">載入資料中...</p>
         </div>
       </div>
     )
@@ -249,7 +249,7 @@ export default function AEOAudit() {
                         {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-900 mb-4">{check.description}</p>
+                    <p className="text-sm text-black mb-4">{check.description}</p>
                     
                     {status === 'fail' && (
                       isPro ? (
@@ -278,7 +278,7 @@ export default function AEOAudit() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h4 className="font-semibold text-black mb-3">短期目標 (1-2週)</h4>
-                <ul className="space-y-2 text-sm text-gray-900">
+                <ul className="space-y-2 text-sm text-black">
                   <li className="flex items-start gap-2"><span className="text-purple-500">•</span>補齊所有缺少的 Open Graph 標籤</li>
                   <li className="flex items-start gap-2"><span className="text-purple-500">•</span>建立網站的 LLMs.txt 檔案</li>
                   <li className="flex items-start gap-2"><span className="text-purple-500">•</span>修復 canonical 標籤問題</li>
@@ -286,7 +286,7 @@ export default function AEOAudit() {
               </div>
               <div>
                 <h4 className="font-semibold text-black mb-3">中期目標 (1-3月)</h4>
-                <ul className="space-y-2 text-sm text-gray-900">
+                <ul className="space-y-2 text-sm text-black">
                   <li className="flex items-start gap-2"><span className="text-blue-500">•</span>建立完整的 JSON-LD 結構化資料</li>
                   <li className="flex items-start gap-2"><span className="text-blue-500">•</span>為常見問題頁面添加 FAQ Schema</li>
                   <li className="flex items-start gap-2"><span className="text-blue-500">•</span>優化麵包屑導航結構</li>
