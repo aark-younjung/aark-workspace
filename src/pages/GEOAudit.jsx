@@ -139,7 +139,7 @@ export default function GEOAudit() {
       <div className={`min-h-screen flex items-center justify-center ${isDark ? '' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">載入資料中...</p>
+          <p className="text-gray-900">載入資料中...</p>
         </div>
       </div>
     )
@@ -170,14 +170,14 @@ export default function GEOAudit() {
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 mb-8">
           <div className="flex items-center justify-between flex-wrap gap-6">
             <div>
-              <h2 className="text-lg font-semibold text-slate-700 mb-2">GEO 技術檢測得分</h2>
+              <h2 className="text-lg font-semibold text-black mb-2">GEO 技術檢測得分</h2>
               <div className="flex items-baseline gap-3">
                 <span className="text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   {score}
                 </span>
-                <span className="text-slate-500">/ 100</span>
+                <span className="text-gray-700">/ 100</span>
               </div>
-              <p className="text-slate-500 mt-2">
+              <p className="text-gray-700 mt-2">
                 通過 {passedCount} / {totalCount} 項檢測
               </p>
             </div>
@@ -200,7 +200,7 @@ export default function GEOAudit() {
               </button>
               <Link
                 to={`/dashboard/${id}`}
-                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors font-medium"
+                className="px-6 py-3 bg-slate-100 text-black rounded-xl hover:bg-slate-200 transition-colors font-medium"
               >
                 返回總覽
               </Link>
@@ -237,18 +237,18 @@ export default function GEOAudit() {
                   <div className="text-4xl">{check.icon}</div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-slate-800">{check.name}</h3>
+                      <h3 className="font-semibold text-black">{check.name}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         status === 'pass'
                           ? 'bg-green-100 text-green-700'
                           : status === 'fail'
                           ? 'bg-red-100 text-red-700'
-                          : 'bg-slate-100 text-slate-500'
+                          : 'bg-slate-100 text-gray-700'
                       }`}>
                         {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-600 mb-4">{check.description}</p>
+                    <p className="text-sm text-gray-900 mb-4">{check.description}</p>
                     {status === 'fail' && (
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-xs font-medium text-blue-700 mb-1">💡 建議優化</p>
@@ -264,11 +264,11 @@ export default function GEOAudit() {
 
         {/* 生成式 AI 優化建議 */}
         <div className="mt-8 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-8 border border-emerald-100">
-          <h3 className="text-xl font-bold text-slate-800 mb-4">🤖 提升 AI 引用率的建議</h3>
+          <h3 className="text-xl font-bold text-black mb-4">🤖 提升 AI 引用率的建議</h3>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
+              <h4 className="font-semibold text-black mb-3">短期目標 (1-2週)</h4>
+              <ul className="space-y-2 text-sm text-gray-900">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500">•</span>
                   建立 /llms.txt 描述品牌與服務內容
@@ -284,8 +284,8 @@ export default function GEOAudit() {
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
-              <ul className="space-y-2 text-sm text-slate-600">
+              <h4 className="font-semibold text-black mb-3">中期目標 (1-3月)</h4>
+              <ul className="space-y-2 text-sm text-gray-900">
                 <li className="flex items-start gap-2">
                   <span className="text-teal-500">•</span>
                   在 JSON-LD 中加入 author、publisher、datePublished

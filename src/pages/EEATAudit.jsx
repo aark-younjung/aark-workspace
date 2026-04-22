@@ -164,7 +164,7 @@ export default function EEATAudit() {
       <div className={`min-h-screen flex items-center justify-center ${isDark ? '' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-slate-600">載入資料中...</p>
+          <p className="text-gray-900">載入資料中...</p>
         </div>
       </div>
     )
@@ -195,14 +195,14 @@ export default function EEATAudit() {
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 mb-8">
           <div className="flex items-center justify-between flex-wrap gap-6">
             <div>
-              <h2 className="text-lg font-semibold text-slate-700 mb-2">E-E-A-T 可信度得分</h2>
+              <h2 className="text-lg font-semibold text-black mb-2">E-E-A-T 可信度得分</h2>
               <div className="flex items-baseline gap-3">
                 <span className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
                   {score}
                 </span>
-                <span className="text-slate-500">/ 100</span>
+                <span className="text-gray-700">/ 100</span>
               </div>
-              <p className="text-slate-500 mt-2">通過 {passedCount} / {EEAT_CHECKS.length} 項檢測</p>
+              <p className="text-gray-700 mt-2">通過 {passedCount} / {EEAT_CHECKS.length} 項檢測</p>
             </div>
             <div className="flex gap-3">
               <button onClick={handleReanalyze} disabled={analyzing}
@@ -218,7 +218,7 @@ export default function EEATAudit() {
                 ) : '重新檢測'}
               </button>
               <Link to={`/dashboard/${id}`}
-                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors font-medium">
+                className="px-6 py-3 bg-slate-100 text-black rounded-xl hover:bg-slate-200 transition-colors font-medium">
                 返回總覽
               </Link>
             </div>
@@ -241,8 +241,8 @@ export default function EEATAudit() {
           ].map(({ label, desc, icon }) => (
             <div key={label} className="bg-white rounded-xl p-4 border border-slate-100 text-center">
               <div className="text-2xl mb-2">{icon}</div>
-              <div className="text-sm font-semibold text-slate-700">{label}</div>
-              <div className="text-xs text-slate-400 mt-1">{desc}</div>
+              <div className="text-sm font-semibold text-black">{label}</div>
+              <div className="text-xs text-gray-700 mt-1">{desc}</div>
             </div>
           ))}
         </div>
@@ -261,15 +261,15 @@ export default function EEATAudit() {
                   <div className="text-4xl">{check.icon}</div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-slate-800">{check.name}</h3>
+                      <h3 className="font-semibold text-black">{check.name}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         status === 'pass' ? 'bg-green-100 text-green-700'
                         : status === 'fail' ? 'bg-red-100 text-red-700'
-                        : 'bg-slate-100 text-slate-500'}`}>
+                        : 'bg-slate-100 text-gray-700'}`}>
                         {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-600 mb-4">{check.description}</p>
+                    <p className="text-sm text-gray-900 mb-4">{check.description}</p>
                     {status === 'fail' && (
                       isPro ? (
                         <FixGuide checkId={check.id} />
@@ -306,16 +306,16 @@ export default function EEATAudit() {
             <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-8">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
-                  <ul className="space-y-2 text-sm text-slate-600">
+                  <h4 className="font-semibold text-black mb-3">短期目標 (1-2週)</h4>
+                  <ul className="space-y-2 text-sm text-gray-900">
                     <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
                     <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
                     <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
-                  <ul className="space-y-2 text-sm text-slate-600">
+                  <h4 className="font-semibold text-black mb-3">中期目標 (1-3月)</h4>
+                  <ul className="space-y-2 text-sm text-gray-900">
                     <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
                     <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
                     <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>
@@ -329,16 +329,16 @@ export default function EEATAudit() {
               <div className="p-8 blur-sm select-none pointer-events-none">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold text-slate-700 mb-3">短期目標 (1-2週)</h4>
-                    <ul className="space-y-2 text-sm text-slate-600">
+                    <h4 className="font-semibold text-black mb-3">短期目標 (1-2週)</h4>
+                    <ul className="space-y-2 text-sm text-gray-900">
                       <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
                       <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
                       <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-slate-700 mb-3">中期目標 (1-3月)</h4>
-                    <ul className="space-y-2 text-sm text-slate-600">
+                    <h4 className="font-semibold text-black mb-3">中期目標 (1-3月)</h4>
+                    <ul className="space-y-2 text-sm text-gray-900">
                       <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
                       <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
                       <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>
@@ -350,8 +350,8 @@ export default function EEATAudit() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl px-10 py-8 shadow-lg border border-orange-100 max-w-sm mx-4">
                   <div className="text-4xl mb-3">🔒</div>
-                  <h4 className="text-lg font-bold text-slate-800 mb-2">升級 Pro 解鎖完整建議</h4>
-                  <p className="text-sm text-slate-500 mb-5">包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
+                  <h4 className="text-lg font-bold text-black mb-2">升級 Pro 解鎖完整建議</h4>
+                  <p className="text-sm text-gray-700 mb-5">包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
                   <button
                     onClick={handleUpgrade}
                     disabled={upgrading}
@@ -359,7 +359,7 @@ export default function EEATAudit() {
                   >
                     {upgrading ? '跳轉中...' : '升級 Pro 方案 →'}
                   </button>
-                  <p className="text-xs text-slate-400 mt-3">NT$2,000 / 月 · 隨時取消</p>
+                  <p className="text-xs text-gray-700 mt-3">NT$2,000 / 月 · 隨時取消</p>
                 </div>
               </div>
             </div>

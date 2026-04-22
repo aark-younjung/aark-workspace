@@ -154,7 +154,7 @@ export default function SEOAudit() {
       <div className={`min-h-screen flex items-center justify-center ${isDark ? '' : 'bg-slate-50'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">載入資料中...</p>
+          <p className="text-gray-900">載入資料中...</p>
         </div>
       </div>
     )
@@ -185,14 +185,14 @@ export default function SEOAudit() {
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 mb-8">
           <div className="flex items-center justify-between flex-wrap gap-6">
             <div>
-              <h2 className="text-lg font-semibold text-slate-700 mb-2">SEO 檢測得分</h2>
+              <h2 className="text-lg font-semibold text-black mb-2">SEO 檢測得分</h2>
               <div className="flex items-baseline gap-3">
                 <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   {score}
                 </span>
-                <span className="text-slate-500">/ 100</span>
+                <span className="text-gray-700">/ 100</span>
               </div>
-              <p className="text-slate-500 mt-2">通過 {passedCount} / {SEO_CHECKS.length} 項檢測</p>
+              <p className="text-gray-700 mt-2">通過 {passedCount} / {SEO_CHECKS.length} 項檢測</p>
             </div>
             <button
               onClick={handleReanalyze}
@@ -235,7 +235,7 @@ export default function SEOAudit() {
                 <div className="text-4xl">{check.icon}</div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-slate-800">{check.name}</h3>
+                    <h3 className="font-semibold text-black">{check.name}</h3>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       check.passed
                         ? 'bg-green-100 text-green-700'
@@ -244,7 +244,7 @@ export default function SEOAudit() {
                       {check.passed ? '✓ 通過' : '✗ 未通過'}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-600 mb-2">{check.description}</p>
+                  <p className="text-sm text-gray-900 mb-2">{check.description}</p>
                   {check.detail && (
                     <p className={`text-xs font-medium mb-3 px-2 py-1 rounded ${
                       check.passed ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
@@ -271,17 +271,17 @@ export default function SEOAudit() {
         {/* SEO 優化路線圖 */}
         <div className="mt-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-8 border border-blue-100">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-slate-800">🚀 SEO 優化路線圖</h3>
+            <h3 className="text-xl font-bold text-black">🚀 SEO 優化路線圖</h3>
             {!isPro && <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-semibold">Pro 功能</span>}
           </div>
           {isPro ? (
             <div className="grid md:grid-cols-3 gap-6">
               <div>
-                <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                <h4 className="font-semibold text-black mb-3 flex items-center gap-2">
                   <span className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
                   立即修復（本週）
                 </h4>
-                <ul className="space-y-2 text-sm text-slate-600">
+                <ul className="space-y-2 text-sm text-gray-900">
                   {!seoAudit?.meta_tags?.hasTitle && <li className="flex gap-2"><span className="text-red-500">•</span>補充 Meta 標題（影響最大）</li>}
                   {!seoAudit?.meta_tags?.hasDescription && <li className="flex gap-2"><span className="text-red-500">•</span>補充 Meta 描述（提升點擊率）</li>}
                   {!seoAudit?.mobile_compatible?.hasViewport && <li className="flex gap-2"><span className="text-red-500">•</span>加入 viewport meta 標籤</li>}
@@ -291,11 +291,11 @@ export default function SEOAudit() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                <h4 className="font-semibold text-black mb-3 flex items-center gap-2">
                   <span className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
                   短期改善（1–2週）
                 </h4>
-                <ul className="space-y-2 text-sm text-slate-600">
+                <ul className="space-y-2 text-sm text-gray-900">
                   {!seoAudit?.h1_structure?.hasOnlyOneH1 && <li className="flex gap-2"><span className="text-amber-500">•</span>修正 H1 結構（每頁只留一個）</li>}
                   {(seoAudit?.alt_tags?.altCoverage ?? 100) < 80 && <li className="flex gap-2"><span className="text-amber-500">•</span>補充圖片 Alt 屬性（提升 AI 理解）</li>}
                   <li className="flex gap-2"><span className="text-amber-500">•</span>優化標題與描述的關鍵字密度</li>
@@ -303,11 +303,11 @@ export default function SEOAudit() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                <h4 className="font-semibold text-black mb-3 flex items-center gap-2">
                   <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
                   中期優化（1–3月）
                 </h4>
-                <ul className="space-y-2 text-sm text-slate-600">
+                <ul className="space-y-2 text-sm text-gray-900">
                   {seoAudit?.page_speed?.loadTime > 3000 && <li className="flex gap-2"><span className="text-blue-500">•</span>優化載入速度（壓縮圖片、CDN）</li>}
                   <li className="flex gap-2"><span className="text-blue-500">•</span>建立內部連結結構</li>
                   <li className="flex gap-2"><span className="text-blue-500">•</span>搭配 AEO Schema 標記提升 AI 引用</li>
@@ -317,7 +317,7 @@ export default function SEOAudit() {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-slate-500 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的 SEO 優化路線圖</p>
+              <p className="text-gray-700 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的 SEO 優化路線圖</p>
               <Link
                 to={`/dashboard/${id}`}
                 className="inline-block px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all"
