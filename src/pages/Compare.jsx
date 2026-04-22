@@ -157,7 +157,7 @@ export default function Compare() {
       {/* Header */}
       <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to={isDark ? "/dark" : "/"} className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -167,7 +167,7 @@ export default function Compare() {
           </Link>
           <nav className="flex items-center gap-4">
             <Link to="/showcase" className="hidden sm:block text-slate-600 hover:text-slate-900 transition-colors text-sm">排行榜</Link>
-            <Link to={isDark ? "/dark" : "/"} className="hidden sm:block text-slate-600 hover:text-slate-900 transition-colors text-sm">免費檢測</Link>
+            <Link to="/" className="hidden sm:block text-slate-600 hover:text-slate-900 transition-colors text-sm">免費檢測</Link>
             {user ? (
               <>
                 {!isPro && <Link to="/pricing" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded-lg transition-colors font-medium">升級 Pro</Link>}

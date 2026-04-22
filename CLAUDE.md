@@ -50,7 +50,10 @@ aark-workspace/
 │   ├── lib/
 │   │   └── supabase.js           # Supabase client
 │   ├── pages/
-│   │   ├── Home.jsx              # 首頁：輸入網址、觸發分析、雷達動畫、掃描 overlay
+│   │   ├── _legacy/              # 已下線的橘白版頁面備存（2026-04-22 起）
+│   │   │   ├── Home.jsx          # 原橘白版首頁（保留備查，未被路由使用）
+│   │   │   └── README.md         # 下線說明與復原步驟
+│   │   ├── HomeDark.jsx          # 首頁（主視覺，深紅暗黑版）：輸入網址、觸發分析、雷達動畫
 │   │   ├── Dashboard.jsx         # 儀表板：四大分數、圖表、AI 優化工具
 │   │   ├── SEOAudit.jsx          # SEO 5 項詳細頁
 │   │   ├── AEOAudit.jsx          # AEO 8 項詳細頁
@@ -104,7 +107,7 @@ aark-workspace/
 
 | 路徑 | 頁面 | 說明 |
 |------|------|------|
-| `/` | Home | 首頁，輸入網址觸發分析 |
+| `/` | HomeDark | 首頁（暗黑主視覺），輸入網址觸發分析 |
 | `/dashboard/:id` | Dashboard | 儀表板，`:id` 為 website UUID |
 | `/seo-audit/:id` | SEOAudit | SEO 詳細報告 |
 | `/aeo-audit/:id` | AEOAudit | AEO 詳細報告 |
@@ -125,7 +128,13 @@ aark-workspace/
 
 ## UI / UX 設計規範
 
-**配色主題：** 橘白暖色系（所有頁面統一）
+**主視覺：** 暗黑深紅版（HomeDark，自 2026-04-22 起為預設）  
+**ThemeContext：** `isDark` 預設為 `true`；`/dark` 路由已移除、整併至 `/`  
+**橘白版：** 已下線，首頁搬至 `src/pages/_legacy/Home.jsx` 備查；共用頁面（Pricing、FAQ、Dashboard 等）仍保留 `!isDark` 分支供未來切換復原
+
+**配色主題（暗黑主視覺）：** 深紅漸層 + 黑底；其餘共用頁面沿用橘白配色資料
+
+### 橘白版配色（備存，供日後切換回來使用）
 
 ```css
 /* 背景漸層 */
@@ -238,6 +247,15 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ---
 
 ## 工作日誌
+
+### 2026-04-22
+**暗黑版升格為主視覺：**
+- ✅ `ThemeContext` 預設 `isDark: true`（sessionStorage 無值時預設暗黑）
+- ✅ `App.jsx` 路由：`/` 指向 `HomeDark`，`/dark` 路由移除
+- ✅ 原 `Home.jsx`（橘白版首頁）搬至 `src/pages/_legacy/Home.jsx`，並附 README 說明復原步驟
+- ✅ 全庫 `to={isDark ? "/dark" : "/"}` 全部收斂為 `to="/"`（Compare/ContentAudit/Dashboard/Login/FAQ/Register/Pricing/Showcase）
+- ✅ `HomeDark.jsx` 內部 `state: { from: '/dark' }` 改為 `{ from: '/' }`
+- ⚠️ 共用頁面 `!isDark` 橘白分支保留，以便日後切換回橘白版（無需重寫）
 
 ### 2026-04-19
 **Dashboard 儀表板強化（參考競品分析報告借鏡）：**

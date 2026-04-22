@@ -144,7 +144,7 @@ export default function FAQ() {
       {/* Header */}
       <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/30">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to={isDark ? "/dark" : "/"} className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -153,7 +153,7 @@ export default function FAQ() {
             <span className="text-lg font-bold text-slate-800">優勢方舟數位行銷</span>
           </Link>
           <nav className="flex items-center gap-4">
-            <Link to={isDark ? "/dark" : "/"} className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
+            <Link to="/" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
             <Link to="/pricing" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">定價</Link>
             {user ? (
               <>
@@ -228,7 +228,7 @@ export default function FAQ() {
           <div className="text-3xl mb-3">🚀</div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">還有其他問題？</h2>
           <p className="text-slate-500 text-sm mb-4">直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
-          <Link to={isDark ? "/dark" : "/"}
+          <Link to="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200">
             取得我的免費報告 →
           </Link>
@@ -242,7 +242,7 @@ export default function FAQ() {
 
         {/* Footer nav */}
         <div className="mt-6 text-center">
-          <Link to={isDark ? "/dark" : "/"} className="text-gray-400 hover:text-gray-600 text-sm transition-colors">← 返回首頁</Link>
+          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">← 返回首頁</Link>
         </div>
       </main>
       <Footer />

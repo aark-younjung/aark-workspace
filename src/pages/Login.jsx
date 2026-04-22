@@ -44,7 +44,7 @@ export default function Login() {
       <div className="w-full max-w-md relative">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to={isDark ? "/dark" : "/"} className="inline-flex items-center gap-3 mb-6">
+          <Link to="/" className="inline-flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -139,7 +139,7 @@ export default function Login() {
         </div>
 
         <div className="mt-6 text-center">
-          <Link to={isDark ? "/dark" : "/"} className="text-white/60 hover:text-white/80 text-sm transition-colors">
+          <Link to="/" className="text-white/60 hover:text-white/80 text-sm transition-colors">
             ← 返回首頁
           </Link>
         </div>

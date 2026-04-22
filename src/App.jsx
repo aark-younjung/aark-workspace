@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
-import Home from './pages/Home'
+// 暗黑版為現行主視覺；橘白版 Home 已移至 src/pages/_legacy/Home.jsx 保留備查
 import HomeDark from './pages/HomeDark'
 import Dashboard from './pages/Dashboard'
 import SEOAudit from './pages/SEOAudit'
@@ -61,8 +61,7 @@ function AppInner() {
     <>
       {isDark && <GlobalDarkBg />}
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/dark" element={<HomeDark />} />
+        <Route path="/" element={<HomeDark />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/showcase" element={<Showcase />} />
