@@ -173,18 +173,18 @@ export default function EEATAudit() {
   return (
     <div className={`min-h-screen ${isDark ? '' : 'bg-slate-50'}`}>
       {/* Header */}
-      <header className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+      <header className="bg-gradient-to-r from-orange-500 to-amber-500 text-black">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center gap-4 mb-4">
-            <Link to={`/dashboard/${id}`} className="text-white/70 hover:text-white">
+            <Link to={`/dashboard/${id}`} className="text-black/70 hover:text-black">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
             <div>
               <h1 className="text-2xl font-bold">E-E-A-T 可信度檢測</h1>
-              <p className="text-white/80 text-sm">Experience · Expertise · Authoritativeness · Trustworthiness</p>
-              <p className="text-white/60 text-xs mt-1">{website?.url}</p>
+              <p className="text-black/80 text-sm">Experience · Expertise · Authoritativeness · Trustworthiness</p>
+              <p className="text-black/60 text-xs mt-1">{website?.url}</p>
             </div>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function EEATAudit() {
             </div>
             <div className="flex gap-3">
               <button onClick={handleReanalyze} disabled={analyzing}
-                className="px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                className="px-6 py-3 bg-orange-500 text-black rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                 {analyzing ? (
                   <>
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -292,11 +292,11 @@ export default function EEATAudit() {
           {/* 標題列 */}
           <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-5 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-white">🛡️ E-E-A-T 優化行動計畫</h3>
-              <p className="text-white/70 text-sm mt-1">依影響力排序的具體修復步驟與時程規劃</p>
+              <h3 className="text-lg font-bold text-black">🛡️ E-E-A-T 優化行動計畫</h3>
+              <p className="text-black/70 text-sm mt-1">依影響力排序的具體修復步驟與時程規劃</p>
             </div>
             {!isPro && (
-              <span className="px-3 py-1 bg-white/20 rounded-full text-white text-xs font-semibold border border-white/30">
+              <span className="px-3 py-1 bg-white/20 rounded-full text-black text-xs font-semibold border border-white/30">
                 🔒 Pro 功能
               </span>
             )}
@@ -355,7 +355,7 @@ export default function EEATAudit() {
                   <button
                     onClick={handleUpgrade}
                     disabled={upgrading}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-black font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {upgrading ? '跳轉中...' : '升級 Pro 方案 →'}
                   </button>

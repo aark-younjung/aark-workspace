@@ -151,18 +151,18 @@ export default function AEOAudit() {
   return (
     <div className={`min-h-screen ${isDark ? '' : 'bg-slate-50'}`}>
       {/* Header */}
-      <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+      <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-black">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center gap-4 mb-4">
-            <Link to={`/dashboard/${id}`} className="text-white/70 hover:text-white">
+            <Link to={`/dashboard/${id}`} className="text-black/70 hover:text-black">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
             <div>
               <h1 className="text-2xl font-bold">AEO 技術檢測</h1>
-              <p className="text-white/80 text-sm">Answer Engine Optimization — 傳統 Google 問答優化</p>
-              <p className="text-white/60 text-xs mt-1">{website?.url}</p>
+              <p className="text-black/80 text-sm">Answer Engine Optimization — 傳統 Google 問答優化</p>
+              <p className="text-black/60 text-xs mt-1">{website?.url}</p>
             </div>
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function AEOAudit() {
               <button
                 onClick={handleReanalyze}
                 disabled={analyzing}
-                className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-3 bg-purple-600 text-black rounded-xl hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {analyzing ? (
                   <>
@@ -298,7 +298,7 @@ export default function AEOAudit() {
               <p className="text-gray-700 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的優化路線圖</p>
               <Link
                 to="/dashboard"
-                className="inline-block px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all"
+                className="inline-block px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-black text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all"
               >
                 🔒 升級 Pro 解鎖完整建議
               </Link>

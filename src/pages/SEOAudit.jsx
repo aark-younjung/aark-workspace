@@ -163,18 +163,18 @@ export default function SEOAudit() {
   return (
     <div className={`min-h-screen ${isDark ? '' : 'bg-slate-50'}`}>
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+      <header className="bg-gradient-to-r from-blue-600 to-cyan-600 text-black">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center gap-4 mb-4">
-            <Link to={`/dashboard/${id}`} className="text-white/70 hover:text-white">
+            <Link to={`/dashboard/${id}`} className="text-black/70 hover:text-black">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
             <div>
               <h1 className="text-2xl font-bold">SEO 基本檢測</h1>
-              <p className="text-white/80 text-sm">Search Engine Optimization — 搜尋引擎排名基礎優化</p>
-              <p className="text-white/60 text-xs mt-1">{website?.url}</p>
+              <p className="text-black/80 text-sm">Search Engine Optimization — 搜尋引擎排名基礎優化</p>
+              <p className="text-black/60 text-xs mt-1">{website?.url}</p>
             </div>
           </div>
         </div>
@@ -197,7 +197,7 @@ export default function SEOAudit() {
             <button
               onClick={handleReanalyze}
               disabled={analyzing}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-blue-600 text-black rounded-xl hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {analyzing ? (
                 <>
@@ -278,7 +278,7 @@ export default function SEOAudit() {
             <div className="grid md:grid-cols-3 gap-6">
               <div>
                 <h4 className="font-semibold text-black mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <span className="w-6 h-6 bg-red-500 text-black rounded-full flex items-center justify-center text-xs font-bold">1</span>
                   立即修復（本週）
                 </h4>
                 <ul className="space-y-2 text-sm text-black">
@@ -292,7 +292,7 @@ export default function SEOAudit() {
               </div>
               <div>
                 <h4 className="font-semibold text-black mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <span className="w-6 h-6 bg-amber-500 text-black rounded-full flex items-center justify-center text-xs font-bold">2</span>
                   短期改善（1–2週）
                 </h4>
                 <ul className="space-y-2 text-sm text-black">
@@ -304,7 +304,7 @@ export default function SEOAudit() {
               </div>
               <div>
                 <h4 className="font-semibold text-black mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <span className="w-6 h-6 bg-blue-500 text-black rounded-full flex items-center justify-center text-xs font-bold">3</span>
                   中期優化（1–3月）
                 </h4>
                 <ul className="space-y-2 text-sm text-black">
@@ -320,7 +320,7 @@ export default function SEOAudit() {
               <p className="text-gray-700 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的 SEO 優化路線圖</p>
               <Link
                 to={`/dashboard/${id}`}
-                className="inline-block px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all"
+                className="inline-block px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-black text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all"
               >
                 🔒 升級 Pro 解鎖完整路線圖
               </Link>
