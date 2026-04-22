@@ -200,9 +200,9 @@ export default function EEATAudit() {
                 <span className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
                   {score}
                 </span>
-                <span className="text-gray-700">/ 100</span>
+                <span className="text-black">/ 100</span>
               </div>
-              <p className="text-gray-700 mt-2">通過 {passedCount} / {EEAT_CHECKS.length} 項檢測</p>
+              <p className="text-black mt-2">通過 {passedCount} / {EEAT_CHECKS.length} 項檢測</p>
             </div>
             <div className="flex gap-3">
               <button onClick={handleReanalyze} disabled={analyzing}
@@ -242,7 +242,7 @@ export default function EEATAudit() {
             <div key={label} className="bg-white rounded-xl p-4 border border-slate-100 text-center">
               <div className="text-2xl mb-2">{icon}</div>
               <div className="text-sm font-semibold text-black">{label}</div>
-              <div className="text-xs text-gray-700 mt-1">{desc}</div>
+              <div className="text-xs text-black mt-1">{desc}</div>
             </div>
           ))}
         </div>
@@ -265,7 +265,7 @@ export default function EEATAudit() {
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         status === 'pass' ? 'bg-green-100 text-green-700'
                         : status === 'fail' ? 'bg-red-100 text-red-700'
-                        : 'bg-slate-100 text-gray-700'}`}>
+                        : 'bg-slate-100 text-black'}`}>
                         {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
                       </span>
                     </div>
@@ -351,7 +351,7 @@ export default function EEATAudit() {
                 <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl px-10 py-8 shadow-lg border border-orange-100 max-w-sm mx-4">
                   <div className="text-4xl mb-3">🔒</div>
                   <h4 className="text-lg font-bold text-black mb-2">升級 Pro 解鎖完整建議</h4>
-                  <p className="text-sm text-gray-700 mb-5">包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
+                  <p className="text-sm text-black mb-5">包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
                   <button
                     onClick={handleUpgrade}
                     disabled={upgrading}
@@ -359,7 +359,7 @@ export default function EEATAudit() {
                   >
                     {upgrading ? '跳轉中...' : '升級 Pro 方案 →'}
                   </button>
-                  <p className="text-xs text-gray-700 mt-3">NT$2,000 / 月 · 隨時取消</p>
+                  <p className="text-xs text-black mt-3">NT$2,000 / 月 · 隨時取消</p>
                 </div>
               </div>
             </div>

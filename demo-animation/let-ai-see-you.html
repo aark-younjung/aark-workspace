@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<title>讓 AI 看見你 · 優勢方舟 AI 能見度儀表板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ========== 基底：重置與字體 ========== */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #000; color: #fff; overflow: hidden; }
+  body {
+    font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'kern' 1, 'palt' 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ========== 數字等寬字 ========== */
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ========== 暗黑紅色漸層背景（跟 HomeDark 一致） ========== */
+  .bg-dark-red {
+    background: linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #000000 60%);
+  }
+
+  /* ========== Grain 雜訊質感 ========== */
+  .grain {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.18; mix-blend-mode: soft-light;
+  }
+
+  /* ========== 共用：玻璃卡片（暗色版） ========== */
+  .glass-dark {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 24px;
+  }
+
+  /* ========== 脈動圓環（雷達 pulse）========== */
+  @keyframes radar-pulse {
+    0%   { transform: scale(0.4); opacity: 0.9; }
+    100% { transform: scale(1.0); opacity: 0; }
+  }
+  .radar-ring { position: absolute; border-radius: 50%; border: 1.5px solid #f97316; animation: radar-pulse 2.4s linear infinite; }
+
+  /* ========== 數字 count-up 遮罩動畫專用 ========== */
+  .big-num { font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+
+  /* ========== 文字漸變（標題用）========== */
+  .text-gradient-orange {
+    background: linear-gradient(135deg, #ffedd5 0%, #fb923c 45%, #f97316 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .text-gradient-red {
+    background: linear-gradient(135deg, #fff 0%, #fecaca 40%, #ef4444 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React 18 + Babel standalone（pinned）— 單檔交付所需 -->
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+
+<!-- ============================================================
+     Animations Engine (inline from huashu-design assets/animations.jsx)
+     Stage + Sprite + useTime + useSprite + Easing + interpolate
+     ============================================================ -->
+<script>
+(function() {
+  const { createContext, useContext, useState, useEffect, useRef, useCallback } = React;
+
+  const TimeContext = createContext({ time: 0, duration: 10, playing: false });
+  const SpriteContext = createContext(null);
+
+  const Easing = {
+    linear: t => t,
+    easeIn: t => t * t,
+    easeOut: t => 1 - (1 - t) * (1 - t),
+    easeInOut: t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+    expoOut: t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
+    overshoot: t => {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    },
+    spring: t => {
+      const c = (2 * Math.PI) / 3;
+      return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c) + 1;
+    },
+  };
+
+  function interpolate(t, input, output, easing) {
+    const [inStart, inEnd] = input;
+    const [outStart, outEnd] = output;
+    if (t <= inStart) return outStart;
+    if (t >= inEnd) return outEnd;
+    let progress = (t - inStart) / (inEnd - inStart);
+    if (easing) progress = easing(progress);
+    return outStart + (outEnd - outStart) * progress;
+  }
+
+  function useTime() { return useContext(TimeContext).time; }
+  function useSprite() {
+    const s = useContext(SpriteContext);
+    return s || { t: 0, elapsed: 0, duration: 0 };
+  }
+
+  function Stage({ duration = 10, width = 1920, height = 1080, loop = true, children, bgColor = '#000' }) {
+    const [time, setTime] = useState(0);
+    const [playing, setPlaying] = useState(true);
+    const [scale, setScale] = useState(1);
+    const rafRef = useRef(null);
+
+    // 錄影時強制 loop=false（render-video.js 注入 window.__recording=true）
+    const effectiveLoop = (typeof window !== 'undefined' && window.__recording) ? false : loop;
+
+    useEffect(() => {
+      function updateScale() {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight - 56;
+        const s = Math.min(vw / width, vh / height);
+        setScale(s);
+      }
+      updateScale();
+      window.addEventListener('resize', updateScale);
+      return () => window.removeEventListener('resize', updateScale);
+    }, [width, height]);
+
+    useEffect(() => {
+      if (!playing) return;
+      let cancelled = false;
+      let last = null;
+
+      function tick(now) {
+        if (cancelled) return;
+        if (last === null) {
+          last = now;
+          if (typeof window !== 'undefined') window.__ready = true;
+        }
+        const delta = (now - last) / 1000;
+        last = now;
+        setTime(prev => {
+          const next = prev + delta;
+          if (next >= duration) return effectiveLoop ? 0 : duration - 0.001;
+          return next;
+        });
+        rafRef.current = requestAnimationFrame(tick);
+      }
+
+      const startAfterFonts = () => {
+        if (cancelled) return;
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(startAfterFonts);
+      } else {
+        startAfterFonts();
+      }
+
+      return () => { cancelled = true; cancelAnimationFrame(rafRef.current); };
+    }, [playing, duration, effectiveLoop]);
+
+    const handleScrub = useCallback((e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      setTime(Math.max(0, Math.min(duration, ratio * duration)));
+    }, [duration]);
+
+    const handleSeek = useCallback((e) => {
+      handleScrub(e);
+      setPlaying(false);
+    }, [handleScrub]);
+
+    const progress = time / duration;
+
+    return React.createElement(TimeContext.Provider, { value: { time, duration, playing, setPlaying, setTime } },
+      React.createElement('div', {
+        style: {
+          position: 'fixed', inset: 0, background: '#000',
+          display: 'flex', flexDirection: 'column',
+          fontFamily: 'Noto Sans TC, -apple-system, sans-serif',
+        }
+      },
+        React.createElement('div', { style: { flex: 1, position: 'relative', overflow: 'hidden' } },
+          React.createElement('div', {
+            style: {
+              position: 'absolute', top: '50%', left: '50%',
+              width, height, background: bgColor, overflow: 'hidden',
+              transform: `translate(-50%, -50%) scale(${scale})`,
+              transformOrigin: 'center center',
+            }
+          }, children)
+        ),
+        // 播放控制（`.no-record` class，錄影時會被隱藏）
+        React.createElement('div', {
+          className: 'no-record',
+          style: {
+            position: 'fixed', bottom: 0, left: 0, right: 0,
+            background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+            padding: '12px 20px', display: 'flex', alignItems: 'center',
+            gap: 16, color: '#fff', fontSize: 12, zIndex: 100,
+          }
+        },
+          React.createElement('button', {
+            style: { background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: '6px 14px', borderRadius: 4, cursor: 'pointer' },
+            onClick: () => setPlaying(p => !p)
+          }, playing ? '⏸ 暫停' : '▶ 播放'),
+          React.createElement('button', {
+            style: { background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: '6px 14px', borderRadius: 4, cursor: 'pointer' },
+            onClick: () => setTime(0)
+          }, '⏮ 開始'),
+          React.createElement('div', { style: { fontFamily: 'JetBrains Mono, monospace', minWidth: 100 } },
+            `${time.toFixed(2)}s / ${duration.toFixed(2)}s`),
+          React.createElement('div', {
+            style: { flex: 1, height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 2, position: 'relative', cursor: 'pointer' },
+            onMouseDown: handleSeek
+          },
+            React.createElement('div', { style: { position: 'absolute', top: 0, left: 0, height: '100%', background: '#fb923c', borderRadius: 2, width: `${progress * 100}%`, pointerEvents: 'none' } }),
+            React.createElement('div', { style: { position: 'absolute', top: '50%', width: 12, height: 12, background: '#fff', borderRadius: '50%', left: `${progress * 100}%`, transform: 'translate(-50%, -50%)', pointerEvents: 'none' } })
+          )
+        )
+      )
+    );
+  }
+
+  function Sprite({ start = 0, end, children, style }) {
+    const { time } = useContext(TimeContext);
+    const actualEnd = end == null ? Infinity : end;
+    if (time < start || time >= actualEnd) return null;
+    const duration = actualEnd - start;
+    const elapsed = time - start;
+    const t = duration === 0 ? 1 : Math.max(0, Math.min(1, elapsed / duration));
+    const spriteValue = { t, elapsed, duration, start, end: actualEnd };
+    return React.createElement(SpriteContext.Provider, { value: spriteValue },
+      React.createElement('div', { style: { position: 'absolute', inset: 0, ...style } }, children)
+    );
+  }
+
+  window.Animations = { Stage, Sprite, useTime, useSprite, Easing, interpolate };
+})();
+</script>
+
+<!-- ============================================================
+     動畫主體 Scenes — React 組件
+     ============================================================ -->
+<script type="text/babel">
+const { Stage, Sprite, useTime, useSprite, Easing, interpolate } = window.Animations;
+const { useState, useEffect, useRef } = React;
+
+// ============================================================
+// 共用：品牌資料 — 來自 aark-workspace/src/pages/HomeDark.jsx
+// ============================================================
+// AI bots（8個真實爬蟲品牌色）
+const AI_BOTS = [
+  { name: 'GPTBot',       color: '#10b981', company: 'OpenAI' },
+  { name: 'Google AI',    color: '#3b82f6', company: 'Google' },
+  { name: 'ClaudeBot',    color: '#f59e0b', company: 'Anthropic' },
+  { name: 'PerplexityBot',color: '#06b6d4', company: 'Perplexity' },
+  { name: 'Meta AI',      color: '#6366f1', company: 'Meta' },
+  { name: 'Amazonbot',    color: '#f97316', company: 'Amazon' },
+  { name: 'NotebookLM',   color: '#eab308', company: 'Google' },
+  { name: 'Applebot',     color: '#94a3b8', company: 'Apple' },
+];
+
+// 掃描節點（8個技術檢測點）
+const SCAN_NODES = [
+  { id: 'meta',    label: 'Meta 標籤',  x: 210, y: 58  },
+  { id: 'sitemap', label: 'Sitemap',    x: 316, y: 104 },
+  { id: 'jsonld',  label: 'JSON-LD',    x: 358, y: 210 },
+  { id: 'og',      label: 'Open Graph', x: 316, y: 316 },
+  { id: 'llms',    label: 'llms.txt',   x: 210, y: 362 },
+  { id: 'robots',  label: 'robots.txt', x: 104, y: 316 },
+  { id: 'h1',      label: 'H1 / Alt',   x: 62,  y: 210 },
+  { id: 'eeat',    label: 'E-E-A-T',    x: 104, y: 104 },
+];
+
+// 四大分析面向（顏色來自 CLAUDE.md）
+const FOUR_SCORES = [
+  { key: 'SEO',    label: 'SEO 搜尋引擎',    color: '#3b82f6', score: 72, before: 45 },
+  { key: 'AEO',    label: 'AEO 問答引擎',   color: '#8b5cf6', score: 68, before: 38 },
+  { key: 'GEO',    label: 'GEO 生成引擎',   color: '#10b981', score: 85, before: 52 },
+  { key: 'EEAT',   label: 'E-E-A-T 權威度', color: '#f59e0b', score: 79, before: 41 },
+];
+
+// ============================================================
+// 共用元件：背景（暗黑紅 + 雜訊）
+// ============================================================
+function DarkBackground() {
+  return (
+    <>
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #000000 60%)',
+      }} />
+      <div className="grain" />
+      {/* 角落暈光：增加電影感 */}
+      <div style={{
+        position: 'absolute', top: -200, right: -200, width: 700, height: 700,
+        background: 'radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 65%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: -300, left: -300, width: 800, height: 800,
+        background: 'radial-gradient(circle, rgba(162,21,64,0.20) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+    </>
+  );
+}
+
+// ============================================================
+// 共用元件：Logo（橘色漸層方塊 + 閃電）
+// ============================================================
+function AarkLogo({ size = 56, showText = true, textColor = '#fff' }) {
+  const boxSize = size;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{
+        width: boxSize, height: boxSize,
+        background: 'linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)',
+        borderRadius: boxSize * 0.22,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 8px 24px rgba(249,115,22,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
+      }}>
+        <svg width={boxSize * 0.55} height={boxSize * 0.55} viewBox="0 0 24 24" fill="none">
+          <path d="M13 2 L4 14 L11 14 L9 22 L20 9 L13 9 Z"
+            fill="#fff" stroke="#fff" strokeWidth="0.5" strokeLinejoin="round"/>
+        </svg>
+      </div>
+      {showText && (
+        <div style={{ lineHeight: 1.15 }}>
+          <div style={{ fontSize: size * 0.32, fontWeight: 700, color: textColor, letterSpacing: '0.02em' }}>
+            優勢方舟
+          </div>
+          <div style={{ fontSize: size * 0.22, fontWeight: 500, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.18em' }}>
+            DIGITAL MARKETING
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Scene 1 (0–4s)：Logo + 標題入場
+// ============================================================
+function Scene1_Opening() {
+  const { t, elapsed } = useSprite();
+  // 階段 1：Logo 從下淡入（0–1.2s）
+  const logoOpacity = interpolate(elapsed, [0.1, 1.2], [0, 1], Easing.expoOut);
+  const logoY = interpolate(elapsed, [0.1, 1.2], [30, 0], Easing.expoOut);
+  // 階段 2：主標題（0.8–2.0s）
+  const titleOpacity = interpolate(elapsed, [0.8, 2.0], [0, 1], Easing.expoOut);
+  const titleY = interpolate(elapsed, [0.8, 2.0], [40, 0], Easing.expoOut);
+  // 階段 3：副標題（1.6–2.8s）
+  const subOpacity = interpolate(elapsed, [1.6, 2.8], [0, 1], Easing.expoOut);
+  // 階段 4：分隔線繪出（2.2–3.2s）
+  const lineScale = interpolate(elapsed, [2.2, 3.2], [0, 1], Easing.easeInOut);
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '80px',
+    }}>
+      <div style={{ opacity: logoOpacity, transform: `translateY(${logoY}px)`, marginBottom: 64 }}>
+        <AarkLogo size={72} />
+      </div>
+
+      <div style={{
+        width: 320, height: 1,
+        background: 'linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.6) 50%, transparent 100%)',
+        transform: `scaleX(${lineScale})`, marginBottom: 48,
+      }} />
+
+      <h1 style={{
+        opacity: titleOpacity, transform: `translateY(${titleY}px)`,
+        fontSize: 152, fontWeight: 900, letterSpacing: '-0.03em',
+        margin: 0, textAlign: 'center', lineHeight: 1.05,
+      }} className="text-gradient-orange">
+        讓&nbsp;AI&nbsp;看見你
+      </h1>
+
+      <p style={{
+        opacity: subOpacity,
+        fontSize: 28, fontWeight: 400, color: 'rgba(255,255,255,0.72)',
+        marginTop: 32, letterSpacing: '0.06em', textAlign: 'center',
+      }}>
+        AI&nbsp;能見度儀表板 · 檢測你的網站在&nbsp;ChatGPT、Perplexity、Google&nbsp;AI&nbsp;的被看見程度
+      </p>
+    </div>
+  );
+}
+
+// ============================================================
+// Scene 2 (4–10s)：痛點 — AI 搜尋結果裡出現競品，你卻不見了
+// ============================================================
+function Scene2_Problem() {
+  const { elapsed } = useSprite();
+  // Chat 視窗淡入
+  const chatOpacity = interpolate(elapsed, [0, 0.8], [0, 1], Easing.expoOut);
+  // 提問打字效果（0.3–1.8s）
+  const question = '請推薦台灣的數位行銷公司';
+  const typed = Math.floor(interpolate(elapsed, [0.3, 1.8], [0, question.length], Easing.linear));
+  const questionShown = question.slice(0, typed);
+  // Thinking 顯示（1.8–2.8s）
+  const thinkingOpacity = interpolate(elapsed, [1.8, 2.2], [0, 1]) - interpolate(elapsed, [2.8, 3.1], [0, 1]);
+  // 答案 3 個競品逐一浮現（3.0, 3.4, 3.8s）
+  const competitors = [
+    { name: 'Pitchup Media', desc: '擅長品牌策略 + SEO' },
+    { name: 'Greenwave Digital', desc: 'GA4 / GSC 實戰經驗' },
+    { name: 'Novadesign Studio', desc: 'B2B 內容行銷專家' },
+  ];
+  // 你的品牌被劃掉（4.8–5.5s）
+  const youOpacity = interpolate(elapsed, [4.4, 5.0], [0, 1], Easing.expoOut);
+  const strikeScale = interpolate(elapsed, [5.2, 5.8], [0, 1], Easing.easeInOut);
+  // 痛點文字（5.6s+）
+  const painOpacity = interpolate(elapsed, [5.4, 5.9], [0, 1], Easing.expoOut);
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '80px',
+    }}>
+      <div className="glass-dark" style={{
+        opacity: chatOpacity,
+        width: 1100, padding: 48,
+        boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+      }}>
+        {/* 視窗 chrome */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444' }} />
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#f59e0b' }} />
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#10b981' }} />
+          </div>
+          <div style={{
+            marginLeft: 16, padding: '6px 14px', borderRadius: 8,
+            background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)',
+            fontSize: 13, fontFamily: 'JetBrains Mono, monospace',
+          }}>
+            chat.openai.com
+          </div>
+        </div>
+
+        {/* 使用者提問 */}
+        <div style={{
+          display: 'flex', justifyContent: 'flex-end', marginBottom: 28,
+        }}>
+          <div style={{
+            maxWidth: '70%', padding: '16px 22px', borderRadius: 18,
+            background: 'rgba(59,130,246,0.18)', border: '1px solid rgba(59,130,246,0.35)',
+            fontSize: 24, color: '#fff', letterSpacing: '0.01em',
+          }}>
+            {questionShown}
+            {typed < question.length && <span style={{ opacity: (Math.floor(elapsed * 3) % 2) ? 1 : 0.2 }}>｜</span>}
+          </div>
+        </div>
+
+        {/* Thinking */}
+        {thinkingOpacity > 0.05 && (
+          <div style={{
+            opacity: thinkingOpacity,
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20,
+            color: 'rgba(255,255,255,0.5)', fontSize: 18,
+          }}>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[0, 0.2, 0.4].map(d => (
+                <div key={d} style={{
+                  width: 7, height: 7, borderRadius: '50%', background: '#fb923c',
+                  opacity: ((elapsed + d) * 3) % 1 > 0.5 ? 1 : 0.3,
+                }} />
+              ))}
+            </div>
+            <span>AI 正在從網路搜集資料…</span>
+          </div>
+        )}
+
+        {/* 競品出現 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
+          {competitors.map((c, i) => {
+            const appearAt = 3.0 + i * 0.4;
+            const op = interpolate(elapsed, [appearAt, appearAt + 0.5], [0, 1], Easing.expoOut);
+            const tx = interpolate(elapsed, [appearAt, appearAt + 0.5], [-20, 0], Easing.expoOut);
+            return (
+              <div key={c.name} style={{
+                opacity: op, transform: `translateX(${tx}px)`,
+                padding: '16px 22px', borderRadius: 14,
+                background: 'rgba(16,185,129,0.08)',
+                border: '1px solid rgba(16,185,129,0.25)',
+                display: 'flex', alignItems: 'center', gap: 16,
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18, fontWeight: 700, color: '#fff',
+                }}>{i + 1}</div>
+                <div>
+                  <div style={{ fontSize: 22, fontWeight: 600, color: '#fff', letterSpacing: '0.01em' }}>{c.name}</div>
+                  <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{c.desc}</div>
+                </div>
+                <div style={{
+                  marginLeft: 'auto', color: '#10b981', fontSize: 22,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}>✓</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 你的品牌（被劃掉） */}
+        <div style={{
+          opacity: youOpacity,
+          padding: '16px 22px', borderRadius: 14,
+          background: 'rgba(239,68,68,0.08)',
+          border: '1px dashed rgba(239,68,68,0.35)',
+          display: 'flex', alignItems: 'center', gap: 16,
+          position: 'relative',
+        }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'rgba(100,100,100,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 22, color: 'rgba(255,255,255,0.3)',
+          }}>?</div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 600, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.01em' }}>
+              你的品牌
+            </div>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+              AI 找不到你的相關資訊
+            </div>
+          </div>
+          {/* 紅色劃掉線 */}
+          <div style={{
+            position: 'absolute', left: 16, right: 16, top: '50%',
+            height: 2, background: '#ef4444',
+            transform: `scaleX(${strikeScale})`, transformOrigin: 'left center',
+            boxShadow: '0 0 8px rgba(239,68,68,0.6)',
+          }} />
+        </div>
+      </div>
+
+      {/* 痛點標語（右下浮出） */}
+      <div style={{
+        position: 'absolute', bottom: 100, right: 120,
+        opacity: painOpacity,
+        maxWidth: 420,
+      }}>
+        <div style={{
+          fontSize: 18, color: '#fb923c', letterSpacing: '0.3em', marginBottom: 12, fontWeight: 600,
+        }}>THE PROBLEM</div>
+        <div style={{
+          fontSize: 38, fontWeight: 700, color: '#fff', lineHeight: 1.25, letterSpacing: '-0.01em',
+        }}>
+          AI 看不見你，<br/>競品全拿走了。
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Scene 3 (10–18s)：輸入網址 + 雷達掃描 8 節點
+// ============================================================
+function Scene3_Scanning() {
+  const { elapsed } = useSprite();
+  // 輸入欄淡入（0–0.8s）
+  const inputOpacity = interpolate(elapsed, [0, 0.8], [0, 1], Easing.expoOut);
+  // URL 打字（0.4–2.0s）
+  const urlText = 'yourbrand.com.tw';
+  const urlTyped = Math.floor(interpolate(elapsed, [0.4, 2.0], [0, urlText.length], Easing.linear));
+  // 按鈕發光（2.2–2.6s）
+  const btnGlow = interpolate(elapsed, [2.0, 2.4], [0, 1], Easing.expoOut);
+  // 雷達整體（3.0s+ 從按鈕擴展出來）
+  const radarOpacity = interpolate(elapsed, [2.8, 3.6], [0, 1], Easing.expoOut);
+  const radarScale = interpolate(elapsed, [2.8, 3.8], [0.85, 1], Easing.expoOut);
+
+  // 掃描節點逐一亮起（3.8s 開始，每 0.4s 一個 = 共 3.2s 完成 8 個）
+  const nodeStates = SCAN_NODES.map((node, i) => {
+    const lightAt = 3.8 + i * 0.4;
+    const on = elapsed >= lightAt;
+    const flashOpacity = Math.max(0, 1 - (elapsed - lightAt) * 2); // 閃一下
+    return { ...node, on, flashOpacity };
+  });
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '60px',
+    }}>
+      {/* Logo 小型保留在左上角，維持品牌識別 */}
+      <div style={{ position: 'absolute', top: 48, left: 60, opacity: 0.7 }}>
+        <AarkLogo size={40} showText={false} />
+      </div>
+
+      {/* URL 輸入欄 */}
+      <div className="glass-dark" style={{
+        opacity: inputOpacity,
+        width: 780, padding: '20px 28px',
+        display: 'flex', alignItems: 'center', gap: 16,
+        marginBottom: 56,
+        boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+      }}>
+        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 22 }}>🔗</div>
+        <div className="mono" style={{
+          flex: 1, fontSize: 24, color: '#fff', letterSpacing: '0.02em',
+        }}>
+          https://{urlTyped > 0 ? urlText.slice(0, urlTyped) : ''}
+          {urlTyped < urlText.length && <span style={{ opacity: (Math.floor(elapsed * 3) % 2) ? 1 : 0.2, color: '#fb923c' }}>｜</span>}
+        </div>
+        <button style={{
+          padding: '12px 28px', borderRadius: 12,
+          background: `linear-gradient(135deg, #fb923c 0%, #f97316 100%)`,
+          border: 'none', color: '#fff', fontSize: 18, fontWeight: 600, cursor: 'pointer',
+          boxShadow: `0 0 ${btnGlow * 40}px rgba(249,115,22,${0.4 + btnGlow * 0.4})`,
+          letterSpacing: '0.05em',
+        }}>
+          開始檢測
+        </button>
+      </div>
+
+      {/* 雷達 */}
+      <div style={{
+        opacity: radarOpacity,
+        transform: `scale(${radarScale})`,
+        position: 'relative', width: 520, height: 520,
+      }}>
+        <svg width="520" height="520" viewBox="0 0 420 420" style={{ overflow: 'visible' }}>
+          <defs>
+            <filter id="nodeGlow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <radialGradient id="centerGrad">
+              <stop offset="0%" stopColor="#ffedd5" stopOpacity="1" />
+              <stop offset="60%" stopColor="#f97316" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#ea580c" stopOpacity="0.6" />
+            </radialGradient>
+          </defs>
+
+          {/* 同心圓 */}
+          <circle cx="210" cy="210" r="155" fill="none" stroke="rgba(249,115,22,0.18)" strokeWidth="1" />
+          <circle cx="210" cy="210" r="100" fill="none" stroke="rgba(249,115,22,0.22)" strokeWidth="1" />
+          <circle cx="210" cy="210" r="50"  fill="none" stroke="rgba(249,115,22,0.30)" strokeWidth="1" />
+
+          {/* 雷達掃描扇形（旋轉） */}
+          <g style={{ transformOrigin: '210px 210px', transform: `rotate(${(elapsed * 90) % 360}deg)` }}>
+            <path d="M 210 210 L 370 210 A 160 160 0 0 1 322 322 Z"
+              fill="url(#centerGrad)" opacity="0.25" />
+          </g>
+
+          {/* 節點連線 */}
+          {nodeStates.map(n => (
+            <line key={`l-${n.id}`}
+              x1="210" y1="210" x2={n.x} y2={n.y}
+              stroke={n.on ? '#10b981' : 'rgba(148,163,184,0.25)'}
+              strokeWidth={n.on ? 2 : 1}
+              strokeDasharray="6,4"
+              opacity={n.on ? 0.85 : 0.3}
+            />
+          ))}
+
+          {/* 節點 */}
+          {nodeStates.map(n => (
+            <g key={n.id} filter={n.on ? 'url(#nodeGlow)' : ''}>
+              <circle cx={n.x} cy={n.y} r={22 + n.flashOpacity * 8}
+                fill="rgba(0,0,0,0.7)"
+                stroke={n.on ? '#10b981' : 'rgba(148,163,184,0.4)'}
+                strokeWidth="2"
+              />
+              <text x={n.x} y={n.y + 2} textAnchor="middle" dominantBaseline="middle"
+                fill={n.on ? '#10b981' : 'rgba(148,163,184,0.5)'}
+                fontSize="14" fontWeight="700" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                {n.on ? '✓' : '○'}
+              </text>
+              <text x={n.x} y={n.y + 42} textAnchor="middle"
+                fill={n.on ? '#fff' : 'rgba(255,255,255,0.5)'}
+                fontSize="12" fontWeight="500" letterSpacing="0.05em">
+                {n.label}
+              </text>
+            </g>
+          ))}
+
+          {/* 中心 pulse */}
+          <circle cx="210" cy="210" r={14 + Math.sin(elapsed * 4) * 2}
+            fill="url(#centerGrad)" opacity="0.95" />
+          <circle cx="210" cy="210" r="6" fill="#fff" />
+        </svg>
+
+        {/* 擴散的 radar ring（純 CSS 動畫） */}
+        {[0, 0.8, 1.6].map((delay, i) => (
+          <div key={i} className="radar-ring" style={{
+            top: '50%', left: '50%',
+            width: 380, height: 380,
+            transform: 'translate(-50%, -50%)',
+            animationDelay: `${delay}s`,
+          }} />
+        ))}
+      </div>
+
+      {/* 掃描狀態文字 */}
+      <div style={{
+        marginTop: 36, display: 'flex', alignItems: 'center', gap: 12,
+        opacity: radarOpacity,
+      }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%', background: '#fb923c',
+          animation: 'radar-pulse 1.2s ease-in-out infinite',
+        }} />
+        <div className="mono" style={{
+          fontSize: 16, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em',
+        }}>
+          SCANNING · {nodeStates.filter(n => n.on).length} / 8 CHECKPOINTS
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Scene 4 (18–26s)：四大分數揭示
+// ============================================================
+function Scene4_Scores() {
+  const { elapsed } = useSprite();
+  // 標題（0–1s）
+  const titleOpacity = interpolate(elapsed, [0, 1.0], [0, 1], Easing.expoOut);
+  const titleY = interpolate(elapsed, [0, 1.0], [30, 0], Easing.expoOut);
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '80px',
+    }}>
+      <div style={{
+        opacity: titleOpacity, transform: `translateY(${titleY}px)`,
+        textAlign: 'center', marginBottom: 56,
+      }}>
+        <div style={{ fontSize: 16, color: '#fb923c', letterSpacing: '0.3em', marginBottom: 12, fontWeight: 600 }}>
+          AI VISIBILITY REPORT
+        </div>
+        <h2 style={{
+          fontSize: 72, fontWeight: 900, margin: 0, letterSpacing: '-0.02em',
+          color: '#fff',
+        }}>
+          四大面向 · 完整診斷
+        </h2>
+      </div>
+
+      {/* 四張分數卡 */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 28, width: 1680,
+      }}>
+        {FOUR_SCORES.map((s, i) => {
+          const appearAt = 1.2 + i * 0.5;
+          const op = interpolate(elapsed, [appearAt, appearAt + 0.6], [0, 1], Easing.expoOut);
+          const ty = interpolate(elapsed, [appearAt, appearAt + 0.6], [50, 0], Easing.expoOut);
+          // 數字 count-up（appear + 0.3 起跑 1.2 秒）
+          const countStart = appearAt + 0.3;
+          const countProgress = interpolate(elapsed, [countStart, countStart + 1.4], [0, 1], Easing.expoOut);
+          const displayScore = Math.floor(s.score * countProgress);
+
+          return (
+            <div key={s.key} className="glass-dark" style={{
+              opacity: op, transform: `translateY(${ty}px)`,
+              padding: 36,
+              border: `1px solid ${s.color}55`,
+              background: `linear-gradient(180deg, ${s.color}12 0%, rgba(255,255,255,0.03) 100%)`,
+              boxShadow: `0 16px 48px ${s.color}20, 0 0 0 1px ${s.color}20`,
+              position: 'relative', overflow: 'hidden',
+            }}>
+              {/* 頂部色條 */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                background: `linear-gradient(90deg, transparent 0%, ${s.color} 50%, transparent 100%)`,
+              }} />
+              {/* 背景暈光 */}
+              <div style={{
+                position: 'absolute', top: -50, right: -50, width: 200, height: 200,
+                background: `radial-gradient(circle, ${s.color}30 0%, transparent 70%)`,
+                pointerEvents: 'none',
+              }} />
+
+              <div style={{ fontSize: 36, fontWeight: 900, color: s.color, letterSpacing: '0.02em', marginBottom: 8 }}>
+                {s.key}
+              </div>
+              <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: 32 }}>
+                {s.label}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <div className="mono big-num" style={{
+                  fontSize: 120, color: '#fff',
+                  textShadow: `0 0 32px ${s.color}80`,
+                }}>
+                  {displayScore}
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>/100</div>
+              </div>
+
+              {/* 進度條 */}
+              <div style={{
+                marginTop: 28, height: 6, background: 'rgba(255,255,255,0.08)',
+                borderRadius: 3, overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%', width: `${countProgress * s.score}%`,
+                  background: `linear-gradient(90deg, ${s.color} 0%, ${s.color}aa 100%)`,
+                  borderRadius: 3,
+                  boxShadow: `0 0 12px ${s.color}`,
+                }} />
+              </div>
+
+              {/* 等級標籤 */}
+              <div style={{
+                marginTop: 20, display: 'inline-block',
+                padding: '6px 14px', borderRadius: 8,
+                background: `${s.color}22`, border: `1px solid ${s.color}44`,
+                fontSize: 14, fontWeight: 600, color: s.color,
+                letterSpacing: '0.05em',
+              }}>
+                {s.score >= 80 ? '● 優秀' : s.score >= 65 ? '● 良好' : '● 待改善'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 底部訊息 */}
+      <div style={{
+        marginTop: 48,
+        opacity: interpolate(elapsed, [4.0, 5.0], [0, 1], Easing.expoOut),
+        display: 'flex', alignItems: 'center', gap: 16,
+        padding: '16px 32px',
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 16,
+      }}>
+        <div style={{ fontSize: 24 }}>💡</div>
+        <div style={{ fontSize: 20, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.02em' }}>
+          平均分數 <span className="mono" style={{ fontWeight: 700, color: '#fb923c' }}>76</span> · 擁有 <span style={{ fontWeight: 700, color: '#fff' }}>23</span> 項具體修復建議
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Scene 5 (26–32s)：修復建議 + 分數躍升
+// ============================================================
+function Scene5_Fix() {
+  const { elapsed } = useSprite();
+  const titleOpacity = interpolate(elapsed, [0, 0.8], [0, 1], Easing.expoOut);
+
+  // 修復建議清單
+  const fixes = [
+    { priority: 'P1', color: '#ef4444', text: '加入 llms.txt 讓 AI 正確索引', node: 'llms.txt' },
+    { priority: 'P1', color: '#ef4444', text: '補上 JSON-LD 結構化資料',        node: 'JSON-LD' },
+    { priority: 'P2', color: '#f59e0b', text: '優化 Meta Description 長度',     node: 'Meta' },
+    { priority: 'P2', color: '#f59e0b', text: '建立作者簡介與聯絡頁',            node: 'E-E-A-T' },
+  ];
+
+  // 分數躍升（3.0s 起）
+  const jumpStart = 3.0;
+  const jumpEnd = 5.0;
+  const jumpProgress = interpolate(elapsed, [jumpStart, jumpEnd], [0, 1], Easing.expoOut);
+  const before = 52, after = 87;
+  const currentScore = Math.floor(before + (after - before) * jumpProgress);
+
+  // 分數卡位移（左邊修復清單完成後，滑入中心）
+  const scoreCardX = interpolate(elapsed, [2.6, 3.4], [80, 0], Easing.expoOut);
+  const scoreCardOp = interpolate(elapsed, [2.6, 3.4], [0, 1], Easing.expoOut);
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: 60, padding: '80px',
+    }}>
+      {/* 左側：修復建議清單 */}
+      <div style={{ width: 620 }}>
+        <div style={{
+          opacity: titleOpacity, marginBottom: 32,
+        }}>
+          <div style={{ fontSize: 16, color: '#fb923c', letterSpacing: '0.3em', marginBottom: 12, fontWeight: 600 }}>
+            THE FIX
+          </div>
+          <h2 style={{ fontSize: 56, fontWeight: 900, margin: 0, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            具體修復建議<br/>
+            <span className="text-gradient-orange">直接給你答案</span>
+          </h2>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {fixes.map((f, i) => {
+            const appearAt = 0.8 + i * 0.25;
+            const op = interpolate(elapsed, [appearAt, appearAt + 0.5], [0, 1], Easing.expoOut);
+            const tx = interpolate(elapsed, [appearAt, appearAt + 0.5], [-30, 0], Easing.expoOut);
+            // 3.2s 之後勾選
+            const checkAt = 3.2 + i * 0.15;
+            const checked = elapsed >= checkAt;
+
+            return (
+              <div key={i} className="glass-dark" style={{
+                opacity: op, transform: `translateX(${tx}px)`,
+                padding: '18px 24px',
+                display: 'flex', alignItems: 'center', gap: 16,
+                borderColor: checked ? 'rgba(16,185,129,0.35)' : 'rgba(255,255,255,0.1)',
+                background: checked ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.04)',
+                transition: 'all 0.4s ease',
+              }}>
+                {/* 優先級標籤 */}
+                <div style={{
+                  padding: '4px 10px', borderRadius: 6,
+                  background: `${f.color}25`, color: f.color,
+                  fontSize: 13, fontWeight: 700, letterSpacing: '0.05em',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  minWidth: 40, textAlign: 'center',
+                }}>
+                  {f.priority}
+                </div>
+                {/* 節點標籤 */}
+                <div className="mono" style={{
+                  fontSize: 13, color: 'rgba(255,255,255,0.5)',
+                  padding: '4px 10px', borderRadius: 6,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  {f.node}
+                </div>
+                {/* 說明 */}
+                <div style={{ flex: 1, fontSize: 18, color: '#fff' }}>{f.text}</div>
+                {/* 勾選 */}
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  background: checked ? '#10b981' : 'rgba(255,255,255,0.08)',
+                  border: `2px solid ${checked ? '#10b981' : 'rgba(255,255,255,0.2)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontSize: 16, fontWeight: 700,
+                  boxShadow: checked ? '0 0 16px rgba(16,185,129,0.6)' : 'none',
+                  transition: 'all 0.3s ease',
+                }}>
+                  {checked ? '✓' : ''}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 右側：分數躍升卡 */}
+      <div style={{
+        opacity: scoreCardOp, transform: `translateX(${scoreCardX}px)`,
+      }}>
+        <div className="glass-dark" style={{
+          padding: 56, width: 480,
+          border: '1px solid rgba(249,115,22,0.35)',
+          background: 'linear-gradient(180deg, rgba(249,115,22,0.12) 0%, rgba(255,255,255,0.03) 100%)',
+          boxShadow: '0 24px 80px rgba(249,115,22,0.15)',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute', top: -80, right: -80, width: 260, height: 260,
+            background: 'radial-gradient(circle, rgba(249,115,22,0.25) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+
+          <div style={{ fontSize: 16, color: '#fb923c', letterSpacing: '0.3em', marginBottom: 16, fontWeight: 600 }}>
+            AFTER 30 DAYS
+          </div>
+
+          <div style={{
+            display: 'flex', alignItems: 'baseline', gap: 24, marginBottom: 32,
+          }}>
+            <div>
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginBottom: 4, letterSpacing: '0.1em' }}>
+                BEFORE
+              </div>
+              <div className="mono big-num" style={{
+                fontSize: 64, color: 'rgba(255,255,255,0.4)',
+                textDecoration: 'line-through', textDecorationColor: '#ef4444',
+              }}>
+                {before}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 48, color: '#fb923c', padding: '0 8px' }}>→</div>
+
+            <div>
+              <div style={{ fontSize: 14, color: '#fb923c', marginBottom: 4, letterSpacing: '0.1em' }}>
+                AFTER
+              </div>
+              <div className="mono big-num" style={{
+                fontSize: 120, color: '#fff',
+                textShadow: '0 0 40px rgba(249,115,22,0.8)',
+              }}>
+                {currentScore}
+              </div>
+            </div>
+          </div>
+
+          {/* 進度條 */}
+          <div style={{
+            height: 10, background: 'rgba(255,255,255,0.08)', borderRadius: 5, overflow: 'hidden',
+            marginBottom: 20,
+          }}>
+            <div style={{
+              height: '100%', width: `${currentScore}%`,
+              background: 'linear-gradient(90deg, #fb923c 0%, #f97316 100%)',
+              borderRadius: 5,
+              boxShadow: '0 0 16px #f97316',
+            }} />
+          </div>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 18, color: '#10b981', fontWeight: 600,
+          }}>
+            <span style={{ fontSize: 24 }}>↑</span>
+            <span>平均提升 <span className="mono" style={{ fontSize: 24, fontWeight: 900 }}>+35</span> 分</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Scene 6 (32–36s)：結尾 CTA
+// ============================================================
+function Scene6_CTA() {
+  const { elapsed } = useSprite();
+
+  const logoOpacity = interpolate(elapsed, [0, 0.8], [0, 1], Easing.expoOut);
+  const titleOpacity = interpolate(elapsed, [0.4, 1.4], [0, 1], Easing.expoOut);
+  const titleY = interpolate(elapsed, [0.4, 1.4], [30, 0], Easing.expoOut);
+  const ctaOpacity = interpolate(elapsed, [1.0, 2.0], [0, 1], Easing.expoOut);
+  const ctaScale = interpolate(elapsed, [1.0, 1.6], [0.92, 1], Easing.overshoot);
+  const urlOpacity = interpolate(elapsed, [1.6, 2.4], [0, 1], Easing.expoOut);
+
+  // 按鈕呼吸光暈
+  const glowPulse = 0.5 + Math.sin(elapsed * 2.5) * 0.3;
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '80px',
+    }}>
+      <div style={{ opacity: logoOpacity, marginBottom: 48 }}>
+        <AarkLogo size={80} />
+      </div>
+
+      <h1 style={{
+        opacity: titleOpacity, transform: `translateY(${titleY}px)`,
+        fontSize: 120, fontWeight: 900, margin: 0, letterSpacing: '-0.03em',
+        lineHeight: 1.05, textAlign: 'center',
+      }} className="text-gradient-orange">
+        讓&nbsp;AI&nbsp;看見你
+      </h1>
+
+      <p style={{
+        opacity: titleOpacity, transform: `translateY(${titleY}px)`,
+        fontSize: 28, color: 'rgba(255,255,255,0.7)',
+        marginTop: 24, letterSpacing: '0.04em', textAlign: 'center',
+      }}>
+        從今天起，讓你的品牌在 AI 搜尋時代不再隱形
+      </p>
+
+      <button style={{
+        opacity: ctaOpacity, transform: `scale(${ctaScale})`,
+        marginTop: 56,
+        padding: '24px 72px', borderRadius: 20,
+        background: 'linear-gradient(135deg, #fb923c 0%, #f97316 100%)',
+        border: 'none', color: '#fff',
+        fontSize: 32, fontWeight: 700, letterSpacing: '0.05em',
+        cursor: 'pointer',
+        boxShadow: `0 16px 48px rgba(249,115,22,${0.35 + glowPulse * 0.35}), 0 0 ${40 + glowPulse * 40}px rgba(249,115,22,${glowPulse * 0.5})`,
+      }}>
+        立即免費檢測 →
+      </button>
+
+      <div style={{
+        opacity: urlOpacity,
+        marginTop: 40,
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <div style={{ width: 40, height: 1, background: 'rgba(255,255,255,0.3)' }} />
+        <div className="mono" style={{
+          fontSize: 20, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.1em',
+        }}>
+          aark-workspace.vercel.app
+        </div>
+        <div style={{ width: 40, height: 1, background: 'rgba(255,255,255,0.3)' }} />
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// 主應用：組合所有 Scenes
+// ============================================================
+function App() {
+  return (
+    <Stage duration={36} width={1920} height={1080} bgColor="#000" loop={true}>
+      <DarkBackground />
+
+      <Sprite start={0}     end={4.2}>  <Scene1_Opening /></Sprite>
+      <Sprite start={4.0}   end={10.2}> <Scene2_Problem /></Sprite>
+      <Sprite start={10.0}  end={18.2}> <Scene3_Scanning /></Sprite>
+      <Sprite start={18.0}  end={26.2}> <Scene4_Scores /></Sprite>
+      <Sprite start={26.0}  end={32.2}> <Scene5_Fix /></Sprite>
+      <Sprite start={32.0}  end={36.0}> <Scene6_CTA /></Sprite>
+    </Stage>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -175,9 +175,9 @@ export default function GEOAudit() {
                 <span className="text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   {score}
                 </span>
-                <span className="text-gray-700">/ 100</span>
+                <span className="text-black">/ 100</span>
               </div>
-              <p className="text-gray-700 mt-2">
+              <p className="text-black mt-2">
                 通過 {passedCount} / {totalCount} 項檢測
               </p>
             </div>
@@ -243,7 +243,7 @@ export default function GEOAudit() {
                           ? 'bg-green-100 text-green-700'
                           : status === 'fail'
                           ? 'bg-red-100 text-red-700'
-                          : 'bg-slate-100 text-gray-700'
+                          : 'bg-slate-100 text-black'
                       }`}>
                         {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
                       </span>

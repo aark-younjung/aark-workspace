@@ -190,9 +190,9 @@ export default function SEOAudit() {
                 <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   {score}
                 </span>
-                <span className="text-gray-700">/ 100</span>
+                <span className="text-black">/ 100</span>
               </div>
-              <p className="text-gray-700 mt-2">通過 {passedCount} / {SEO_CHECKS.length} 項檢測</p>
+              <p className="text-black mt-2">通過 {passedCount} / {SEO_CHECKS.length} 項檢測</p>
             </div>
             <button
               onClick={handleReanalyze}
@@ -317,7 +317,7 @@ export default function SEOAudit() {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-gray-700 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的 SEO 優化路線圖</p>
+              <p className="text-black text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的 SEO 優化路線圖</p>
               <Link
                 to={`/dashboard/${id}`}
                 className="inline-block px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-black text-sm font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all"

@@ -178,9 +178,9 @@ export default function AEOAudit() {
                 <span className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   {score}
                 </span>
-                <span className="text-gray-700">/ 100</span>
+                <span className="text-black">/ 100</span>
               </div>
-              <p className="text-gray-700 mt-2">
+              <p className="text-black mt-2">
                 通過 {passedCount} / {totalCount} 項檢測
               </p>
             </div>
@@ -244,7 +244,7 @@ export default function AEOAudit() {
                           ? 'bg-green-100 text-green-700' 
                           : status === 'fail'
                           ? 'bg-red-100 text-red-700'
-                          : 'bg-slate-100 text-gray-700'
+                          : 'bg-slate-100 text-black'
                       }`}>
                         {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
                       </span>
@@ -295,7 +295,7 @@ export default function AEOAudit() {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-gray-700 text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的優化路線圖</p>
+              <p className="text-black text-sm mb-4">升級 Pro 方案，取得根據你網站現況量身訂製的優化路線圖</p>
               <Link
                 to="/dashboard"
                 className="inline-block px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-black text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all"
