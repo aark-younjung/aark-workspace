@@ -436,7 +436,8 @@ export default function HomeDark() {
     } catch (error) {
       console.error('Error:', error)
       setStatus('')
-      alert('發生錯誤，請稍後再試')
+      const detail = error?.message || error?.error?.message || JSON.stringify(error).slice(0, 200)
+      alert(`發生錯誤：${detail}\n\n請截圖此訊息與主控台（F12）錯誤給開發者`)
     } finally {
       setLoading(false)
     }
