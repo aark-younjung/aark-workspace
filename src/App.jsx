@@ -25,6 +25,8 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminWebsites from './pages/admin/AdminWebsites'
 import AdminRevenue from './pages/admin/AdminRevenue'
+import AIVisibility from './pages/AIVisibility'
+import AIVisibilityDashboard from './pages/AIVisibilityDashboard'
 
 const DARK_CIRCLES = [65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157]
 
@@ -83,6 +85,9 @@ function AppInner() {
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/websites" element={<AdminWebsites />} />
         <Route path="/admin/revenue" element={<AdminRevenue />} />
+        {/* AI 曝光監測（aivis）— Phase 1 基礎 */}
+        <Route path="/ai-visibility" element={<AIVisibility />} />
+        <Route path="/ai-visibility/:id" element={<AIVisibilityDashboard />} />
       </Routes>
     </>
   )

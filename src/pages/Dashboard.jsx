@@ -1724,6 +1724,32 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           )}
         </div>
 
+        {/* 🆕 AI 曝光監測（aivis）入口橫幅 — Phase 1 */}
+        <Link
+          to="/ai-visibility"
+          className="mt-8 block p-6 bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-400/30 rounded-2xl hover:border-emerald-400/60 transition-all group"
+        >
+          <div className="flex items-center justify-between gap-6 flex-wrap">
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              <span className="text-4xl flex-shrink-0">🎯</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 className="text-lg font-bold text-slate-800">AI 曝光監測</h3>
+                  <span className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-400/40 rounded-full text-[10px] font-semibold text-emerald-700 uppercase tracking-wider">
+                    New · Beta
+                  </span>
+                </div>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  追蹤品牌在 ChatGPT、Claude、Perplexity、Gemini 中的真實曝光表現。量化「被 AI 主動推薦」的商業機會。
+                </p>
+              </div>
+            </div>
+            <span className="text-emerald-600 group-hover:text-emerald-700 text-sm font-medium whitespace-nowrap">
+              開始監測 →
+            </span>
+          </div>
+        </Link>
+
         </>}
 
         {/* ── Tab: AI 爬蟲追蹤 ── */}
