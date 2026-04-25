@@ -5,8 +5,9 @@
  *
  * Body / Query:
  *   brand_id          (必填) 品牌 UUID
- *   replace_existing  (選填) true → 將舊 auto prompts 設為 is_active=false 再新增
- *                            false（預設）→ 直接追加，不動舊的
+ *   replace_existing  (選填，預設 true) — 配合 10 條上限，「重新產生」語意
+ *                     true（預設）→ 將舊 auto prompts 設為 is_active=false 再新增
+ *                     false        → 直接追加，不動舊的（小心撞 10 條上限）
  *
  * Env:
  *   ANTHROPIC_API_KEY
@@ -33,7 +34,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
 
   const brandId = req.query.brand_id || req.body?.brand_id
-  const replaceExisting = (req.query.replace_existing || req.body?.replace_existing) === 'true'
+  // 預設替換 auto prompts（語意 = 重新產生），避免撞 10 條上限
+  const replaceExisting = (req.query.replace_existing ?? req.body?.replace_existing) !== 'false'
 
   if (!brandId) {
     return res.status(400).json({ error: 'brand_id is required' })
