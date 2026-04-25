@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from './AdminLayout'
 import AdminGuard from './AdminGuard'
@@ -170,7 +171,14 @@ export default function AdminWebsites() {
                 {filtered.map(site => (
                   <div key={site.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-700/30 transition-colors">
                     <div className="col-span-3">
-                      <p className="text-slate-200 text-sm font-medium truncate">{site.name || site.url}</p>
+                      {/* 網站名稱可點：開啟此網站對應的儀表板（與前台一致的完整分析視圖） */}
+                      <Link
+                        to={`/dashboard/${site.id}`}
+                        className="text-slate-200 text-sm font-medium truncate block hover:text-orange-400 transition-colors"
+                        title="查看完整分析儀表板"
+                      >
+                        {site.name || site.url}
+                      </Link>
                       <a href={site.url} target="_blank" rel="noopener noreferrer"
                         className="text-slate-500 text-xs hover:text-slate-300 transition-colors truncate block"
                         onClick={e => e.stopPropagation()}>

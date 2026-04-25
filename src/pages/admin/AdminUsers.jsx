@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from './AdminLayout'
 import AdminGuard from './AdminGuard'
@@ -310,9 +310,15 @@ export default function AdminUsers() {
                               const geo = site.geo_audits?.[0]?.score ?? '—'
                               const eeat = site.eeat_audits?.[0]?.score ?? '—'
                               return (
-                                <div key={site.id} className="flex items-center justify-between bg-slate-800 rounded-lg px-4 py-3">
+                                <Link
+                                  key={site.id}
+                                  to={`/dashboard/${site.id}`}
+                                  className="flex items-center justify-between bg-slate-800 hover:bg-slate-700 rounded-lg px-4 py-3 transition-colors group"
+                                  title="查看完整分析儀表板"
+                                >
                                   <div>
-                                    <p className="text-slate-200 text-sm">{site.name || site.url}</p>
+                                    {/* hover 時網站名稱橘色強調，提示可點 */}
+                                    <p className="text-slate-200 text-sm group-hover:text-orange-400 transition-colors">{site.name || site.url}</p>
                                     <p className="text-slate-500 text-xs">{site.url}</p>
                                   </div>
                                   <div className="flex gap-3 text-xs text-slate-400">
@@ -321,7 +327,7 @@ export default function AdminUsers() {
                                     <span>GEO <strong className="text-emerald-400">{geo}</strong></span>
                                     <span>E-E-A-T <strong className="text-amber-400">{eeat}</strong></span>
                                   </div>
-                                </div>
+                                </Link>
                               )
                             })}
                           </div>

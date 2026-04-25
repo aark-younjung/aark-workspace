@@ -19,28 +19,36 @@ export default function AdminRevenue() {
   const fetchData = async () => {
     setLoading(true)
     try {
+      // 區分「付費 Pro」(stripe_subscription_id 不為 null) 與「手動授予 Pro」
+      // MRR 只計算實際刷卡付費的用戶；授予僅是行銷/補償行為，不應算進營收
       const [
         { count: totalUsers },
         { count: proCount },
+        { count: paidProCount },
         { data: proList },
         { count: totalWebsites },
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_pro', true),
-        supabase.from('profiles').select('id, name, email, created_at').eq('is_pro', true).order('created_at', { ascending: false }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_pro', true).not('stripe_subscription_id', 'is', null),
+        supabase.from('profiles').select('id, name, email, created_at, stripe_subscription_id, subscribed_at').eq('is_pro', true).order('created_at', { ascending: false }),
         supabase.from('websites').select('*', { count: 'exact', head: true }),
       ])
+
+      const grantedProCount = (proCount || 0) - (paidProCount || 0)
 
       setStats({
         totalUsers: totalUsers || 0,
         proCount: proCount || 0,
-        mrr: (proCount || 0) * PRO_PRICE,
-        conversionRate: totalUsers ? (((proCount || 0) / totalUsers) * 100).toFixed(1) : '0.0',
+        paidProCount: paidProCount || 0,
+        grantedProCount,
+        mrr: (paidProCount || 0) * PRO_PRICE,
+        conversionRate: totalUsers ? (((paidProCount || 0) / totalUsers) * 100).toFixed(1) : '0.0',
         totalWebsites: totalWebsites || 0,
       })
       setProUsers(proList || [])
 
-      // 產生近 6 個月的累積用戶數圖表資料（從 profiles 的 created_at 推算）
+      // 近 6 個月「實際付費」用戶圖表 — 用 subscribed_at（真實刷卡時間）而非 created_at（註冊時間）
       const months = []
       for (let i = 5; i >= 0; i--) {
         const d = new Date()
@@ -52,17 +60,19 @@ export default function AdminRevenue() {
         })
       }
 
-      const { data: allProUsers } = await supabase
+      const { data: allPaidUsers } = await supabase
         .from('profiles')
-        .select('created_at')
+        .select('subscribed_at')
         .eq('is_pro', true)
+        .not('stripe_subscription_id', 'is', null)
+        .not('subscribed_at', 'is', null)
 
       const chart = months.map(m => {
-        const count = (allProUsers || []).filter(u => {
-          const d = new Date(u.created_at)
+        const count = (allPaidUsers || []).filter(u => {
+          const d = new Date(u.subscribed_at)
           return d.getFullYear() === m.year && d.getMonth() === m.month
         }).length
-        return { name: m.label, 新增Pro用戶: count, MRR: count * PRO_PRICE }
+        return { name: m.label, 新增付費用戶: count, MRR: count * PRO_PRICE }
       })
       setChartData(chart)
 
@@ -74,9 +84,10 @@ export default function AdminRevenue() {
   }
 
   const STAT_CARDS = stats ? [
-    { label: 'MRR（估算）', value: `NT$ ${stats.mrr.toLocaleString()}`, sub: `${stats.proCount} 位 Pro 用戶 × NT$${PRO_PRICE}`, color: 'text-orange-400', icon: '💰' },
-    { label: 'Pro 用戶數', value: stats.proCount.toLocaleString(), sub: `共 ${stats.totalUsers} 位用戶`, color: 'text-yellow-400', icon: '⭐' },
-    { label: '轉換率', value: `${stats.conversionRate}%`, sub: 'Free → Pro', color: 'text-emerald-400', icon: '📈' },
+    // MRR 只算實際刷卡付費，不含手動授予
+    { label: 'MRR（實際付費）', value: `NT$ ${stats.mrr.toLocaleString()}`, sub: `${stats.paidProCount} 位付費用戶 × NT$${PRO_PRICE}`, color: 'text-orange-400', icon: '💰' },
+    { label: 'Pro 用戶數', value: stats.proCount.toLocaleString(), sub: `付費 ${stats.paidProCount} + 授予 ${stats.grantedProCount}`, color: 'text-yellow-400', icon: '⭐' },
+    { label: '付費轉換率', value: `${stats.conversionRate}%`, sub: '註冊 → 實際付費', color: 'text-emerald-400', icon: '📈' },
     { label: '已分析網站', value: stats.totalWebsites.toLocaleString(), sub: '累積分析次數', color: 'text-blue-400', icon: '🌐' },
   ] : []
 
@@ -86,7 +97,7 @@ export default function AdminRevenue() {
         <div className="p-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-white">營收儀表板</h1>
-            <p className="text-slate-400 text-sm mt-1">基於 Supabase 資料估算（實際金額以 Stripe 為準）</p>
+            <p className="text-slate-400 text-sm mt-1">MRR 與轉換率僅計算實際透過 Stripe 付費的用戶（手動授予不算）</p>
           </div>
 
           {/* 數字卡 */}
@@ -119,7 +130,7 @@ export default function AdminRevenue() {
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                   />
-                  <Line type="monotone" dataKey="新增Pro用戶" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }} />
+                  <Line type="monotone" dataKey="新增付費用戶" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -136,21 +147,39 @@ export default function AdminRevenue() {
               {proUsers.length === 0 ? (
                 <p className="px-6 py-10 text-slate-500 text-sm text-center">尚無 Pro 用戶</p>
               ) : (
-                proUsers.map((u, i) => (
-                  <div key={u.id} className="flex items-center justify-between px-6 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-slate-600 text-xs w-5 text-right">{i + 1}</span>
-                      <div>
-                        <p className="text-slate-200 text-sm font-medium">{u.name || '（未填姓名）'}</p>
-                        <p className="text-slate-500 text-xs">{u.email}</p>
+                proUsers.map((u, i) => {
+                  // 區分真實付費（有 stripe_subscription_id）與手動授予
+                  const isPaid = !!u.stripe_subscription_id
+                  // 升級時間：付費用戶用 subscribed_at（刷卡日），授予用戶用 created_at（註冊日）做為 fallback
+                  const upgradeDate = u.subscribed_at || u.created_at
+                  return (
+                    <div key={u.id} className="flex items-center justify-between px-6 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-slate-600 text-xs w-5 text-right">{i + 1}</span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-slate-200 text-sm font-medium">{u.name || '（未填姓名）'}</p>
+                            {/* 區分付費 / 授予的徽章，營收只計付費那一群 */}
+                            {isPaid ? (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium">💳 付費</span>
+                            ) : (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-slate-600/40 text-slate-400 font-medium">⭐ 授予</span>
+                            )}
+                          </div>
+                          <p className="text-slate-500 text-xs">{u.email}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-semibold ${isPaid ? 'text-orange-400' : 'text-slate-500'}`}>
+                          {isPaid ? `NT$ ${PRO_PRICE.toLocaleString()}/月` : '不計入營收'}
+                        </p>
+                        <p className="text-slate-500 text-xs">
+                          {isPaid ? '訂閱於' : '授予於'} {new Date(upgradeDate).toLocaleDateString('zh-TW')}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-orange-400 text-sm font-semibold">NT$ {PRO_PRICE.toLocaleString()}/月</p>
-                      <p className="text-slate-500 text-xs">升級於 {new Date(u.created_at).toLocaleDateString('zh-TW')}</p>
-                    </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
           </div>
