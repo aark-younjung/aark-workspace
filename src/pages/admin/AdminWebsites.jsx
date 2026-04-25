@@ -144,8 +144,10 @@ export default function AdminWebsites() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-xs text-slate-500 font-semibold uppercase tracking-wider">
               <div className="col-span-3">網站</div>
+              {/* 分析欄：點擊按鈕另開新分頁查看完整儀表板 */}
+              <div className="col-span-1 text-center">分析</div>
               <div className="col-span-2">所屬用戶</div>
-              <div className="col-span-4 grid grid-cols-4 text-center">
+              <div className="col-span-3 grid grid-cols-4 text-center">
                 <span className="text-blue-500">SEO</span>
                 <span className="text-purple-500">AEO</span>
                 <span className="text-emerald-500">GEO</span>
@@ -171,21 +173,27 @@ export default function AdminWebsites() {
                 {filtered.map(site => (
                   <div key={site.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-700/30 transition-colors">
                     <div className="col-span-3">
-                      {/* 網站名稱可點：另開新視窗開啟儀表板，避免離開後台清單 */}
+                      {/* 網站名稱純顯示，不再吃掉外部網址連結 */}
+                      <p className="text-slate-200 text-sm font-medium truncate">
+                        {site.name || site.url}
+                      </p>
+                      {/* 網址直接連到客戶實際網站（外部開新分頁） */}
+                      <a href={site.url} target="_blank" rel="noopener noreferrer"
+                        className="text-slate-500 text-xs hover:text-slate-300 transition-colors truncate block">
+                        {site.url}
+                      </a>
+                    </div>
+                    {/* 分析欄：獨立按鈕另開新分頁進入完整儀表板，避免與網址連結衝突 */}
+                    <div className="col-span-1 flex items-center justify-center">
                       <Link
                         to={`/dashboard/${site.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-slate-200 text-sm font-medium truncate block hover:text-orange-400 transition-colors"
+                        className="px-2 py-1 bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 text-xs rounded-md font-medium transition-colors whitespace-nowrap"
                         title="於新分頁查看完整分析儀表板"
                       >
-                        {site.name || site.url}
+                        📊 查看
                       </Link>
-                      <a href={site.url} target="_blank" rel="noopener noreferrer"
-                        className="text-slate-500 text-xs hover:text-slate-300 transition-colors truncate block"
-                        onClick={e => e.stopPropagation()}>
-                        {site.url}
-                      </a>
                     </div>
                     <div className="col-span-2">
                       <p className="text-slate-300 text-sm truncate">{site.profiles?.name || '—'}</p>
@@ -196,7 +204,7 @@ export default function AdminWebsites() {
                         <p className="text-slate-500 text-xs truncate">{site.profiles?.email}</p>
                       </div>
                     </div>
-                    <div className="col-span-4 grid grid-cols-4 text-center text-sm">
+                    <div className="col-span-3 grid grid-cols-4 text-center text-sm">
                       <ScoreBadge score={getLatestScore(site.seo_audits)} color="text-blue-400" />
                       <ScoreBadge score={getLatestScore(site.aeo_audits)} color="text-purple-400" />
                       <ScoreBadge score={getLatestScore(site.geo_audits)} color="text-emerald-400" />
