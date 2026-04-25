@@ -313,8 +313,10 @@ export default function AdminUsers() {
                                 <Link
                                   key={site.id}
                                   to={`/dashboard/${site.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
                                   className="flex items-center justify-between bg-slate-800 hover:bg-slate-700 rounded-lg px-4 py-3 transition-colors group"
-                                  title="查看完整分析儀表板"
+                                  title="於新分頁查看完整分析儀表板"
                                 >
                                   <div>
                                     {/* hover 時網站名稱橘色強調，提示可點 */}

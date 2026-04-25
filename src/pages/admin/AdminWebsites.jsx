@@ -171,11 +171,13 @@ export default function AdminWebsites() {
                 {filtered.map(site => (
                   <div key={site.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-700/30 transition-colors">
                     <div className="col-span-3">
-                      {/* 網站名稱可點：開啟此網站對應的儀表板（與前台一致的完整分析視圖） */}
+                      {/* 網站名稱可點：另開新視窗開啟儀表板，避免離開後台清單 */}
                       <Link
                         to={`/dashboard/${site.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-slate-200 text-sm font-medium truncate block hover:text-orange-400 transition-colors"
-                        title="查看完整分析儀表板"
+                        title="於新分頁查看完整分析儀表板"
                       >
                         {site.name || site.url}
                       </Link>
