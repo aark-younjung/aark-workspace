@@ -350,15 +350,20 @@ export default function HomeDark() {
       let cleanUrl = url.trim()
       if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) cleanUrl = 'https://' + cleanUrl
 
-      const { data: existing } = await supabase.from('websites').select('id, user_id').eq('url', cleanUrl).maybeSingle()
+      // 以「URL + user_id」為唯一鍵：同一網址不同用戶各有自己的紀錄，避免資料污染與後台漏抓
+      const { data: existing } = await supabase
+        .from('websites')
+        .select('id')
+        .eq('url', cleanUrl)
+        .eq('user_id', user.id)
+        .maybeSingle()
 
       let websiteId
       if (existing) {
         websiteId = existing.id
-        if (user && !existing.user_id) await supabase.from('websites').update({ user_id: user.id }).eq('id', existing.id)
       } else {
         const { data: newSite, error: siteError } = await supabase
-          .from('websites').insert([{ url: cleanUrl, name: new URL(cleanUrl).hostname, user_id: user?.id || null }]).select().single()
+          .from('websites').insert([{ url: cleanUrl, name: new URL(cleanUrl).hostname, user_id: user.id }]).select().single()
         if (siteError) throw siteError
         websiteId = newSite.id
       }
