@@ -150,33 +150,9 @@ export default function Dashboard() {
     }
   }, [activeTab, website])
 
-  const handleUpgrade = async () => {
-    if (!user) {
-      alert('請先登入再升級 Pro 方案')
-      return
-    }
-    setUpgrading(true)
-    try {
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          email: user.email,
-          returnUrl: window.location.href,
-        }),
-      })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        alert(data.error || '建立付款頁面失敗，請稍後再試')
-      }
-    } catch {
-      alert('連線失敗，請稍後再試')
-    } finally {
-      setUpgrading(false)
-    }
+  const handleUpgrade = () => {
+    // 改為導向方案頁，讓使用者先了解功能與費用再決定是否進入結帳
+    navigate('/pricing')
   }
   
   // 解析 GSC 輸入，轉成正確的 siteUrl 格式
