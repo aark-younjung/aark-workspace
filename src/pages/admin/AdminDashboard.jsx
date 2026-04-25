@@ -20,11 +20,14 @@ export default function AdminDashboard() {
       const [
         { count: totalUsers },
         { count: proUsers },
+        { count: paidProUsers },
         { data: totalWebsites },
         { data: recent },
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_pro', true),
+        // MRR 只算實際刷卡付費（與 /admin/revenue 規則一致）
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_pro', true).not('stripe_subscription_id', 'is', null),
         supabase.from('websites').select('url'),
         supabase.from('profiles').select('id, name, email, is_pro, created_at').order('created_at', { ascending: false }).limit(5),
       ])
@@ -36,7 +39,7 @@ export default function AdminDashboard() {
         totalUsers: totalUsers || 0,
         proUsers: proUsers || 0,
         totalWebsites: uniqueWebsites,
-        mrr: (proUsers || 0) * PRO_PRICE,
+        mrr: (paidProUsers || 0) * PRO_PRICE,
       })
       setRecentUsers(recent || [])
     } catch (e) {
