@@ -1,6 +1,7 @@
 -- =====================================================
--- AI 曝光監測 — 每個品牌最多 10 條 prompts 限制
+-- AI 曝光監測 — 每個品牌最多 10 條「啟用中」prompts 限制
 -- 用 trigger 強制檢查（CHECK constraint 不允許子查詢）
+-- 軟刪除（is_active=false）的不佔位 → 配合 generate-prompts 的「重新產生」語意
 -- 可重複執行
 -- =====================================================
 
@@ -9,9 +10,11 @@ RETURNS TRIGGER AS $$
 DECLARE
   cnt INTEGER;
 BEGIN
-  SELECT COUNT(*) INTO cnt FROM aivis_prompts WHERE brand_id = NEW.brand_id;
+  -- 只算啟用中的，軟刪除的不佔位
+  SELECT COUNT(*) INTO cnt FROM aivis_prompts
+   WHERE brand_id = NEW.brand_id AND is_active = true;
   IF cnt >= 10 THEN
-    RAISE EXCEPTION '每個品牌最多 10 條 prompts（目前已 % 條）', cnt
+    RAISE EXCEPTION '每個品牌最多 10 條啟用中的 prompts（目前已 % 條）', cnt
       USING ERRCODE = 'check_violation';
   END IF;
   RETURN NEW;
@@ -24,5 +27,6 @@ BEFORE INSERT ON aivis_prompts
 FOR EACH ROW EXECUTE FUNCTION enforce_aivis_prompt_limit();
 
 -- =====================================================
--- 完成。INSERT 第 11 條時會炸 check_violation 錯誤。
+-- 完成。第 11 條啟用中的 prompt 被 INSERT 時會炸 check_violation。
+-- 軟刪除（is_active=false）的舊 prompt 會保留（保留 responses 歷史），不佔位。
 -- =====================================================
