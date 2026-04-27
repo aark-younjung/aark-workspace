@@ -8,6 +8,10 @@ import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
+// v2 設計系統共用 tokens 與元件（與後續其他頁面同一份視覺語言）
+// Hero 排版維持原有橘紅 Tailwind 按鈕,所以暫不引入 Btn
+import { T } from '../styles/v2-tokens'
+import { GlassCard } from '../components/v2'
 
 const timeAgo = (d) => {
   if (!d) return ''
@@ -232,20 +236,26 @@ function DarkScanningOverlay({ logs, targetUrl }) {
   )
 }
 
+// FAQ 折疊項目 — 用 v2 GlassCard 包,hover 時邊框轉橘
 function HomeFAQItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
-    <div
-      className="p-5 backdrop-blur-md rounded-xl border border-white/10 cursor-pointer hover:border-orange-500/30 transition-all"
-      style={{ background: 'rgba(255,255,255,0.10)' }}
-      onClick={() => setOpen(v => !v)}
-    >
+    <GlassCard color={T.orange} hover onClick={() => setOpen(v => !v)} style={{ padding: 20 }}>
       <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-white text-sm">{q}</span>
-        <span className={`text-white/80 text-lg flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>↓</span>
+        <span style={{ color: T.text, fontSize: 14, fontWeight: 500 }}>{q}</span>
+        <span
+          className={`text-lg flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          style={{ color: T.textMid }}
+        >↓</span>
       </div>
-      {open && <p className="mt-3 text-white/80 text-sm leading-relaxed border-t border-white/10 pt-3">{a}</p>}
-    </div>
+      {open && (
+        <p style={{
+          color: T.textMid, fontSize: 14, lineHeight: 1.7,
+          marginTop: 12, paddingTop: 12,
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+        }}>{a}</p>
+      )}
+    </GlassCard>
   )
 }
 
@@ -729,44 +739,45 @@ export default function HomeDark() {
                 const total = hasScore
                   ? Math.round(([site.seo, site.aeo, site.geo].filter(v => v !== null).reduce((a, b) => a + b, 0)) / [site.seo, site.aeo, site.geo].filter(v => v !== null).length)
                   : null
-                const scoreColor = s => s >= 70 ? 'text-green-400' : s >= 40 ? 'text-yellow-400' : 'text-red-400'
-                const barColor = s => s >= 70 ? 'bg-green-400' : s >= 40 ? 'bg-yellow-400' : 'bg-red-400'
+                // 分數對應顏色:綠（>=70）/ 黃（>=40）/ 紅
+                const scoreColor = s => s >= 70 ? T.pass : s >= 40 ? T.warn : T.fail
                 return (
-                  <Link key={site.id} to={`/dashboard/${site.id}`}
-                    className="group block backdrop-blur-md border rounded-2xl p-4 hover:border-orange-500/40 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-white text-sm truncate group-hover:text-orange-400 transition-colors">{site.name}</p>
-                        <p className="text-xs text-white/60 truncate mt-0.5">{site.url}</p>
+                  <Link key={site.id} to={`/dashboard/${site.id}`} className="block group">
+                    <GlassCard color={T.orange} hover style={{ padding: 16 }}>
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate group-hover:text-orange-400 transition-colors" style={{ color: T.text }}>{site.name}</p>
+                          <p className="text-xs truncate mt-0.5" style={{ color: T.textMid }}>{site.url}</p>
+                        </div>
+                        {total !== null && <span className="flex-shrink-0 text-xl font-bold" style={{ color: scoreColor(total) }}>{total}</span>}
                       </div>
-                      {total !== null && <span className={`flex-shrink-0 text-xl font-bold ${scoreColor(total)}`}>{total}</span>}
-                    </div>
-                    {hasScore ? (
-                      <div className="space-y-1.5">
-                        {[['SEO', site.seo], ['AEO', site.aeo], ['GEO', site.geo]].map(([label, score]) => score !== null && (
-                          <div key={label} className="flex items-center gap-2">
-                            <span className="text-xs text-white/60 w-7">{label}</span>
-                            <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div className={`h-1.5 rounded-full ${barColor(score)}`} style={{ width: `${score}%` }} />
+                      {hasScore ? (
+                        <div className="space-y-1.5">
+                          {[['SEO', site.seo], ['AEO', site.aeo], ['GEO', site.geo]].map(([label, score]) => score !== null && (
+                            <div key={label} className="flex items-center gap-2">
+                              <span className="text-xs w-7" style={{ color: T.textMid }}>{label}</span>
+                              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                                <div className="h-1.5 rounded-full" style={{ width: `${score}%`, background: scoreColor(score) }} />
+                              </div>
+                              <span className="text-xs font-bold w-6 text-right" style={{ color: scoreColor(score) }}>{score}</span>
                             </div>
-                            <span className={`text-xs font-bold w-6 text-right ${scoreColor(score)}`}>{score}</span>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
+                      ) : <p className="text-xs" style={{ color: T.textMid }}>尚未分析</p>}
+                      <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                        <span className="text-xs" style={{ color: T.textMid }}>🤖 {timeAgo(site.last_scanned_at)}</span>
+                        <span className="text-xs font-medium group-hover:underline" style={{ color: T.orange }}>查看報告 →</span>
                       </div>
-                    ) : <p className="text-xs text-white/60">尚未分析</p>}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/8">
-                      <span className="text-xs text-white/60">🤖 {timeAgo(site.last_scanned_at)}</span>
-                      <span className="text-xs text-orange-400 font-medium group-hover:underline">查看報告 →</span>
-                    </div>
+                    </GlassCard>
                   </Link>
                 )
               })}
               {myWebsites.length < WEBSITE_LIMIT && (
                 <button onClick={() => document.querySelector('input[type="text"]')?.focus()}
-                  className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-2xl p-4 transition-all text-white/60 hover:text-orange-400 hover:border-orange-500/40 min-h-[120px]"
-                  style={{ borderColor: 'rgba(255,255,255,0.15)' }}
+                  className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-2xl p-4 transition-all min-h-[120px]"
+                  style={{ borderColor: 'rgba(255,255,255,0.15)', color: T.textMid }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = T.orange + '66'; e.currentTarget.style.color = T.orange }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = T.textMid }}
                 >
                   <span className="text-2xl">＋</span>
                   <span className="text-xs font-medium">新增網站</span>
@@ -776,25 +787,25 @@ export default function HomeDark() {
           </div>
         )}
 
-        {/* 跑馬燈 */}
+        {/* 跑馬燈 — 強調色從紫色改為 aivis 青綠（與 v2 設計系統一致） */}
         {recentScans.length > 0 && (
           <div className="mt-10">
             <div className="flex items-center gap-2 mb-2 justify-center">
-              <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></span>
-              <span className="text-white/60 text-xs tracking-widest uppercase">AI 即時讀取動態</span>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.aivis }}></span>
+              <span className="text-xs tracking-widest uppercase" style={{ color: T.textMid }}>AI 即時讀取動態</span>
             </div>
-            <div className="overflow-hidden rounded-xl border py-3" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' }}>
+            <GlassCard style={{ padding: '12px 0', overflow: 'hidden' }}>
               <div className="flex whitespace-nowrap" style={{ animation: 'tickerScroll 25s linear infinite' }}>
                 {[...recentScans, ...recentScans].map((item, i) => (
                   <span key={i} className="inline-flex items-center gap-2 px-6 text-sm">
-                    <span className="text-purple-400 text-base">🤖</span>
-                    <span className="font-medium text-white">{item.name}</span>
-                    <span className="text-white/40 text-xs">{timeAgo(item.scanned_at)}</span>
-                    <span className="text-white/25 mx-3">·</span>
+                    <span className="text-base" style={{ color: T.aivis }}>🤖</span>
+                    <span className="font-medium" style={{ color: T.text }}>{item.name}</span>
+                    <span className="text-xs" style={{ color: T.textLow }}>{timeAgo(item.scanned_at)}</span>
+                    <span className="mx-3" style={{ color: T.textLow }}>·</span>
                   </span>
                 ))}
               </div>
-            </div>
+            </GlassCard>
           </div>
         )}
 
@@ -825,23 +836,22 @@ export default function HomeDark() {
                 const offsetMins = Math.round((1 - bot.ratio) * 90)
                 const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
                 return (
-                  <div key={i} className="p-4 backdrop-blur-md rounded-xl border hover:border-orange-500/30 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
+                  <GlassCard key={i} color={T.aivis} hover style={{ padding: 16 }}>
                     <div className="flex items-center gap-3 mb-3">
                       <BotLogo domain={bot.domain} color={bot.color} size="md" />
                       <div className="min-w-0">
-                        <div className="font-bold text-white text-sm truncate">{bot.name}</div>
-                        <div className="text-white/60 text-xs">{bot.company}</div>
+                        <div className="font-bold text-sm truncate" style={{ color: T.text }}>{bot.name}</div>
+                        <div className="text-xs" style={{ color: T.textMid }}>{bot.company}</div>
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
                       <div>
-                        <div className="text-green-400 font-bold text-xl">{count.toLocaleString()}</div>
-                        <div className="text-green-500/70 text-xs">+{todayCount} 今日</div>
+                        <div className="font-bold text-xl" style={{ color: T.pass }}>{count.toLocaleString()}</div>
+                        <div className="text-xs" style={{ color: T.pass + 'b3' }}>+{todayCount} 今日</div>
                       </div>
-                      <div className="text-white/60 text-xs text-right">{timeAgo(lastSeen)}</div>
+                      <div className="text-xs text-right" style={{ color: T.textMid }}>{timeAgo(lastSeen)}</div>
                     </div>
-                  </div>
+                  </GlassCard>
                 )
               })}
             </div>
@@ -857,73 +867,70 @@ export default function HomeDark() {
                 const offsetMins = Math.round((1 - bot.ratio) * 60)
                 const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
                 return (
-                  <div key={i} className="p-4 backdrop-blur-md rounded-xl border hover:border-orange-500/30 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
+                  <GlassCard key={i} color={T.seo} hover style={{ padding: 16 }}>
                     <div className="flex items-center gap-2 mb-3">
                       <BotLogo domain={bot.domain} color={bot.color} size="sm" />
                       <div className="min-w-0">
-                        <div className="font-bold text-white text-xs truncate">{bot.name}</div>
-                        <div className="text-white/60 text-xs">{bot.company}</div>
+                        <div className="font-bold text-xs truncate" style={{ color: T.text }}>{bot.name}</div>
+                        <div className="text-xs" style={{ color: T.textMid }}>{bot.company}</div>
                       </div>
                     </div>
                     <div className="flex items-end justify-between">
                       <div>
-                        <div className="text-green-400 font-bold text-lg">{count.toLocaleString()}</div>
-                        <div className="text-green-500/70 text-xs">+{todayCount} 今日</div>
+                        <div className="font-bold text-lg" style={{ color: T.pass }}>{count.toLocaleString()}</div>
+                        <div className="text-xs" style={{ color: T.pass + 'b3' }}>+{todayCount} 今日</div>
                       </div>
-                      <div className="text-white/60 text-xs">{timeAgo(lastSeen)}</div>
+                      <div className="text-xs" style={{ color: T.textMid }}>{timeAgo(lastSeen)}</div>
                     </div>
-                  </div>
+                  </GlassCard>
                 )
               })}
             </div>
           </div>
         )}
 
-        {/* Features */}
+        {/* Features — 三大檢測介紹卡,各自配對應的 v2 語意色 */}
         <div className="mt-24 grid md:grid-cols-3 gap-6">
           {[
-            { icon: '🎯', title: 'SEO 檢測', desc: '全面分析網站技術 SEO，Meta 標籤、H1、圖片 Alt、行動版等' },
-            { icon: '💬', title: 'AEO 優化', desc: '8 項 Answer Engine 指標：FAQ Schema、問句標題、精選摘要優化' },
-            { icon: '🤖', title: 'GEO 優化', desc: '8 項 Generative Engine 指標：llms.txt、AI 爬蟲開放性、引用信號' },
+            { icon: '🎯', title: 'SEO 檢測', desc: '全面分析網站技術 SEO,Meta 標籤、H1、圖片 Alt、行動版等', color: T.seo },
+            { icon: '💬', title: 'AEO 優化', desc: '8 項 Answer Engine 指標:FAQ Schema、問句標題、精選摘要優化', color: T.aeo },
+            { icon: '🤖', title: 'GEO 優化', desc: '8 項 Generative Engine 指標:llms.txt、AI 爬蟲開放性、引用信號', color: T.geo },
           ].map((item, i) => (
-            <div key={i} className="p-6 backdrop-blur-md rounded-2xl border hover:border-orange-500/30 transition-all"
-              style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
+            <GlassCard key={i} color={item.color} hover style={{ padding: 24 }}>
               <div className="text-4xl mb-4">{item.icon}</div>
-              <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-              <p className="text-white/80">{item.desc}</p>
-            </div>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: T.text }}>{item.title}</h3>
+              <p style={{ color: T.textMid, lineHeight: 1.7 }}>{item.desc}</p>
+            </GlassCard>
           ))}
         </div>
 
-        {/* 排行榜入口 */}
-        <div className="mt-16 p-8 rounded-2xl border text-center"
-          style={{ background: 'rgba(255,255,255,0.10)', borderColor: 'rgba(255,255,255,0.20)' }}>
+        {/* 排行榜入口 — 用 GlassCard 包,內部按鈕保留藍紫漸層作為差異化視覺 */}
+        <GlassCard style={{ marginTop: 64, padding: 32, textAlign: 'center' }}>
           <div className="text-3xl mb-3">🏆</div>
-          <h2 className="text-xl font-bold text-white mb-2">想知道其他網站的 AI 能見度表現？</h2>
-          <p className="text-white/80 mb-6 text-sm">查看進步之星、排行榜與成功案例，了解優化前後的差異</p>
+          <h2 className="text-xl font-bold mb-2" style={{ color: T.text }}>想知道其他網站的 AI 能見度表現?</h2>
+          <p className="mb-6 text-sm" style={{ color: T.textMid }}>查看進步之星、排行榜與成功案例,了解優化前後的差異</p>
           <Link to="/showcase"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-900/40">
             查看 AI 能見度排行榜 →
           </Link>
-        </div>
+        </GlassCard>
 
         {/* FAQ */}
         <div className="mt-16">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">常見問題</h2>
-            <p className="text-white/60 text-sm">關於 SEO、AEO、GEO 與 E-E-A-T 的快速解答</p>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: T.text }}>常見問題</h2>
+            <p className="text-sm" style={{ color: T.textMid }}>關於 SEO、AEO、GEO 與 E-E-A-T 的快速解答</p>
           </div>
           <div className="space-y-3">
             {[
-              { q: '什麼是 AI 能見度？', a: 'AI 能見度是指你的網站在 ChatGPT、Claude、Perplexity、Google AI 等平台中被「看見」並「引用」的能力。傳統 SEO 讓你出現在 Google，AI 能見度讓你出現在 AI 的回答中。' },
-              { q: 'SEO、AEO、GEO、E-E-A-T 有什麼不同？', a: 'SEO 讓搜尋引擎找到你；AEO 讓 AI 直接引用你的答案；GEO 讓生成式 AI 在回答中推薦你；E-E-A-T 建立品牌可信度，影響前三者的評分。四者互補，缺一不可。' },
-              { q: '分析需要多久？需要安裝什麼嗎？', a: '不需要安裝任何東西。輸入網址後約 15–30 秒即可看到完整報告，系統會自動爬取並分析你的網站。' },
-              { q: '分數低要怎麼辦？', a: '儀表板的「AI 優化工具」會根據你的失敗項目，自動列出最重要的 5 條改善行動，並提供可直接複製的修復程式碼（llms.txt、JSON-LD、FAQ Schema）。' },
+              { q: '什麼是 AI 能見度?', a: 'AI 能見度是指你的網站在 ChatGPT、Claude、Perplexity、Google AI 等平台中被「看見」並「引用」的能力。傳統 SEO 讓你出現在 Google,AI 能見度讓你出現在 AI 的回答中。' },
+              { q: 'SEO、AEO、GEO、E-E-A-T 有什麼不同?', a: 'SEO 讓搜尋引擎找到你;AEO 讓 AI 直接引用你的答案;GEO 讓生成式 AI 在回答中推薦你;E-E-A-T 建立品牌可信度,影響前三者的評分。四者互補,缺一不可。' },
+              { q: '分析需要多久?需要安裝什麼嗎?', a: '不需要安裝任何東西。輸入網址後約 15–30 秒即可看到完整報告,系統會自動爬取並分析你的網站。' },
+              { q: '分數低要怎麼辦?', a: '儀表板的「AI 優化工具」會根據你的失敗項目,自動列出最重要的 5 條改善行動,並提供可直接複製的修復程式碼(llms.txt、JSON-LD、FAQ Schema)。' },
             ].map((item, i) => <HomeFAQItem key={i} q={item.q} a={item.a} />)}
           </div>
           <div className="text-center mt-6">
-            <Link to="/faq" className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors">
+            <Link to="/faq" className="text-sm font-medium transition-colors" style={{ color: T.orange }}>
               查看所有常見問題 →
             </Link>
           </div>
