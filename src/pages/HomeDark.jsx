@@ -708,7 +708,7 @@ export default function HomeDark() {
               {/* Bot 標籤 — 以雷達圓心(330,0)為基準，各角度+半徑亂數分散，最近距圓心200px */}
               {[
                 /* angle=20°  r=230 */ { label: 'GPTBot',        color: '#7dd3fc', style: { top:  '68px', left: '518px' } },
-                /* angle=162° r=200 */ { label: 'Meta AI',       color: '#6366f1', style: { top:  '58px', left: '115px' } },
+                /* angle=162° r=200 */ { label: 'Meta AI',       color: '#a5b4fc', style: { top:  '58px', left: '115px' } },
                 /* angle=42°  r=295 */ { label: 'ChatGPT',       color: '#ffffff', style: { top: '165px', left: '530px' } },
                 /* angle=128° r=260 */ { label: 'PerplexityBot', color: '#06b6d4', style: { top: '183px', left: '130px' } },
                 /* angle=68°  r=345 */ { label: 'Googlebot',     color: '#ef4444', style: { top: '278px', left: '455px' } },
