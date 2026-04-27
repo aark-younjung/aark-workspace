@@ -598,7 +598,7 @@ export default function HomeDark() {
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold mb-3 leading-tight text-white">
-              讓AI看見你
+              你的網站,<br />AI 看得見嗎?
             </h1>
 
             <p className="text-xl md:text-2xl font-semibold text-white mb-8 leading-snug">
@@ -889,19 +889,81 @@ export default function HomeDark() {
           </div>
         )}
 
-        {/* Features — 三大檢測介紹卡,各自配對應的 v2 語意色 */}
-        <div className="mt-24 grid md:grid-cols-3 gap-6">
-          {[
-            { icon: '🎯', title: 'SEO 檢測', desc: '全面分析網站技術 SEO,Meta 標籤、H1、圖片 Alt、行動版等', color: T.seo },
-            { icon: '💬', title: 'AEO 優化', desc: '8 項 Answer Engine 指標:FAQ Schema、問句標題、精選摘要優化', color: T.aeo },
-            { icon: '🤖', title: 'GEO 優化', desc: '8 項 Generative Engine 指標:llms.txt、AI 爬蟲開放性、引用信號', color: T.geo },
-          ].map((item, i) => (
-            <GlassCard key={i} color={item.color} hover style={{ padding: 24 }}>
-              <div className="text-4xl mb-4">{item.icon}</div>
-              <h3 className="text-lg font-semibold mb-2" style={{ color: T.text }}>{item.title}</h3>
-              <p style={{ color: T.textMid, lineHeight: 1.7 }}>{item.desc}</p>
-            </GlassCard>
-          ))}
+        {/* How it Works — 三大 AI 能見度檢測面向(v2 設計版,取代原 Features) */}
+        <div className="mt-24">
+          {/* Section header */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4" style={{
+              background: T.aivis + '1f',
+              border: `1px solid ${T.aivis}55`,
+            }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: T.aivis }} />
+              <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>How it Works</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: T.text, letterSpacing: '-0.02em' }}>
+              三大 AI 能見度檢測面向
+            </h2>
+            <p className="text-base max-w-2xl mx-auto" style={{ color: T.textMid, lineHeight: 1.7 }}>
+              從傳統 SEO 到 AI 時代的 AEO、GEO —— 我們幫你拆解每個維度的優化機會
+            </p>
+          </div>
+
+          {/* 三張詳細卡 — 階段編號 + icon + 描述 + 檢測項目清單 */}
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                stage: '01',
+                icon: '🎯',
+                title: 'SEO 搜尋引擎優化',
+                tag: '傳統地基',
+                desc: '網站技術基礎,讓 Google / Bing 等搜尋引擎能正確讀懂你的內容架構。',
+                items: ['Meta 標籤完整性', 'H1 / Hn 結構', '圖片 Alt 文字', '行動版相容', '頁面載入速度'],
+                color: T.seo,
+              },
+              {
+                stage: '02',
+                icon: '💬',
+                title: 'AEO 問答引擎優化',
+                tag: '直接被引用',
+                desc: '當 AI 直接回答使用者問題時,讓你的內容成為被引用的精選摘要來源。',
+                items: ['FAQ Schema 標記', 'JSON-LD 結構化資料', '問句式標題', 'Open Graph / Canonical', '麵包屑導覽'],
+                color: T.aeo,
+              },
+              {
+                stage: '03',
+                icon: '🤖',
+                title: 'GEO 生成引擎優化',
+                tag: 'AI 時代新賽道',
+                desc: '面對 ChatGPT / Claude / Perplexity 等生成式 AI,讓你的品牌與產品被主動推薦。',
+                items: ['llms.txt 配置', 'AI 爬蟲開放性', 'Sitemap / Robots', '引用信號(JSON-LD Citation)', 'HTTPS / 規範化'],
+                color: T.geo,
+              },
+            ].map((item) => (
+              <GlassCard key={item.stage} color={item.color} hover style={{ padding: 28 }}>
+                {/* 階段編號 + tag */}
+                <div className="flex items-center justify-between mb-5">
+                  <span className="font-mono text-3xl font-bold" style={{ color: item.color, opacity: 0.85 }}>{item.stage}</span>
+                  <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{
+                    color: item.color,
+                    background: item.color + '1a',
+                    border: `1px solid ${item.color}40`,
+                  }}>{item.tag}</span>
+                </div>
+                <div className="text-3xl mb-3">{item.icon}</div>
+                <h3 className="text-xl font-bold mb-2" style={{ color: T.text, letterSpacing: '-0.01em' }}>{item.title}</h3>
+                <p className="text-sm mb-5" style={{ color: T.textMid, lineHeight: 1.7 }}>{item.desc}</p>
+                {/* 檢測項目清單 */}
+                <ul className="space-y-2 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  {item.items.map((it, j) => (
+                    <li key={j} className="flex items-start gap-2 text-xs" style={{ color: T.textMid }}>
+                      <span className="flex-shrink-0 mt-0.5" style={{ color: item.color }}>✓</span>
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+              </GlassCard>
+            ))}
+          </div>
         </div>
 
         {/* 排行榜入口 — 用 GlassCard 包,內部按鈕保留藍紫漸層作為差異化視覺 */}
