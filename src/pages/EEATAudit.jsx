@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
 import FixGuide from '../components/FixGuide'
+import { T } from '../styles/v2-tokens'
+import { GlassCard } from '../components/v2'
 
 const EEAT_CHECKS = [
   {
@@ -68,10 +68,12 @@ const EEAT_CHECKS = [
 
 export default function EEATAudit() {
   const { id } = useParams()
+  const { isPro, user } = useAuth()
   const [website, setWebsite] = useState(null)
   const [eeatAudit, setEeatAudit] = useState(null)
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
+  const [upgrading, setUpgrading] = useState(false)
 
   useEffect(() => { fetchData() }, [id])
 
@@ -123,10 +125,6 @@ export default function EEATAudit() {
     }
   }
 
-  const { isPro, user } = useAuth()
-  const { isDark } = useTheme()
-  const [upgrading, setUpgrading] = useState(false)
-
   const handleUpgrade = async () => {
     if (!user) {
       alert('請先登入再升級 Pro 方案')
@@ -161,211 +159,278 @@ export default function EEATAudit() {
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? '' : 'bg-slate-50'}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-black">載入資料中...</p>
+      <PageBg>
+        <div className="min-h-screen flex items-center justify-center relative z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: T.eeat }}></div>
+            <p style={{ color: T.textMid }}>載入資料中...</p>
+          </div>
         </div>
-      </div>
+      </PageBg>
     )
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? '' : 'bg-slate-50'}`}>
-      {/* Header */}
-      <header className="bg-gradient-to-r from-orange-500 to-amber-500 text-black">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center gap-4 mb-4">
-            <Link to={`/dashboard/${id}`} className="text-black/70 hover:text-black">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">E-E-A-T 可信度檢測</h1>
-              <p className="text-black/80 text-sm">Experience · Expertise · Authoritativeness · Trustworthiness</p>
-              <p className="text-black/60 text-xs mt-1">{website?.url}</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* 總覽卡片 */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 mb-8">
-          <div className="flex items-center justify-between flex-wrap gap-6">
-            <div>
-              <h2 className="text-lg font-semibold text-black mb-2">E-E-A-T 可信度得分</h2>
-              <div className="flex items-baseline gap-3">
-                <span className="text-5xl font-bold bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                  {score}
-                </span>
-                <span className="text-black">/ 100</span>
-              </div>
-              <p className="text-black mt-2">通過 {passedCount} / {EEAT_CHECKS.length} 項檢測</p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={handleReanalyze} disabled={analyzing}
-                className="px-6 py-3 bg-orange-500 text-black rounded-xl hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                {analyzing ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    分析中...
-                  </>
-                ) : '重新檢測'}
-              </button>
-              <Link to={`/dashboard/${id}`}
-                className="px-6 py-3 bg-slate-100 text-black rounded-xl hover:bg-slate-200 transition-colors font-medium">
-                返回總覽
+    <PageBg>
+      <div className="relative z-10">
+        {/* Header — 暗色玻璃條 + E-E-A-T 琥珀色 accent 細條 */}
+        <header className="border-b backdrop-blur-xl" style={{ borderColor: T.cardBorder, background: 'rgba(0,0,0,0.5)' }}>
+          <div className="h-1" style={{ background: `linear-gradient(90deg, ${T.eeat}, ${T.orange})` }} />
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="flex items-center gap-4">
+              <Link to={`/dashboard/${id}`} className="transition-colors hover:opacity-80" style={{ color: T.textMid }} aria-label="返回 Dashboard">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
               </Link>
+              <div>
+                <h1 className="text-2xl font-bold" style={{ color: T.text }}>E-E-A-T 可信度檢測</h1>
+                <p className="text-sm" style={{ color: T.textMid }}>Experience · Expertise · Authoritativeness · Trustworthiness</p>
+                <p className="text-xs mt-1" style={{ color: T.textLow }}>{website?.url}</p>
+              </div>
             </div>
           </div>
-          <div className="mt-8">
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500"
-                style={{ width: `${score}%` }} />
+        </header>
+
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          {/* 總覽分數卡 */}
+          <GlassCard color={T.eeat} style={{ padding: 32, marginBottom: 32 }}>
+            <div className="flex items-center justify-between flex-wrap gap-6">
+              <div>
+                <h2 className="text-lg font-semibold mb-2" style={{ color: T.text }}>E-E-A-T 可信度得分</h2>
+                <div className="flex items-baseline gap-3">
+                  <span
+                    className="text-5xl font-bold"
+                    style={{
+                      background: `linear-gradient(135deg, ${T.eeat}, ${T.orange})`,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}
+                  >{score}</span>
+                  <span style={{ color: T.textMid }}>/ 100</span>
+                </div>
+                <p className="mt-2" style={{ color: T.textMid }}>通過 {passedCount} / {EEAT_CHECKS.length} 項檢測</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleReanalyze}
+                  disabled={analyzing}
+                  className="px-6 py-3 rounded-xl transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-white shadow-lg"
+                  style={{
+                    background: `linear-gradient(135deg, ${T.eeat}, ${T.orange})`,
+                    boxShadow: `0 8px 24px ${T.eeat}40`,
+                  }}
+                >
+                  {analyzing ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      分析中...
+                    </>
+                  ) : '重新檢測'}
+                </button>
+                <Link
+                  to={`/dashboard/${id}`}
+                  className="px-6 py-3 rounded-xl transition-all font-medium"
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${T.cardBorder}`,
+                    color: T.text,
+                  }}
+                >
+                  返回總覽
+                </Link>
+              </div>
             </div>
+            <div className="mt-8">
+              <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${score}%`, background: `linear-gradient(90deg, ${T.eeat}, ${T.orange})` }}
+                />
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* E-E-A-T 四個維度說明 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {[
+              { label: 'Experience', desc: '內容來自真實經驗', icon: '🌟' },
+              { label: 'Expertise', desc: '具備專業知識', icon: '🎓' },
+              { label: 'Authoritativeness', desc: '在領域中具權威', icon: '🏆' },
+              { label: 'Trustworthiness', desc: '網站安全且可信', icon: '🛡️' },
+            ].map(({ label, desc, icon }) => (
+              <GlassCard key={label} style={{ padding: 16, textAlign: 'center' }}>
+                <div className="text-2xl mb-2">{icon}</div>
+                <div className="text-sm font-semibold" style={{ color: T.text }}>{label}</div>
+                <div className="text-xs mt-1" style={{ color: T.textMid }}>{desc}</div>
+              </GlassCard>
+            ))}
           </div>
-        </div>
 
-        {/* 四個維度說明 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Experience', desc: '內容來自真實經驗', icon: '🌟' },
-            { label: 'Expertise', desc: '具備專業知識', icon: '🎓' },
-            { label: 'Authoritativeness', desc: '在領域中具權威', icon: '🏆' },
-            { label: 'Trustworthiness', desc: '網站安全且可信', icon: '🛡️' },
-          ].map(({ label, desc, icon }) => (
-            <div key={label} className="bg-white rounded-xl p-4 border border-slate-100 text-center">
-              <div className="text-2xl mb-2">{icon}</div>
-              <div className="text-sm font-semibold text-black">{label}</div>
-              <div className="text-xs text-black mt-1">{desc}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* 檢測項目列表 */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {EEAT_CHECKS.map((check) => {
-            const status = getCheckStatus(check.id)
-            return (
-              <div key={check.id}
-                className={`bg-white rounded-2xl p-6 shadow-sm border-2 transition-all ${
-                  status === 'pass' ? 'border-green-200 bg-green-50/30'
-                  : status === 'fail' ? 'border-red-200 bg-red-50/30'
-                  : 'border-slate-100'}`}>
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">{check.icon}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-black">{check.name}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        status === 'pass' ? 'bg-green-100 text-green-700'
-                        : status === 'fail' ? 'bg-red-100 text-red-700'
-                        : 'bg-slate-100 text-black'}`}>
-                        {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
-                      </span>
+          {/* 檢測項目列表 */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {EEAT_CHECKS.map((check) => {
+              const status = getCheckStatus(check.id)
+              const statusColor = status === 'pass' ? T.pass : status === 'fail' ? T.fail : null
+              return (
+                <GlassCard key={check.id} color={statusColor} style={{ padding: 24 }}>
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">{check.icon}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <h3 className="font-semibold" style={{ color: T.text }}>{check.name}</h3>
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                          style={{
+                            background: status === 'pass' ? T.pass + '26' : status === 'fail' ? T.fail + '26' : 'rgba(255,255,255,0.06)',
+                            color: status === 'pass' ? '#86efac' : status === 'fail' ? '#fca5a5' : T.textMid,
+                          }}
+                        >
+                          {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
+                        </span>
+                      </div>
+                      <p className="text-sm mb-4" style={{ color: T.textMid }}>{check.description}</p>
+                      {status === 'fail' && (
+                        isPro ? (
+                          <FixGuide checkId={check.id} />
+                        ) : (
+                          <div
+                            className="p-3 rounded-lg flex items-center justify-between gap-3"
+                            style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}` }}
+                          >
+                            <p className="text-xs blur-sm select-none flex-1" style={{ color: T.textLow }}>升級 Pro 查看平台別修復指南升級 Pro 查看平台別修復指南</p>
+                            <Link
+                              to="/pricing"
+                              className="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 hover:opacity-80"
+                              style={{ background: T.orange + '26', color: '#fdba74' }}
+                            >🔒 升級 Pro</Link>
+                          </div>
+                        )
+                      )}
                     </div>
-                    <p className="text-sm text-black mb-4">{check.description}</p>
-                    {status === 'fail' && (
-                      isPro ? (
-                        <FixGuide checkId={check.id} />
-                      ) : (
-                        <div className="p-3 bg-slate-100 rounded-lg flex items-center justify-between gap-3">
-                          <p className="text-xs text-slate-400 blur-sm select-none flex-1">升級 Pro 查看平台別修復指南升級 Pro 查看平台別修復指南</p>
-                          <Link to="/pricing" className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">🔒 升級 Pro</Link>
-                        </div>
-                      )
-                    )}
                   </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* 優化行動計畫（付費功能） */}
-        <div className="mt-8 rounded-2xl border-2 border-dashed border-orange-200 overflow-hidden">
-          {/* 標題列 */}
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-5 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-black">🛡️ E-E-A-T 優化行動計畫</h3>
-              <p className="text-black/70 text-sm mt-1">依影響力排序的具體修復步驟與時程規劃</p>
-            </div>
-            {!isPro && (
-              <span className="px-3 py-1 bg-white/20 rounded-full text-black text-xs font-semibold border border-white/30">
-                🔒 Pro 功能
-              </span>
-            )}
+                </GlassCard>
+              )
+            })}
           </div>
 
-          {isPro ? (
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-8">
-              <div className="grid md:grid-cols-2 gap-6">
+          {/* 優化行動計畫（付費功能） */}
+          <div className="mt-8">
+            <GlassCard color={T.eeat} style={{ overflow: 'hidden' }}>
+              {/* 標題列 — eeat→orange 漸層 */}
+              <div
+                className="px-8 py-5 flex items-center justify-between"
+                style={{ background: `linear-gradient(90deg, ${T.eeat}, ${T.orange})` }}
+              >
                 <div>
-                  <h4 className="font-semibold text-black mb-3">短期目標 (1-2週)</h4>
-                  <ul className="space-y-2 text-sm text-black">
-                    <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
-                    <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
-                    <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
-                  </ul>
+                  <h3 className="text-lg font-bold text-white">🛡️ E-E-A-T 優化行動計畫</h3>
+                  <p className="text-white/80 text-sm mt-1">依影響力排序的具體修復步驟與時程規劃</p>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-black mb-3">中期目標 (1-3月)</h4>
-                  <ul className="space-y-2 text-sm text-black">
-                    <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
-                    <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
-                    <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>
-                  </ul>
-                </div>
+                {!isPro && (
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-white text-xs font-semibold border border-white/30 backdrop-blur-sm">
+                    🔒 Pro 功能
+                  </span>
+                )}
               </div>
-            </div>
-          ) : (
-            <div className="relative bg-gradient-to-br from-orange-50 to-amber-50">
-              {/* 模糊預覽 */}
-              <div className="p-8 blur-sm select-none pointer-events-none">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold text-black mb-3">短期目標 (1-2週)</h4>
-                    <ul className="space-y-2 text-sm text-black">
-                      <li className="flex items-start gap-2"><span className="text-orange-500">•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
-                      <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入隱私權政策連結</li>
-                      <li className="flex items-start gap-2"><span className="text-orange-500">•</span>在頁尾加入品牌社群媒體連結</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-black mb-3">中期目標 (1-3月)</h4>
-                    <ul className="space-y-2 text-sm text-black">
-                      <li className="flex items-start gap-2"><span className="text-amber-500">•</span>加入 Organization JSON-LD 結構化資料</li>
-                      <li className="flex items-start gap-2"><span className="text-amber-500">•</span>在每篇文章標示作者與發布日期</li>
-                      <li className="flex items-start gap-2"><span className="text-amber-500">•</span>內容中引用並連結外部權威來源</li>
-                    </ul>
+
+              {isPro ? (
+                <div className="p-8">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold mb-3" style={{ color: T.text }}>短期目標 (1-2週)</h4>
+                      <ul className="space-y-2 text-sm" style={{ color: T.textMid }}>
+                        <li className="flex items-start gap-2"><span style={{ color: T.eeat }}>•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
+                        <li className="flex items-start gap-2"><span style={{ color: T.eeat }}>•</span>在頁尾加入隱私權政策連結</li>
+                        <li className="flex items-start gap-2"><span style={{ color: T.eeat }}>•</span>在頁尾加入品牌社群媒體連結</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-3" style={{ color: T.text }}>中期目標 (1-3月)</h4>
+                      <ul className="space-y-2 text-sm" style={{ color: T.textMid }}>
+                        <li className="flex items-start gap-2"><span style={{ color: T.orange }}>•</span>加入 Organization JSON-LD 結構化資料</li>
+                        <li className="flex items-start gap-2"><span style={{ color: T.orange }}>•</span>在每篇文章標示作者與發布日期</li>
+                        <li className="flex items-start gap-2"><span style={{ color: T.orange }}>•</span>內容中引用並連結外部權威來源</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
-              {/* 升級 CTA 覆蓋層 */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center bg-white/90 backdrop-blur-sm rounded-2xl px-10 py-8 shadow-lg border border-orange-100 max-w-sm mx-4">
-                  <div className="text-4xl mb-3">🔒</div>
-                  <h4 className="text-lg font-bold text-black mb-2">升級 Pro 解鎖完整建議</h4>
-                  <p className="text-sm text-black mb-5">包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
-                  <button
-                    onClick={handleUpgrade}
-                    disabled={upgrading}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-black font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {upgrading ? '跳轉中...' : '升級 Pro 方案 →'}
-                  </button>
-                  <p className="text-xs text-black mt-3">NT$2,000 / 月 · 隨時取消</p>
+              ) : (
+                <div className="relative">
+                  {/* 模糊預覽 */}
+                  <div className="p-8 blur-sm select-none pointer-events-none">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-semibold mb-3" style={{ color: T.text }}>短期目標 (1-2週)</h4>
+                        <ul className="space-y-2 text-sm" style={{ color: T.textMid }}>
+                          <li className="flex items-start gap-2"><span style={{ color: T.eeat }}>•</span>建立或更新「關於我們」與「聯絡我們」頁面</li>
+                          <li className="flex items-start gap-2"><span style={{ color: T.eeat }}>•</span>在頁尾加入隱私權政策連結</li>
+                          <li className="flex items-start gap-2"><span style={{ color: T.eeat }}>•</span>在頁尾加入品牌社群媒體連結</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-3" style={{ color: T.text }}>中期目標 (1-3月)</h4>
+                        <ul className="space-y-2 text-sm" style={{ color: T.textMid }}>
+                          <li className="flex items-start gap-2"><span style={{ color: T.orange }}>•</span>加入 Organization JSON-LD 結構化資料</li>
+                          <li className="flex items-start gap-2"><span style={{ color: T.orange }}>•</span>在每篇文章標示作者與發布日期</li>
+                          <li className="flex items-start gap-2"><span style={{ color: T.orange }}>•</span>內容中引用並連結外部權威來源</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  {/* 升級 CTA 覆蓋層 */}
+                  <div className="absolute inset-0 flex items-center justify-center p-4">
+                    <div
+                      className="text-center rounded-2xl px-10 py-8 max-w-sm mx-4 backdrop-blur-xl"
+                      style={{
+                        background: 'rgba(0,0,0,0.6)',
+                        border: `1px solid ${T.eeat}55`,
+                        boxShadow: `0 8px 36px ${T.eeat}26`,
+                      }}
+                    >
+                      <div className="text-4xl mb-3">🔒</div>
+                      <h4 className="text-lg font-bold mb-2" style={{ color: T.text }}>升級 Pro 解鎖完整建議</h4>
+                      <p className="text-sm mb-5" style={{ color: T.textMid }}>包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
+                      <button
+                        onClick={handleUpgrade}
+                        disabled={upgrading}
+                        className="w-full px-6 py-3 text-white font-semibold rounded-xl transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{
+                          background: `linear-gradient(135deg, ${T.eeat}, ${T.orange})`,
+                          boxShadow: `0 8px 24px ${T.eeat}40`,
+                        }}
+                      >
+                        {upgrading ? '跳轉中...' : '升級 Pro 方案 →'}
+                      </button>
+                      <p className="text-xs mt-3" style={{ color: T.textLow }}>NT$1,490 / 月 · 隨時取消</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </main>
+              )}
+            </GlassCard>
+          </div>
+        </main>
+      </div>
+    </PageBg>
+  )
+}
+
+// 共用的暗色背景 wrapper（青綠頂部漸層 + 雜訊疊層）
+function PageBg({ children }) {
+  return (
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={{ background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)' }}
+    >
+      <div className="absolute inset-0 pointer-events-none z-0" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+        opacity: 0.12,
+        mixBlendMode: 'overlay',
+      }} />
+      {children}
     </div>
   )
 }
