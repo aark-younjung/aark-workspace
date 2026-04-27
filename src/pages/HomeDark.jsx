@@ -569,9 +569,12 @@ export default function HomeDark() {
                   onChange={(e) => setUrl(e.target.value)}
                   onFocus={() => { if (!user) navigate('/login', { state: { from: '/' } }) }}
                   placeholder={user ? '輸入您的網址 (例如: example.com)' : '請先登入以開始分析'}
-                  className="flex-1 px-6 py-4 rounded-xl border border-white/60 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent shadow-sm transition-all backdrop-blur-sm"
+                  className="flex-1 px-6 py-4 rounded-xl border border-white/70 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60 focus:border-transparent transition-all backdrop-blur-sm"
                   disabled={loading}
-                  style={{ background: 'rgba(255,255,255,0.10)' }}
+                  style={{
+                    background: 'rgba(255,255,255,0.22)',
+                    boxShadow: '0 0 0 1px rgba(255,255,255,0.10) inset, 0 4px 18px rgba(0,0,0,0.25)',
+                  }}
                 />
                 <button
                   type="submit"
