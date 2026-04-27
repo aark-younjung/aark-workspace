@@ -501,7 +501,7 @@ export default function HomeDark() {
       }} />
 
       {/* Header */}
-      <header className="relative z-10 border-b border-white/8 bg-black/50 backdrop-blur-xl">
+      <header className="relative z-50 border-b border-white/8 bg-black/50 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between py-3 sm:py-4">
             <div className="flex items-center gap-2.5 flex-shrink-0">
