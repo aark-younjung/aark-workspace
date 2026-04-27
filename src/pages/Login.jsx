@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
+import { T } from '../styles/v2-tokens'
+import { GlassCard } from '../components/v2'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -15,10 +16,9 @@ export default function Login() {
   const { signIn, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const { isDark } = useTheme()
   const from = location.state?.from || '/'
 
-  // mount 時偵測，避免每次 render 重算
+  // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth），避免每次 render 重算
   const inApp = useMemo(() => isInAppBrowser(), [])
   const inAppName = useMemo(() => getInAppBrowserName(), [])
   const deviceOS = useMemo(() => getDeviceOS(), [])
@@ -66,33 +66,50 @@ export default function Login() {
     }
   }
 
+  // Login / Register 是純 dark 頁面，沒有 light 備份分支
+  // 用單向頂部漸層（不用雙端），頁面短不需要底部漸層
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-4" >
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`, opacity: 0.25, mixBlendMode: 'overlay' }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-      <div className="w-full max-w-md relative">
+    <div
+      className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden"
+      style={{ background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)' }}
+    >
+      {/* 雜訊疊層 — 與 HomeDark 一致 */}
+      <div className="absolute inset-0 pointer-events-none z-0" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+        opacity: 0.12,
+        mixBlendMode: 'overlay',
+      }} />
+
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-900/50 rounded-xl flex items-center justify-center">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold text-white">優勢方舟數位行銷</span>
+            <span className="text-2xl font-bold" style={{ color: T.text }}>優勢方舟數位行銷</span>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">歡迎回來</h1>
-          <p className="text-white/60">登入以查看您的 AI 能見度報告</p>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: T.text, letterSpacing: '-0.02em' }}>歡迎回來</h1>
+          <p style={{ color: T.textMid }}>登入以查看您的 AI 能見度報告</p>
         </div>
 
         {/* In-App Browser 警告 banner（FB / LINE / IG 等社群 App 內建瀏覽器會擋 Google OAuth）*/}
         {inApp && (
-          <div className="mb-5 p-4 bg-amber-500/15 border border-amber-400/40 rounded-xl text-amber-100 text-sm">
+          <div
+            className="mb-5 p-4 rounded-xl text-sm"
+            style={{
+              background: T.warn + '26',
+              border: `1px solid ${T.warn}66`,
+              color: '#fde68a',
+            }}
+          >
             <div className="flex items-start gap-2">
               <span className="text-lg leading-none">⚠️</span>
               <div className="flex-1">
                 <p className="font-semibold mb-1">偵測到您正在 {inAppName} 瀏覽</p>
-                <p className="text-amber-100/80 text-xs leading-relaxed">
+                <p className="text-xs leading-relaxed" style={{ color: '#fde68acc' }}>
                   Google 不允許在 App 內建瀏覽器登入。請點下方按鈕複製網址，再用 {deviceOS === 'ios' ? 'Safari' : 'Chrome'} 開啟，或改用 Email 登入。
                 </p>
               </div>
@@ -101,17 +118,17 @@ export default function Login() {
         )}
 
         {/* 表單 */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8">
+        <GlassCard color={T.orange} style={{ padding: 32 }}>
           {/* Google 登入 */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading || googleLoading}
-            className="w-full flex items-center justify-center gap-3 py-3 bg-white text-white font-semibold rounded-xl hover:bg-white/5 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 active:translate-y-0 transition-all shadow-md mb-5 disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-3 py-3 bg-white text-slate-700 font-semibold rounded-xl hover:bg-slate-100 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 active:translate-y-0 transition-all shadow-md mb-5 disabled:opacity-60"
           >
             {googleLoading ? (
               <>
-                <svg className="animate-spin w-5 h-5 text-white/60" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
@@ -131,37 +148,54 @@ export default function Login() {
           </button>
 
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-orange-100"></div>
-            <span className="text-white/60 text-xs">或使用 Email 登入</span>
-            <div className="flex-1 h-px bg-orange-100"></div>
+            <div className="flex-1 h-px" style={{ background: T.cardBorder }} />
+            <span className="text-xs" style={{ color: T.textLow }}>或使用 Email 登入</span>
+            <div className="flex-1 h-px" style={{ background: T.cardBorder }} />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-white/60 text-sm mb-2">電子郵件</label>
+              <label className="block text-sm mb-2" style={{ color: T.textMid }}>電子郵件</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 disabled:opacity-50"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${T.cardBorder}`,
+                  color: T.text,
+                }}
               />
             </div>
             <div>
-              <label className="block text-white/60 text-sm mb-2">密碼</label>
+              <label className="block text-sm mb-2" style={{ color: T.textMid }}>密碼</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-xl bg-white/12 border border-orange-100 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:opacity-50"
+                className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 disabled:opacity-50"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${T.cardBorder}`,
+                  color: T.text,
+                }}
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
+              <div
+                className="p-3 rounded-xl text-sm"
+                style={{
+                  background: T.fail + '1a',
+                  border: `1px solid ${T.fail}33`,
+                  color: '#fca5a5',
+                }}
+              >
                 {error}
               </div>
             )}
@@ -169,21 +203,21 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-200">
+              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-900/50">
               {loading ? '登入中...' : '登入'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <span className="text-white/60 text-sm">還沒有帳號？</span>
-            <Link to="/register" className="text-orange-500 hover:text-orange-400 text-sm ml-1 font-medium">
+            <span className="text-sm" style={{ color: T.textMid }}>還沒有帳號？</span>
+            <Link to="/register" className="text-sm ml-1 font-medium hover:opacity-80" style={{ color: T.orange }}>
               立即註冊
             </Link>
           </div>
-        </div>
+        </GlassCard>
 
         <div className="mt-6 text-center">
-          <Link to="/" className="text-white/60 hover:text-white/80 text-sm transition-colors">
+          <Link to="/" className="text-sm transition-colors hover:opacity-80" style={{ color: T.textLow }}>
             ← 返回首頁
           </Link>
         </div>
@@ -192,27 +226,36 @@ export default function Login() {
       {/* In-App Browser 阻擋 Modal — 點 Google 登入時觸發，引導用戶複製網址改用系統瀏覽器 */}
       {showInAppWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-slate-900 border border-white/15 rounded-2xl p-6 shadow-2xl">
+          <GlassCard color={T.warn} style={{ width: '100%', maxWidth: 28 * 16, padding: 24 }}>
             <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-2xl shrink-0">⚠️</div>
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-2xl shrink-0"
+                style={{ background: T.warn + '33' }}
+              >⚠️</div>
               <div className="flex-1">
-                <h3 className="text-white font-semibold text-lg mb-1">無法使用 Google 登入</h3>
-                <p className="text-white/60 text-sm leading-relaxed">
+                <h3 className="font-semibold text-lg mb-1" style={{ color: T.text }}>無法使用 Google 登入</h3>
+                <p className="text-sm leading-relaxed" style={{ color: T.textMid }}>
                   Google 不允許在 {inAppName || 'App 內建'} 瀏覽器中進行登入（403 disallowed_useragent）。請改用 {deviceOS === 'ios' ? 'Safari' : 'Chrome'} 開啟此網址。
                 </p>
               </div>
             </div>
 
             {/* 網址顯示框 + 複製按鈕 */}
-            <div className="bg-black/40 border border-white/10 rounded-lg p-3 mb-4">
-              <p className="text-white/40 text-xs mb-1">網址</p>
-              <p className="text-white/90 text-sm break-all font-mono">{getCurrentUrl()}</p>
+            <div
+              className="rounded-lg p-3 mb-4"
+              style={{
+                background: 'rgba(0,0,0,0.4)',
+                border: `1px solid ${T.cardBorder}`,
+              }}
+            >
+              <p className="text-xs mb-1" style={{ color: T.textLow }}>網址</p>
+              <p className="text-sm break-all font-mono" style={{ color: T.text }}>{getCurrentUrl()}</p>
             </div>
 
             <button
               type="button"
               onClick={handleCopyUrl}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all mb-3"
+              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all mb-3 shadow-lg shadow-orange-900/50"
             >
               {copied ? '✓ 已複製，請開啟瀏覽器貼上' : '📋 複製網址'}
             </button>
@@ -222,7 +265,12 @@ export default function Login() {
               <button
                 type="button"
                 onClick={tryOpenInSystemBrowser}
-                className="w-full py-3 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-medium rounded-xl transition-all mb-3"
+                className="w-full py-3 font-medium rounded-xl transition-all mb-3"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${T.cardBorder}`,
+                  color: T.text,
+                }}
               >
                 🌐 嘗試直接開啟 Chrome
               </button>
@@ -230,7 +278,7 @@ export default function Login() {
 
             {/* iOS 步驟說明 */}
             {deviceOS === 'ios' && (
-              <div className="text-white/50 text-xs leading-relaxed mb-3 px-1">
+              <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.textMid }}>
                 <p className="mb-1">📱 iPhone 操作步驟：</p>
                 <p>1. 點上方「複製網址」</p>
                 <p>2. 開啟 Safari</p>
@@ -241,11 +289,12 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowInAppWarning(false)}
-              className="w-full py-2 text-white/50 hover:text-white/80 text-sm transition-colors"
+              className="w-full py-2 text-sm transition-colors hover:opacity-80"
+              style={{ color: T.textLow }}
             >
               關閉，改用 Email 登入
             </button>
-          </div>
+          </GlassCard>
         </div>
       )}
     </div>
