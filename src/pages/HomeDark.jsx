@@ -505,7 +505,7 @@ export default function HomeDark() {
       {/* 下方青綠漸層光暈 — 從頁尾右下往左上擴散（335deg = 155deg 雙軸鏡像，亮角落到對側）
          同樣使用 lighten 混合，避免其黑色區覆蓋上方漸層的亮色 */}
       <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
-        height: '3500px',
+        height: '4500px',
         background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
         mixBlendMode: 'lighten',
       }} />
