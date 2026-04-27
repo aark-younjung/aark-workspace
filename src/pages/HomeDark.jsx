@@ -496,13 +496,13 @@ export default function HomeDark() {
 
       {/* 上方青綠漸層光暈 — 從頁首左上往中央漸隱至純黑（範圍比照原本 full-page 設定） */}
       <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
-        height: '2400px',
+        height: '3000px',
         background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
       }} />
 
       {/* 下方青綠漸層光暈 — 從頁尾右下往左上擴散（335deg = 155deg 雙軸鏡像，亮角落到對側） */}
       <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
-        height: '2400px',
+        height: '3000px',
         background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
       }} />
 
