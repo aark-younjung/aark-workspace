@@ -249,10 +249,15 @@ function HomeFAQItem({ q, a }) {
   )
 }
 
+// 網址欄位 placeholder 打字動畫的範例網址（循環播放）
+const TYPEWRITER_DOMAINS = ['example.com', 'yourbrand.tw', 'shop.com.tw']
+
 export default function HomeDark() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
+  // 打字動畫:當前 placeholder 顯示的範例網址片段（循環打/刪）
+  const [typedDomain, setTypedDomain] = useState('')
   const [recentScans, setRecentScans] = useState([
     { name: 'aark.com.tw',          scanned_at: new Date(Date.now() - 3   * 60000).toISOString() },
     { name: 'greenwave.com.tw',     scanned_at: new Date(Date.now() - 11  * 60000).toISOString() },
@@ -278,6 +283,39 @@ export default function HomeDark() {
   const { user, isPro, userName, signOut } = useAuth()
   const { setDark } = useTheme()
   useEffect(() => { setDark(true) }, [])
+
+  // 打字動畫:循環打/刪範例網址,只在已登入且 input 為空時跑
+  useEffect(() => {
+    if (!user || url) { setTypedDomain(''); return }
+    let wordIdx = 0
+    let charIdx = 0
+    let phase = 'typing' // typing → holding → deleting → empty → 下一個字
+    let timer
+    const tick = () => {
+      const word = TYPEWRITER_DOMAINS[wordIdx]
+      if (phase === 'typing') {
+        charIdx++
+        setTypedDomain(word.slice(0, charIdx))
+        if (charIdx === word.length) { phase = 'holding'; timer = setTimeout(tick, 1500); return }
+        timer = setTimeout(tick, 85)
+      } else if (phase === 'holding') {
+        phase = 'deleting'
+        timer = setTimeout(tick, 50)
+      } else if (phase === 'deleting') {
+        charIdx--
+        setTypedDomain(word.slice(0, charIdx))
+        if (charIdx === 0) { phase = 'empty'; timer = setTimeout(tick, 400); return }
+        timer = setTimeout(tick, 45)
+      } else if (phase === 'empty') {
+        wordIdx = (wordIdx + 1) % TYPEWRITER_DOMAINS.length
+        phase = 'typing'
+        tick()
+      }
+    }
+    timer = setTimeout(tick, 800) // 進站後先停 800ms 再開始打
+    return () => clearTimeout(timer)
+  }, [user, url])
+
   const WEBSITE_LIMIT = isPro ? 15 : 3
 
   const fetchMyWebsites = async () => {
@@ -568,12 +606,16 @@ export default function HomeDark() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onFocus={() => { if (!user) navigate('/login', { state: { from: '/' } }) }}
-                  placeholder={user ? '輸入您的網址 (例如: example.com)' : '請先登入以開始分析'}
-                  className="flex-1 px-6 py-4 rounded-xl border border-white/70 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60 focus:border-transparent transition-all backdrop-blur-sm"
+                  placeholder={
+                    user
+                      ? (typedDomain ? `輸入網址,例如 ${typedDomain}` : '輸入您的網址')
+                      : '請先登入以開始分析'
+                  }
+                  className="flex-1 px-6 py-4 rounded-xl border border-white/80 text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:border-transparent transition-all"
                   disabled={loading}
                   style={{
-                    background: 'rgba(255,255,255,0.22)',
-                    boxShadow: '0 0 0 1px rgba(255,255,255,0.10) inset, 0 4px 18px rgba(0,0,0,0.25)',
+                    background: 'rgba(255,255,255,0.92)',
+                    animation: 'urlInputGlow 2.6s ease-in-out infinite',
                   }}
                 />
                 <button

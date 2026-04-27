@@ -38,6 +38,22 @@ body {
   100% { transform: rotate(360deg); }
 }
 
+/* HomeDark 網址欄位脈衝發光（吸引第一次造訪用戶的視線） */
+@keyframes urlInputGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.18) inset,
+      0 0 0 0 rgba(249,115,22,0),
+      0 4px 18px rgba(0,0,0,0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.28) inset,
+      0 0 0 8px rgba(249,115,22,0.18),
+      0 6px 24px rgba(249,115,22,0.18);
+  }
+}
+
 /* ── Dark theme overrides (applied when html.dark-theme) ── */
 
 /* Cards & panels */
