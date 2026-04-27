@@ -491,8 +491,20 @@ export default function HomeDark() {
     <>
     {loading && <DarkScanningOverlay logs={scanLogs} targetUrl={url} />}
     <div className="min-h-screen relative overflow-hidden" style={{
-      background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+      background: '#000',
     }}>
+
+      {/* 上方青綠漸層光暈 — 從頁首左上往中央漸隱至純黑 */}
+      <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '900px',
+        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+      }} />
+
+      {/* 下方青綠漸層光暈 — 從頁尾左下往中央漸隱至純黑（25deg 為 155deg 的垂直鏡像） */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '900px',
+        background: 'linear-gradient(25deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+      }} />
 
       {/* 顆粒感疊層 */}
       <div className="absolute inset-0 pointer-events-none z-0" style={{
