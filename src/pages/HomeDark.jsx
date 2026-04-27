@@ -494,16 +494,20 @@ export default function HomeDark() {
       background: '#000',
     }}>
 
-      {/* 上方青綠漸層光暈 — 從頁首左上往中央漸隱至純黑（範圍比照原本 full-page 設定） */}
+      {/* 上方青綠漸層光暈 — 從頁首左上往中央漸隱至純黑（範圍比照原本 full-page 設定）
+         使用 mix-blend-mode: lighten 確保和下方漸層重疊時亮色不會被蓋掉 */}
       <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
         height: '3000px',
         background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
       }} />
 
-      {/* 下方青綠漸層光暈 — 從頁尾右下往左上擴散（335deg = 155deg 雙軸鏡像，亮角落到對側） */}
+      {/* 下方青綠漸層光暈 — 從頁尾右下往左上擴散（335deg = 155deg 雙軸鏡像，亮角落到對側）
+         同樣使用 lighten 混合，避免其黑色區覆蓋上方漸層的亮色 */}
       <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
         height: '3000px',
         background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
       }} />
 
       {/* 顆粒感疊層 */}
