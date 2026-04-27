@@ -23,43 +23,6 @@ const timeAgo = (d) => {
   return `${Math.floor(hours / 24)} 天前`
 }
 
-const AI_BOTS = [
-  { name: 'GPTBot',       company: 'OpenAI',      color: '#10b981', ratio: 0.35, todayRatio: 0.38, domain: 'openai.com' },
-  { name: 'Google AI',    company: 'Google',       color: '#3b82f6', ratio: 0.18, todayRatio: 0.20, domain: 'google.com' },
-  { name: 'ClaudeBot',    company: 'Anthropic',    color: '#f59e0b', ratio: 0.15, todayRatio: 0.14, domain: 'anthropic.com' },
-  { name: 'PerplexityBot',company: 'Perplexity',   color: '#06b6d4', ratio: 0.12, todayRatio: 0.11, domain: 'perplexity.ai' },
-  { name: 'Meta AI',      company: 'Meta',          color: '#6366f1', ratio: 0.08, todayRatio: 0.07, domain: 'meta.com' },
-  { name: 'Amazonbot',    company: 'Amazon',        color: '#f97316', ratio: 0.06, todayRatio: 0.05, domain: 'amazon.com' },
-  { name: 'NotebookLM',   company: 'Google',        color: '#eab308', ratio: 0.03, todayRatio: 0.03, domain: 'notebooklm.google.com' },
-  { name: 'ChatGPT',      company: 'OpenAI',        color: '#14b8a6', ratio: 0.03, todayRatio: 0.02, domain: 'openai.com' },
-]
-
-const SE_BOTS = [
-  { name: 'Googlebot',   company: 'Google',       color: '#10b981', ratio: 0.40, todayRatio: 0.42, domain: 'google.com' },
-  { name: 'Bingbot',     company: 'Microsoft',    color: '#3b82f6', ratio: 0.25, todayRatio: 0.24, domain: 'bing.com' },
-  { name: 'YandexBot',   company: 'Yandex',       color: '#ef4444', ratio: 0.20, todayRatio: 0.18, domain: 'yandex.com' },
-  { name: 'DuckDuckBot', company: 'DuckDuckGo',   color: '#f97316', ratio: 0.10, todayRatio: 0.11, domain: 'duckduckgo.com' },
-  { name: 'Applebot',    company: 'Apple',         color: '#94a3b8', ratio: 0.05, todayRatio: 0.05, domain: 'apple.com' },
-]
-
-function BotLogo({ domain, color, size = 'md' }) {
-  const dim = size === 'md' ? 'w-9 h-9' : 'w-8 h-8'
-  const imgDim = size === 'md' ? 'w-6 h-6' : 'w-5 h-5'
-  return (
-    <div className={`${dim} rounded-full flex-shrink-0 bg-white/10 flex items-center justify-center overflow-hidden border border-white/20 shadow-sm`}>
-      <img
-        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
-        alt={domain}
-        className={`${imgDim} object-contain`}
-        onError={(e) => {
-          e.currentTarget.parentElement.style.background = `radial-gradient(circle at 35% 35%, rgba(255,255,255,0.2) 0%, ${color}88 60%)`
-          e.currentTarget.style.display = 'none'
-        }}
-      />
-    </div>
-  )
-}
-
 const SCAN_NODES = [
   { id: 'meta',    label: 'Meta 標籤',  x: 210, y: 58,  keys: ['meta', 'Meta'] },
   { id: 'sitemap', label: 'Sitemap',    x: 316, y: 104, keys: ['sitemap'] },
@@ -262,6 +225,19 @@ function HomeFAQItem({ q, a }) {
 // 網址欄位 placeholder 打字動畫的範例網址（循環播放）
 const TYPEWRITER_DOMAINS = ['example.com', 'yourbrand.tw', 'shop.com.tw']
 
+// TOP 8 排行榜的樣本資料(僅在真實掃描資料不足 8 筆時用來補位、避免空版面)
+// 分數設定為偏高(74–92)以呈現「優等生」榜單視覺
+const SAMPLE_TOP = [
+  { id: 'top-s1', name: '優勢方舟數位行銷',  url: 'aark.com.tw',         total: 92, seo: 95, aeo: 91, geo: 90, isSample: true },
+  { id: 'top-s2', name: 'Lifong 立勛資訊',   url: 'lifong.com.hk',       total: 88, seo: 90, aeo: 87, geo: 87, isSample: true },
+  { id: 'top-s3', name: 'Notion 設計工作室', url: 'notion-design.tw',    total: 85, seo: 88, aeo: 83, geo: 84, isSample: true },
+  { id: 'top-s4', name: '青山空間設計',       url: 'qingshan-design.tw',  total: 82, seo: 86, aeo: 80, geo: 80, isSample: true },
+  { id: 'top-s5', name: 'Greenwave 行銷',    url: 'greenwave.com.tw',    total: 80, seo: 85, aeo: 78, geo: 77, isSample: true },
+  { id: 'top-s6', name: 'Lumen Creative',    url: 'lumencreative.co',    total: 78, seo: 82, aeo: 76, geo: 76, isSample: true },
+  { id: 'top-s7', name: 'Peak Studio',       url: 'peakstudio.io',       total: 76, seo: 78, aeo: 75, geo: 75, isSample: true },
+  { id: 'top-s8', name: 'Mint Leaf 品牌顧問',url: 'mintleaf.com.tw',     total: 74, seo: 76, aeo: 73, geo: 73, isSample: true },
+]
+
 export default function HomeDark() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
@@ -282,13 +258,10 @@ export default function HomeDark() {
     { name: 'horizonbrand.tw',      scanned_at: new Date(Date.now() - 310 * 60000).toISOString() },
     { name: 'craftlabs.io',         scanned_at: new Date(Date.now() - 390 * 60000).toISOString() },
   ])
-  const [crawlerStats, setCrawlerStats] = useState({
-    total: 1247,
-    todayTotal: 38,
-    latestAt: new Date(Date.now() - 3 * 60000).toISOString(),
-  })
   const [scanLogs, setScanLogs] = useState([])
   const [myWebsites, setMyWebsites] = useState([])
+  // TOP 8 排行榜:預設用 SAMPLE_TOP,真實資料載入後若有 ≥1 筆會混合或覆蓋
+  const [topSites, setTopSites] = useState(SAMPLE_TOP)
   const navigate = useNavigate()
   const { user, isPro, userName, signOut } = useAuth()
   const { setDark } = useTheme()
@@ -365,23 +338,41 @@ export default function HomeDark() {
 
   useEffect(() => {
     const init = async () => {
-      const today = new Date().toISOString().split('T')[0]
-      const [scansRes, totalRes, todayRes, latestRes] = await Promise.all([
+      // 跑馬燈 + TOP 8 排行榜的資料來源:websites 與三大面向 audits
+      const [scansRes, wRes, sRes, aRes, gRes] = await Promise.all([
         supabase.from('seo_audits').select('created_at, websites(name)').order('created_at', { ascending: false }).limit(15),
-        supabase.from('seo_audits').select('id', { count: 'exact', head: true }),
-        supabase.from('seo_audits').select('id', { count: 'exact', head: true }).gte('created_at', today + 'T00:00:00'),
-        supabase.from('seo_audits').select('created_at').order('created_at', { ascending: false }).limit(1),
+        supabase.from('websites').select('id, name, url'),
+        supabase.from('seo_audits').select('website_id, score, created_at').order('created_at', { ascending: false }),
+        supabase.from('aeo_audits').select('website_id, score, created_at').order('created_at', { ascending: false }),
+        supabase.from('geo_audits').select('website_id, score, created_at').order('created_at', { ascending: false }),
       ])
       if (scansRes.data) {
         const withNames = scansRes.data.filter(d => d.websites?.name)
         if (withNames.length >= 5) setRecentScans(withNames.map(d => ({ name: d.websites.name, scanned_at: d.created_at })))
       }
-      const base = 800
-      setCrawlerStats({
-        total: base + (totalRes.count || 0) * 60,
-        todayTotal: 20 + (todayRes.count || 0) * 60,
-        latestAt: latestRes.data?.[0]?.created_at || new Date().toISOString(),
-      })
+
+      // TOP 8 排行榜:撈所有 websites + 三大面向最新分數,計算總分排序
+      // 真實資料 < 8 筆時用 SAMPLE_TOP 補位,確保版面不會空白
+      const latestPerSite = (rows) => {
+        const m = {}
+        rows?.forEach(r => { if (!(r.website_id in m)) m[r.website_id] = r.score })
+        return m
+      }
+      const seoMap = latestPerSite(sRes.data)
+      const aeoMap = latestPerSite(aRes.data)
+      const geoMap = latestPerSite(gRes.data)
+      const realRanked = (wRes.data || []).map(w => {
+        const seo = seoMap[w.id], aeo = aeoMap[w.id], geo = geoMap[w.id]
+        const scores = [seo, aeo, geo].filter(v => v != null)
+        if (scores.length === 0) return null
+        const total = Math.round(scores.reduce((x,y) => x + y, 0) / scores.length)
+        return { id: w.id, name: w.name, url: w.url, total, seo: seo ?? 0, aeo: aeo ?? 0, geo: geo ?? 0, isSample: false }
+      }).filter(Boolean).sort((a, b) => b.total - a.total)
+      // 真實 ≥ 8 → 全用真實;不足 → 真實在前、樣本補後面 8 位
+      const merged = realRanked.length >= 8
+        ? realRanked.slice(0, 8)
+        : [...realRanked, ...SAMPLE_TOP].slice(0, 8)
+      setTopSites(merged)
     }
     init()
   }, [])
@@ -809,81 +800,69 @@ export default function HomeDark() {
           </div>
         )}
 
-        {/* 即時爬蟲動態 */}
-        {crawlerStats && (
-          <div className="mt-16 text-left">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl">📡</span>
+        {/* 本週 AI 能見度 TOP 8 — 真實掃描分數排名(不足時樣本補位) */}
+        {topSites.length > 0 && (
+          <div className="mt-16">
+            <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-white">即時爬蟲動態</h2>
-                  <span className="flex items-center gap-1 px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30">
-                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>即時
-                  </span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3" style={{
+                  background: T.aivis + '1f',
+                  border: `1px solid ${T.aivis}55`,
+                }}>
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.aivis }} />
+                  <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>本週榜單</span>
                 </div>
-                <p className="text-white/60 text-xs mt-0.5">分析日誌衍生・每次檢測即更新</p>
+                <h2 className="text-2xl md:text-3xl font-bold" style={{ color: T.text, letterSpacing: '-0.02em' }}>
+                  AI 能見度 TOP 8
+                </h2>
+                <p className="text-sm mt-1" style={{ color: T.textMid }}>
+                  所有掃描網站的最新總分排名 · 你也可以上榜
+                </p>
               </div>
+              <Link to="/showcase" className="text-sm font-medium" style={{ color: T.orange }}>
+                查看完整排行榜 →
+              </Link>
             </div>
 
-            <div className="flex items-center gap-2 mb-3">
-              <span>🤖</span>
-              <span className="text-white/80 text-sm font-medium">AI 爬蟲</span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-              {AI_BOTS.map((bot, i) => {
-                const count = Math.round(crawlerStats.total * bot.ratio)
-                const todayCount = Math.max(1, Math.round(crawlerStats.todayTotal * bot.todayRatio))
-                const offsetMins = Math.round((1 - bot.ratio) * 90)
-                const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
-                return (
-                  <GlassCard key={i} color={T.aivis} hover style={{ padding: 16 }}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <BotLogo domain={bot.domain} color={bot.color} size="md" />
-                      <div className="min-w-0">
-                        <div className="font-bold text-sm truncate" style={{ color: T.text }}>{bot.name}</div>
-                        <div className="text-xs" style={{ color: T.textMid }}>{bot.company}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {topSites.slice(0, 8).map((site, i) => {
+                const rank = i + 1
+                // 前三名給金/銀/銅獎牌與專屬色,4–8 名顯示 #N
+                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
+                const rankColor = rank === 1 ? '#fbbf24' : rank === 2 ? '#cbd5e1' : rank === 3 ? '#fb923c' : T.textMid
+                const scoreColor = (s) => s >= 70 ? T.pass : s >= 40 ? T.warn : T.fail
+                // 樣本資料無 dashboard 連結,真實資料才包 Link
+                const Inner = (
+                  <GlassCard color={rank <= 3 ? T.orange : null} hover style={{ padding: 14 }}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-10 text-center font-bold" style={{
+                        color: rankColor,
+                        fontSize: rank <= 3 ? 22 : 16,
+                      }}>{medal}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm truncate flex items-center gap-2" style={{ color: T.text }}>
+                          {site.name}
+                          {site.isSample && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded font-normal" style={{
+                              color: T.textLow,
+                              background: 'rgba(255,255,255,0.06)',
+                            }}>樣本</span>
+                          )}
+                        </div>
+                        <div className="text-xs truncate" style={{ color: T.textMid }}>{site.url}</div>
                       </div>
-                    </div>
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <div className="font-bold text-xl" style={{ color: T.pass }}>{count.toLocaleString()}</div>
-                        <div className="text-xs" style={{ color: T.pass + 'b3' }}>+{todayCount} 今日</div>
+                      <div className="flex-shrink-0 text-right">
+                        <div className="text-2xl font-bold leading-none" style={{ color: scoreColor(site.total) }}>{site.total}</div>
+                        <div className="text-[10px] mt-1" style={{ color: T.textLow }}>
+                          SEO {site.seo} · AEO {site.aeo} · GEO {site.geo}
+                        </div>
                       </div>
-                      <div className="text-xs text-right" style={{ color: T.textMid }}>{timeAgo(lastSeen)}</div>
                     </div>
                   </GlassCard>
                 )
-              })}
-            </div>
-
-            <div className="flex items-center gap-2 mb-3">
-              <span>🔍</span>
-              <span className="text-white/80 text-sm font-medium">搜尋引擎爬蟲</span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {SE_BOTS.map((bot, i) => {
-                const count = Math.round(crawlerStats.total * bot.ratio * 1.2)
-                const todayCount = Math.max(1, Math.round(crawlerStats.todayTotal * bot.todayRatio * 1.2))
-                const offsetMins = Math.round((1 - bot.ratio) * 60)
-                const lastSeen = new Date(new Date(crawlerStats.latestAt).getTime() - offsetMins * 60000).toISOString()
-                return (
-                  <GlassCard key={i} color={T.seo} hover style={{ padding: 16 }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <BotLogo domain={bot.domain} color={bot.color} size="sm" />
-                      <div className="min-w-0">
-                        <div className="font-bold text-xs truncate" style={{ color: T.text }}>{bot.name}</div>
-                        <div className="text-xs" style={{ color: T.textMid }}>{bot.company}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <div className="font-bold text-lg" style={{ color: T.pass }}>{count.toLocaleString()}</div>
-                        <div className="text-xs" style={{ color: T.pass + 'b3' }}>+{todayCount} 今日</div>
-                      </div>
-                      <div className="text-xs" style={{ color: T.textMid }}>{timeAgo(lastSeen)}</div>
-                    </div>
-                  </GlassCard>
-                )
+                return site.isSample
+                  ? <div key={site.id || i}>{Inner}</div>
+                  : <Link key={site.id || i} to={`/dashboard/${site.id}`} className="block">{Inner}</Link>
               })}
             </div>
           </div>
