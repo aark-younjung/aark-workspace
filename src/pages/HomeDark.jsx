@@ -614,7 +614,7 @@ export default function HomeDark() {
                   className="flex-1 px-6 py-4 rounded-xl border border-white/80 text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:border-transparent transition-all"
                   disabled={loading}
                   style={{
-                    background: 'rgba(255,255,255,0.92)',
+                    background: 'rgba(255,255,255,0.72)',
                     animation: 'urlInputGlow 2.6s ease-in-out infinite',
                   }}
                 />
