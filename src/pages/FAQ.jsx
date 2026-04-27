@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import Footer from '../components/Footer'
+import { T } from '../styles/v2-tokens'
+import { GlassCard } from '../components/v2'
 
 const FAQ_ITEMS = [
   {
@@ -115,6 +117,49 @@ const FAQ_ITEMS = [
   },
 ]
 
+// FAQ 折疊項 — dark 版用 GlassCard + T.orange hover 邊；light 版維持原 bg-white/50
+function FAQItem({ catIdx, qIdx, item, isOpen, onToggle, isDark }) {
+  if (isDark) {
+    return (
+      <GlassCard color={T.orange} style={{ overflow: 'hidden', padding: 0 }}>
+        <button
+          onClick={() => onToggle(catIdx, qIdx)}
+          className="w-full flex items-center justify-between px-6 py-4 text-left gap-4"
+        >
+          <span className="font-semibold text-sm leading-relaxed" style={{ color: T.text }}>{item.q}</span>
+          <span
+            className={`flex-shrink-0 text-lg transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`}
+            style={{ color: T.orange }}
+          >+</span>
+        </button>
+        {isOpen && (
+          <div className="px-6 pb-5">
+            <div className="h-px mb-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <p className="text-sm leading-relaxed" style={{ color: T.textMid }}>{item.a}</p>
+          </div>
+        )}
+      </GlassCard>
+    )
+  }
+  return (
+    <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl overflow-hidden shadow-sm">
+      <button
+        onClick={() => onToggle(catIdx, qIdx)}
+        className="w-full flex items-center justify-between px-6 py-4 text-left gap-4"
+      >
+        <span className="font-semibold text-slate-800 text-sm leading-relaxed">{item.q}</span>
+        <span className={`text-orange-500 flex-shrink-0 text-lg transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`}>+</span>
+      </button>
+      {isOpen && (
+        <div className="px-6 pb-5">
+          <div className="h-px bg-orange-100 mb-4" />
+          <p className="text-slate-600 text-sm leading-relaxed">{item.a}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FAQ() {
   const { user, isPro, userName, signOut } = useAuth()
   const { isDark } = useTheme()
@@ -126,11 +171,46 @@ export default function FAQ() {
   }
 
   return (
-    <div className="min-h-screen relative" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`, opacity: 0.25, mixBlendMode: 'overlay' }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+    <div
+      className="min-h-screen relative overflow-hidden"
+      style={isDark
+        ? { background: '#000' }
+        : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }
+      }
+    >
+      {/* dark 模式雙端漸層 — 與 HomeDark 一致，上方左上亮 + 下方右下亮，中段純黑
+         FAQ 頁高度約 2500-3500px，bottom 用 1800px 即可避免兩層全頁覆蓋 */}
+      {isDark && (
+        <>
+          <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
+            height: '2400px',
+            background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+            mixBlendMode: 'lighten',
+          }} />
+          <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
+            height: '1800px',
+            background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+            mixBlendMode: 'lighten',
+          }} />
+        </>
+      )}
 
-      {/* JSON-LD FAQ Schema */}
+      {/* 雜訊疊層 — dark 用 0.12/overlay，light 用 0.25/overlay */}
+      <div className="absolute inset-0 pointer-events-none z-0" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='${isDark ? 4 : 3}' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+        opacity: isDark ? 0.12 : 0.25,
+        mixBlendMode: 'overlay',
+      }} />
+
+      {/* light 模式才有的橘色點陣紋路（dark 模式不需要） */}
+      {!isDark && (
+        <div className="absolute inset-0 pointer-events-none z-0" style={{
+          backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }} />
+      )}
+
+      {/* JSON-LD FAQ Schema — SEO 必要，dark/light 都要保留 */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
@@ -141,20 +221,28 @@ export default function FAQ() {
         })))
       }) }} />
 
-      {/* Header */}
-      <header className="relative sticky top-0 z-40 border-b border-white/40 backdrop-blur-md bg-white/30">
+      {/* Header — dark 用 bg-black/50 + 白色文字，light 維持原 bg-white/30 */}
+      <header className={`relative sticky top-0 z-40 border-b backdrop-blur-md ${
+        isDark ? 'border-white/8 bg-black/50' : 'border-white/40 bg-white/30'
+      }`}>
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200">
+            <div className={`w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md ${
+              isDark ? 'shadow-orange-900/50' : 'shadow-orange-200'
+            }`}>
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-lg font-bold text-slate-800">優勢方舟數位行銷</span>
+            <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>優勢方舟數位行銷</span>
           </Link>
           <nav className="flex items-center gap-4">
-            <Link to="/" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">首頁</Link>
-            <Link to="/pricing" className="hidden sm:block text-slate-600 hover:text-slate-900 text-sm transition-colors">定價</Link>
+            <Link to="/" className={`hidden sm:block text-sm transition-colors ${
+              isDark ? 'text-white/85 hover:text-orange-300' : 'text-slate-600 hover:text-slate-900'
+            }`}>首頁</Link>
+            <Link to="/pricing" className={`hidden sm:block text-sm transition-colors ${
+              isDark ? 'text-white/85 hover:text-orange-300' : 'text-slate-600 hover:text-slate-900'
+            }`}>定價</Link>
             {user ? (
               <>
                 {!isPro && (
@@ -164,12 +252,14 @@ export default function FAQ() {
                   {user?.user_metadata?.avatar_url ? (
                     <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">
                       {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
                     </div>
                   )}
                 </Link>
-                <button onClick={signOut} className="text-slate-400 hover:text-slate-700 text-xs sm:text-sm transition-colors">登出</button>
+                <button onClick={signOut} className={`text-xs sm:text-sm transition-colors ${
+                  isDark ? 'text-white/50 hover:text-white/85' : 'text-slate-400 hover:text-slate-700'
+                }`}>登出</button>
               </>
             ) : (
               <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
@@ -178,14 +268,32 @@ export default function FAQ() {
         </div>
       </header>
 
-      <main className="relative max-w-3xl mx-auto px-6 py-16">
-        {/* Hero */}
+      <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
+        {/* Hero — dark 用 T.orange 膠囊 + T.text H1 + T.textMid 副標 */}
         <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-100 text-orange-600 rounded-full text-sm font-medium mb-6">
+          <div
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-6"
+            style={isDark
+              ? { background: T.orange + '1f', border: `1px solid ${T.orange}55`, color: T.orange }
+              : { background: '#fed7aa55', color: '#ea580c' }
+            }
+          >
             💬 常見問題
           </div>
-          <h1 className="text-4xl font-bold text-slate-800 mb-4">有任何問題嗎？</h1>
-          <p className="text-slate-500 text-lg">關於 AI 能見度、工具使用與方案的常見問題解答</p>
+          <h1
+            className="text-4xl font-bold mb-4"
+            style={isDark
+              ? { color: T.text, letterSpacing: '-0.02em' }
+              : { color: '#1e293b' }
+            }
+          >有任何問題嗎？</h1>
+          <p
+            className="text-lg"
+            style={isDark
+              ? { color: T.textMid, lineHeight: 1.7 }
+              : { color: '#64748b' }
+            }
+          >關於 AI 能見度、工具使用與方案的常見問題解答</p>
         </div>
 
         {/* FAQ 分類 */}
@@ -194,28 +302,24 @@ export default function FAQ() {
             <div key={catIdx}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xl">{cat.icon}</span>
-                <h2 className="text-lg font-bold text-slate-700">{cat.category}</h2>
+                <h2
+                  className="text-lg font-bold"
+                  style={isDark ? { color: T.text } : { color: '#334155' }}
+                >{cat.category}</h2>
               </div>
               <div className="space-y-3">
                 {cat.questions.map((item, qIdx) => {
                   const key = `${catIdx}-${qIdx}`
-                  const isOpen = openItems[key]
                   return (
-                    <div key={qIdx} className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl overflow-hidden shadow-sm">
-                      <button
-                        onClick={() => toggle(catIdx, qIdx)}
-                        className="w-full flex items-center justify-between px-6 py-4 text-left gap-4"
-                      >
-                        <span className="font-semibold text-slate-800 text-sm leading-relaxed">{item.q}</span>
-                        <span className={`text-orange-500 flex-shrink-0 text-lg transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`}>+</span>
-                      </button>
-                      {isOpen && (
-                        <div className="px-6 pb-5">
-                          <div className="h-px bg-orange-100 mb-4" />
-                          <p className="text-slate-600 text-sm leading-relaxed">{item.a}</p>
-                        </div>
-                      )}
-                    </div>
+                    <FAQItem
+                      key={qIdx}
+                      catIdx={catIdx}
+                      qIdx={qIdx}
+                      item={item}
+                      isOpen={openItems[key]}
+                      onToggle={toggle}
+                      isDark={isDark}
+                    />
                   )
                 })}
               </div>
@@ -223,26 +327,51 @@ export default function FAQ() {
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="mt-16 p-8 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl text-center shadow-sm">
-          <div className="text-3xl mb-3">🚀</div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">還有其他問題？</h2>
-          <p className="text-slate-500 text-sm mb-4">直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
-          <Link to="/"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200">
-            取得我的免費報告 →
-          </Link>
-          <p className="mt-4 text-sm text-slate-500">
-            或直接寫信給我們：
-            <a href="mailto:aark.younjung@gmail.com" className="text-orange-500 hover:text-orange-600 font-medium ml-1">
-              aark.younjung@gmail.com
-            </a>
-          </p>
-        </div>
+        {/* CTA — dark 用 GlassCard，light 維持原樣 */}
+        {isDark ? (
+          <GlassCard color={T.orange} style={{ marginTop: 64, padding: 32, textAlign: 'center' }}>
+            <div className="text-3xl mb-3">🚀</div>
+            <h2 className="text-xl font-bold mb-2" style={{ color: T.text }}>還有其他問題？</h2>
+            <p className="text-sm mb-4" style={{ color: T.textMid }}>直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
+            <Link to="/"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-900/60">
+              取得我的免費報告 →
+            </Link>
+            <p className="mt-4 text-sm" style={{ color: T.textMid }}>
+              或直接寫信給我們：
+              <a href="mailto:aark.younjung@gmail.com" className="font-medium ml-1" style={{ color: T.orange }}>
+                aark.younjung@gmail.com
+              </a>
+            </p>
+          </GlassCard>
+        ) : (
+          <div className="mt-16 p-8 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl text-center shadow-sm">
+            <div className="text-3xl mb-3">🚀</div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">還有其他問題？</h2>
+            <p className="text-slate-500 text-sm mb-4">直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
+            <Link to="/"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200">
+              取得我的免費報告 →
+            </Link>
+            <p className="mt-4 text-sm text-slate-500">
+              或直接寫信給我們：
+              <a href="mailto:aark.younjung@gmail.com" className="text-orange-500 hover:text-orange-600 font-medium ml-1">
+                aark.younjung@gmail.com
+              </a>
+            </p>
+          </div>
+        )}
 
         {/* Footer nav */}
         <div className="mt-6 text-center">
-          <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm transition-colors">← 返回首頁</Link>
+          <Link
+            to="/"
+            className="text-sm transition-colors"
+            style={isDark
+              ? { color: T.textLow }
+              : undefined
+            }
+          >← 返回首頁</Link>
         </div>
       </main>
       <Footer />
