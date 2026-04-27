@@ -232,12 +232,10 @@ export default function AIVisibilityDashboard() {
   // 累積掃描次數（responses 行數）
   const scanCount = totalRuns
 
-  // 本月成本（USD → NT$ 約 ×31）
+  // 本月新增提及次數（被 AI 提到才計入）
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-  const monthCostUsd = responses.filter(r => r.created_at >= monthStart)
-    .reduce((sum, r) => sum + Number(r.cost_usd || 0), 0)
-  const monthCostNT = (monthCostUsd * 31).toFixed(2)
+  const monthMentions = responses.filter(r => r.created_at >= monthStart && r.brand_mentioned).length
 
   // 30 天趨勢資料（每日 mention rate）
   const trendData = useMemo(() => {
@@ -368,7 +366,7 @@ export default function AIVisibilityDashboard() {
       const r = await fetch(`/api/aivis/generate-prompts?brand_id=${id}`, { method: 'POST' })
       const json = await r.json()
       if (!r.ok || !json.success) throw new Error(json.error || json.detail || '產生失敗')
-      setToast({ kind: 'success', msg: `✅ 已重新產生 ${json.generated_count} 條（成本 $${json.cost_usd?.toFixed(4) ?? '0.0000'}）` })
+      setToast({ kind: 'success', msg: `✅ 已重新產生 ${json.generated_count} 條 prompt` })
       setTimeout(() => setToast(null), 3500)
       loadAll()
     } catch (err) {
@@ -384,7 +382,7 @@ export default function AIVisibilityDashboard() {
       return
     }
     setScanning(true); setScanPhase(0); setScanTotal(activePrompts.length)
-    let totalMentioned = 0, totalRunsCount = 0, totalCost = 0
+    let totalMentioned = 0, totalRunsCount = 0
     try {
       for (let i = 0; i < activePrompts.length; i++) {
         const p = activePrompts[i]
@@ -396,13 +394,12 @@ export default function AIVisibilityDashboard() {
         }
         totalMentioned += json.mentioned_count
         totalRunsCount += json.runs
-        totalCost += json.total_cost_usd
       }
       const rate = totalRunsCount > 0 ? Math.round(totalMentioned / totalRunsCount * 100) : 0
       setScanning(false)
       setToast({
         kind: 'success',
-        msg: `✅ 掃描完成 — ${activePrompts.length} prompt × ${SCAN_RUNS} 次 = ${totalRunsCount} 次呼叫，平均提及率 ${rate}%（成本 $${totalCost.toFixed(4)}）`,
+        msg: `✅ 掃描完成 — ${activePrompts.length} prompt × ${SCAN_RUNS} 次 = ${totalRunsCount} 次呼叫，平均提及率 ${rate}%`,
       })
       setTimeout(() => setToast(null), 5500)
       loadAll()
@@ -504,7 +501,7 @@ export default function AIVisibilityDashboard() {
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => <OverviewSkeleton key={i} />)
           ) : isEmpty ? (
-            ['品牌曝光率', '平均出現位置', '已掃描次數', '本月總費用'].map((label, i) => (
+            ['品牌曝光率', '平均出現位置', '已掃描次數', '本月新增提及'].map((label, i) => (
               <OverviewEmpty key={i} label={label} />
             ))
           ) : (
@@ -516,8 +513,8 @@ export default function AIVisibilityDashboard() {
                 sub="被提到時通常的排名" color={AIVIS_TEAL} />
               <OverviewCard icon="🔄" label="已掃描次數" value={scanCount} suffix=" 次"
                 sub="累積 Claude API 呼叫量" color={T.textMid} />
-              <OverviewCard icon="💰" label="本月總費用" value={monthCostNT} prefix="NT$ "
-                sub={`API 累積成本（haiku 4.5）≈ $${monthCostUsd.toFixed(4)} USD`} color={T.orange} />
+              <OverviewCard icon="✨" label="本月新增提及" value={monthMentions} suffix=" 次"
+                sub="AI 在本月回答中提到品牌的次數" color={T.orange} />
             </>
           )}
         </div>
@@ -566,7 +563,7 @@ export default function AIVisibilityDashboard() {
                 立即執行掃描
               </div>
               <div style={{ fontSize: 13, color: T.textMid }}>
-                手動觸發一次 {activeCount} prompt × {SCAN_RUNS} 次的 Claude 詢問 · 約耗時 {activeCount * 8} 秒、消耗 ~NT$ {(activeCount * 0.13).toFixed(2)}
+                手動觸發一次 {activeCount} prompt × {SCAN_RUNS} 次的 Claude 詢問 · 約耗時 {activeCount * 8} 秒
               </div>
             </div>
           </div>

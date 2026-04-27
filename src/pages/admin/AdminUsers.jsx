@@ -14,6 +14,7 @@ export default function AdminUsers() {
   const [expandedId, setExpandedId] = useState(null)
   const [toggling, setToggling] = useState(null)
   const [userWebsites, setUserWebsites] = useState({})
+  const [userAivis, setUserAivis] = useState({}) // { userId: { monthUsd, totalUsd, monthRuns, totalRuns } }
   const [grantEmail, setGrantEmail] = useState('')
   const [granting, setGranting] = useState(false)
   const [grantResult, setGrantResult] = useState(null) // { type: 'success'|'error'|'info', msg }
@@ -59,6 +60,25 @@ export default function AdminUsers() {
         return true
       })
       setUserWebsites(prev => ({ ...prev, [userId]: deduped }))
+    }
+    // 載入 aivis（AI 曝光監測）API 成本
+    if (!userAivis[userId]) {
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+      const { data: rows } = await supabase
+        .from('aivis_responses')
+        .select('cost_usd, created_at')
+        .eq('user_id', userId)
+      const all = rows || []
+      const totalUsd = all.reduce((s, r) => s + Number(r.cost_usd || 0), 0)
+      const monthRows = all.filter(r => r.created_at >= monthStart)
+      const monthUsd = monthRows.reduce((s, r) => s + Number(r.cost_usd || 0), 0)
+      setUserAivis(prev => ({
+        ...prev,
+        [userId]: {
+          monthUsd, totalUsd,
+          monthRuns: monthRows.length, totalRuns: all.length,
+        },
+      }))
     }
   }
 
@@ -297,7 +317,42 @@ export default function AdminUsers() {
                     {/* 展開詳情 */}
                     {expandedId === u.id && (
                       <div className="px-6 pb-5 bg-slate-900/50 border-t border-slate-700">
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-4 mb-3">已分析的網站</p>
+                        {/* AI 曝光監測 API 成本（admin 內部追蹤，前台對用戶隱藏） */}
+                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-4 mb-3">AI 曝光監測 — API 成本（內部）</p>
+                        {!userAivis[u.id] ? (
+                          <p className="text-slate-500 text-sm">載入中...</p>
+                        ) : userAivis[u.id].totalRuns === 0 ? (
+                          <p className="text-slate-500 text-sm">尚未使用 AI 曝光監測</p>
+                        ) : (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {/* 本月成本 */}
+                            <div className="bg-slate-800 rounded-lg px-4 py-3">
+                              <p className="text-slate-500 text-xs mb-1">本月成本</p>
+                              <p className="text-emerald-400 text-lg font-bold">${userAivis[u.id].monthUsd.toFixed(4)}</p>
+                              <p className="text-slate-500 text-xs">≈ NT$ {(userAivis[u.id].monthUsd * 31).toFixed(2)}</p>
+                            </div>
+                            {/* 累積成本 */}
+                            <div className="bg-slate-800 rounded-lg px-4 py-3">
+                              <p className="text-slate-500 text-xs mb-1">累積成本</p>
+                              <p className="text-slate-200 text-lg font-bold">${userAivis[u.id].totalUsd.toFixed(4)}</p>
+                              <p className="text-slate-500 text-xs">≈ NT$ {(userAivis[u.id].totalUsd * 31).toFixed(2)}</p>
+                            </div>
+                            {/* 本月呼叫數 */}
+                            <div className="bg-slate-800 rounded-lg px-4 py-3">
+                              <p className="text-slate-500 text-xs mb-1">本月 API 呼叫</p>
+                              <p className="text-slate-200 text-lg font-bold">{userAivis[u.id].monthRuns}</p>
+                              <p className="text-slate-500 text-xs">次</p>
+                            </div>
+                            {/* 累積呼叫數 */}
+                            <div className="bg-slate-800 rounded-lg px-4 py-3">
+                              <p className="text-slate-500 text-xs mb-1">累積 API 呼叫</p>
+                              <p className="text-slate-200 text-lg font-bold">{userAivis[u.id].totalRuns}</p>
+                              <p className="text-slate-500 text-xs">次</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-5 mb-3">已分析的網站</p>
                         {!userWebsites[u.id] ? (
                           <p className="text-slate-500 text-sm">載入中...</p>
                         ) : userWebsites[u.id].length === 0 ? (
