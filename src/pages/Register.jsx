@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -13,13 +14,39 @@ export default function Register() {
   const [marketingConsent, setMarketingConsent] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [showInAppWarning, setShowInAppWarning] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { signUp, signInWithGoogle } = useAuth()
   const { isDark } = useTheme()
 
+  // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth）
+  const inApp = useMemo(() => isInAppBrowser(), [])
+  const inAppName = useMemo(() => getInAppBrowserName(), [])
+  const deviceOS = useMemo(() => getDeviceOS(), [])
+
   const handleGoogleSignIn = async () => {
+    if (inApp) {
+      setShowInAppWarning(true)
+      return
+    }
     setGoogleLoading(true)
     await signInWithGoogle()
     setTimeout(() => setGoogleLoading(false), 3000)
+  }
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(getCurrentUrl())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = getCurrentUrl()
+      document.body.appendChild(ta)
+      ta.select()
+      try { document.execCommand('copy'); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
+      document.body.removeChild(ta)
+    }
   }
 
 
@@ -77,6 +104,21 @@ export default function Register() {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">建立帳號</h1>
           <p className="text-gray-500">加入即獲得 3 個網站免費分析額度，不需信用卡</p>
         </div>
+
+        {/* In-App Browser 警告 banner */}
+        {inApp && (
+          <div className="mb-5 p-4 bg-amber-100 border border-amber-300 rounded-xl text-amber-900 text-sm">
+            <div className="flex items-start gap-2">
+              <span className="text-lg leading-none">⚠️</span>
+              <div className="flex-1">
+                <p className="font-semibold mb-1">偵測到您正在 {inAppName} 瀏覽</p>
+                <p className="text-amber-800 text-xs leading-relaxed">
+                  Google 不允許在 App 內建瀏覽器註冊登入。請改用 {deviceOS === 'ios' ? 'Safari' : 'Chrome'} 開啟，或使用 Email 註冊。
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 表單 */}
         <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 p-8">
@@ -199,6 +241,63 @@ export default function Register() {
           </Link>
         </div>
       </div>
+
+      {/* In-App Browser 阻擋 Modal */}
+      {showInAppWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-2xl shrink-0">⚠️</div>
+              <div className="flex-1">
+                <h3 className="text-gray-800 font-semibold text-lg mb-1">無法使用 Google 註冊</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Google 不允許在 {inAppName || 'App 內建'} 瀏覽器中進行 OAuth 登入。請改用 {deviceOS === 'ios' ? 'Safari' : 'Chrome'} 開啟此網址。
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+              <p className="text-gray-400 text-xs mb-1">網址</p>
+              <p className="text-gray-700 text-sm break-all font-mono">{getCurrentUrl()}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCopyUrl}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all mb-3"
+            >
+              {copied ? '✓ 已複製，請開啟瀏覽器貼上' : '📋 複製網址'}
+            </button>
+
+            {deviceOS === 'android' && (
+              <button
+                type="button"
+                onClick={tryOpenInSystemBrowser}
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-700 font-medium rounded-xl transition-all mb-3"
+              >
+                🌐 嘗試直接開啟 Chrome
+              </button>
+            )}
+
+            {deviceOS === 'ios' && (
+              <div className="text-gray-500 text-xs leading-relaxed mb-3 px-1">
+                <p className="mb-1">📱 iPhone 操作步驟：</p>
+                <p>1. 點上方「複製網址」</p>
+                <p>2. 開啟 Safari</p>
+                <p>3. 在網址列長按 → 貼上 → 前往</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowInAppWarning(false)}
+              className="w-full py-2 text-gray-400 hover:text-gray-600 text-sm transition-colors"
+            >
+              關閉，改用 Email 註冊
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

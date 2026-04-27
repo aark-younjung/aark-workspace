@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -9,18 +10,46 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showInAppWarning, setShowInAppWarning] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { signIn, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { isDark } = useTheme()
   const from = location.state?.from || '/'
 
+  // mount 時偵測，避免每次 render 重算
+  const inApp = useMemo(() => isInAppBrowser(), [])
+  const inAppName = useMemo(() => getInAppBrowserName(), [])
+  const deviceOS = useMemo(() => getDeviceOS(), [])
+
   if (user) { navigate(from, { replace: true }); return null }
 
   const handleGoogleSignIn = async () => {
+    // 偵測 in-app browser → Google 會擋 OAuth (403 disallowed_useragent)，先彈窗引導改用系統瀏覽器
+    if (inApp) {
+      setShowInAppWarning(true)
+      return
+    }
     setGoogleLoading(true)
     await signInWithGoogle(from)
     setTimeout(() => setGoogleLoading(false), 3000)
+  }
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(getCurrentUrl())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // 部分 in-app browser 不允許 clipboard API，fallback 用 textarea select
+      const ta = document.createElement('textarea')
+      ta.value = getCurrentUrl()
+      document.body.appendChild(ta)
+      ta.select()
+      try { document.execCommand('copy'); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
+      document.body.removeChild(ta)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -55,6 +84,21 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-white mb-2">歡迎回來</h1>
           <p className="text-white/60">登入以查看您的 AI 能見度報告</p>
         </div>
+
+        {/* In-App Browser 警告 banner（FB / LINE / IG 等社群 App 內建瀏覽器會擋 Google OAuth）*/}
+        {inApp && (
+          <div className="mb-5 p-4 bg-amber-500/15 border border-amber-400/40 rounded-xl text-amber-100 text-sm">
+            <div className="flex items-start gap-2">
+              <span className="text-lg leading-none">⚠️</span>
+              <div className="flex-1">
+                <p className="font-semibold mb-1">偵測到您正在 {inAppName} 瀏覽</p>
+                <p className="text-amber-100/80 text-xs leading-relaxed">
+                  Google 不允許在 App 內建瀏覽器登入。請點下方按鈕複製網址，再用 {deviceOS === 'ios' ? 'Safari' : 'Chrome'} 開啟，或改用 Email 登入。
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 表單 */}
         <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8">
@@ -144,6 +188,66 @@ export default function Login() {
           </Link>
         </div>
       </div>
+
+      {/* In-App Browser 阻擋 Modal — 點 Google 登入時觸發，引導用戶複製網址改用系統瀏覽器 */}
+      {showInAppWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-slate-900 border border-white/15 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-2xl shrink-0">⚠️</div>
+              <div className="flex-1">
+                <h3 className="text-white font-semibold text-lg mb-1">無法使用 Google 登入</h3>
+                <p className="text-white/60 text-sm leading-relaxed">
+                  Google 不允許在 {inAppName || 'App 內建'} 瀏覽器中進行登入（403 disallowed_useragent）。請改用 {deviceOS === 'ios' ? 'Safari' : 'Chrome'} 開啟此網址。
+                </p>
+              </div>
+            </div>
+
+            {/* 網址顯示框 + 複製按鈕 */}
+            <div className="bg-black/40 border border-white/10 rounded-lg p-3 mb-4">
+              <p className="text-white/40 text-xs mb-1">網址</p>
+              <p className="text-white/90 text-sm break-all font-mono">{getCurrentUrl()}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCopyUrl}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all mb-3"
+            >
+              {copied ? '✓ 已複製，請開啟瀏覽器貼上' : '📋 複製網址'}
+            </button>
+
+            {/* Android 直接嘗試開啟 Chrome */}
+            {deviceOS === 'android' && (
+              <button
+                type="button"
+                onClick={tryOpenInSystemBrowser}
+                className="w-full py-3 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-medium rounded-xl transition-all mb-3"
+              >
+                🌐 嘗試直接開啟 Chrome
+              </button>
+            )}
+
+            {/* iOS 步驟說明 */}
+            {deviceOS === 'ios' && (
+              <div className="text-white/50 text-xs leading-relaxed mb-3 px-1">
+                <p className="mb-1">📱 iPhone 操作步驟：</p>
+                <p>1. 點上方「複製網址」</p>
+                <p>2. 開啟 Safari</p>
+                <p>3. 在網址列長按 → 貼上 → 前往</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowInAppWarning(false)}
+              className="w-full py-2 text-white/50 hover:text-white/80 text-sm transition-colors"
+            >
+              關閉，改用 Email 登入
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
