@@ -611,10 +611,9 @@ export default function HomeDark() {
                       ? (typedDomain ? `輸入網址,例如 ${typedDomain}` : '輸入您的網址')
                       : '請先登入以開始分析'
                   }
-                  className="flex-1 px-6 py-4 rounded-xl border border-white/80 text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:border-transparent transition-all"
+                  className="home-url-input flex-1 px-6 py-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:border-transparent transition-all"
                   disabled={loading}
                   style={{
-                    background: 'rgba(255,255,255,0.95)',
                     animation: 'urlInputGlow 2.6s ease-in-out infinite',
                   }}
                 />

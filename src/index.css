@@ -116,6 +116,17 @@ html.dark-theme input::placeholder, html.dark-theme textarea::placeholder {
   color: rgba(255, 255, 255, 0.35) !important;
 }
 
+/* 例外：HomeDark 首頁的網址欄位要白底深字（吸引第一次造訪的視線），
+   蓋掉上面 dark-theme 全域 reset 的 !important */
+html.dark-theme input.home-url-input {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
+  color: #0f172a !important; /* slate-900 */
+}
+html.dark-theme input.home-url-input::placeholder {
+  color: rgba(15, 23, 42, 0.55) !important; /* slate-500 */
+}
+
 /* Blur overlay (pro lock) */
 html.dark-theme .bg-white\/60.backdrop-blur-sm {
   background-color: rgba(0, 0, 0, 0.5) !important;
