@@ -777,7 +777,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
           {/* 第二列：動作按鈕（手機橫向捲動，桌面正常排列） */}
           <div className="flex items-center gap-2 pb-3 overflow-x-auto scrollbar-hide">
-            {/* 連接 Google */}
+            {/* 連接 Google — 暫時隱藏（Google OAuth 未驗證警告 + 7 天 token 過期問題，等送審後恢復）
             {googleConnected ? (
               <button
                 onClick={() => setShowGoogleSettings(true)}
@@ -796,6 +796,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 連接 Google
               </button>
             )}
+            */}
             {/* 重新檢測 */}
             <button
               onClick={handleReanalyze}
@@ -947,7 +948,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide p-1.5 rounded-2xl" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
           {[
             { id: 'overview', label: '總覽', icon: '📊' },
-            { id: 'traffic', label: '流量數據', icon: '📈' },
+            // { id: 'traffic', label: '流量數據', icon: '📈' }, // 暫時隱藏（同 TopBar Google 按鈕，等 OAuth 驗證後恢復）
             { id: 'crawler', labelMobile: 'AI 爬蟲', label: 'AI 爬蟲追蹤', icon: '🤖' },
             { id: 'tools', label: '優化工具', icon: '⚙️' },
           ].map(tab => {
