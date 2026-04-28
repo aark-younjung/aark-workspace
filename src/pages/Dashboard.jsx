@@ -943,28 +943,39 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           )
         })()}
 
-        {/* Tab 頁籤列 — 暗色：橘色作為 active 指示色 */}
-        <div className="flex border-b border-white/10 mb-8 overflow-x-auto scrollbar-hide">
+        {/* Tab 頁籤列 — pill 樣式：active 為深色膠囊配青綠邊框 */}
+        <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide p-1.5 rounded-2xl" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
           {[
             { id: 'overview', label: '總覽', icon: '📊' },
             { id: 'traffic', label: '流量數據', icon: '📈' },
             { id: 'crawler', labelMobile: 'AI 爬蟲', label: 'AI 爬蟲追蹤', icon: '🤖' },
             { id: 'tools', label: '優化工具', icon: '⚙️' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 -mb-px transition-all whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-orange-400 text-orange-300'
-                  : 'border-transparent text-white/50 hover:text-white hover:border-white/20'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              <span className="sm:hidden">{tab.labelMobile || tab.label}</span>
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          ))}
+          ].map(tab => {
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all whitespace-nowrap"
+                style={isActive ? {
+                  background: 'rgba(0,0,0,0.5)',
+                  border: '1px solid rgba(24,197,144,0.5)',
+                  color: '#34d399',
+                  boxShadow: '0 0 0 1px rgba(24,197,144,0.15), 0 4px 16px rgba(24,197,144,0.12)',
+                } : {
+                  background: 'transparent',
+                  border: '1px solid transparent',
+                  color: 'rgba(255,255,255,0.55)',
+                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#fff' }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+              >
+                <span>{tab.icon}</span>
+                <span className="sm:hidden">{tab.labelMobile || tab.label}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            )
+          })}
         </div>
 
         {/* ── Tab: 總覽 ── */}
