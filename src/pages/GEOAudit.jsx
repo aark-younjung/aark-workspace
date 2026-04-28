@@ -202,7 +202,7 @@ export default function GEOAudit() {
               background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
               borderRadius: T.rL, padding: 24,
             }}>
-              <GEOSignature />
+              <GEOSignature audit={geoAudit} isPro={isPro} />
             </div>
           </div>
 

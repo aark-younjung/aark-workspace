@@ -230,7 +230,7 @@ export default function EEATAudit() {
               background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
               borderRadius: T.rL, padding: 24,
             }}>
-              <EEATSignature />
+              <EEATSignature audit={eeatAudit} />
             </div>
           </div>
 

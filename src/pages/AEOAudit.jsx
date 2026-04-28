@@ -200,7 +200,7 @@ export default function AEOAudit() {
               background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
               borderRadius: T.rL, padding: 24,
             }}>
-              <AEOSignature />
+              <AEOSignature audit={aeoAudit} brandName={website?.name} />
             </div>
           </div>
 

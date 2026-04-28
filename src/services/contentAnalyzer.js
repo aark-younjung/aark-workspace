@@ -165,6 +165,32 @@ function checkInternalLinks(doc, url) {
   }
 }
 
+// ── 7b. 外部引用 ──────────────────────────────────────────────
+// 連結到外站的 anchor 數量；AI 引用偏好「有引用權威來源」的內容
+function checkOutboundLinks(doc, url) {
+  let domain = ''
+  try { domain = new URL(url).hostname } catch {}
+  const outbound = [...doc.querySelectorAll('a[href]')].filter(a => {
+    const href = a.getAttribute('href') || ''
+    if (!href.startsWith('http')) return false
+    try {
+      return new URL(href).hostname !== domain
+    } catch { return false }
+  })
+  return { count: outbound.length, hasEnough: outbound.length >= 3 }
+}
+
+// ── 7c. 多媒體輔助 ────────────────────────────────────────────
+// 圖片 / 影片 / iframe 數量；AI 引用偏好有視覺輔助的長文
+function checkMultimedia(doc) {
+  const imgs = doc.querySelectorAll('img').length
+  const videos = doc.querySelectorAll('video').length
+  const pictures = doc.querySelectorAll('picture').length
+  const iframes = doc.querySelectorAll('iframe').length
+  const total = imgs + videos + pictures + iframes
+  return { count: total, imgs, videos, pictures, iframes }
+}
+
 // ── 8. 可讀性（段落長度）─────────────────────────────────────
 function checkReadability(doc) {
   const paragraphs = [...doc.querySelectorAll('article p, main p, .content p, p')]
@@ -229,9 +255,13 @@ export async function analyzeContent(url) {
   const author = checkAuthor(doc)
   const images = checkImages(doc)
   const links = checkInternalLinks(doc, url)
+  const outbound = checkOutboundLinks(doc, url)
+  const multimedia = checkMultimedia(doc)
   const readability = checkReadability(doc)
+  // 估算閱讀分鐘數：中文 ≈ 400 字/分、英文 ≈ 200 字/分，混和取 250 字/分
+  const readingMinutes = Math.round((wordCount.totalWords / 250) * 10) / 10
 
-  const checks = { heading, wordCount, meta, aeo, author, images, links, readability }
+  const checks = { heading, wordCount, meta, aeo, author, images, links, outbound, multimedia, readability, readingMinutes }
   const score = calcScore(checks)
 
   return { url, score, ...checks }
