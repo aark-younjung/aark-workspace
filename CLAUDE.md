@@ -252,6 +252,16 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-04-28
+**SEOAudit 遷移至共用 AuditHero / IssueBoard / SerpAndVitals（完成五頁 dedupe）:**
+- ✅ **抽出 [src/components/v2/SerpAndVitals.jsx](src/components/v2/SerpAndVitals.jsx)**：把原本 SEOAudit 內聯的 `SerpAndVitals` + `CWVMetric`（Google SERP 預覽 + Core Web Vitals LCP/INP/CLS 三格）獨立成檔，CSS class `.seo-cwv-grid` 改名為 `.v2-cwv-grid`（與 v2-issue-board / v2-hero-grid 命名一致）。barrel export 加進 [src/components/v2/index.js](src/components/v2/index.js)。
+- ✅ **[src/pages/SEOAudit.jsx](src/pages/SEOAudit.jsx) 大幅瘦身（1018 → 300 行，砍掉 718 行）**：移除所有內聯的 `ScoreHero` / `ScoreCircle` / `Sparkline` / `IssueBoard` / `IssueLane` / `IssueCard` / `IssueFixPanel` / `IssueLockCTA` / `HeroSkeleton` / `IssueBoardSkeleton`、`PAGE_KEYFRAMES` 整段 CSS、`firstFail` dead code，全部改為從 `../components/v2` import 共用元件。麵包屑列也用 `<AuditTopBar face="SEO" accent={ACCENT} accent2={ACCENT2} />` 取代原本內聯的 `.seo-topbar`。`.seo-hero-grid` → `.v2-hero-grid`。
+- ✅ **保留 SEO 專屬元件 inline**：`PageBg`、`SectionTitle`、`RoadmapPanel`、`RoadmapColumn`、`RoadmapLockOverlay` 留在檔內，因為這些只 SEO 用得到（其他四頁沒有 P1/P2/P3 三段式優化路線圖）。`SEO_CHECKS` 資料當然也留下。
+- ✅ **AuditTopBar 提供同款外觀**：返回 dashboard 麵包屑 + 重新檢測（轉圈 spin）+ 匯出 PDF（橘藍漸層按鈕），與 AEO/GEO/EEAT 完全一致，視覺零差異。
+- ✅ **dedupe 後唯一 source of truth**：SEO/AEO/GEO/EEAT/Content 五個 audit 頁的頂部分數區、右側 Signature 容器、看板式 IssueBoard 全部走共用元件，未來改視覺只需改 v2 共用檔，不會分歧。Sparkline `<linearGradient>` ID prefix `audit-spark-grad-` 也統一了（之前 SEOAudit 用 `spark-grad-` 是為了避撞，現在用同款後可以同名共存）。
+- 🔖 **取捨：Roadmap 不抽到 v2 共用**：P1/P2/P3 三段路線圖目前只 SEO 有，AEO/GEO/EEAT 各自有「短期目標 / 中期目標」兩段式 GlassCard 結構不同。若硬抽 props 介面會擴得很複雜，等第二個面向頁需要 P1/P2/P3 結構再說。
+- 🔖 **取捨：本地 build 反覆 STATUS_STACK_BUFFER_OVERRUN（exit -1073740791）非本次 commit 引發**：在乾淨 main 上 build 也一樣崩在 870 modules transformed 後的 rollup 渲染階段（屬 Windows 環境性問題）。我這 commit 只多 1 個檔案 → 871 modules 前的 transformation 全通過，依靠 Vercel CI Linux 環境驗證實際 build。
+
+### 2026-04-28
 **MetricSignatures 從 mock 改為真實 analyzer 資料（4 個面向別右側欄全接通）:**
 - ✅ **[src/services/contentAnalyzer.js](src/services/contentAnalyzer.js) 補 3 個欄位**：新增 `checkOutboundLinks(doc, url)`（外部 anchor 數量，跨 hostname 才算）+ `checkMultimedia(doc)`（img/video/picture/iframe 數量分項）+ `readingMinutes`（`totalWords / 250` 取一位小數，中英混合估算）。`analyzeContent()` return 加上 `outbound`、`multimedia`、`readingMinutes` 三個 key。`calcScore` 不變（這 3 個只供 ContentSignature 5 維度用，不影響總分）。
 - ✅ **[src/components/v2/MetricSignatures.jsx](src/components/v2/MetricSignatures.jsx) 全面接 props**：`AEOSignature({ audit, brandName })` / `GEOSignature({ audit, isPro })` / `EEATSignature({ audit })` / `ContentSignature({ result })`，每個都保留 `audit/result == null` 的 mock fallback 路徑（供 prototype 預覽 + audit 還沒掃描時的占位）。
