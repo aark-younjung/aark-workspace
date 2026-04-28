@@ -1933,7 +1933,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       P3: { bg: 'rgba(16,185,129,0.18)', color: '#86efac', label: 'P3 優化' },
                     }[tip.priority] || { bg: 'rgba(255,255,255,0.08)', color: '#cbd5e1', label: tip.priority }
                     return (
-                      <div key={i} className="flex gap-4 p-4 rounded-xl" style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div key={i} className="flex gap-4 p-4 rounded-xl" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)' }}>
                         <span className="text-2xl flex-shrink-0">{tip.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
