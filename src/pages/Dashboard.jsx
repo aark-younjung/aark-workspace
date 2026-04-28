@@ -363,12 +363,13 @@ export default function Dashboard() {
     'E-E-A-T': T.eeat,
     '內容': '#ec4899',
   }
+  // target 80 對應 getVerdict()「良好」門檻 — 每軸一致，作為合格基準線
   const radarData = [
-    { subject: 'SEO', score: seoScore, fullMark: 100 },
-    { subject: 'AEO', score: aeoScore, fullMark: 100 },
-    { subject: 'GEO', score: geoScore, fullMark: 100 },
-    { subject: 'E-E-A-T', score: eeatScore, fullMark: 100 },
-    { subject: '內容', score: contentScore || 0, fullMark: 100 },
+    { subject: 'SEO', score: seoScore, target: 80, fullMark: 100 },
+    { subject: 'AEO', score: aeoScore, target: 80, fullMark: 100 },
+    { subject: 'GEO', score: geoScore, target: 80, fullMark: 100 },
+    { subject: 'E-E-A-T', score: eeatScore, target: 80, fullMark: 100 },
+    { subject: '內容', score: contentScore || 0, target: 80, fullMark: 100 },
   ]
 
   // 歷史趨勢數據（從最新紀錄對齊，避免各模組筆數不同時錯位）
@@ -1012,6 +1013,17 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   }}
                 />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)' }} />
+                {/* 合格基準線（80 分=「良好」門檻）— 白色虛線，畫在現況之下 */}
+                <Radar
+                  name="合格基準（80 分）"
+                  dataKey="target"
+                  stroke="rgba(255,255,255,0.55)"
+                  fill="rgba(255,255,255,0.04)"
+                  strokeDasharray="5 4"
+                  strokeWidth={1.25}
+                  dot={false}
+                  isAnimationActive={false}
+                />
                 <Radar
                   name="本站表現"
                   dataKey="score"
