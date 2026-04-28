@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { analyzeGEO } from '../services/geoAnalyzer'
 import { useAuth } from '../context/AuthContext'
 import { T } from '../styles/v2-tokens'
-import { GlassCard, IssueBoard, IssueBoardSkeleton } from '../components/v2'
+import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 
@@ -83,6 +83,7 @@ export default function GEOAudit() {
   const { isPro } = useAuth()
   const [website, setWebsite] = useState(null)
   const [geoAudit, setGeoAudit] = useState(null)
+  const [recentAudits, setRecentAudits] = useState([])
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
 
@@ -98,6 +99,12 @@ export default function GEOAudit() {
         .from('geo_audits').select('*').eq('website_id', id)
         .order('created_at', { ascending: false }).limit(1).maybeSingle()
       setGeoAudit(geoData)
+
+      // 近 7 筆分數，給 ScoreHero 7 日趨勢迷你圖用
+      const { data: recentData } = await supabase
+        .from('geo_audits').select('score, created_at').eq('website_id', id)
+        .order('created_at', { ascending: false }).limit(7)
+      setRecentAudits(recentData || [])
     } catch (error) {
       console.error('Error:', error)
     } finally {
@@ -166,96 +173,32 @@ export default function GEOAudit() {
     <PageBg>
       <SiteHeader />
       <div className="relative z-10">
-        {/* 頁內標題列：返回箭頭 + GEO 標題 + 網址（取代原獨立 header） */}
-        <div className="max-w-7xl mx-auto px-6 pt-8">
-          <div className="flex items-center gap-4 mb-6">
-            <Link to={`/dashboard/${id}`} className="transition-colors hover:opacity-80" style={{ color: T.textMid }} aria-label="返回 Dashboard">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
-            <div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold" style={{ color: T.text }}>GEO 技術檢測</h1>
-                {/* GEO 綠色強調膠囊 */}
-                <span style={{
-                  fontSize: 11, fontWeight: 700, letterSpacing: '.06em',
-                  padding: '3px 8px', borderRadius: 5,
-                  background: `linear-gradient(90deg, ${T.geo}33, #14b8a633)`,
-                  color: T.geo, border: `1px solid ${T.geo}55`,
-                }}>GEO</span>
-              </div>
-              <p className="text-sm mt-1" style={{ color: T.textMid }}>Generative Engine Optimization — 生成式 AI 引用優化</p>
-              {website?.url && <p className="text-xs mt-1" style={{ color: T.textLow }}>{website.url}</p>}
-            </div>
+        <main style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 24px 64px', fontFamily: T.font }}>
+          {/* 頂部麵包屑列：返回 Dashboard + 重新檢測 + 匯出 PDF（與 SEO 同款） */}
+          <AuditTopBar
+            websiteId={id}
+            face="GEO"
+            websiteUrl={website?.url}
+            onReanalyze={handleReanalyze}
+            analyzing={analyzing}
+            accent={T.geo}
+            accent2={GEO_ACCENT2}
+          />
+
+          {/* 分數總覽 Hero（與 SEO 同款，單欄） */}
+          <div style={{ marginBottom: 32 }}>
+            <ScoreHero
+              face="GEO"
+              subChip="技術檢測"
+              tagline="Generative Engine Optimization — 生成式 AI 引用優化"
+              score={score}
+              passedCount={passedCount}
+              failedCount={totalCount - passedCount}
+              total={totalCount}
+              recentAudits={recentAudits}
+              accent={T.geo}
+            />
           </div>
-        </div>
-
-        <main className="max-w-7xl mx-auto px-6 pb-8">
-          {/* 總覽分數卡 */}
-          <GlassCard color={T.geo} style={{ padding: 32, marginBottom: 32 }}>
-            <div className="flex items-center justify-between flex-wrap gap-6">
-              <div>
-                <h2 className="text-lg font-semibold mb-2" style={{ color: T.text }}>GEO 技術檢測得分</h2>
-                <div className="flex items-baseline gap-3">
-                  <span
-                    className="text-5xl font-bold"
-                    style={{
-                      background: `linear-gradient(135deg, ${T.geo}, #14b8a6)`,
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                    }}
-                  >{score}</span>
-                  <span style={{ color: T.textMid }}>/ 100</span>
-                </div>
-                <p className="mt-2" style={{ color: T.textMid }}>通過 {passedCount} / {totalCount} 項檢測</p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleReanalyze}
-                  disabled={analyzing}
-                  className="px-6 py-3 rounded-xl transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-white shadow-lg"
-                  style={{
-                    background: `linear-gradient(135deg, ${T.geo}, #14b8a6)`,
-                    boxShadow: `0 8px 24px ${T.geo}40`,
-                  }}
-                >
-                  {analyzing ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      分析中...
-                    </>
-                  ) : '重新檢測'}
-                </button>
-                <Link
-                  to={`/dashboard/${id}`}
-                  className="px-6 py-3 rounded-xl transition-all font-medium"
-                  style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: `1px solid ${T.cardBorder}`,
-                    color: T.text,
-                  }}
-                >
-                  返回總覽
-                </Link>
-              </div>
-            </div>
-
-            {/* 進度條 */}
-            <div className="mt-8">
-              <div className="h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${score}%`, background: `linear-gradient(90deg, ${T.geo}, #14b8a6)` }}
-                />
-              </div>
-            </div>
-          </GlassCard>
 
           {/* 詳細檢測項目（看板式 IssueBoard）— 與 SEO 同款 */}
           <div style={{ marginBottom: 14 }}>

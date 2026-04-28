@@ -4,7 +4,7 @@ import { analyzeContent } from '../services/contentAnalyzer'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
-import { IssueBoard } from '../components/v2'
+import { IssueBoard, ScoreHero } from '../components/v2'
 
 const CONTENT_ACCENT = '#ec4899' // 內容品質粉紅（與 Dashboard 第五分數一致）
 
@@ -131,28 +131,6 @@ const CHECKS = [
   },
 ]
 
-const CATEGORIES = ['內容結構', '字數與深度', 'Meta 標籤', 'AEO 結構化資料', '可信度（E-E-A-T）', '可讀性']
-
-function ScoreRing({ score }) {
-  const color = score >= 70 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444'
-  const r = 44
-  const circ = 2 * Math.PI * r
-  const dash = (score / 100) * circ
-  return (
-    <div className="relative w-32 h-32 flex items-center justify-center">
-      <svg className="absolute inset-0 -rotate-90" width="128" height="128">
-        <circle cx="64" cy="64" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
-        <circle cx="64" cy="64" r={r} fill="none" stroke={color} strokeWidth="10"
-          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
-      </svg>
-      <div className="text-center">
-        <div className="text-4xl font-bold" style={{ color }}>{score}</div>
-        <div className="text-xs text-white/60">/ 100</div>
-      </div>
-    </div>
-  )
-}
-
 export default function ContentAudit() {
   const { isPro } = useAuth()
   const [url, setUrl] = useState('')
@@ -190,13 +168,6 @@ export default function ContentAudit() {
     detail: c.detail(result),
     recommendation: c.fix,
   })) : []
-
-  const categoryCounts = CATEGORIES.reduce((acc, cat) => {
-    if (!result) return acc
-    const items = CHECKS.filter(c => c.category === cat)
-    acc[cat] = { passed: items.filter(c => c.get(result)).length, total: items.length }
-    return acc
-  }, {})
 
   return (
     <PageBg>
@@ -250,35 +221,19 @@ export default function ContentAudit() {
         {/* 分析結果 */}
         {result && (
           <>
-            {/* 總分卡 */}
-            <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-sm mb-6">
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                <ScoreRing score={result.score} />
-                <div className="flex-1 text-center sm:text-left">
-                  <h2 className="text-xl font-bold text-white mb-1">
-                    {result.score >= 70 ? '🎉 內容品質良好' : result.score >= 50 ? '⚠️ 有改善空間' : '🔴 需要優化'}
-                  </h2>
-                  <p className="text-white/60 text-sm mb-3 break-all">{result.url}</p>
-                  <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
-                    <span className="px-3 py-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-full text-sm font-medium">✅ 通過 {passedCount} 項</span>
-                    <span className="px-3 py-1 bg-red-500/15 text-red-300 border border-red-500/30 rounded-full text-sm font-medium">❌ 待改善 {CHECKS.length - passedCount} 項</span>
-                    <span className="px-3 py-1 bg-blue-500/15 text-blue-300 border border-blue-500/30 rounded-full text-sm font-medium">📝 約 {result.wordCount.totalWords.toLocaleString()} 字</span>
-                  </div>
-                </div>
-                {/* 分類快覽 */}
-                <div className="grid grid-cols-3 sm:grid-cols-2 gap-2 flex-shrink-0">
-                  {CATEGORIES.slice(0, 4).map(cat => {
-                    const { passed, total } = categoryCounts[cat] || {}
-                    const color = passed === total ? 'text-emerald-400' : passed >= total / 2 ? 'text-amber-400' : 'text-red-400'
-                    return (
-                      <div key={cat} className="text-center bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-                        <div className={`text-lg font-bold ${color}`}>{passed}/{total}</div>
-                        <div className="text-xs text-white/60 leading-tight">{cat.replace('（E-E-A-T）', '')}</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+            {/* 總分卡 — ScoreHero 同款 SEO 風格 */}
+            <div style={{ marginBottom: 32 }}>
+              <ScoreHero
+                face="內容品質"
+                subChip="文章分析"
+                tagline={result.url}
+                score={result.score}
+                passedCount={passedCount}
+                failedCount={CHECKS.length - passedCount}
+                total={CHECKS.length}
+                recentAudits={[]}
+                accent={CONTENT_ACCENT}
+              />
             </div>
 
             {/* 詳細檢測項目 — 4 欄看板 */}
