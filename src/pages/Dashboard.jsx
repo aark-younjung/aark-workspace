@@ -1119,37 +1119,37 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* GA4 流量數據區塊 */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <span className="text-xl">📊</span> GA4 網站流量分析<InfoTooltip text={`串接 Google Analytics 4 顯示真實流量數據\n・工作階段：用戶造訪網站的次數\n・活躍使用者：實際與網站互動的人數\n・跳出率：只看一頁就離開的比例（越低越好）\n・互動率：有效互動工作階段的比例（越高越好）\n・新使用者：首次造訪的訪客比例\n系統會根據數據自動給出優化建議`} />
             </h3>
             <div className="flex items-center gap-3">
-              {ga4Loading && <span className="text-sm text-slate-500">載入中...</span>}
-              {!ga4Loading && ga4PropertyId && <button onClick={() => fetchGA4GSCData()} className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors" title="重新載入數據">↻</button>}
-              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">⚙️ 修改設定</button>
-              {ga4Data && <Link to={`/ga4-report/${id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">查看詳情 →</Link>}
+              {ga4Loading && <span className="text-sm text-white/60">載入中...</span>}
+              {!ga4Loading && ga4PropertyId && <button onClick={() => fetchGA4GSCData()} className="text-xs text-white/60 hover:text-white px-2 py-1.5 rounded-lg border border-white/15 hover:border-white/25 transition-colors" title="重新載入數據">↻</button>}
+              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-white/60 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-white/25 transition-colors">⚙️ 修改設定</button>
+              {ga4Data && <Link to={`/ga4-report/${id}`} className="text-blue-300 hover:text-blue-200 text-sm font-medium">查看詳情 →</Link>}
             </div>
           </div>
           {ga4Error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
               <div className="flex items-start gap-3 mb-3">
-                <span className="text-red-500 flex-shrink-0">⚠️</span>
-                <p className="text-sm text-red-700 font-medium">{ga4Error}</p>
+                <span className="text-red-300 flex-shrink-0">⚠️</span>
+                <p className="text-sm text-red-200 font-medium">{ga4Error}</p>
               </div>
               {ga4PropertyId && (
-                <p className="text-xs text-red-500 mb-2">目前設定的 Property ID：<span className="font-mono bg-red-100 px-1 rounded">{ga4PropertyId}</span></p>
+                <p className="text-xs text-red-300 mb-2">目前設定的 Property ID：<span className="font-mono bg-red-500/20 px-1 rounded">{ga4PropertyId}</span></p>
               )}
               <div className="flex gap-2 flex-wrap">
                 {ga4Error.includes('授權已過期') || ga4Error.includes('NOT_AUTHENTICATED') ? (
                   <button
                     onClick={initiateGoogleAuth}
-                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                    className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
                   >
                     🔄 重新連接 Google
                   </button>
                 ) : null}
                 <button
                   onClick={() => setShowGoogleSettings(true)}
-                  className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                  className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
                 >
                   ✏️ 修正 Property ID 設定
                 </button>
@@ -1194,82 +1194,86 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               </div>
               {isPro ? (
               <div className="grid md:grid-cols-2 gap-6 mb-4">
-                <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
-                  <h4 className="font-semibold text-slate-800 mb-4">流量趨勢 (近30天)</h4>
+                <GlassCard color={T.seo} style={{ padding: 24 }}>
+                  <h4 className="font-semibold text-white mb-4">流量趨勢 (近30天)</h4>
                   <ResponsiveContainer width="100%" height={240}>
                     <AreaChart data={ga4Data.timeline || []}>
                       <defs>
                         <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
                           <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorPageViews" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
                           <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickFormatter={(val) => val.slice(5)} />
-                      <YAxis stroke="#64748b" fontSize={11} />
-                      <Tooltip formatter={(value) => value.toLocaleString()} labelFormatter={(label) => `日期: ${label}`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={10} tickFormatter={(val) => val.slice(5)} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={11} />
+                      <Tooltip
+                        contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff' }}
+                        formatter={(value) => value.toLocaleString()}
+                        labelFormatter={(label) => `日期: ${label}`}
+                      />
                       <Area type="monotone" dataKey="sessions" stroke="#3b82f6" fillOpacity={1} fill="url(#colorSessions)" name="工作階段" />
                       <Area type="monotone" dataKey="pageViews" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorPageViews)" name="瀏覽量" />
                     </AreaChart>
                   </ResponsiveContainer>
-                </div>
-                <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
-                  <h4 className="font-semibold text-slate-800 mb-4">📊 流量洞察與建議</h4>
+                </GlassCard>
+                <GlassCard color={T.aeo} style={{ padding: 24 }}>
+                  <h4 className="font-semibold text-white mb-4">📊 流量洞察與建議</h4>
                   <div className="space-y-3">
                     {ga4Data.bounceRate > 70 ? (
-                      <div className="flex gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                      <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.fail}1a`, border: `1px solid ${T.fail}33` }}>
                         <span className="text-lg flex-shrink-0">⚠️</span>
                         <div>
-                          <div className="font-medium text-red-700 text-sm">跳出率偏高（{ga4Data.bounceRate?.toFixed(1)}%）</div>
-                          <div className="text-red-600 text-xs mt-0.5">建議改善頁面載入速度、提升內容相關性，加入明確的 CTA 引導使用者繼續瀏覽</div>
+                          <div className="font-medium text-red-300 text-sm">跳出率偏高（{ga4Data.bounceRate?.toFixed(1)}%）</div>
+                          <div className="text-red-200/80 text-xs mt-0.5">建議改善頁面載入速度、提升內容相關性，加入明確的 CTA 引導使用者繼續瀏覽</div>
                         </div>
                       </div>
                     ) : ga4Data.bounceRate > 0 && ga4Data.bounceRate <= 50 ? (
-                      <div className="flex gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.pass}1a`, border: `1px solid ${T.pass}33` }}>
                         <span className="text-lg flex-shrink-0">✅</span>
                         <div>
-                          <div className="font-medium text-green-700 text-sm">跳出率表現良好（{ga4Data.bounceRate?.toFixed(1)}%）</div>
-                          <div className="text-green-600 text-xs mt-0.5">使用者願意留在頁面繼續瀏覽，內容相關性高</div>
+                          <div className="font-medium text-green-300 text-sm">跳出率表現良好（{ga4Data.bounceRate?.toFixed(1)}%）</div>
+                          <div className="text-green-200/80 text-xs mt-0.5">使用者願意留在頁面繼續瀏覽，內容相關性高</div>
                         </div>
                       </div>
                     ) : null}
                     {ga4Data.sessions > 0 && (ga4Data.engagedSessions / ga4Data.sessions) < 0.4 && (
-                      <div className="flex gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                      <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.warn}1a`, border: `1px solid ${T.warn}33` }}>
                         <span className="text-lg flex-shrink-0">💡</span>
                         <div>
-                          <div className="font-medium text-amber-700 text-sm">互動率偏低（{Math.round(ga4Data.engagedSessions / ga4Data.sessions * 100)}%）</div>
-                          <div className="text-amber-600 text-xs mt-0.5">考慮加入影片、互動元素或清晰的號召行動按鈕</div>
+                          <div className="font-medium text-amber-300 text-sm">互動率偏低（{Math.round(ga4Data.engagedSessions / ga4Data.sessions * 100)}%）</div>
+                          <div className="text-amber-200/80 text-xs mt-0.5">考慮加入影片、互動元素或清晰的號召行動按鈕</div>
                         </div>
                       </div>
                     )}
                     {ga4Data.activeUsers > 0 && ga4Data.newUsers / ga4Data.activeUsers > 0.7 && (
-                      <div className="flex gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.seo}1a`, border: `1px solid ${T.seo}33` }}>
                         <span className="text-lg flex-shrink-0">📣</span>
                         <div>
-                          <div className="font-medium text-blue-700 text-sm">新訪客佔比高（{Math.round(ga4Data.newUsers / ga4Data.activeUsers * 100)}%）</div>
-                          <div className="text-blue-600 text-xs mt-0.5">建議加強留存策略：Email 訂閱、社群追蹤、推播通知</div>
+                          <div className="font-medium text-blue-300 text-sm">新訪客佔比高（{Math.round(ga4Data.newUsers / ga4Data.activeUsers * 100)}%）</div>
+                          <div className="text-blue-200/80 text-xs mt-0.5">建議加強留存策略：Email 訂閱、社群追蹤、推播通知</div>
                         </div>
                       </div>
                     )}
                     {ga4Data.sessions > 0 && ga4Data.bounceRate >= 50 && ga4Data.bounceRate <= 70 && (
-                      <div className="flex gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                      <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.warn}1a`, border: `1px solid ${T.warn}33` }}>
                         <span className="text-lg flex-shrink-0">📈</span>
                         <div>
-                          <div className="font-medium text-amber-700 text-sm">跳出率尚可（{ga4Data.bounceRate?.toFixed(1)}%），仍有改善空間</div>
-                          <div className="text-amber-600 text-xs mt-0.5">嘗試優化首屏內容、加快頁面載入速度可進一步降低跳出率</div>
+                          <div className="font-medium text-amber-300 text-sm">跳出率尚可（{ga4Data.bounceRate?.toFixed(1)}%），仍有改善空間</div>
+                          <div className="text-amber-200/80 text-xs mt-0.5">嘗試優化首屏內容、加快頁面載入速度可進一步降低跳出率</div>
                         </div>
                       </div>
                     )}
                   </div>
-                </div>
+                </GlassCard>
               </div>
               ) : (
-              <div className="bg-orange-50/80 rounded-2xl p-4 border border-orange-100 text-center mb-4">
-                <p className="text-sm text-orange-700 font-medium">🔒 趨勢圖與流量洞察建議為 Pro 功能</p>
+              <div className="rounded-2xl p-4 border text-center mb-4" style={{ background: `${T.orange}1a`, borderColor: `${T.orange}40` }}>
+                <p className="text-sm text-orange-300 font-medium">🔒 趨勢圖與流量洞察建議為 Pro 功能</p>
                 <button onClick={handleUpgrade} disabled={upgrading} className="mt-2 px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60">
                   {upgrading ? '跳轉中...' : '升級 Pro 解鎖'}
                 </button>
@@ -1277,19 +1281,19 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               )}
             </>
           ) : (
-            <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+            <GlassCard color={T.seo} style={{ padding: 24 }}>
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">📊</span>
                     <div>
-                      <h4 className="font-semibold text-slate-800">串接 Google Analytics 4</h4>
-                      <p className="text-sm text-slate-500">了解你的網站流量與用戶行為</p>
+                      <h4 className="font-semibold text-white">串接 Google Analytics 4</h4>
+                      <p className="text-sm text-white/60">了解你的網站流量與用戶行為</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {['工作階段數', '活躍使用者', '跳出率', '頁面瀏覽量', '新使用者', '互動率'].map(m => (
-                      <div key={m} className="bg-blue-50 text-blue-700 text-xs px-2 py-1.5 rounded-lg text-center font-medium">{m}</div>
+                      <div key={m} className="bg-blue-500/15 text-blue-300 text-xs px-2 py-1.5 rounded-lg text-center font-medium border border-blue-500/25">{m}</div>
                     ))}
                   </div>
                   <div className="space-y-2">
@@ -1299,66 +1303,66 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       { step: '3', text: '點擊「設定 GA4 Property ID」填入資源 ID，即可看到流量數據', done: false },
                     ].map(({ step, text, done }) => (
                       <div key={step} className="flex gap-3 items-start">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-white/10 text-white/70'}`}>
                           {done ? '✓' : step}
                         </span>
-                        <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
+                        <p className="text-sm text-white/70 leading-relaxed">{text}</p>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="flex flex-col justify-center items-center gap-3 md:w-44">
                   {!googleConnected ? (
-                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-orange-100 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all">
+                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 border border-white/15 rounded-xl hover:bg-white/15 hover:border-white/25 text-white font-medium text-sm transition-all">
                       <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                       步驟 1：連接帳號
                     </button>
                   ) : (
-                    <div className="w-full text-center text-sm text-green-600 font-medium bg-green-50 rounded-xl py-2">✓ Google 帳號已連接</div>
+                    <div className="w-full text-center text-sm text-green-300 font-medium bg-green-500/15 border border-green-500/30 rounded-xl py-2">✓ Google 帳號已連接</div>
                   )}
-                  <button onClick={() => setShowGoogleSettings(true)} className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-all">
+                  <button onClick={() => setShowGoogleSettings(true)} className="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-all">
                     步驟 2：設定 Property ID
                   </button>
                 </div>
               </div>
-            </div>
+            </GlassCard>
           )}
         </div>
 
         {/* GSC 搜尋數據區塊 */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <span className="text-xl">🔍</span> Google Search Console 搜尋成效<InfoTooltip text={`顯示網站在 Google 搜尋結果的真實表現\n・曝光次數：網站出現在搜尋結果的次數\n・點擊次數：用戶實際點進網站的次數\n・點擊率 CTR：曝光中有多少人點擊（越高越好）\n・平均排名：關鍵字在 Google 的平均位置\n・機會關鍵字：排名第 4–10 名、稍加優化就能衝進前三的關鍵字`} />
             </h3>
             <div className="flex items-center gap-3">
-              {gscLoading && <span className="text-sm text-slate-500">載入中...</span>}
-              {!gscLoading && gscSiteUrl && <button onClick={() => fetchGA4GSCData()} className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors" title="重新載入數據">↻</button>}
-              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-slate-500 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">⚙️ 修改設定</button>
-              {gscData && <Link to={`/gsc-report/${id}`} className="text-green-600 hover:text-green-700 text-sm font-medium">查看詳情 →</Link>}
+              {gscLoading && <span className="text-sm text-white/60">載入中...</span>}
+              {!gscLoading && gscSiteUrl && <button onClick={() => fetchGA4GSCData()} className="text-xs text-white/60 hover:text-white px-2 py-1.5 rounded-lg border border-white/15 hover:border-white/25 transition-colors" title="重新載入數據">↻</button>}
+              <button onClick={() => setShowGoogleSettings(true)} className="text-xs text-white/60 hover:text-white px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-white/25 transition-colors">⚙️ 修改設定</button>
+              {gscData && <Link to={`/gsc-report/${id}`} className="text-green-300 hover:text-green-200 text-sm font-medium">查看詳情 →</Link>}
             </div>
           </div>
           {gscError && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
               <div className="flex items-start gap-3 mb-3">
-                <span className="text-red-500 flex-shrink-0">⚠️</span>
-                <p className="text-sm text-red-700 font-medium">{gscError}</p>
+                <span className="text-red-300 flex-shrink-0">⚠️</span>
+                <p className="text-sm text-red-200 font-medium">{gscError}</p>
               </div>
               {gscSiteUrl && (
-                <p className="text-xs text-red-500 mb-2">目前設定的網域：<span className="font-mono bg-red-100 px-1 rounded">{gscSiteUrl}</span></p>
+                <p className="text-xs text-red-300 mb-2">目前設定的網域：<span className="font-mono bg-red-500/20 px-1 rounded">{gscSiteUrl}</span></p>
               )}
               <div className="flex gap-2 flex-wrap">
                 {gscError.includes('授權已過期') || gscError.includes('NOT_AUTHENTICATED') ? (
                   <button
                     onClick={initiateGoogleAuth}
-                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                    className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
                   >
                     🔄 重新連接 Google
                   </button>
                 ) : null}
                 <button
                   onClick={() => setShowGoogleSettings(true)}
-                  className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                  className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
                 >
                   ✏️ 修正網域設定
                 </button>
@@ -1392,22 +1396,25 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               {isPro ? (
               <>
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
-                  <h4 className="font-semibold text-slate-800 mb-4">搜尋曝光與點擊趨勢</h4>
+                <GlassCard color={T.geo} style={{ padding: 24 }}>
+                  <h4 className="font-semibold text-white mb-4">搜尋曝光與點擊趨勢</h4>
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={gscData.timeline || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickFormatter={(val) => val.slice(5)} />
-                      <YAxis stroke="#64748b" fontSize={11} />
-                      <Tooltip formatter={(value) => value.toLocaleString()} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={10} tickFormatter={(val) => val.slice(5)} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={11} />
+                      <Tooltip
+                        contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, color: '#fff' }}
+                        formatter={(value) => value.toLocaleString()}
+                      />
                       <Line type="monotone" dataKey="impressions" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} name="曝光" />
                       <Line type="monotone" dataKey="clicks" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} name="點擊" />
                     </LineChart>
                   </ResponsiveContainer>
-                </div>
-                <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
-                  <h4 className="font-semibold text-slate-800 mb-3">熱門搜尋關鍵字</h4>
-                  <div className="flex gap-4 text-xs text-slate-400 mb-2 px-3">
+                </GlassCard>
+                <GlassCard color={T.eeat} style={{ padding: 24 }}>
+                  <h4 className="font-semibold text-white mb-3">熱門搜尋關鍵字</h4>
+                  <div className="flex gap-4 text-xs text-white/40 mb-2 px-3">
                     <span className="flex-1">關鍵字</span>
                     <span className="w-10 text-right">點擊</span>
                     <span className="w-12 text-right">CTR</span>
@@ -1416,71 +1423,71 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <div className="space-y-2">
                     {(gscData.topQueries || []).slice(0, 10).map((item, index) => {
                       const isOpportunity = item.position >= 4 && item.position <= 10
-                      const posColor = item.position <= 3 ? 'text-green-600' : item.position <= 10 ? 'text-amber-600' : 'text-red-500'
+                      const posColor = item.position <= 3 ? 'text-green-300' : item.position <= 10 ? 'text-amber-300' : 'text-red-300'
                       return (
-                        <div key={index} className="flex items-center gap-2 p-2.5 bg-white/50 rounded-lg">
-                          <span className="w-5 h-5 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{index + 1}</span>
-                          <span className="text-sm text-slate-700 font-medium truncate flex-1">{item.query}</span>
-                          {isOpportunity && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">機會</span>}
-                          <span className="w-10 text-right text-xs text-green-600 font-medium flex-shrink-0">{item.clicks}</span>
-                          <span className="w-12 text-right text-xs text-blue-600 font-medium flex-shrink-0">{(item.ctr * 100).toFixed(1)}%</span>
+                        <div key={index} className="flex items-center gap-2 p-2.5 bg-white/5 border border-white/10 rounded-lg">
+                          <span className="w-5 h-5 bg-orange-500/20 text-orange-300 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{index + 1}</span>
+                          <span className="text-sm text-white/90 font-medium truncate flex-1">{item.query}</span>
+                          {isOpportunity && <span className="text-xs bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">機會</span>}
+                          <span className="w-10 text-right text-xs text-green-300 font-medium flex-shrink-0">{item.clicks}</span>
+                          <span className="w-12 text-right text-xs text-blue-300 font-medium flex-shrink-0">{(item.ctr * 100).toFixed(1)}%</span>
                           <span className={`w-10 text-right text-xs font-bold flex-shrink-0 ${posColor}`}>#{item.position.toFixed(0)}</span>
                         </div>
                       )
                     })}
                     {(gscData.topQueries || []).length === 0 && (
-                      <div className="text-center text-slate-400 text-sm py-6">尚無搜尋關鍵字數據</div>
+                      <div className="text-center text-white/40 text-sm py-6">尚無搜尋關鍵字數據</div>
                     )}
                   </div>
-                </div>
+                </GlassCard>
               </div>
-              <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60 mt-4">
-                <h4 className="font-semibold text-slate-800 mb-4">🎯 搜尋優化建議</h4>
+              <GlassCard color={T.orange} style={{ padding: 24, marginTop: 16 }}>
+                <h4 className="font-semibold text-white mb-4">🎯 搜尋優化建議</h4>
                 <div className="grid md:grid-cols-2 gap-3">
                   {gscData.position > 10 && (
-                    <div className="flex gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                    <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.fail}1a`, border: `1px solid ${T.fail}33` }}>
                       <span className="text-lg flex-shrink-0">⚠️</span>
                       <div>
-                        <div className="font-medium text-red-700 text-sm">平均排名在第 2 頁（#{gscData.position?.toFixed(1)}）</div>
-                        <div className="text-red-600 text-xs mt-0.5">加強內容深度、Schema 標記、E-E-A-T 指標可提升排名</div>
+                        <div className="font-medium text-red-300 text-sm">平均排名在第 2 頁（#{gscData.position?.toFixed(1)}）</div>
+                        <div className="text-red-200/80 text-xs mt-0.5">加強內容深度、Schema 標記、E-E-A-T 指標可提升排名</div>
                       </div>
                     </div>
                   )}
                   {gscData.position > 0 && gscData.position <= 10 && (
-                    <div className="flex gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                    <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.pass}1a`, border: `1px solid ${T.pass}33` }}>
                       <span className="text-lg flex-shrink-0">✅</span>
                       <div>
-                        <div className="font-medium text-green-700 text-sm">平均排名在第 1 頁（#{gscData.position?.toFixed(1)}）</div>
-                        <div className="text-green-600 text-xs mt-0.5">持續維持內容品質，爭取更多精選摘要（Featured Snippet）</div>
+                        <div className="font-medium text-green-300 text-sm">平均排名在第 1 頁（#{gscData.position?.toFixed(1)}）</div>
+                        <div className="text-green-200/80 text-xs mt-0.5">持續維持內容品質，爭取更多精選摘要（Featured Snippet）</div>
                       </div>
                     </div>
                   )}
                   {gscData.impressions > 0 && gscData.ctr < 0.02 && (
-                    <div className="flex gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                    <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.warn}1a`, border: `1px solid ${T.warn}33` }}>
                       <span className="text-lg flex-shrink-0">💡</span>
                       <div>
-                        <div className="font-medium text-amber-700 text-sm">點擊率偏低（{(gscData.ctr * 100).toFixed(2)}%）</div>
-                        <div className="text-amber-600 text-xs mt-0.5">優化 Meta 標題與描述，加入數字、問句或情緒詞提升吸引力</div>
+                        <div className="font-medium text-amber-300 text-sm">點擊率偏低（{(gscData.ctr * 100).toFixed(2)}%）</div>
+                        <div className="text-amber-200/80 text-xs mt-0.5">優化 Meta 標題與描述，加入數字、問句或情緒詞提升吸引力</div>
                       </div>
                     </div>
                   )}
                   {(gscData.topQueries || []).filter(q => q.position >= 4 && q.position <= 10).length > 0 && (
-                    <div className="flex gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="flex gap-3 p-3 rounded-lg" style={{ background: `${T.seo}1a`, border: `1px solid ${T.seo}33` }}>
                       <span className="text-lg flex-shrink-0">🚀</span>
                       <div>
-                        <div className="font-medium text-blue-700 text-sm">
+                        <div className="font-medium text-blue-300 text-sm">
                           {(gscData.topQueries || []).filter(q => q.position >= 4 && q.position <= 10).length} 個「機會關鍵字」排名 4–10
                         </div>
-                        <div className="text-blue-600 text-xs mt-0.5">針對這些關鍵字加強內頁內容、內部連結、取得反向連結可衝進前三</div>
+                        <div className="text-blue-200/80 text-xs mt-0.5">針對這些關鍵字加強內頁內容、內部連結、取得反向連結可衝進前三</div>
                       </div>
                     </div>
                   )}
                 </div>
-              </div>
+              </GlassCard>
               </>
               ) : (
-              <div className="bg-orange-50/80 rounded-2xl p-4 border border-orange-100 text-center mt-4">
-                <p className="text-sm text-orange-700 font-medium">🔒 趨勢圖、熱門關鍵字與搜尋建議為 Pro 功能</p>
+              <div className="rounded-2xl p-4 border text-center mt-4" style={{ background: `${T.orange}1a`, borderColor: `${T.orange}40` }}>
+                <p className="text-sm text-orange-300 font-medium">🔒 趨勢圖、熱門關鍵字與搜尋建議為 Pro 功能</p>
                 <button onClick={handleUpgrade} disabled={upgrading} className="mt-2 px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60">
                   {upgrading ? '跳轉中...' : '升級 Pro 解鎖'}
                 </button>
@@ -1488,19 +1495,19 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               )}
             </>
           ) : (
-            <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+            <GlassCard color={T.geo} style={{ padding: 24 }}>
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">🔍</span>
                     <div>
-                      <h4 className="font-semibold text-slate-800">串接 Google Search Console</h4>
-                      <p className="text-sm text-slate-500">掌握網站在 Google 搜尋的真實成效</p>
+                      <h4 className="font-semibold text-white">串接 Google Search Console</h4>
+                      <p className="text-sm text-white/60">掌握網站在 Google 搜尋的真實成效</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {['搜尋曝光次數', '點擊次數', '點擊率 CTR', '平均排名', '熱門關鍵字', '機會關鍵字'].map(m => (
-                      <div key={m} className="bg-green-50 text-green-700 text-xs px-2 py-1.5 rounded-lg text-center font-medium">{m}</div>
+                      <div key={m} className="bg-green-500/15 text-green-300 text-xs px-2 py-1.5 rounded-lg text-center font-medium border border-green-500/25">{m}</div>
                     ))}
                   </div>
                   <div className="space-y-2">
@@ -1510,29 +1517,29 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       { step: '3', text: '點擊「設定 GSC Site URL」，填入 GSC 中的網站網址（如 https://example.com/）', done: false },
                     ].map(({ step, text, done }) => (
                       <div key={step} className="flex gap-3 items-start">
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${done ? 'bg-green-500 text-white' : 'bg-white/10 text-white/70'}`}>
                           {done ? '✓' : step}
                         </span>
-                        <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
+                        <p className="text-sm text-white/70 leading-relaxed">{text}</p>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="flex flex-col justify-center items-center gap-3 md:w-44">
                   {!googleConnected ? (
-                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-orange-100 rounded-xl shadow-sm hover:shadow-md text-slate-700 font-medium text-sm transition-all">
+                    <button onClick={initiateGoogleAuth} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 border border-white/15 rounded-xl hover:bg-white/15 hover:border-white/25 text-white font-medium text-sm transition-all">
                       <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                       步驟 2：連接帳號
                     </button>
                   ) : (
-                    <div className="w-full text-center text-sm text-green-600 font-medium bg-green-50 rounded-xl py-2">✓ Google 帳號已連接</div>
+                    <div className="w-full text-center text-sm text-green-300 font-medium bg-green-500/15 border border-green-500/30 rounded-xl py-2">✓ Google 帳號已連接</div>
                   )}
-                  <button onClick={() => setShowGoogleSettings(true)} className="w-full px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-all">
+                  <button onClick={() => setShowGoogleSettings(true)} className="w-full px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-all">
                     步驟 3：設定 Site URL
                   </button>
                 </div>
               </div>
-            </div>
+            </GlassCard>
           )}
         </div>
 
@@ -1543,10 +1550,10 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* 詳細檢測項目 */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* SEO 基本檢測 */}
-          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+          <GlassCard color={T.seo} style={{ padding: 24 }}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-semibold text-slate-800">SEO 基本檢測<InfoTooltip text={`搜尋引擎排名的基礎要素，共 5 項\n・Meta 標題：建議 30–60 字，包含目標關鍵字\n・Meta 描述：建議 70–155 字，吸引用戶點擊\n・H1 結構：每頁應只有一個 H1，明確傳達主題\n・圖片 Alt：所有圖片需有描述文字（SEO + 無障礙）\n・載入速度：回應時間越短，排名與用戶體驗越好`} /></h3>
-              <Link to={`/seo-audit/${id}`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              <h3 className="font-semibold text-white">SEO 基本檢測<InfoTooltip text={`搜尋引擎排名的基礎要素，共 5 項\n・Meta 標題：建議 30–60 字，包含目標關鍵字\n・Meta 描述：建議 70–155 字，吸引用戶點擊\n・H1 結構：每頁應只有一個 H1，明確傳達主題\n・圖片 Alt：所有圖片需有描述文字（SEO + 無障礙）\n・載入速度：回應時間越短，排名與用戶體驗越好`} /></h3>
+              <Link to={`/seo-audit/${id}`} className="text-blue-300 hover:text-blue-200 text-sm font-medium">
                 查看詳情 →
               </Link>
             </div>
@@ -1593,106 +1600,109 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   passed: seoAudit?.page_speed?.passed
                 },
               ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                <div key={i} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-slate-700 block">{item.name}</span>
-                    <span className="text-xs text-slate-500 truncate block">{item.value}</span>
+                    <span className="text-sm font-medium text-white block">{item.name}</span>
+                    <span className="text-xs text-white/50 truncate block">{item.value}</span>
                   </div>
                   <div className="flex items-center gap-3 ml-4">
-                    <span className="text-sm font-bold text-slate-700">{item.score}</span>
+                    <span className="text-sm font-bold text-white">{item.score}</span>
                     <span className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                      item.passed ? 'bg-green-500' : 'bg-yellow-500'
+                      item.passed ? 'bg-green-400' : 'bg-yellow-400'
                     }`}></span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </GlassCard>
 
           {/* AEO 技術檢測 */}
-          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+          <GlassCard color={T.aeo} style={{ padding: 24 }}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-slate-800">AEO 技術檢測<InfoTooltip text={`AEO（答案引擎優化）共 8 項技術指標\n・JSON-LD：結構化資料，幫助 AI 理解網頁內容\n・FAQ Schema：問答格式，提升被 AI 直接引用的機率\n・Canonical：避免重複內容，集中 SEO 權重\n・麵包屑：網站層級結構，改善索引效率\n・Open Graph：社群分享時的標題與圖片預覽\n・問句式標題：以問題形式撰寫標題，符合 AI 搜尋行為\n・Meta 描述長度：控制在適當範圍內\n・結構化答案：直接在頁面上給出清晰答案`} /></h3>
-              <Link to={`/aeo-audit/${id}`} className="text-purple-600 hover:text-purple-700 text-sm font-medium">
+              <h3 className="font-semibold text-white">AEO 技術檢測<InfoTooltip text={`AEO（答案引擎優化）共 8 項技術指標\n・JSON-LD：結構化資料，幫助 AI 理解網頁內容\n・FAQ Schema：問答格式，提升被 AI 直接引用的機率\n・Canonical：避免重複內容，集中 SEO 權重\n・麵包屑：網站層級結構，改善索引效率\n・Open Graph：社群分享時的標題與圖片預覽\n・問句式標題：以問題形式撰寫標題，符合 AI 搜尋行為\n・Meta 描述長度：控制在適當範圍內\n・結構化答案：直接在頁面上給出清晰答案`} /></h3>
+              <Link to={`/aeo-audit/${id}`} className="text-purple-300 hover:text-purple-200 text-sm font-medium">
                 查看詳情 →
               </Link>
             </div>
-            <p className="text-xs text-slate-400 mb-4">Answer Engine — 傳統 Google 問答優化</p>
+            <p className="text-xs text-white/40 mb-4">Answer Engine — 傳統 Google 問答優化</p>
             <div className="grid grid-cols-2 gap-3">
               {aeoChecks.map((check) => (
-                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
                     check.passed
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
+                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                      : 'bg-red-500/20 text-red-300 border border-red-500/30'
                   }`}>
                     {check.passed ? '✓' : '✗'}
                   </span>
-                  <span className="text-sm text-slate-700">{check.name}</span>
+                  <span className="text-sm text-white/90">{check.name}</span>
                 </div>
               ))}
             </div>
-          </div>
+          </GlassCard>
         </div>
 
         {/* GEO 生成式 AI 優化檢測 */}
-        <div className="mt-6 bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+        <div className="mt-6">
+        <GlassCard color={T.geo} style={{ padding: 24 }}>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-slate-800">GEO 生成式 AI 優化<InfoTooltip text={`GEO（生成式引擎優化）共 8 項指標\n・llms.txt：專為 AI 爬蟲設計的說明文件\n・AI 爬蟲開放：robots.txt 是否允許 GPTBot 等爬取\n・Sitemap：網站地圖，幫助搜尋引擎完整索引\n・Open Graph：頁面的標題、描述、圖片標記\n・Twitter Card：社群預覽卡片設定\n・JSON-LD 引用信號：提供 AI 引用所需的結構化資訊\n・Canonical：告知搜尋引擎頁面的標準版本\n・HTTPS：安全連線，影響排名與用戶信任`} /></h3>
+            <h3 className="font-semibold text-white">GEO 生成式 AI 優化<InfoTooltip text={`GEO（生成式引擎優化）共 8 項指標\n・llms.txt：專為 AI 爬蟲設計的說明文件\n・AI 爬蟲開放：robots.txt 是否允許 GPTBot 等爬取\n・Sitemap：網站地圖，幫助搜尋引擎完整索引\n・Open Graph：頁面的標題、描述、圖片標記\n・Twitter Card：社群預覽卡片設定\n・JSON-LD 引用信號：提供 AI 引用所需的結構化資訊\n・Canonical：告知搜尋引擎頁面的標準版本\n・HTTPS：安全連線，影響排名與用戶信任`} /></h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">Generative Engine</span>
-              <Link to={`/geo-audit/${id}`} className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">查看詳情 →</Link>
+              <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-medium">Generative Engine</span>
+              <Link to={`/geo-audit/${id}`} className="text-emerald-300 hover:text-emerald-200 text-sm font-medium">查看詳情 →</Link>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Claude、Perplexity、Gemini）</p>
+          <p className="text-xs text-white/40 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Claude、Perplexity、Gemini）</p>
           {geoAudit ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {geoChecks.map((check) => (
-                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
                     check.passed
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
+                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                      : 'bg-red-500/20 text-red-300 border border-red-500/30'
                   }`}>
                     {check.passed ? '✓' : '✗'}
                   </span>
-                  <span className="text-sm text-slate-700">{check.name}</span>
+                  <span className="text-sm text-white/90">{check.name}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 text-slate-400 text-sm">
+            <div className="text-center py-6 text-white/40 text-sm">
               點擊「重新檢測」以執行 GEO 分析
             </div>
           )}
+        </GlassCard>
         </div>
 
         {/* E-E-A-T 可信度 */}
-        <div className="mt-8 bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+        <div className="mt-8">
+        <GlassCard color={T.eeat} style={{ padding: 24 }}>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-slate-800">E-E-A-T 可信度<InfoTooltip text={`Google 品質評分核心：經驗、專業、權威、可信度\n・作者資訊：頁面是否標示作者姓名與專業背景\n・關於我們：是否有介紹公司/團隊的頁面\n・聯絡方式：是否提供可驗證的聯絡資訊\n・隱私權政策：必備的法律合規頁面\n・Organization Schema：結構化的組織資訊標記\n・發布日期：文章是否標示發布與更新時間\n・社群媒體連結：提升品牌可信度與權威性\n・外部權威連結：引用可信來源，增加內容可信度`} /></h3>
+            <h3 className="font-semibold text-white">E-E-A-T 可信度<InfoTooltip text={`Google 品質評分核心：經驗、專業、權威、可信度\n・作者資訊：頁面是否標示作者姓名與專業背景\n・關於我們：是否有介紹公司/團隊的頁面\n・聯絡方式：是否提供可驗證的聯絡資訊\n・隱私權政策：必備的法律合規頁面\n・Organization Schema：結構化的組織資訊標記\n・發布日期：文章是否標示發布與更新時間\n・社群媒體連結：提升品牌可信度與權威性\n・外部權威連結：引用可信來源，增加內容可信度`} /></h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded-full font-medium">Trust Signals</span>
-              <Link to={`/eeat-audit/${id}`} className="text-orange-500 hover:text-orange-600 text-sm font-medium">查看詳情 →</Link>
+              <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full font-medium">Trust Signals</span>
+              <Link to={`/eeat-audit/${id}`} className="text-orange-300 hover:text-orange-200 text-sm font-medium">查看詳情 →</Link>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mb-4">檢測作者資訊、組織可信度與外部權威連結（Experience · Expertise · Authoritativeness · Trustworthiness）</p>
+          <p className="text-xs text-white/40 mb-4">檢測作者資訊、組織可信度與外部權威連結（Experience · Expertise · Authoritativeness · Trustworthiness）</p>
           {eeatAudit ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {eeatChecks.map((check) => (
-                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">
+                <div key={check.key} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                    check.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    check.passed ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'
                   }`}>
                     {check.passed ? '✓' : '✗'}
                   </span>
-                  <span className="text-sm text-slate-700">{check.name}</span>
+                  <span className="text-sm text-white/90">{check.name}</span>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-slate-400 text-sm mb-2">點擊「重新檢測」以執行 E-E-A-T 分析</p>
+              <p className="text-white/40 text-sm mb-2">點擊「重新檢測」以執行 E-E-A-T 分析</p>
               {!isPro && (
                 <button
                   onClick={handleUpgrade}
@@ -1704,29 +1714,30 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               )}
             </div>
           )}
+        </GlassCard>
         </div>
 
         {/* 🆕 AI 曝光監測（aivis）入口橫幅 — Phase 1 */}
         <Link
           to="/ai-visibility"
-          className="mt-8 block p-6 bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-400/30 rounded-2xl hover:border-emerald-400/60 transition-all group"
+          className="mt-8 block p-6 bg-gradient-to-br from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 rounded-2xl hover:border-emerald-400/60 transition-all group backdrop-blur-md"
         >
           <div className="flex items-center justify-between gap-6 flex-wrap">
             <div className="flex items-start gap-4 flex-1 min-w-0">
               <span className="text-4xl flex-shrink-0">🎯</span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <h3 className="text-lg font-bold text-slate-800">AI 曝光監測</h3>
-                  <span className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-400/40 rounded-full text-[10px] font-semibold text-emerald-700 uppercase tracking-wider">
+                  <h3 className="text-lg font-bold text-white">AI 曝光監測</h3>
+                  <span className="px-2 py-0.5 bg-emerald-500/25 border border-emerald-400/50 rounded-full text-[10px] font-semibold text-emerald-200 uppercase tracking-wider">
                     New · Beta
                   </span>
                 </div>
-                <p className="text-sm text-slate-600 leading-relaxed">
+                <p className="text-sm text-white/70 leading-relaxed">
                   追蹤品牌在 ChatGPT、Claude、Perplexity、Gemini 中的真實曝光表現。量化「被 AI 主動推薦」的商業機會。
                 </p>
               </div>
             </div>
-            <span className="text-emerald-600 group-hover:text-emerald-700 text-sm font-medium whitespace-nowrap">
+            <span className="text-emerald-300 group-hover:text-emerald-200 text-sm font-medium whitespace-nowrap">
               開始監測 →
             </span>
           </div>
