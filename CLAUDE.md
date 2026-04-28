@@ -252,6 +252,19 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-04-28
+**Dashboard 主菜 v2 暗色改造 part 1 — 總覽 tab（PageBg + SiteHeader + 5 score cards + 8 checklist + radar/trend GlassCard）:**
+- ✅ **[src/pages/Dashboard.jsx](src/pages/Dashboard.jsx) 三段式外殼換好**：移除舊有的 `bg-white/...` + radial-gradient + dot pattern overlay 與內聯 `<header>`（橘白 nav + Logo），整頁包進 `<PageBg>` + `<SiteHeader />` + `<div className="relative z-10">` + `<Footer dark />`，與其他五個 audit 頁、Showcase / Compare 完全一致。`PageBg` 函式加在檔尾（青綠 155deg 頂部漸層 + lighten + 雜訊 0.12/overlay），維持各頁模組層 inline 不抽元件的原則。
+- ✅ **頁面 TopBar 重寫**：原本內聯的橘白 header（含 Logo + nav 排行榜/競品比較/定價/文章分析/FAQ + 頭像）整段砍掉（這些 SiteHeader 已包辦），改為 dark TopBar（`bg-black/40 backdrop-blur-xl + border-b border-white/10`）只放：返回箭頭 + 網站名稱 + 「🤖 N 分鐘前」最後分析時間膠囊（橘色 chip）+ 三顆動作按鈕（連接 Google Analytics / 重新檢測 / 匯出 PDF）。InfoTooltip 內部也改 `bg-white/15 text-white/70` 按鈕配 `bg-black/90 border-white/15` 工具提示。
+- ✅ **5 張總覽分數卡 → `<GlassCard color={item.color}>`**：grid 從 `md:grid-cols-2 xl:grid-cols-4` 升 `xl:grid-cols-5`（含第五張內容品質卡），每張卡 inline `padding: 24` 維持原 layout，標題色用 face-specific token（SEO 藍 / AEO 紫 / GEO 綠 / EEAT 琥珀 / 內容品質粉）。verdict 文字 + 分數 + 進度條 + detail text 都改吃 `text-white/{60,70,90}`，進度條軌道改 `bg-white/10`。
+- ✅ **8 項 AI 引用條件 checklist → `<GlassCard color={accent}>`**：accent = passCount >= 6 ? `T.pass` : >= 4 ? `T.warn` : `T.fail`（依達成數量動態），每條 row 內聯 border 用 `${T.pass}26 / ${T.pass}40` 綠透明背景 vs `bg-white/5 border-white/10` 灰底（未達成）。整段 wrapper 從原本 `bg-white/40 border-orange-200` 改為 GlassCard 內聯 padding。
+- ✅ **雷達圖卡 → `<GlassCard color={T.seo}>`**：`PolarGrid stroke="rgba(255,255,255,0.1)"`、`PolarAngleAxis tick fill="#ffffff"`、Tooltip 改 `contentStyle: { background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }`。標題與目標值說明文字 `text-white/{50,70}`。
+- ✅ **趨勢圖卡 → `<GlassCard color={T.aeo}>`**：Pro 鎖定遮罩用 `bg-black/60` + 橘琥珀漸層 CTA。趨勢摘要 4 格用 `${color}1a` 半透明背景 + `${color}33` 邊框（dynamic per-face）。LineChart `CartesianGrid stroke="rgba(255,255,255,0.08)"`、`XAxis/YAxis stroke="rgba(255,255,255,0.5)"`、Tooltip 同雷達卡 dark style。
+- ✅ **Tab nav 4 顆改暗色**：`border-white/10` 底邊，active 從 `border-orange-500 text-orange-600` 換 `border-orange-400 text-orange-300`，inactive 從 `text-slate-500 hover:text-slate-700` 換 `text-white/50 hover:text-white`。
+- 🔖 **取捨：留 `const isDark = true` bridge**：未動到的 Tab 2/3/4/5（流量、詳細檢測、AI 爬蟲、優化工具）內部還有約 3 處 `isDark ? dark : light` 條件分支。直接刪除 `useTheme` import 後這些 branch 會 ReferenceError，所以在 Dashboard() 函式頂部加 `const isDark = true`，讓未轉換 tab 仍能渲染 dark 分支。Commit 2/3 會逐步把這些條件分支改成寫死的 dark style，最後刪除 bridge。
+- 🔖 **取捨：5 張卡 + 8 項 checklist + 雷達 + 趨勢都用 GlassCard**：用戶明確要求「雷達圖 + 4 大分數卡 + 第五張內容卡 + 8 項 checklist 全部要套 GlassCard」，這次 commit 全數兌現。其他卡（GA4/GSC summary、4 face check 詳細卡、AI 爬蟲卡、優化工具卡）等 Commit 2/3 處理時再依需要套上。
+- 🔖 **取捨：頂部 TopBar 不放 SiteHeader 的 nav 連結**：因 SiteHeader 已含「排行榜 / 競品比較 / 定價 / 文章分析 / FAQ + 登入頭像 + 升級鈕」全套，TopBar 只需是「這個網站的 dashboard 專屬動作列」（返回 + 操作按鈕），避免雙重 nav 視覺擁擠。
+
+### 2026-04-28
 **Showcase / Compare 兩頁改暗色主題（PageBg + SiteHeader，純視覺收尾）:**
 - ✅ **[src/pages/Showcase.jsx](src/pages/Showcase.jsx) 從橘白主題遷至暗色 v2**：移除 `useTheme` import + `const { isDark }` 解構 + 內聯橘白 `<header>`，整頁包進 `<PageBg>` + `<SiteHeader />` + `<Footer dark />` 三段式結構（與五個 audit 頁完全一致）。
 - ✅ **配色批次改寫**：`bg-white/40|60|70` → `bg-black/40`、`border-orange-100` / `border-white/60` → `border-white/10`、`text-gray-800|900` → `text-white`、`text-gray-400|500` → `text-white/40-60`、`scoreColor()` 從 `text-green/yellow/red-500` 換到 `-400`（提亮對比）、進步分數 chip 從 `bg-green-100/text-green-700` 換 `bg-green-500/20 text-green-400`、AI 已讀取膠囊改 `bg-orange-500/15 text-orange-300`。`isDark` 條件 fade edges 移除 → 寫死 `linear-gradient(to right, rgba(0,0,0,0.95), transparent)`。

@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import SiteHeader from '../components/v2/SiteHeader'
+import Footer from '../components/Footer'
+import { GlassCard } from '../components/v2'
+import { T } from '../styles/v2-tokens'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
@@ -35,12 +38,12 @@ function InfoTooltip({ text }) {
   const lines = text.split('\n')
   return (
     <span className="relative group inline-flex items-center ml-1.5 align-middle">
-      <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-xs flex items-center justify-center cursor-help font-bold leading-none">?</span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-slate-800 text-white text-xs rounded-lg px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+      <span className="w-4 h-4 rounded-full bg-white/15 text-white/70 text-xs flex items-center justify-center cursor-help font-bold leading-none">?</span>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-black/90 border border-white/15 text-white text-xs rounded-lg px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl backdrop-blur">
         {lines.map((line, i) => (
-          <span key={i} className={`block ${line.startsWith('・') ? 'mt-1 text-slate-300' : 'font-medium mb-1'}`}>{line}</span>
+          <span key={i} className={`block ${line.startsWith('・') ? 'mt-1 text-white/60' : 'font-medium mb-1'}`}>{line}</span>
         ))}
-        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></span>
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/90"></span>
       </span>
     </span>
   )
@@ -51,7 +54,6 @@ export default function Dashboard() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isPro, userName, refreshProfile } = useAuth()
-  const { isDark } = useTheme()
   const [upgradeSuccess, setUpgradeSuccess] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
   const [website, setWebsite] = useState(null)
@@ -98,6 +100,10 @@ export default function Dashboard() {
   const [crawlerScanning, setCrawlerScanning] = useState(false)
   const [terminalLogs, setTerminalLogs] = useState([])
   const terminalRef = useRef(null)
+
+  // v2 改造期：未轉換的 tab 仍走 isDark ? dark : light 條件分支，
+  // 此頁固定為暗色，先以常數提供值，後續 commit 會逐步移除這些分支
+  const isDark = true
 
   useEffect(() => {
     fetchData()
@@ -324,23 +330,27 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-slate-600">載入資料中...</p>
+      <PageBg>
+        <div className="min-h-screen flex items-center justify-center relative z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-400 mx-auto mb-4"></div>
+            <p className="text-white/60">載入資料中...</p>
+          </div>
         </div>
-      </div>
+      </PageBg>
     )
   }
 
   if (!website) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-800 mb-4">找不到網站</h2>
-          <Link to="/" className="text-orange-500 hover:underline">返回首頁</Link>
+      <PageBg>
+        <div className="min-h-screen flex items-center justify-center relative z-10">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-4">找不到網站</h2>
+            <Link to="/" className="text-orange-400 hover:text-orange-300 hover:underline">返回首頁</Link>
+          </div>
         </div>
-      </div>
+      </PageBg>
     )
   }
 
@@ -730,36 +740,36 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
   // ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen relative" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`, opacity: 0.25, mixBlendMode: 'overlay' }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-      <div className="relative">
+    <PageBg>
+      <SiteHeader />
+      <div className="relative z-10">
       {/* 升級成功提示 */}
       {upgradeSuccess && (
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center py-3 px-6 text-sm font-semibold">
           🎉 恭喜！Pro 方案啟用成功！所有進階功能已解鎖。
         </div>
       )}
-      {/* Header */}
-      <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
+
+      {/* 頁面 TopBar：網站名稱 + 動作按鈕（連接 Google / 重新檢測 / 匯出 PDF） */}
+      <div className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          {/* 第一列：返回 + 標題 + 頭像 */}
+          {/* 第一列：返回 + 標題 */}
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-3 min-w-0">
-              <Link to="/" className="text-slate-500 hover:text-slate-700 flex-shrink-0">
+              <Link to="/" className="text-white/50 hover:text-white flex-shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-bold text-slate-900 truncate">{website.name}</h1>
+                <h1 className="text-base sm:text-xl font-bold text-white truncate">{website.name}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-slate-500 truncate hidden sm:block">{website.url}</p>
+                  <p className="text-xs text-white/50 truncate hidden sm:block">{website.url}</p>
                   {(seoAudit || aeoAudit || geoAudit || eeatAudit) && (() => {
                     const ts = seoAudit?.created_at || aeoAudit?.created_at || geoAudit?.created_at || eeatAudit?.created_at
                     const ago = timeAgo(ts)
                     return ago ? (
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-orange-50 text-orange-600 border border-orange-200 rounded-full font-medium whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-orange-500/15 text-orange-300 border border-orange-400/30 rounded-full font-medium whitespace-nowrap">
                         🤖 {ago}
                       </span>
                     ) : null
@@ -767,16 +777,6 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 </div>
               </div>
             </div>
-            {/* 頭像（桌面版同排；手機版也顯示） */}
-            <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 ml-2" title="帳號設定">
-              {user?.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
-                  {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
-                </div>
-              )}
-            </Link>
           </div>
 
           {/* 第二列：動作按鈕（手機橫向捲動，桌面正常排列） */}
@@ -785,18 +785,18 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             {googleConnected ? (
               <button
                 onClick={() => setShowGoogleSettings(true)}
-                className="flex-shrink-0 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors flex items-center gap-1.5"
+                className="flex-shrink-0 px-3 py-1.5 bg-green-500/15 text-green-300 border border-green-400/30 rounded-lg text-xs font-medium hover:bg-green-500/25 transition-colors flex items-center gap-1.5"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>
                 <span className="hidden sm:inline">Google 已連接</span>
                 <span className="sm:hidden">已連接</span>
               </button>
             ) : (
               <button
                 onClick={initiateGoogleAuth}
-                className="flex-shrink-0 px-3 py-1.5 bg-white/60 text-slate-600 border border-orange-100 rounded-lg text-xs font-medium hover:bg-white/80 transition-colors flex items-center gap-1.5"
+                className="flex-shrink-0 px-3 py-1.5 bg-white/5 text-white/70 border border-white/15 rounded-lg text-xs font-medium hover:bg-white/10 hover:text-white transition-colors flex items-center gap-1.5"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 inline-block"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-white/40 inline-block"></span>
                 連接 Google
               </button>
             )}
@@ -804,7 +804,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <button
               onClick={handleReanalyze}
               disabled={analyzing}
-              className="flex-shrink-0 px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-xs font-medium"
+              className="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-xs font-medium shadow-lg shadow-orange-500/20"
             >
               {analyzing ? (
                 <>
@@ -828,7 +828,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <button
                 onClick={handleExportPDF}
                 disabled={exportingPDF || analyzing}
-                className="flex-shrink-0 px-3 py-1.5 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-xs font-medium"
+                className="flex-shrink-0 px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white border border-white/15 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-xs font-medium"
               >
                 {exportingPDF ? (
                   <>
@@ -851,56 +851,50 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <button
                 onClick={handleUpgrade}
                 disabled={upgrading}
-                className="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1"
+                className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-orange-400/30 text-orange-300 hover:bg-orange-500/15 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
               >
                 🔒 <span className="hidden sm:inline">匯出 PDF</span> (Pro)
               </button>
             )}
             {!isPro && (
-              <Link to="/pricing" className="flex-shrink-0 px-3 py-1.5 text-xs text-orange-500 hover:text-orange-600 border border-orange-200 rounded-lg hover:border-orange-400 transition-colors whitespace-nowrap">
+              <Link to="/pricing" className="flex-shrink-0 px-3 py-1.5 text-xs text-orange-300 hover:text-orange-200 border border-orange-400/30 hover:border-orange-400/60 rounded-lg transition-colors whitespace-nowrap">
                 查看方案 →
               </Link>
             )}
-            <div className="flex-shrink-0 w-px h-4 bg-orange-100 mx-1" />
-            <Link to="/showcase" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">排行榜</Link>
-            <Link to="/compare" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">競品比較</Link>
-            <Link to="/pricing" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">定價</Link>
-            <Link to="/content-audit" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">文章分析</Link>
-            <Link to="/faq" className="flex-shrink-0 px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 hover:bg-orange-50 rounded-lg transition-colors whitespace-nowrap">FAQ</Link>
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* 總分數卡片 */}
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        {/* 總分數卡片 — 5 張並排（4 大面向 + 內容品質）GlassCard 各自吃對應色 */}
+        <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4 sm:gap-6 mb-8">
           {scoreData.map((item) => (
-            <div key={item.name} className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+            <GlassCard key={item.name} color={item.color} style={{ padding: 24 }}>
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{item.icon}</span>
-                  <h3 className={`font-semibold ${isDark ? 'text-white/90' : 'text-slate-700'}`}>{item.name}</h3>
+                  <h3 className="font-semibold text-white/90">{item.name}</h3>
                 </div>
                 <div className="text-right">
                   {item.loading ? (
-                    <div className="w-8 h-8 rounded-full border-2 border-pink-200 border-t-pink-500 animate-spin ml-auto" />
+                    <div className="w-8 h-8 rounded-full border-2 border-pink-300/30 border-t-pink-400 animate-spin ml-auto" />
                   ) : (
                     <>
                       <span className="text-3xl font-bold" style={{ color: item.color }}>{item.value ?? '—'}</span>
-                      <p className={`text-xs leading-tight ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
+                      <p className="text-xs leading-tight text-white/40">{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
                     </>
                   )}
                 </div>
               </div>
               <p className="text-xs font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
-              <div className={`h-2 rounded-full overflow-hidden mb-3 ${isDark ? 'bg-white/10' : 'bg-orange-100'}`}>
+              <div className="h-2 rounded-full overflow-hidden mb-3 bg-white/10">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${item.value ?? 0}%`, backgroundColor: item.color }}
                 />
               </div>
-              <p className={`text-xs leading-relaxed ${isDark ? 'text-white/60' : 'text-slate-700'}`}>{item.detail}</p>
-            </div>
+              <p className="text-xs leading-relaxed text-white/60">{item.detail}</p>
+            </GlassCard>
           ))}
         </div>
 
@@ -917,36 +911,44 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             { label: 'Canonical 標籤', desc: '避免 AI 引用錯誤或重複版本的頁面', pass: !!aeoAudit?.canonical },
           ]
           const passCount = conditions.filter(c => c.pass).length
+          // 達標等級的強調色 — 影響卡片 hover 邊框與 GlassCard glow
+          const accent = passCount >= 6 ? T.pass : passCount >= 4 ? T.warn : T.fail
           return (
-            <div className="mb-8 rounded-2xl p-6 shadow-sm border" style={isDark ? { background: 'rgba(0,0,0,0.35)', borderColor: 'rgba(255,255,255,0.1)' } : { background: 'rgba(255,255,255,0.4)', borderColor: 'rgba(255,255,255,0.6)' }}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>被 AI 引用的關鍵條件</h3>
-                  <p className={`text-xs mt-0.5 ${isDark ? 'text-white/50' : 'text-slate-400'}`}>ChatGPT · Perplexity · Claude · Gemini 引用網站通常需具備這些條件</p>
-                </div>
-                <div className="text-right flex-shrink-0 ml-4">
-                  <span className="text-2xl font-bold" style={{ color: passCount >= 6 ? '#10b981' : passCount >= 4 ? '#f59e0b' : '#ef4444' }}>{passCount}</span>
-                  <span className={`text-sm ${isDark ? 'text-white/40' : 'text-slate-400'}`}> / {conditions.length}</span>
-                  <p className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{passCount >= 6 ? '具備引用條件' : passCount >= 4 ? '部分達標' : '引用機率偏低'}</p>
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                {conditions.map((c, i) => (
-                  <div key={i} className="flex items-start gap-3 px-3 py-2.5 rounded-xl" style={isDark ? { background: c.pass ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)' } : { background: c.pass ? 'rgba(16,185,129,0.08)' : 'rgba(0,0,0,0.03)' }}>
-                    <span className="text-base flex-shrink-0 mt-0.5">{c.pass ? '✅' : '❌'}</span>
-                    <div>
-                      <p className={`text-sm font-medium leading-tight ${isDark ? 'text-white/90' : 'text-slate-700'}`}>{c.label}</p>
-                      <p className={`text-xs mt-0.5 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>{c.desc}</p>
-                    </div>
+            <div className="mb-8">
+              <GlassCard color={accent} style={{ padding: 24 }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-semibold text-white">被 AI 引用的關鍵條件</h3>
+                    <p className="text-xs mt-0.5 text-white/50">ChatGPT · Perplexity · Claude · Gemini 引用網站通常需具備這些條件</p>
                   </div>
-                ))}
-              </div>
+                  <div className="text-right flex-shrink-0 ml-4">
+                    <span className="text-2xl font-bold" style={{ color: accent }}>{passCount}</span>
+                    <span className="text-sm text-white/40"> / {conditions.length}</span>
+                    <p className="text-xs text-white/40">{passCount >= 6 ? '具備引用條件' : passCount >= 4 ? '部分達標' : '引用機率偏低'}</p>
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {conditions.map((c, i) => (
+                    <div key={i} className="flex items-start gap-3 px-3 py-2.5 rounded-xl border"
+                      style={{
+                        background: c.pass ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
+                        borderColor: c.pass ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.08)',
+                      }}>
+                      <span className="text-base flex-shrink-0 mt-0.5">{c.pass ? '✅' : '❌'}</span>
+                      <div>
+                        <p className="text-sm font-medium leading-tight text-white/90">{c.label}</p>
+                        <p className="text-xs mt-0.5 text-white/40">{c.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </GlassCard>
             </div>
           )
         })()}
 
-        {/* Tab 頁籤列 */}
-        <div className="flex border-b border-orange-200 mb-8 overflow-x-auto scrollbar-hide">
+        {/* Tab 頁籤列 — 暗色：橘色作為 active 指示色 */}
+        <div className="flex border-b border-white/10 mb-8 overflow-x-auto scrollbar-hide">
           {[
             { id: 'overview', label: '總覽', icon: '📊' },
             { id: 'traffic', label: '流量數據', icon: '📈' },
@@ -958,8 +960,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 -mb-px transition-all whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  ? 'border-orange-400 text-orange-300'
+                  : 'border-transparent text-white/50 hover:text-white hover:border-white/20'
               }`}
             >
               <span>{tab.icon}</span>
@@ -973,15 +975,15 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {activeTab === 'overview' && <>
         {/* 圖表區域 */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* 雷達圖 - 5 項 SEO 檢測 */}
-          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
-            <h3 className={`font-semibold mb-2 ${isDark ? "text-white" : "text-slate-800"}`}>SEO 5 項檢測分析<InfoTooltip text={`以雷達圖呈現 5 項 SEO 核心指標得分\n・Meta 標籤：標題與描述是否完整且長度符合規範\n・H1 結構：頁面是否只有一個清晰的主標題\n・Alt 屬性：圖片是否都有描述文字\n・行動版相容：是否適合手機瀏覽（Google 行動優先索引）\n・載入速度：頁面回應時間，影響排名與跳出率`} /></h3>
-            <p className={`text-sm mb-4 ${isDark ? "text-white/60" : "text-slate-500"}`}>Meta · H1 · Alt · Mobile · Speed</p>
+          {/* 雷達圖 - 5 項 SEO 檢測（GlassCard 吃 SEO 藍） */}
+          <GlassCard color={T.seo} style={{ padding: 24 }}>
+            <h3 className="font-semibold mb-2 text-white">SEO 5 項檢測分析<InfoTooltip text={`以雷達圖呈現 5 項 SEO 核心指標得分\n・Meta 標籤：標題與描述是否完整且長度符合規範\n・H1 結構：頁面是否只有一個清晰的主標題\n・Alt 屬性：圖片是否都有描述文字\n・行動版相容：是否適合手機瀏覽（Google 行動優先索引）\n・載入速度：頁面回應時間，影響排名與跳出率`} /></h3>
+            <p className="text-sm mb-4 text-white/60">Meta · H1 · Alt · Mobile · Speed</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData}>
-                <PolarGrid stroke={isDark ? 'rgba(255,255,255,0.1)' : '#e2e8f0'} />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: isDark ? '#ffffff' : '#64748b' }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: isDark ? 'rgba(255,255,255,0.5)' : '#94a3b8' }} />
+                <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: '#ffffff' }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)' }} />
                 <Radar
                   name="目標"
                   dataKey="target"
@@ -1001,48 +1003,51 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 />
                 <Legend
                   iconType="line"
-                  formatter={(value) => <span style={{ fontSize: 12, color: isDark ? 'rgba(255,255,255,0.7)' : '#64748b' }}>{value}</span>}
+                  formatter={(value) => <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{value}</span>}
                 />
-                <Tooltip formatter={(v, name) => [`${v} 分`, name]} />
+                <Tooltip
+                  contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 12, color: '#fff' }}
+                  formatter={(v, name) => [`${v} 分`, name]}
+                />
               </RadarChart>
             </ResponsiveContainer>
             {/* 檢測結果說明 */}
             <div className="grid grid-cols-5 gap-2 mt-2">
               {radarData.map((item) => (
                 <div key={item.subject} className="text-center">
-                  <div className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-800"}`}>{item.score}</div>
-                  <div className={`text-xs ${isDark ? "text-white/60" : "text-slate-500"}`}>{item.subject}</div>
+                  <div className="text-lg font-bold text-white">{item.score}</div>
+                  <div className="text-xs text-white/60">{item.subject}</div>
                 </div>
               ))}
             </div>
-          </div>
+          </GlassCard>
 
-          {/* 趨勢圖 */}
-          <div className="bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
+          {/* 趨勢圖（GlassCard 吃 AEO 紫，與雷達圖區分） */}
+          <GlassCard color={T.aeo} style={{ padding: 24 }}>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-semibold text-slate-800">歷史趨勢<InfoTooltip text={`每次重新檢測後自動記錄，最多顯示近 10 次\n・折線圖追蹤 SEO、AEO、GEO、E-E-A-T 四項分數變化\n・綜合分數為四項平均值\n・可觀察優化動作是否有效提升分數\n・卡片上的 +/- 數字代表與上次相比的變化`} /></h3>
-              {!isPro && <span className="text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full font-semibold">🔒 Pro 功能</span>}
+              <h3 className="font-semibold text-white">歷史趨勢<InfoTooltip text={`每次重新檢測後自動記錄，最多顯示近 10 次\n・折線圖追蹤 SEO、AEO、GEO、E-E-A-T 四項分數變化\n・綜合分數為四項平均值\n・可觀察優化動作是否有效提升分數\n・卡片上的 +/- 數字代表與上次相比的變化`} /></h3>
+              {!isPro && <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-300 border border-orange-400/30 rounded-full font-semibold">🔒 Pro 功能</span>}
             </div>
-            <p className="text-xs text-slate-400 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
+            <p className="text-xs text-white/40 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
 
             {!isPro ? (
               <div className="relative">
                 {/* 模糊假圖 */}
-                <div className="h-[280px] blur-sm opacity-50 pointer-events-none select-none flex items-end gap-2 px-4 pb-4">
+                <div className="h-[280px] blur-sm opacity-40 pointer-events-none select-none flex items-end gap-2 px-4 pb-4">
                   {[45,60,55,70,65,80,75,85].map((h, i) => (
                     <div key={i} className="flex-1 flex flex-col gap-1 items-center justify-end h-full">
-                      <div className="w-full rounded-t-sm" style={{ height: `${h}%`, background: i % 4 === 0 ? '#3b82f6' : i % 4 === 1 ? '#8b5cf6' : i % 4 === 2 ? '#10b981' : '#f59e0b', opacity: 0.6 }} />
+                      <div className="w-full rounded-t-sm" style={{ height: `${h}%`, background: i % 4 === 0 ? '#3b82f6' : i % 4 === 1 ? '#8b5cf6' : i % 4 === 2 ? '#10b981' : '#f59e0b', opacity: 0.7 }} />
                     </div>
                   ))}
                 </div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-xl">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl border border-white/10">
                   <div className="text-3xl mb-3">📈</div>
-                  <p className="font-bold text-slate-800 mb-1">歷史趨勢圖為 Pro 功能</p>
-                  <p className="text-sm text-slate-500 mb-5 text-center px-4">追蹤每次優化後分數的變化，確認行動是否有效</p>
+                  <p className="font-bold text-white mb-1">歷史趨勢圖為 Pro 功能</p>
+                  <p className="text-sm text-white/60 mb-5 text-center px-4">追蹤每次優化後分數的變化，確認行動是否有效</p>
                   <button
                     onClick={handleUpgrade}
                     disabled={upgrading}
-                    className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-200 text-sm"
+                    className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-500/30 text-sm"
                   >
                     {upgrading ? '跳轉中...' : '升級 Pro 解鎖'}
                   </button>
@@ -1050,23 +1055,24 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               </div>
             ) : trendData.length >= 2 ? (
               <>
-                {/* 進步摘要卡 */}
+                {/* 進步摘要卡 — 暗色版用半透明色塊 */}
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-6">
                   {[
-                    { key: 'SEO',    color: '#3b82f6', bg: '#eff6ff' },
-                    { key: 'AEO',    color: '#8b5cf6', bg: '#f5f3ff' },
-                    { key: 'GEO',    color: '#10b981', bg: '#f0fdf4' },
-                    { key: 'E-E-A-T',color: '#f59e0b', bg: '#fffbeb' },
-                    { key: '綜合',   color: '#64748b', bg: '#f8fafc' },
-                  ].map(({ key, color, bg }) => {
+                    { key: 'SEO',    color: '#3b82f6' },
+                    { key: 'AEO',    color: '#8b5cf6' },
+                    { key: 'GEO',    color: '#10b981' },
+                    { key: 'E-E-A-T',color: '#f59e0b' },
+                    { key: '綜合',   color: '#94a3b8' },
+                  ].map(({ key, color }) => {
                     const first = trendData[0][key] || 0
                     const last = trendData[trendData.length - 1][key] || 0
                     const diff = last - first
                     return (
-                      <div key={key} style={{ background: bg }} className="rounded-xl p-3 text-center">
-                        <div className="text-xs text-slate-500 mb-1">{key}</div>
+                      <div key={key} className="rounded-xl p-3 text-center border"
+                        style={{ background: `${color}1a`, borderColor: `${color}33` }}>
+                        <div className="text-xs text-white/60 mb-1">{key}</div>
                         <div className="text-xl font-bold" style={{ color }}>{last}</div>
-                        <div className={`text-xs font-medium mt-0.5 ${diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                        <div className={`text-xs font-medium mt-0.5 ${diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-red-400' : 'text-white/40'}`}>
                           {diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '持平'}
                         </div>
                       </div>
@@ -1076,34 +1082,34 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
                 <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={trendData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 100]} tickLine={false} axisLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={11} tickLine={false} />
+                    <YAxis stroke="rgba(255,255,255,0.5)" fontSize={11} domain={[0, 100]} tickLine={false} axisLine={false} />
                     <Tooltip
-                      contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 12 }}
+                      contentStyle={{ background: 'rgba(0,0,0,0.85)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', fontSize: 12, color: '#fff' }}
                       formatter={(v, name) => [`${v} 分`, name]}
                     />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12, color: 'rgba(255,255,255,0.7)' }} />
                     <Line type="monotone" dataKey="SEO"    stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                     <Line type="monotone" dataKey="AEO"    stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                     <Line type="monotone" dataKey="GEO"    stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                     <Line type="monotone" dataKey="E-E-A-T" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                    <Line type="monotone" dataKey="綜合"   stroke="#64748b" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="綜合"   stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3 }} activeDot={{ r: 5 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </>
             ) : trendData.length === 1 ? (
-              <div className="h-[280px] flex flex-col items-center justify-center text-slate-400 gap-2">
+              <div className="h-[280px] flex flex-col items-center justify-center text-white/40 gap-2">
                 <div className="text-3xl">📈</div>
                 <p className="text-sm">已有 1 筆記錄，再次「重新檢測」後即可顯示趨勢圖</p>
               </div>
             ) : (
-              <div className="h-[280px] flex flex-col items-center justify-center text-slate-400 gap-2">
+              <div className="h-[280px] flex flex-col items-center justify-center text-white/40 gap-2">
                 <div className="text-3xl">📊</div>
                 <p className="text-sm">尚無歷史資料，執行「重新檢測」建立記錄</p>
               </div>
             )}
-          </div>
+          </GlassCard>
         </div>
 
         </>}
@@ -2197,6 +2203,38 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         </div>
       )}
       </div>
+      <Footer dark />
+    </PageBg>
+  )
+}
+
+// v2 暗色頁面背景：純黑底 + 上方青綠漸層 + 雜訊疊層（與 audit / Showcase / Compare 同款）
+function PageBg({ children }) {
+  return (
+    <div className="min-h-screen relative overflow-hidden" style={{ background: '#000' }}>
+      {/* 上方青綠 → 深藍漸層（lighten 混合，避免覆蓋下層黑底） */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0"
+        style={{
+          height: 3000,
+          background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+          mixBlendMode: 'lighten',
+          zIndex: 0,
+        }}
+      />
+      {/* SVG fractalNoise 質感雜訊 */}
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute inset-0 w-full h-full"
+        style={{ opacity: 0.12, mixBlendMode: 'overlay', zIndex: 1 }}
+      >
+        <filter id="dashboard-noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#dashboard-noise)" />
+      </svg>
+      {children}
     </div>
   )
 }
