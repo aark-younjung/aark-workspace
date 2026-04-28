@@ -101,10 +101,6 @@ export default function Dashboard() {
   const [terminalLogs, setTerminalLogs] = useState([])
   const terminalRef = useRef(null)
 
-  // v2 改造期：未轉換的 tab 仍走 isDark ? dark : light 條件分支，
-  // 此頁固定為暗色，先以常數提供值，後續 commit 會逐步移除這些分支
-  const isDark = true
-
   useEffect(() => {
     fetchData()
     fetchGA4GSCData()
@@ -1751,8 +1747,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 className="text-xl font-bold text-slate-800">AI 爬蟲追蹤</h3>
-                <p className="text-slate-500 text-sm mt-0.5">檢測 AI 爬蟲是否能存取你的網站，以及 robots.txt 設定狀況</p>
+                <h3 className="text-xl font-bold text-white">AI 爬蟲追蹤</h3>
+                <p className="text-white/60 text-sm mt-0.5">檢測 AI 爬蟲是否能存取你的網站，以及 robots.txt 設定狀況</p>
               </div>
               <button
                 onClick={runCrawlerScan}
@@ -1792,42 +1788,42 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             {crawlerResults && (
               <>
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-700 mb-3">AI 爬蟲存取權限</h4>
+                  <h4 className="text-sm font-semibold text-white/80 mb-3">AI 爬蟲存取權限</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {AI_CRAWLERS.map(bot => {
                       const status = crawlerResults.robots[bot.id]
                       return (
                         <div key={bot.id} className={`p-3 rounded-xl border backdrop-blur-sm ${
                           status === 'blocked'
-                            ? 'bg-red-50/80 border-red-200'
+                            ? 'bg-red-500/10 border-red-500/30'
                             : status === 'allowed'
-                            ? 'bg-green-50/80 border-green-200'
-                            : 'bg-white/60 border-white/60'
+                            ? 'bg-green-500/10 border-green-500/30'
+                            : 'bg-white/5 border-white/10'
                         }`}>
                           <div className="flex items-start justify-between mb-2">
                             <span className="text-xl leading-none">{bot.emoji}</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold border ${
                               status === 'blocked'
-                                ? 'bg-red-100 text-red-600'
+                                ? 'bg-red-500/20 text-red-300 border-red-500/30'
                                 : status === 'allowed'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-slate-100 text-slate-500'
+                                ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                                : 'bg-white/10 text-white/50 border-white/15'
                             }`}>
                               {status === 'blocked' ? '封鎖' : status === 'allowed' ? '允許' : '預設'}
                             </span>
                           </div>
-                          <p className="text-slate-800 font-semibold text-sm leading-tight">{bot.name}</p>
-                          <p className="text-slate-400 text-xs mt-0.5">{bot.company}</p>
+                          <p className="text-white font-semibold text-sm leading-tight">{bot.name}</p>
+                          <p className="text-white/50 text-xs mt-0.5">{bot.company}</p>
                         </div>
                       )
                     })}
                   </div>
-                  <p className="text-xs text-slate-400 mt-2">「預設」代表 robots.txt 未特別設定，爬蟲預設可存取</p>
+                  <p className="text-xs text-white/40 mt-2">「預設」代表 robots.txt 未特別設定，爬蟲預設可存取</p>
                 </div>
 
                 {/* AI Visibility Signals */}
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-700 mb-3">AI 可見度信號</h4>
+                  <h4 className="text-sm font-semibold text-white/80 mb-3">AI 可見度信號</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
                       { label: 'llms.txt', desc: '讓 AI 了解你的品牌與服務', passed: !!geoAudit?.llms_txt, icon: '📄', fix: '在根目錄建立 /llms.txt' },
@@ -1835,14 +1831,14 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       { label: 'robots.txt', desc: '爬蟲規則文件', passed: crawlerResults.hasRobotsTxt, icon: '🤖', fix: '建立 /robots.txt 明確設定規則' },
                     ].map(item => (
                       <div key={item.label} className={`flex items-center gap-3 p-4 rounded-xl border ${
-                        item.passed ? 'bg-green-50/80 border-green-200' : 'bg-orange-50/80 border-orange-200'
+                        item.passed ? 'bg-green-500/10 border-green-500/30' : 'bg-orange-500/10 border-orange-500/30'
                       }`}>
                         <span className="text-2xl flex-shrink-0">{item.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-800 text-sm">{item.label}</p>
-                          <p className="text-xs text-slate-500 truncate">{item.passed ? item.desc : item.fix}</p>
+                          <p className="font-semibold text-white text-sm">{item.label}</p>
+                          <p className="text-xs text-white/60 truncate">{item.passed ? item.desc : item.fix}</p>
                         </div>
-                        <span className={`text-xl flex-shrink-0 ${item.passed ? 'text-green-500' : 'text-orange-400'}`}>
+                        <span className={`text-xl flex-shrink-0 ${item.passed ? 'text-green-300' : 'text-orange-300'}`}>
                           {item.passed ? '✓' : '✗'}
                         </span>
                       </div>
@@ -1852,21 +1848,21 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
                 {/* Recommendations */}
                 {(Object.values(crawlerResults.robots).some(v => v === 'blocked') || !geoAudit?.llms_txt || !geoAudit?.sitemap) && (
-                  <div className="p-5 bg-amber-50/80 border border-amber-200 rounded-xl">
-                    <h4 className="font-semibold text-amber-800 mb-3">⚠️ 優化建議</h4>
-                    <ul className="space-y-2 text-sm text-amber-700">
+                  <div className="p-5 rounded-xl border" style={{ background: `${T.warn}1a`, borderColor: `${T.warn}33` }}>
+                    <h4 className="font-semibold text-amber-200 mb-3">⚠️ 優化建議</h4>
+                    <ul className="space-y-2 text-sm text-amber-100/90">
                       {Object.entries(crawlerResults.robots)
                         .filter(([, v]) => v === 'blocked')
                         .map(([botId]) => {
                           const bot = AI_CRAWLERS.find(b => b.id === botId)
-                          return <li key={botId}>• robots.txt 封鎖了 <strong>{bot?.name}</strong>，建議移除封鎖或改為 <code className="bg-amber-100 px-1 rounded">Allow: /</code></li>
+                          return <li key={botId}>• robots.txt 封鎖了 <strong className="text-white">{bot?.name}</strong>，建議移除封鎖或改為 <code className="bg-amber-500/20 text-amber-200 px-1 rounded">Allow: /</code></li>
                         })
                       }
                       {!geoAudit?.llms_txt && (
-                        <li>• 尚未建立 <strong>llms.txt</strong>，AI 無法識別你的品牌服務，前往「優化工具」Tab 產生修復碼</li>
+                        <li>• 尚未建立 <strong className="text-white">llms.txt</strong>，AI 無法識別你的品牌服務，前往「優化工具」Tab 產生修復碼</li>
                       )}
                       {!geoAudit?.sitemap && (
-                        <li>• 尚未偵測到 <strong>sitemap.xml</strong>，AI 爬蟲可能無法完整索引你的頁面</li>
+                        <li>• 尚未偵測到 <strong className="text-white">sitemap.xml</strong>，AI 爬蟲可能無法完整索引你的頁面</li>
                       )}
                     </ul>
                   </div>
@@ -1874,10 +1870,10 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
                 {/* All Good */}
                 {!Object.values(crawlerResults.robots).some(v => v === 'blocked') && geoAudit?.llms_txt && geoAudit?.sitemap && (
-                  <div className="p-5 bg-green-50/80 border border-green-200 rounded-xl text-center">
+                  <div className="p-5 rounded-xl border text-center" style={{ background: `${T.pass}1a`, borderColor: `${T.pass}33` }}>
                     <span className="text-3xl">🎉</span>
-                    <p className="font-semibold text-green-700 mt-2">太棒了！所有 AI 爬蟲都可以存取你的網站</p>
-                    <p className="text-sm text-green-600 mt-1">llms.txt、sitemap.xml 齊備，AI 引用能見度最佳化</p>
+                    <p className="font-semibold text-green-300 mt-2">太棒了！所有 AI 爬蟲都可以存取你的網站</p>
+                    <p className="text-sm text-green-200/80 mt-1">llms.txt、sitemap.xml 齊備，AI 引用能見度最佳化</p>
                   </div>
                 )}
               </>
@@ -1888,18 +1884,18 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* ── Tab: 優化工具 ── */}
         {activeTab === 'tools' && <>
         {/* AI 優化工具 */}
-        <div className="mt-0 bg-white/40 backdrop-blur-md rounded-2xl shadow-sm border border-white/60 overflow-hidden">
-          <div className="px-6 py-4 border-b border-orange-100 flex items-center gap-3">
+        <GlassCard color={T.orange} style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="px-6 py-4 border-b border-white/10 flex items-center gap-3">
             <span className="text-2xl">🛠️</span>
             <div>
-              <h3 className="font-bold text-slate-800">AI 優化工具</h3>
-              <p className="text-sm text-slate-500">根據檢測結果自動產生優化建議與修復碼</p>
+              <h3 className="font-bold text-white">AI 優化工具</h3>
+              <p className="text-sm text-white/60">根據檢測結果自動產生優化建議與修復碼</p>
             </div>
           </div>
 
           <>
           {/* Tabs */}
-          <div className="flex border-b border-orange-100">
+          <div className="flex border-b border-white/10">
             {[
               { id: 'suggestions', label: '💡 優化建議', sub: '5 條具體行動' },
               { id: 'code', label: '⚙️ 修復碼產生器', sub: 'llms.txt · JSON-LD · FAQ' },
@@ -1909,8 +1905,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 onClick={() => setActiveFixTab(tab.id)}
                 className={`flex-1 px-3 py-3 text-sm font-medium transition-colors ${
                   activeFixTab === tab.id
-                    ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/50'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'text-orange-300 border-b-2 border-orange-400 bg-orange-500/10'
+                    : 'text-white/50 hover:text-white'
                 }`}
               >
                 <div>{tab.label}</div>
@@ -1926,25 +1922,25 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 {getImprovementSuggestions().length === 0 ? (
                   <div className="text-center py-10">
                     <span className="text-5xl">🎉</span>
-                    <p className="text-slate-700 mt-3 font-semibold">太棒了！所有 AI 優化項目都通過了</p>
-                    <p className="text-sm text-slate-500 mt-1">繼續保持，定期重新掃描以確保持續優化</p>
+                    <p className="text-white mt-3 font-semibold">太棒了！所有 AI 優化項目都通過了</p>
+                    <p className="text-sm text-white/60 mt-1">繼續保持，定期重新掃描以確保持續優化</p>
                   </div>
                 ) : (
                   getImprovementSuggestions().map((tip, i) => {
                     const priorityStyle = {
-                      P1: { bg: '#FCEBEB', color: '#A32D2D', label: 'P1 立即處理' },
-                      P2: { bg: '#FAEEDA', color: '#854F0B', label: 'P2 重要' },
-                      P3: { bg: '#EAF3DE', color: '#3B6D11', label: 'P3 優化' },
-                    }[tip.priority] || { bg: '#F1F5F9', color: '#64748b', label: tip.priority }
+                      P1: { bg: 'rgba(239,68,68,0.18)', color: '#fca5a5', label: 'P1 立即處理' },
+                      P2: { bg: 'rgba(245,158,11,0.18)', color: '#fcd34d', label: 'P2 重要' },
+                      P3: { bg: 'rgba(16,185,129,0.18)', color: '#86efac', label: 'P3 優化' },
+                    }[tip.priority] || { bg: 'rgba(255,255,255,0.08)', color: '#cbd5e1', label: tip.priority }
                     return (
-                      <div key={i} className="flex gap-4 p-4 rounded-xl" style={isDark ? { background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' } : { background: 'rgba(200,200,210,0.18)', border: '1px solid rgba(180,180,200,0.3)' }}>
+                      <div key={i} className="flex gap-4 p-4 rounded-xl" style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <span className="text-2xl flex-shrink-0">{tip.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: priorityStyle.bg, color: priorityStyle.color }}>{priorityStyle.label}</span>
-                            <p className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{tip.title}</p>
+                            <p className="font-semibold text-white">{tip.title}</p>
                           </div>
-                          <p className={`text-sm leading-relaxed ${isDark ? 'text-white/70' : 'text-slate-600'}`}>{tip.desc}</p>
+                          <p className="text-sm leading-relaxed text-white/70">{tip.desc}</p>
                         </div>
                       </div>
                     )
@@ -1957,11 +1953,11 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             {activeFixTab === 'code' && (
               <div className="space-y-6">
                 {/* 補充資訊輸入區 */}
-                <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-4">
+                <div className="rounded-xl p-4 border" style={{ background: 'rgba(59,130,246,0.1)', borderColor: 'rgba(59,130,246,0.3)' }}>
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-base">✏️</span>
-                    <h4 className="text-sm font-semibold text-slate-700">補充商家資訊（選填）</h4>
-                    <span className="text-xs text-slate-400">填入後程式碼即時更新</span>
+                    <h4 className="text-sm font-semibold text-white/90">補充商家資訊（選填）</h4>
+                    <span className="text-xs text-white/50">填入後程式碼即時更新</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
@@ -1971,7 +1967,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       { key: 'description', label: '品牌描述', placeholder: '簡短說明你的品牌與服務（留空則使用網站描述）', icon: '📝' },
                     ].map(({ key, label, placeholder, icon }) => (
                       <div key={key}>
-                        <label className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                        <label className="text-xs text-white/60 mb-1 flex items-center gap-1">
                           <span>{icon}</span>{label}
                         </label>
                         <input
@@ -1979,7 +1975,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                           value={bizInfo[key]}
                           onChange={e => setBizInfo(prev => ({ ...prev, [key]: e.target.value }))}
                           placeholder={placeholder}
-                          className="w-full px-3 py-2 text-xs rounded-lg border border-blue-200 bg-white text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-white/15 bg-black/40 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
                         />
                       </div>
                     ))}
@@ -1993,17 +1989,17 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <div key={id}>
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <h4 className="font-semibold text-slate-800">{label}</h4>
-                        <p className="text-xs text-slate-500">{hint}</p>
+                        <h4 className="font-semibold text-white">{label}</h4>
+                        <p className="text-xs text-white/60">{hint}</p>
                       </div>
                       <button
                         onClick={() => copyToClipboard(fn(), id)}
-                        className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors flex-shrink-0"
+                        className="px-3 py-1.5 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-lg text-xs font-medium hover:bg-orange-500/30 transition-colors flex-shrink-0"
                       >
                         {copiedCode === id ? '✓ 已複製！' : '複製'}
                       </button>
                     </div>
-                    <pre className={`bg-slate-900 ${color} rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48`}>
+                    <pre className={`bg-slate-950/80 border border-white/10 ${color} rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48`}>
                       {fn()}
                     </pre>
                   </div>
@@ -2013,41 +2009,43 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
           </div>
           </>
-        </div>
+        </GlassCard>
 
         {/* 通知搜尋引擎 */}
-        <div className="mt-6 bg-white/40 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-white/60">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">📡</span>
-              <div>
-                <h3 className="font-bold text-slate-800 mb-1">通知搜尋引擎，讓 AI 更快找到你</h3>
-                <p className="text-sm text-slate-500">向 Google 與 Bing 發送 Sitemap 更新通知，讓 AI 爬蟲優先重新索引你的網站內容。</p>
-                {pingResult && (
-                  <p className={`text-xs mt-2 font-medium ${pingResult.success ? 'text-green-600' : 'text-red-500'}`}>
-                    {pingResult.success
-                      ? `✓ 已成功通知 Google & Bing（${new Date(pingResult.pingedAt).toLocaleTimeString('zh-TW')}）`
-                      : '✗ 通知失敗，請稍後再試'}
-                  </p>
-                )}
+        <div className="mt-6">
+          <GlassCard color={T.geo}>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">📡</span>
+                <div>
+                  <h3 className="font-bold text-white mb-1">通知搜尋引擎，讓 AI 更快找到你</h3>
+                  <p className="text-sm text-white/60">向 Google 與 Bing 發送 Sitemap 更新通知，讓 AI 爬蟲優先重新索引你的網站內容。</p>
+                  {pingResult && (
+                    <p className={`text-xs mt-2 font-medium ${pingResult.success ? 'text-green-300' : 'text-red-300'}`}>
+                      {pingResult.success
+                        ? `✓ 已成功通知 Google & Bing（${new Date(pingResult.pingedAt).toLocaleTimeString('zh-TW')}）`
+                        : '✗ 通知失敗，請稍後再試'}
+                    </p>
+                  )}
+                </div>
               </div>
+              <button
+                onClick={handlePingEngines}
+                disabled={pinging}
+                className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-emerald-500/90 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-emerald-400/40"
+              >
+                {pinging ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    通知中...
+                  </>
+                ) : '📡 立即通知'}
+              </button>
             </div>
-            <button
-              onClick={handlePingEngines}
-              disabled={pinging}
-              className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {pinging ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  通知中...
-                </>
-              ) : '📡 立即通知'}
-            </button>
-          </div>
+          </GlassCard>
         </div>
 
         </>}
@@ -2152,46 +2150,46 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
       {/* Google 連接設定 Modal */}
       {showGoogleSettings && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl shadow-2xl max-w-md w-full p-8" style={{ background: 'rgba(10,12,18,0.95)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-slate-800">設定 Google 串接</h3>
-              <button onClick={() => setShowGoogleSettings(false)} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+              <h3 className="text-lg font-bold text-white">設定 Google 串接</h3>
+              <button onClick={() => setShowGoogleSettings(false)} className="text-white/40 hover:text-white text-xl">✕</button>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-white/80 mb-1">
                   GA4 Property ID
-                  <span className="ml-1 text-slate-400 font-normal">（格式：123456789）</span>
+                  <span className="ml-1 text-white/40 font-normal">（格式：123456789）</span>
                 </label>
                 <input
                   type="text"
                   value={ga4Input}
                   onChange={e => setGa4Input(e.target.value)}
                   placeholder="例：123456789"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-white/15 bg-black/40 text-white placeholder-white/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
                 />
-                <p className="text-xs text-slate-400 mt-1">GA4 後台 → 管理 → 資源設定 → 資源 ID</p>
+                <p className="text-xs text-white/40 mt-1">GA4 後台 → 管理 → 資源設定 → 資源 ID</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-white/80 mb-1">
                   GSC 屬性網址
-                  <span className="ml-1 text-slate-400 font-normal">（需已在 GSC 驗證）</span>
+                  <span className="ml-1 text-white/40 font-normal">（需已在 GSC 驗證）</span>
                 </label>
                 <input
                   type="text"
                   value={gscInput}
                   onChange={e => setGscInput(e.target.value.trim())}
                   placeholder="https://www.example.com/"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-white/15 bg-black/40 text-white placeholder-white/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
                 />
-                <div className="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-500 space-y-1">
-                  <p className="font-medium text-slate-600">請依照 GSC 左上角顯示的格式填入：</p>
-                  <p>・<span className="font-mono bg-white px-1 rounded">https://www.example.com/</span>　URL 前置詞（有 www）</p>
-                  <p>・<span className="font-mono bg-white px-1 rounded">https://example.com/</span>　URL 前置詞（無 www）</p>
-                  <p>・<span className="font-mono bg-white px-1 rounded">example.com</span>　網域資源（會自動轉換）</p>
+                <div className="mt-2 p-3 bg-white/5 border border-white/10 rounded-lg text-xs text-white/60 space-y-1">
+                  <p className="font-medium text-white/80">請依照 GSC 左上角顯示的格式填入：</p>
+                  <p>・<span className="font-mono bg-black/40 text-white/80 px-1 rounded">https://www.example.com/</span>　URL 前置詞（有 www）</p>
+                  <p>・<span className="font-mono bg-black/40 text-white/80 px-1 rounded">https://example.com/</span>　URL 前置詞（無 www）</p>
+                  <p>・<span className="font-mono bg-black/40 text-white/80 px-1 rounded">example.com</span>　網域資源（會自動轉換）</p>
                 </div>
               </div>
             </div>
@@ -2199,13 +2197,13 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleSaveGoogleSettings}
-                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all"
+                className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-all border border-blue-400/40"
               >
                 儲存並載入數據
               </button>
               <button
                 onClick={handleDisconnectGoogle}
-                className="px-4 py-2.5 text-red-500 border border-red-200 rounded-xl text-sm hover:bg-red-50 transition-all"
+                className="px-4 py-2.5 text-red-300 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-sm transition-all"
               >
                 中斷連接
               </button>
