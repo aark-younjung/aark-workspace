@@ -4,7 +4,7 @@ import { analyzeContent } from '../services/contentAnalyzer'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
-import { IssueBoard, ScoreHero } from '../components/v2'
+import { IssueBoard, ScoreHero, ContentSignature } from '../components/v2'
 
 const CONTENT_ACCENT = '#ec4899' // 內容品質粉紅（與 Dashboard 第五分數一致）
 
@@ -221,8 +221,8 @@ export default function ContentAudit() {
         {/* 分析結果 */}
         {result && (
           <>
-            {/* 總分卡 — ScoreHero 同款 SEO 風格 */}
-            <div style={{ marginBottom: 32 }}>
+            {/* 總分卡 — 左 5：右 7 兩欄（ScoreHero + 內容品質拆解） */}
+            <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
               <ScoreHero
                 face="內容品質"
                 subChip="文章分析"
@@ -234,6 +234,12 @@ export default function ContentAudit() {
                 recentAudits={[]}
                 accent={CONTENT_ACCENT}
               />
+              <div style={{
+                background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
+                borderRadius: T.rL, padding: 24,
+              }}>
+                <ContentSignature />
+              </div>
             </div>
 
             {/* 詳細檢測項目 — 4 欄看板 */}

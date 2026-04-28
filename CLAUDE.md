@@ -252,6 +252,16 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-04-28
+**AEO / GEO / EEAT / Content 補上面向別 Signature 右側欄（hero 改 5:7 兩欄）:**
+- ⚠️ **回頭發現少做了一半**：上一個 commit 把四頁頂部換成 ScoreHero 後，用戶截圖紅框問「右邊兩位怎麼都不見了」— SEOAudit 是兩欄 hero（左 ScoreHero + 右 SerpAndVitals），其他四頁我只放了左邊，右邊整塊面向別特徵卡漏掉。
+- ✅ **新增 [src/components/v2/MetricSignatures.jsx](src/components/v2/MetricSignatures.jsx)**：從 v3 prototype 抽出四個 face-specific 右側面板 — `AEOSignature`（Perplexity 引用範例 + Perplexity/ChatGPT/Google AI 三家引用率 bar）、`GEOSignature`（引擎 × 關鍵字類型 5×3 熱度矩陣 + 圖例 + 強項/機會點）、`EEATSignature`（E/E/A/T 四個 pillar 卡，每張含主分數 + 兩條子分數 bar）、`ContentSignature`（5 個品質維度：平均文章長度/直接答案覆蓋/多媒體輔助/外部引用/閱讀時間 + 目標值對照）。`SectionLabel` 內部 helper 統一小區塊標籤（uppercase + letter-spacing .12em）。barrel export 加進 [src/components/v2/index.js](src/components/v2/index.js)。
+- ✅ **資料目前為 mock**：四個 Signature 內部都是 hardcode 範例值，等後端 analyzer 補對應欄位（AI 引用率、引用矩陣、E-E-A-T 四維度子分數、內容品質 5 維度）後再改為真實 props。
+- ✅ **新增 `.v2-hero-grid` CSS（[src/index.css](src/index.css)）**：左 5fr : 右 7fr 兩欄，880px 以下堆疊單欄。沿用 SEOAudit 的 `.seo-hero-grid` 規格（後續可考慮把 SEO 一起遷過來）。
+- ✅ **AEO/GEO/EEAT/Content 四頁全套用**：把原本 `<div style={{ marginBottom: 32 }}><ScoreHero /></div>` 改成 `<div className="v2-hero-grid"><ScoreHero /><div>{Signature}</div></div>`，右側容器與 ScoreHero 同款外觀（`rgba(1,8,14,.6)` 底 + `T.cardBorder` 邊 + `T.rL` 圓角 + padding 24）。
+- 🔖 **取捨：右側容器外觀沒抽元件**：四頁的右側容器外殼一模一樣（同款卡 padding），但內容差很大（一個是 SVG bar、一個是熱度 grid、一個是 4-col card grid、一個是直條 list）。目前直接 inline div 包住即可，將來若要做 `<HeroSidePanel>` 再說，避免提早抽出來反而要擴 props 介面。
+- 🔖 **取捨：ContentAudit 雖無歷史 trend 但仍套兩欄**：ContentSignature 跟 ScoreHero 並排視覺平衡，但 ContentAudit 沒有 `recentAudits`（每次分析 ad-hoc URL，不存 DB），sparkline 會顯示「— 首次掃描」，這是預期行為。
+
+### 2026-04-28
 **AEO / GEO / EEAT / Content 四頁頂部分數區重構為 SEO 同款 ScoreHero（視覺最終統一）:**
 - ✅ **抽出共用 [src/components/v2/AuditHero.jsx](src/components/v2/AuditHero.jsx)**：把 SEOAudit 內聯的「頂部麵包屑列 + 分數總覽 Hero」抽成獨立元件供四頁共用。`AuditTopBar`（返回 dashboard pill 麵包屑 + 重新檢測 + 匯出 PDF 漸層按鈕，吃 `accent`/`accent2` 雙色）/ `ScoreHero`（face chip + subChip + tagline + 150px ScoreCircle SVG + 7 日趨勢 Sparkline + 已通過/需修復兩格） / `HeroSkeleton`（載入骨架）三個 named export。內部 helpers：`ScoreCircle`、`Sparkline`。barrel export 加進 [src/components/v2/index.js](src/components/v2/index.js)。
 - ✅ **[src/pages/AEOAudit.jsx](src/pages/AEOAudit.jsx) 套用**：補 `recentAudits` state + 從 `aeo_audits` 拉近 7 筆給 7 日趨勢用。`face="AEO"`、`subChip="技術檢測"`、`tagline="Answer Engine Optimization — 讓內容適合 Google 精選摘要與問答框"`、`accent={T.aeo}`、`accent2={AEO_ACCENT2}`。容器寬度從 `max-w-7xl mx-auto px-6` 換成 inline `maxWidth: 1180`，與 SEO 完全對齊。

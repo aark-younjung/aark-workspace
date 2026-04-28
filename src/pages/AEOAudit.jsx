@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { useAuth } from '../context/AuthContext'
 import { T } from '../styles/v2-tokens'
-import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero, HeroSkeleton } from '../components/v2'
+import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero, HeroSkeleton, AEOSignature } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 
@@ -183,8 +183,8 @@ export default function AEOAudit() {
             accent2={AEO_ACCENT2}
           />
 
-          {/* 分數總覽 Hero（與 SEO 同款，單欄） */}
-          <div style={{ marginBottom: 32 }}>
+          {/* 分數總覽 Hero（左 5：右 7 兩欄，與 SEO 同款） */}
+          <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
             <ScoreHero
               face="AEO"
               subChip="技術檢測"
@@ -196,6 +196,12 @@ export default function AEOAudit() {
               recentAudits={recentAudits}
               accent={T.aeo}
             />
+            <div style={{
+              background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
+              borderRadius: T.rL, padding: 24,
+            }}>
+              <AEOSignature />
+            </div>
           </div>
 
           {/* 詳細檢測項目（看板式 IssueBoard）— 與 SEO 同款 */}

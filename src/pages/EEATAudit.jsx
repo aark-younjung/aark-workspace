@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { useAuth } from '../context/AuthContext'
 import { T } from '../styles/v2-tokens'
-import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero } from '../components/v2'
+import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero, EEATSignature } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 
@@ -213,8 +213,8 @@ export default function EEATAudit() {
             accent2={T.orange}
           />
 
-          {/* 分數總覽 Hero（與 SEO 同款，單欄） */}
-          <div style={{ marginBottom: 32 }}>
+          {/* 分數總覽 Hero（左 5：右 7 兩欄，與 SEO 同款） */}
+          <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
             <ScoreHero
               face="E-E-A-T"
               subChip="可信度檢測"
@@ -226,6 +226,12 @@ export default function EEATAudit() {
               recentAudits={recentAudits}
               accent={T.eeat}
             />
+            <div style={{
+              background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
+              borderRadius: T.rL, padding: 24,
+            }}>
+              <EEATSignature />
+            </div>
           </div>
 
           {/* E-E-A-T 四個維度說明 */}

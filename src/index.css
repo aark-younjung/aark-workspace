@@ -171,3 +171,14 @@ html.dark-theme .overflow-hidden > [style*="--ticker-fade"] {
 html.dark-theme .text-purple-600 { color: rgba(196, 181, 253, 1) !important; }
 html.dark-theme .text-purple-500 { color: rgba(216, 180, 254, 1) !important; }
 html.dark-theme .border-purple-300 { border-color: rgba(216, 180, 254, 0.4) !important; }
+
+/* v2 audit 頂部 hero 兩欄 grid（左 5 = ScoreHero，右 7 = 面向別 Signature） */
+/* 880px 以下堆疊成單欄，與 SEOAudit 同款（.seo-hero-grid） */
+.v2-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 16px;
+}
+@media (max-width: 880px) {
+  .v2-hero-grid { grid-template-columns: 1fr; }
+}
