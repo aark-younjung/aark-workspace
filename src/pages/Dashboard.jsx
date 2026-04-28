@@ -553,23 +553,25 @@ export default function Dashboard() {
   const siteTitle = seoAudit?.meta_tags?.titleContent || website?.name || domain
   const siteDesc = seoAudit?.meta_tags?.descriptionContent || `${siteTitle} 的官方網站`
 
-  const getImprovementSuggestions = () => {
+  // 完整修復清單（含面向別 + 預估時間，給總覽 tab 修復清單預覽 + 優化工具 tab 共用）
+  const getAllImprovements = () => {
     const tips = []
-    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', priority: 'P1', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Claude、Perplexity 更容易引用你。' })
-    if (!aeoAudit?.json_ld) tips.push({ icon: '📋', priority: 'P1', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 Google 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
-    if (!eeatAudit?.about_page) tips.push({ icon: '🏢', priority: 'P1', title: '建立關於我們頁面', desc: '缺少品牌介紹頁面。建立 /about 頁面說明公司背景與核心服務，強化 Google 與 AI 對你品牌的「權威性」認知。' })
-    if (!seoAudit?.h1_structure?.hasOnlyOneH1) tips.push({ icon: '🏷️', priority: 'P1', title: '修正 H1 標題結構', desc: `頁面目前有 ${seoAudit?.h1_structure?.h1Count ?? 0} 個 H1 標題。每個頁面應只有一個 H1，清楚說明頁面主題，幫助 Google 與 AI 理解內容核心。` })
-    if (!aeoAudit?.faq_schema) tips.push({ icon: '❓', priority: 'P2', title: '新增 FAQ Schema', desc: '缺少 FAQPage schema 讓 Google 無法將你的問答內容顯示為精選摘要，為 FAQ 區塊添加結構化資料可大幅提升能見度。' })
-    if (!aeoAudit?.open_graph) tips.push({ icon: '🔗', priority: 'P2', title: '補充 Open Graph 標籤', desc: '缺少 og:title、og:description 會讓 AI 引用時無法獲取標準化資訊，影響在 AI 摘要中呈現的品質。' })
-    if (!eeatAudit?.contact_page) tips.push({ icon: '📞', priority: 'P2', title: '提供聯絡方式', desc: '找不到聯絡資訊。建立 /contact 頁面或在頁尾加入 email 連結，讓訪客和搜尋引擎確認這是真實存在的機構。' })
-    if (!eeatAudit?.privacy_policy) tips.push({ icon: '🔏', priority: 'P2', title: '建立隱私權政策', desc: '缺少隱私權政策。建立 /privacy-policy 頁面並在頁尾加入連結，是合規與信任的基本要求。' })
-    if (!aeoAudit?.question_headings) tips.push({ icon: '💬', priority: 'P2', title: '使用問句式 H2/H3 標題', desc: '問答式標題更容易被 Google 選為精選摘要來源，將部分標題改為「什麼是...？」「如何...？」格式。' })
-    if (!eeatAudit?.organization_schema) tips.push({ icon: '🏷️', priority: 'P3', title: '加入 Organization Schema', desc: '缺少機構結構化資料。在 JSON-LD 加入 Organization schema（含 name、url、logo），讓 Google 和 AI 明確識別你的品牌。' })
-    if (!aeoAudit?.canonical) tips.push({ icon: '🔒', priority: 'P3', title: '設置 Canonical 標籤', desc: '未設置 canonical 可能導致 AI 引用錯誤版本的頁面，在每頁 <head> 加入 <link rel="canonical" href="..."> 即可修正。' })
-    if (!aeoAudit?.breadcrumbs) tips.push({ icon: '🍞', priority: 'P3', title: '加入麵包屑導航 Schema', desc: '麵包屑導航幫助 AI 理解你網站的資訊架構，使用 BreadcrumbList schema 可提升出現在精選摘要的機率。' })
-    if ((seoAudit?.alt_tags?.altCoverage || 100) < 80) tips.push({ icon: '🖼️', priority: 'P3', title: '補充圖片 Alt 文字', desc: `目前僅 ${seoAudit?.alt_tags?.altCoverage || 0}% 的圖片有 Alt 描述，AI 爬蟲無法理解沒有 Alt 的圖片，建議全部補齊。` })
-    return tips.slice(0, 5)
+    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', priority: 'P1', face: 'GEO', time: '30m', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Claude、Perplexity 更容易引用你。' })
+    if (!aeoAudit?.json_ld) tips.push({ icon: '📋', priority: 'P1', face: 'AEO', time: '1h', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 Google 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
+    if (!eeatAudit?.about_page) tips.push({ icon: '🏢', priority: 'P1', face: 'EEAT', time: '2h', title: '建立關於我們頁面', desc: '缺少品牌介紹頁面。建立 /about 頁面說明公司背景與核心服務，強化 Google 與 AI 對你品牌的「權威性」認知。' })
+    if (!seoAudit?.h1_structure?.hasOnlyOneH1) tips.push({ icon: '🏷️', priority: 'P1', face: 'SEO', time: '30m', title: '修正 H1 標題結構', desc: `頁面目前有 ${seoAudit?.h1_structure?.h1Count ?? 0} 個 H1 標題。每個頁面應只有一個 H1，清楚說明頁面主題，幫助 Google 與 AI 理解內容核心。` })
+    if (!aeoAudit?.faq_schema) tips.push({ icon: '❓', priority: 'P2', face: 'AEO', time: '1h', title: '新增 FAQ Schema', desc: '缺少 FAQPage schema 讓 Google 無法將你的問答內容顯示為精選摘要，為 FAQ 區塊添加結構化資料可大幅提升能見度。' })
+    if (!aeoAudit?.open_graph) tips.push({ icon: '🔗', priority: 'P2', face: 'AEO', time: '30m', title: '補充 Open Graph 標籤', desc: '缺少 og:title、og:description 會讓 AI 引用時無法獲取標準化資訊，影響在 AI 摘要中呈現的品質。' })
+    if (!eeatAudit?.contact_page) tips.push({ icon: '📞', priority: 'P2', face: 'EEAT', time: '1h', title: '提供聯絡方式', desc: '找不到聯絡資訊。建立 /contact 頁面或在頁尾加入 email 連結，讓訪客和搜尋引擎確認這是真實存在的機構。' })
+    if (!eeatAudit?.privacy_policy) tips.push({ icon: '🔏', priority: 'P2', face: 'EEAT', time: '2h', title: '建立隱私權政策', desc: '缺少隱私權政策。建立 /privacy-policy 頁面並在頁尾加入連結，是合規與信任的基本要求。' })
+    if (!aeoAudit?.question_headings) tips.push({ icon: '💬', priority: 'P2', face: 'AEO', time: '1h', title: '使用問句式 H2/H3 標題', desc: '問答式標題更容易被 Google 選為精選摘要來源，將部分標題改為「什麼是...？」「如何...？」格式。' })
+    if (!eeatAudit?.organization_schema) tips.push({ icon: '🏷️', priority: 'P3', face: 'EEAT', time: '1h', title: '加入 Organization Schema', desc: '缺少機構結構化資料。在 JSON-LD 加入 Organization schema（含 name、url、logo），讓 Google 和 AI 明確識別你的品牌。' })
+    if (!aeoAudit?.canonical) tips.push({ icon: '🔒', priority: 'P3', face: 'AEO', time: '30m', title: '設置 Canonical 標籤', desc: '未設置 canonical 可能導致 AI 引用錯誤版本的頁面，在每頁 <head> 加入 <link rel="canonical" href="..."> 即可修正。' })
+    if (!aeoAudit?.breadcrumbs) tips.push({ icon: '🍞', priority: 'P3', face: 'AEO', time: '2h', title: '加入麵包屑導航 Schema', desc: '麵包屑導航幫助 AI 理解你網站的資訊架構，使用 BreadcrumbList schema 可提升出現在精選摘要的機率。' })
+    if ((seoAudit?.alt_tags?.altCoverage || 100) < 80) tips.push({ icon: '🖼️', priority: 'P3', face: 'SEO', time: '4h', title: '補充圖片 Alt 文字', desc: `目前僅 ${seoAudit?.alt_tags?.altCoverage || 0}% 的圖片有 Alt 描述，AI 爬蟲無法理解沒有 Alt 的圖片，建議全部補齊。` })
+    return tips
   }
+  const getImprovementSuggestions = () => getAllImprovements().slice(0, 5)
 
   const generateLLMsTxt = () => `# ${siteTitle}
 > ${bizInfo.description || siteDesc}
@@ -1750,6 +1752,127 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             </span>
           </div>
         </Link>
+
+        {/* 修復清單預覽（總覽 tab 下半部）— 借鏡 Claude Design 把優化建議搬上首頁 */}
+        {(() => {
+          const allTips = getAllImprovements()
+          const top5 = allTips.slice(0, 5)
+          const remaining = Math.max(0, allTips.length - 5)
+          // 4 大面向 token 對應的色值（dot + face label 用同色系）
+          const FACE_COLORS = { SEO: T.seo, AEO: T.aeo, GEO: T.geo, EEAT: T.eeat, CONTENT: '#ec4899' }
+          // P1/P2/P3 chip 色（沿用優化工具 tab 的 priority 配色，與 IssueBoard 四欄看板一致）
+          const PRIORITY_STYLE = {
+            P1: { bg: 'rgba(239,68,68,0.18)', color: '#fca5a5', border: 'rgba(239,68,68,0.3)' },
+            P2: { bg: 'rgba(245,158,11,0.18)', color: '#fcd34d', border: 'rgba(245,158,11,0.3)' },
+            P3: { bg: 'rgba(16,185,129,0.18)', color: '#86efac', border: 'rgba(16,185,129,0.3)' },
+          }
+          if (allTips.length === 0) return null
+          return (
+            <div className="mt-8">
+              <GlassCard color={T.fail}>
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3 flex-wrap mb-5">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">修復清單</h3>
+                    <p className="text-sm text-white/60 mt-0.5">
+                      {isPro ? `共 ${allTips.length} 項修復項目` : `顯示 ${top5.length} 項預覽 — 升級 Pro 解鎖完整修復碼`}
+                    </p>
+                  </div>
+                  {/* P1/P2/P3 priority 圖例 chips（不是篩選器，純標示三級色碼） */}
+                  <div className="flex items-center gap-1.5">
+                    {['P1', 'P2', 'P3'].map(p => (
+                      <span key={p} className="text-[10px] font-bold px-2 py-1 rounded border" style={{ background: PRIORITY_STYLE[p].bg, color: PRIORITY_STYLE[p].color, borderColor: PRIORITY_STYLE[p].border }}>{p}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 5 條 issue rows */}
+                <div className="space-y-2.5">
+                  {top5.map((tip, i) => {
+                    const ps = PRIORITY_STYLE[tip.priority] || PRIORITY_STYLE.P3
+                    const faceColor = FACE_COLORS[tip.face] || '#cbd5e1'
+                    return (
+                      <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
+                        {/* P1/P2/P3 chip */}
+                        <span className="flex-shrink-0 text-[10px] font-bold px-2 py-1 rounded border" style={{ background: ps.bg, color: ps.color, borderColor: ps.border }}>{tip.priority}</span>
+                        {/* 標題 + 描述 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {/* face 色點 */}
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: faceColor }}></span>
+                            <p className="font-semibold text-white text-sm">{tip.title}</p>
+                          </div>
+                          <p className="text-xs text-white/60 leading-relaxed">{tip.desc}</p>
+                        </div>
+                        {/* 右側：時間估計 + Pro 鎖 */}
+                        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                          <span className="flex items-center gap-1 text-[11px] text-white/50 whitespace-nowrap">
+                            <span>⏱</span><span>{tip.time}</span>
+                          </span>
+                          {!isPro && (
+                            <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border whitespace-nowrap" style={{ background: `${T.orange}26`, color: '#fdba74', borderColor: `${T.orange}66` }}>
+                              <span>🔒</span><span>Pro</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* 底部 Pro CTA banner — 僅免費版顯示 */}
+                {!isPro && (
+                  <div className="mt-5 p-5 rounded-xl border flex items-center justify-between gap-4 flex-wrap" style={{ background: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(245,158,11,0.08))', borderColor: 'rgba(251,146,60,0.35)' }}>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-white">
+                        {remaining > 0 ? `還有 ${remaining} 項問題 + 完整修復碼在等你` : '完整修復碼在等你'}
+                      </p>
+                      <p className="text-xs text-white/70 mt-1">Pro 版含修復碼產生器、歷史趨勢圖、PDF 匯出、aivis AI 曝光監測</p>
+                    </div>
+                    <Link
+                      to="/pricing"
+                      className="flex-shrink-0 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-sm font-semibold rounded-xl transition-all whitespace-nowrap shadow-lg shadow-orange-500/30"
+                    >
+                      解鎖全部 — NT$1,490/月
+                    </Link>
+                  </div>
+                )}
+              </GlassCard>
+            </div>
+          )
+        })()}
+
+        {/* 底部 5 顆面向報告 pill 導航 — 借鏡 Claude Design 讓 audit 頁入口 prominent */}
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {[
+            { label: 'SEO 報告', to: `/seo-audit/${id}`, color: T.seo },
+            { label: 'AEO 報告', to: `/aeo-audit/${id}`, color: T.aeo },
+            { label: 'GEO 報告', to: `/geo-audit/${id}`, color: T.geo },
+            { label: 'E-E-A-T 報告', to: `/eeat-audit/${id}`, color: T.eeat },
+            { label: '內容品質', to: '/content-audit', color: '#ec4899' },
+          ].map(face => (
+            <Link
+              key={face.label}
+              to={face.to}
+              className="block px-5 py-3.5 rounded-xl text-center text-sm font-semibold transition-all border backdrop-blur-md"
+              style={{
+                background: 'rgba(0,0,0,0.4)',
+                borderColor: `${face.color}33`,
+                color: face.color,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = `${face.color}80`
+                e.currentTarget.style.background = `${face.color}1a`
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = `${face.color}33`
+                e.currentTarget.style.background = 'rgba(0,0,0,0.4)'
+              }}
+            >
+              {face.label} →
+            </Link>
+          ))}
+        </div>
 
         </>}
 

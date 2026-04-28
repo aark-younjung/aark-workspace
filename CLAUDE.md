@@ -252,6 +252,19 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-04-28
+**Dashboard 總覽 tab 新增「修復清單預覽」+ Pro CTA banner + 5 顆面向報告 pill 導航（借鏡 Claude Design v3）:**
+- 💡 **靈感來源**：用戶分享 Claude Design 的儀表板下半部設計稿，把「優化建議」從藏在「優化工具」tab 升級為總覽 tab 的 first-class 元素，並加上 conversion 路徑更短的 Pro CTA banner 與面向報告 pill 導航。比對後共識：抽 4 個重點借鏡（修復清單上首頁 + 時間估計 + Pro CTA + 5 顆 pill），不照抄（雷達圖/趨勢圖/checklist 是現有差異化資產要留）。
+- ✅ **`getImprovementSuggestions()` 重構為 `getAllImprovements()` + thin wrapper**（[src/pages/Dashboard.jsx:556-575](src/pages/Dashboard.jsx)）：原本只回傳 `slice(0, 5)` 的 5 條，改為 `getAllImprovements()` 回傳完整列表（最多 13 條根據 audit 結果）+ `getImprovementSuggestions()` = `getAllImprovements().slice(0, 5)`（給優化工具 tab 用）。每個 tip 物件新增兩個欄位：`face`（'SEO'/'AEO'/'GEO'/'EEAT' — 用來顯示色點）+ `time`（'30m'/'1h'/'2h'/'4h' — 預估修復時間給用戶心理預期）。13 條 tips 的 face 對應：llms.txt=GEO、json_ld/faq_schema/open_graph/question_headings/canonical/breadcrumbs=AEO、about/contact/privacy/organization=EEAT、h1/alt=SEO；time 估計依複雜度（建檔 30m / 寫文案 2h / 補圖片 4h 等）。
+- ✅ **總覽 tab 新增「修復清單預覽」widget**（AIVisibility banner 之後 / `</>}` 之前）：用 IIFE 包起來避免污染主 return，整段 ~80 行。外層 `<GlassCard color={T.fail}>`（紅色強調，引導用戶注意修復項目）。Header 區左邊標題 + 副標（免費「顯示 5 項預覽 — 升級 Pro 解鎖完整修復碼」/ Pro「共 N 項修復項目」），右邊 P1/P2/P3 三色 chip 圖例。中間 5 條 issue rows：每條左 priority chip（P1 紅 / P2 琥珀 / P3 綠，沿用 IssueBoard 配色）+ face 色點 + 標題 + 一行描述 + 右側時間（⏱ 30m）+ Pro 鎖 chip（🔒 Pro）。背景 `rgba(255,255,255,0.03)` + border `rgba(255,255,255,0.08)`，與整體玻璃感協調。
+- ✅ **Pro CTA banner（修復清單底部）**：僅 `!isPro` 時顯示。背景 `linear-gradient(135deg, rgba(251,146,60,0.12), rgba(245,158,11,0.08))` + 橘琥珀邊框，左邊「還有 N 項問題 + 完整修復碼在等你」+ 副標「Pro 版含修復碼產生器、歷史趨勢圖、PDF 匯出、aivis AI 曝光監測」（aivis 取代原 GA4/GSC 文案，因 GA4/GSC 入口已暫時隱藏），右邊「解鎖全部 — NT$1,490/月」橘琥珀漸層按鈕 with `shadow-lg shadow-orange-500/30` 暈光效果，連到 /pricing。
+- ✅ **底部 5 顆面向報告 pill 導航**（修復清單之後）：`grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` 響應式。每顆 pill 用各面向 token 色（`T.seo`/`T.aeo`/`T.geo`/`T.eeat`/`#ec4899`），預設 `bg-black/40 border-{color}33 text-{color}`，hover 用 onMouseEnter/Leave 把 border 變 80 透明 + 背景變 `${color}1a`，比 CSS `:hover` + JS state 簡單。
+- ✅ **連接 audit 頁路由**：SEO/AEO/GEO/EEAT 都用 `/{face}-audit/${id}` 帶 website id，內容品質連 `/content-audit`（ad-hoc URL 流程，不需 id）。
+- ✅ **編譯驗證**：node + @babel/parser parse Dashboard.jsx 通過 (`OK`)。
+- 🔖 **取捨：P1/P2/P3 三色 chip 用「圖例」而非「篩選器」**：Claude Design 的稿看起來右上角的 P1/P2/P3 chip 像可點擊的篩選器，但目前 audit 結果只 5 條預覽，加篩選器反而讓 UI 複雜。改為純圖例（不可點擊），讓用戶能對應每條左邊 chip 顏色與優先級含義。等 Pro 版完整 13 條清單時可考慮加 filter 互動。
+- 🔖 **取捨：face 用 1.5px 色點而非 chip**：每條已有 priority chip 在最左、Pro chip 在最右，再加一個 face chip 會視覺擁擠。改為 1.5px 小圓點放在標題前面，配合圖示色與標題一起讀（藍/紫/綠/琥珀/粉），夠識別但不搶版面。
+- 🔖 **取捨：CTA banner 文案「aivis AI 曝光監測」取代「GA4/GSC 整合」**：Claude Design 原稿寫「Pro 版含修復碼產生器、歷史趨勢、PDF 匯出、GA4/GSC 整合」，但我們前一個 commit 才把 GA4/GSC 入口隱藏，所以把 GA4/GSC 替換為 aivis（Phase 2 已上線、是真實 AI 引用資料、更符合產品 differentiator）。
+
+### 2026-04-28
 **Dashboard Google 連接入口暫時隱藏（避免「未經 Google 驗證」警告）:**
 - ⚠️ **Bug 起因**：客戶點 Dashboard TopBar「連接 Google」按鈕觸發 OAuth flow 時，Google 顯示「這個應用程式未經 Google 驗證」警告畫面，原因是 OAuth consent screen 還在 Testing 模式、未送審。Testing 模式還有第二個痛點：refresh_token 7 天就失效，cron 週報與自動掃描都會在第 8 天炸 `invalid_grant`。
 - 💡 **產品決策**：與用戶討論後共識，GA4/GSC 整合對「AI 能見度」核心定位有限（5 道客戶完成連接的門檻太高、實際使用率預估 <20%、跟產品 differentiator 拉扯方向），決定暫時隱藏入口、等到正式上線前再走 Google OAuth 送審流程（3-6 週審核期）。aivis 模組（Phase 2 已完工）會接棒成為 Pro 訂閱的「真實 AI 引用資料」核心賣點。
