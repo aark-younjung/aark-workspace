@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext'
 import FixGuide from '../components/FixGuide'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
+import SiteHeader from '../components/v2/SiteHeader'
+import Footer from '../components/Footer'
 
 const EEAT_CHECKS = [
   {
@@ -160,39 +162,48 @@ export default function EEATAudit() {
   if (loading) {
     return (
       <PageBg>
-        <div className="min-h-screen flex items-center justify-center relative z-10">
+        <SiteHeader />
+        <div className="flex items-center justify-center relative z-10" style={{ minHeight: '60vh' }}>
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: T.eeat }}></div>
             <p style={{ color: T.textMid }}>載入資料中...</p>
           </div>
         </div>
+        <Footer dark />
       </PageBg>
     )
   }
 
   return (
     <PageBg>
+      <SiteHeader />
       <div className="relative z-10">
-        {/* Header — 暗色玻璃條 + E-E-A-T 琥珀色 accent 細條 */}
-        <header className="border-b backdrop-blur-xl" style={{ borderColor: T.cardBorder, background: 'rgba(0,0,0,0.5)' }}>
-          <div className="h-1" style={{ background: `linear-gradient(90deg, ${T.eeat}, ${T.orange})` }} />
-          <div className="max-w-7xl mx-auto px-6 py-6">
-            <div className="flex items-center gap-4">
-              <Link to={`/dashboard/${id}`} className="transition-colors hover:opacity-80" style={{ color: T.textMid }} aria-label="返回 Dashboard">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-              <div>
+        {/* 頁內標題列：返回箭頭 + E-E-A-T 標題 + 網址（取代原獨立 header） */}
+        <div className="max-w-7xl mx-auto px-6 pt-8">
+          <div className="flex items-center gap-4 mb-6">
+            <Link to={`/dashboard/${id}`} className="transition-colors hover:opacity-80" style={{ color: T.textMid }} aria-label="返回 Dashboard">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <div>
+              <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold" style={{ color: T.text }}>E-E-A-T 可信度檢測</h1>
-                <p className="text-sm" style={{ color: T.textMid }}>Experience · Expertise · Authoritativeness · Trustworthiness</p>
-                <p className="text-xs mt-1" style={{ color: T.textLow }}>{website?.url}</p>
+                {/* E-E-A-T 琥珀色強調膠囊 */}
+                <span style={{
+                  fontSize: 11, fontWeight: 700, letterSpacing: '.06em',
+                  padding: '3px 8px', borderRadius: 5,
+                  background: `linear-gradient(90deg, ${T.eeat}33, ${T.orange}33)`,
+                  color: T.eeat, border: `1px solid ${T.eeat}55`,
+                }}>E-E-A-T</span>
               </div>
+              <p className="text-sm mt-1" style={{ color: T.textMid }}>Experience · Expertise · Authoritativeness · Trustworthiness</p>
+              {website?.url && <p className="text-xs mt-1" style={{ color: T.textLow }}>{website.url}</p>}
             </div>
           </div>
-        </header>
+        </div>
 
-        <main className="max-w-7xl mx-auto px-6 py-8">
+        <main className="max-w-7xl mx-auto px-6 pb-8">
           {/* 總覽分數卡 */}
           <GlassCard color={T.eeat} style={{ padding: 32, marginBottom: 32 }}>
             <div className="flex items-center justify-between flex-wrap gap-6">
@@ -414,17 +425,21 @@ export default function EEATAudit() {
           </div>
         </main>
       </div>
+      <Footer dark />
     </PageBg>
   )
 }
 
-// 共用的暗色背景 wrapper（青綠頂部漸層 + 雜訊疊層）
+// 共用的暗色背景 wrapper（與首頁 HomeDark 同款：黑底 + 上方青綠漸層光暈 + 雜訊）
+// 註：頁面高度通常不及首頁，下方漸層會壓到上半部反而互蓋，故捨棄只保留上方
 function PageBg({ children }) {
   return (
-    <div
-      className="min-h-screen relative overflow-hidden"
-      style={{ background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)' }}
-    >
+    <div className="min-h-screen relative overflow-hidden" style={{ background: '#000' }}>
+      <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '3000px',
+        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
+      }} />
       <div className="absolute inset-0 pointer-events-none z-0" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
         opacity: 0.12,
