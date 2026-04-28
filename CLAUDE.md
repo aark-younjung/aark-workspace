@@ -252,6 +252,16 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-04-28
+**Showcase / Compare 兩頁改暗色主題（PageBg + SiteHeader，純視覺收尾）:**
+- ✅ **[src/pages/Showcase.jsx](src/pages/Showcase.jsx) 從橘白主題遷至暗色 v2**：移除 `useTheme` import + `const { isDark }` 解構 + 內聯橘白 `<header>`，整頁包進 `<PageBg>` + `<SiteHeader />` + `<Footer dark />` 三段式結構（與五個 audit 頁完全一致）。
+- ✅ **配色批次改寫**：`bg-white/40|60|70` → `bg-black/40`、`border-orange-100` / `border-white/60` → `border-white/10`、`text-gray-800|900` → `text-white`、`text-gray-400|500` → `text-white/40-60`、`scoreColor()` 從 `text-green/yellow/red-500` 換到 `-400`（提亮對比）、進步分數 chip 從 `bg-green-100/text-green-700` 換 `bg-green-500/20 text-green-400`、AI 已讀取膠囊改 `bg-orange-500/15 text-orange-300`。`isDark` 條件 fade edges 移除 → 寫死 `linear-gradient(to right, rgba(0,0,0,0.95), transparent)`。
+- ✅ **[src/pages/Compare.jsx](src/pages/Compare.jsx) 同模式改寫**：移除 `useTheme` import + 內聯 header + 橘白 radial-gradient + dot-pattern overlay。`SITE_COLORS` 4 個網站主色（橘/藍/紫/綠）保留 hue 但改色階 — `bg-orange-50` → `bg-orange-500/15`（半透明 glow）、`border-orange-400` → `border-orange-400/60`、`text-orange-600` → `text-orange-300`，配對暗底維持可辨識性。輸入欄 `bg-white/60 border-orange-100 text-gray-800` → `bg-black/40 border-white/15 text-white`。Pass/Fail 圈圈：✓ 從 `bg-green-100/text-green-600` 換 `bg-green-500/20 text-green-300 border border-green-500/30`，✗ 從 `bg-slate-100/text-slate-300` 換 `bg-white/5 text-white/30 border border-white/10`。「開始比較」CTA 從純 `bg-orange-500` 升級為 `from-orange-500 to-amber-500` 漸層，與 HomeDark / Login 提交鈕一致。
+- ✅ **PageBg 各檔內聯**：兩頁尾部各加一份 `function PageBg({ children })`，純黑底 + 上方 3000px 155deg 青綠→深藍漸層（mix-blend-mode lighten）+ 雜訊 0.12/overlay，與 SEOAudit / AEOAudit / GEOAudit / EEATAudit / ContentAudit 五頁同款。
+- 🔖 **取捨：保留各檔模組層 PageBg 不抽元件**：與檢測頁原則一致 — 頁面層 wrapper 而非元件，未來若分歧（例如某頁切紅色版漸層）改起來方便。如果哪天確認所有頁面都統一同款再考慮抽到 components/v2/。
+- 🔖 **取捨：「升級 Pro 比較最多 4 個網站」連到 /pricing 而非 /dashboard**：原本連 `/dashboard` 是錯的（沒帶 :id 會 404），改為 `/pricing` 才符合語意（CTA 說的是升級）。
+- 🔖 **可確認的覆蓋率**：五個 audit 頁 + Showcase + Compare + HomeDark + Pricing + FAQ + Login + Register + Account + AIVisibility 一系列頁面全部走 `<PageBg>` + `<SiteHeader />` + dark theme，登入後流程不再出現任何橘白頁。剩 Dashboard（主菜，最複雜，待後續另開 commit）+ ContentAudit（已暗色化但走 v2 hero 而非 PageBg + SiteHeader 結構，目前 OK）。
+
+### 2026-04-28
 **SEOAudit 遷移至共用 AuditHero / IssueBoard / SerpAndVitals（完成五頁 dedupe）:**
 - ✅ **抽出 [src/components/v2/SerpAndVitals.jsx](src/components/v2/SerpAndVitals.jsx)**：把原本 SEOAudit 內聯的 `SerpAndVitals` + `CWVMetric`（Google SERP 預覽 + Core Web Vitals LCP/INP/CLS 三格）獨立成檔，CSS class `.seo-cwv-grid` 改名為 `.v2-cwv-grid`（與 v2-issue-board / v2-hero-grid 命名一致）。barrel export 加進 [src/components/v2/index.js](src/components/v2/index.js)。
 - ✅ **[src/pages/SEOAudit.jsx](src/pages/SEOAudit.jsx) 大幅瘦身（1018 → 300 行，砍掉 718 行）**：移除所有內聯的 `ScoreHero` / `ScoreCircle` / `Sparkline` / `IssueBoard` / `IssueLane` / `IssueCard` / `IssueFixPanel` / `IssueLockCTA` / `HeroSkeleton` / `IssueBoardSkeleton`、`PAGE_KEYFRAMES` 整段 CSS、`firstFail` dead code，全部改為從 `../components/v2` import 共用元件。麵包屑列也用 `<AuditTopBar face="SEO" accent={ACCENT} accent2={ACCENT2} />` 取代原本內聯的 `.seo-topbar`。`.seo-hero-grid` → `.v2-hero-grid`。

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useTheme } from '../context/ThemeContext'
+import SiteHeader from '../components/v2/SiteHeader'
+import Footer from '../components/Footer'
 
 // ── 樣板資料：日本與台灣中小企業（真實掃描結果會自動取代同網址的樣板） ──
 const SAMPLE_SITES = [
@@ -135,7 +135,6 @@ const timeAgo = (d) => {
 }
 
 export default function Showcase() {
-  const { isDark } = useTheme()
   const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
   const [leaderTab, setLeaderTab] = useState('total')
@@ -238,363 +237,365 @@ export default function Showcase() {
   const maxScore = sites.length ? Math.max(...sites.map(s => s.total_score)) : 0
 
   return (
-    <div className="min-h-screen relative" style={isDark ? {} : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }}>
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`, opacity: 0.25, mixBlendMode: 'overlay' }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-      <div className="relative">
-      {/* Header */}
-      <header className="border-b border-orange-100 bg-white/60 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-200 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    <PageBg>
+      <SiteHeader />
+      <div className="relative z-10">
+        <main className="max-w-6xl mx-auto px-6 py-12">
+          {/* 頁面標題 */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full mb-6">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <span className="text-white/70 text-sm">即時更新</span>
+            </div>
+            <h1 className="text-4xl font-bold text-white mb-3">AI 能見度排行榜</h1>
+            <p className="text-white/60">查看所有網站的 SEO + AEO + GEO 綜合表現</p>
+
+            {!loading && sites.length > 0 && (
+              <div className="flex items-center justify-center gap-12 mt-8">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-white">{sites.length}</div>
+                  <div className="text-white/50 text-sm mt-1">已檢測網站</div>
+                </div>
+                <div className="w-px h-10 bg-white/15"></div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-white">{avgScore}</div>
+                  <div className="text-white/50 text-sm mt-1">平均綜合分數</div>
+                </div>
+                <div className="w-px h-10 bg-white/15"></div>
+                <div className="text-center">
+                  <div className={`text-3xl font-bold ${scoreColor(maxScore)}`}>{maxScore}</div>
+                  <div className="text-white/50 text-sm mt-1">最高分數</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-32 gap-4">
+              <svg className="animate-spin h-10 w-10 text-orange-400" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
+              <span className="text-white/60">載入中...</span>
             </div>
-            <span className="text-xl font-bold text-slate-800">優勢方舟數位行銷</span>
-          </Link>
-          <nav className="flex items-center gap-6">
-            <Link to="/" className="text-slate-600 hover:text-slate-900 transition-colors text-sm">免費檢測 →</Link>
-          </nav>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 py-12">
-        {/* 頁面標題 */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 border border-orange-200 rounded-full mb-6">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            <span className="text-gray-500 text-sm">即時更新</span>
-          </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-3">AI 能見度排行榜</h1>
-          <p className="text-gray-500">查看所有網站的 SEO + AEO + GEO 綜合表現</p>
-
-          {!loading && sites.length > 0 && (
-            <div className="flex items-center justify-center gap-12 mt-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-800">{sites.length}</div>
-                <div className="text-gray-400 text-sm mt-1">已檢測網站</div>
-              </div>
-              <div className="w-px h-10 bg-gray-200"></div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-800">{avgScore}</div>
-                <div className="text-gray-400 text-sm mt-1">平均綜合分數</div>
-              </div>
-              <div className="w-px h-10 bg-gray-200"></div>
-              <div className="text-center">
-                <div className={`text-3xl font-bold ${scoreColor(maxScore)}`}>{maxScore}</div>
-                <div className="text-gray-400 text-sm mt-1">最高分數</div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <svg className="animate-spin h-10 w-10 text-orange-400" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <span className="text-gray-500">載入中...</span>
-          </div>
-        ) : (
-          <>
-            {/* ===== Section 1: 進步之星 ===== */}
-            {progressStars.length > 0 && star && (
-              <section className="mb-14">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                  🌟 進步之星
-                  <span className="text-sm font-normal text-gray-400">分析後分數進步最多的網站</span>
-                </h2>
-                <div className="relative rounded-2xl border border-yellow-500/20 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 p-8">
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
-                    <div className="flex-1">
-                      <div className="text-gray-400 text-sm mb-2">#{starIndex + 1} 進步之星 · 共 {progressStars.length} 個</div>
-                      <h3 className="text-2xl font-bold text-gray-800 mb-1 truncate">{star.name}</h3>
-                      <a href={star.url} target="_blank" rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-400 text-sm break-all transition-colors">
-                        {star.url}
-                      </a>
-                      <div className="flex items-center gap-6 mt-6">
-                        <div className="text-center">
-                          <div className="text-3xl font-bold text-gray-400">{star.first_total_score}</div>
-                          <div className="text-xs text-gray-400 mt-1">首次分數</div>
+          ) : (
+            <>
+              {/* ===== Section 1: 進步之星 ===== */}
+              {progressStars.length > 0 && star && (
+                <section className="mb-14">
+                  <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                    🌟 進步之星
+                    <span className="text-sm font-normal text-white/50">分析後分數進步最多的網站</span>
+                  </h2>
+                  <div className="relative rounded-2xl border border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-md p-8">
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
+                      <div className="flex-1">
+                        <div className="text-white/50 text-sm mb-2">#{starIndex + 1} 進步之星 · 共 {progressStars.length} 個</div>
+                        <h3 className="text-2xl font-bold text-white mb-1 truncate">{star.name}</h3>
+                        <a href={star.url} target="_blank" rel="noopener noreferrer"
+                          className="text-blue-300 hover:text-blue-200 text-sm break-all transition-colors">
+                          {star.url}
+                        </a>
+                        <div className="flex items-center gap-6 mt-6">
+                          <div className="text-center">
+                            <div className="text-3xl font-bold text-white/40">{star.first_total_score}</div>
+                            <div className="text-xs text-white/50 mt-1">首次分數</div>
+                          </div>
+                          <div className="text-white/30 text-3xl">→</div>
+                          <div className="text-center">
+                            <div className={`text-3xl font-bold ${scoreColor(star.total_score)}`}>{star.total_score}</div>
+                            <div className="text-xs text-white/50 mt-1">最新分數</div>
+                          </div>
+                          <div className="px-5 py-3 bg-green-500/20 rounded-xl border border-green-500/30 ml-2">
+                            <div className="text-green-400 font-bold text-2xl">+{star.improvement}</div>
+                            <div className="text-green-400/60 text-xs mt-1">進步分數</div>
+                          </div>
                         </div>
-                        <div className="text-gray-300 text-3xl">→</div>
-                        <div className="text-center">
-                          <div className={`text-3xl font-bold ${scoreColor(star.total_score)}`}>{star.total_score}</div>
-                          <div className="text-xs text-gray-400 mt-1">最新分數</div>
-                        </div>
-                        <div className="px-5 py-3 bg-green-500/20 rounded-xl border border-green-500/30 ml-2">
-                          <div className="text-green-500 font-bold text-2xl">+{star.improvement}</div>
-                          <div className="text-green-500/50 text-xs mt-1">進步分數</div>
-                        </div>
+                        <div className="text-white/50 text-sm mt-4">已掃描 {star.scan_count} 次</div>
                       </div>
-                      <div className="text-gray-400 text-sm mt-4">已掃描 {star.scan_count} 次</div>
-                    </div>
 
-                    {/* 輪播指示點 */}
-                    <div className="flex md:flex-col gap-2">
-                      {progressStars.map((_, i) => (
-                        <button key={i}
-                          onClick={() => { setStarIndex(i); clearInterval(timerRef.current) }}
-                          className={`rounded-full transition-all ${i === starIndex
-                            ? 'bg-yellow-400 w-6 h-2 md:w-2 md:h-6'
-                            : 'bg-gray-300 w-2 h-2'}`}
-                        />
+                      {/* 輪播指示點 */}
+                      <div className="flex md:flex-col gap-2">
+                        {progressStars.map((_, i) => (
+                          <button key={i}
+                            onClick={() => { setStarIndex(i); clearInterval(timerRef.current) }}
+                            className={`rounded-full transition-all ${i === starIndex
+                              ? 'bg-yellow-400 w-6 h-2 md:w-2 md:h-6'
+                              : 'bg-white/20 w-2 h-2'}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* ===== Section 2: 排行榜 ===== */}
+              <section className="mb-14">
+                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                  🏆 排行榜
+                </h2>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {[
+                    ['total',    '🏆 AI 友善度 TOP10'],
+                    ['ai',       '🤖 AI 引用潛力'],
+                    ['progress', '📈 進步最多'],
+                    ['recent',   '📅 最近更新'],
+                    ['crawled',  '🔍 被爬蟲找到'],
+                  ].map(([key, label]) => (
+                    <button key={key} onClick={() => setLeaderTab(key)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${leaderTab === key
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden">
+                  {leaders[leaderTab].length === 0 ? (
+                    <div className="text-center py-12 text-white/50">尚無資料</div>
+                  ) : leaders[leaderTab].map((site, i) => (
+                    <div key={site.id}
+                      className="flex items-center gap-4 px-6 py-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                      <div className="w-8 text-center flex-shrink-0">
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' :
+                          <span className="text-white/50 text-sm font-mono">{i + 1}</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium truncate">{site.name}</span>
+                        </div>
+                        <div className="text-white/40 text-xs truncate">{site.url}</div>
+                      </div>
+
+                      {/* AI 友善度：顯示 SEO + AEO + GEO 三欄 */}
+                      {leaderTab === 'total' && (
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
+                            <div key={label} className="text-center hidden sm:block">
+                              <div className={`text-sm font-bold ${scoreColor(score)}`}>{score}</div>
+                              <div className="text-xs text-white/40">{label}</div>
+                            </div>
+                          ))}
+                          <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(site.total_score)}`}>
+                            {site.total_score}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AI 引用潛力：AEO + GEO 合計 */}
+                      {leaderTab === 'ai' && (
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <div className="text-center hidden sm:block">
+                            <div className={`text-sm font-bold ${scoreColor(site.aeo_score)}`}>{site.aeo_score}</div>
+                            <div className="text-xs text-white/40">AEO</div>
+                          </div>
+                          <div className="text-center hidden sm:block">
+                            <div className={`text-sm font-bold ${scoreColor(site.geo_score)}`}>{site.geo_score}</div>
+                            <div className="text-xs text-white/40">GEO</div>
+                          </div>
+                          <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(Math.round((site.aeo_score + site.geo_score) / 2))}`}>
+                            {Math.round((site.aeo_score + site.geo_score) / 2)}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 進步最多：首次 → 現在 + 進步分數 */}
+                      {leaderTab === 'progress' && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-white/40 text-sm hidden sm:block">{site.first_total_score} →</span>
+                          <span className={`text-sm font-bold hidden sm:block ${scoreColor(site.total_score)}`}>{site.total_score}</span>
+                          <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-lg font-bold text-sm">+{site.improvement}</span>
+                        </div>
+                      )}
+
+                      {leaderTab === 'recent' && (
+                        <div className="text-white/60 text-sm flex-shrink-0">{timeAgo(site.last_scanned_at)}</div>
+                      )}
+
+                      {leaderTab === 'crawled' && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-orange-400 font-bold">{site.scan_count}</span>
+                          <span className="text-white/40 text-xs">次掃描</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* ===== Section 3: 成功案例 ===== */}
+              {successStories.length > 0 && (
+                <section className="mb-14">
+                  <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                    📖 成功案例
+                    <span className="text-sm font-normal text-white/50">分數進步 20 分以上</span>
+                  </h2>
+                  <div className="overflow-hidden relative">
+                    {/* fade edges — 暗色版兩端漸隱（與 PageBg 黑底融合） */}
+                    <div className="absolute left-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
+                      style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.95), transparent)' }} />
+                    <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
+                      style={{ background: 'linear-gradient(to left, rgba(0,0,0,0.95), transparent)' }} />
+                    <div className="flex gap-4 pb-4 animate-ticker" style={{ width: 'max-content' }}>
+                      {[...successStories, ...successStories].map((site, idx) => (
+                        <div key={idx}
+                          className="flex-shrink-0 w-72 p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10">
+                          <div className="text-white font-semibold mb-1 truncate">{site.name}</div>
+                          <div className="text-white/40 text-xs mb-5 truncate">{site.url}</div>
+                          <div className="flex items-center gap-3 mb-5">
+                            <div className="text-center">
+                              <div className="text-xl font-bold text-white/40">{site.first_total_score}</div>
+                              <div className="text-xs text-white/50 mt-1">首次</div>
+                            </div>
+                            <div className="text-white/30 text-lg">→</div>
+                            <div className="text-center">
+                              <div className={`text-xl font-bold ${scoreColor(site.total_score)}`}>{site.total_score}</div>
+                              <div className="text-xs text-white/50 mt-1">現在</div>
+                            </div>
+                            <div className="ml-auto px-3 py-1.5 bg-green-500/20 rounded-lg border border-green-500/30 flex-shrink-0">
+                              <span className="text-green-400 font-bold text-lg">+{site.improvement}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
+                              <span key={label}
+                                className={`text-xs px-2 py-1 rounded-full font-medium ${score >= 70
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : score >= 40
+                                  ? 'bg-yellow-500/20 text-yellow-400'
+                                  : 'bg-red-500/20 text-red-400'}`}>
+                                {label} {score}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
-                </div>
-              </section>
-            )}
-
-            {/* ===== Section 2: 排行榜 ===== */}
-            <section className="mb-14">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                🏆 排行榜
-              </h2>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {[
-                  ['total',    '🏆 AI 友善度 TOP10'],
-                  ['ai',       '🤖 AI 引用潛力'],
-                  ['progress', '📈 進步最多'],
-                  ['recent',   '📅 最近更新'],
-                  ['crawled',  '🔍 被爬蟲找到'],
-                ].map(([key, label]) => (
-                  <button key={key} onClick={() => setLeaderTab(key)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${leaderTab === key
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-orange-100 border border-orange-200 text-gray-500 hover:text-gray-800 hover:bg-orange-200'}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 overflow-hidden">
-                {leaders[leaderTab].length === 0 ? (
-                  <div className="text-center py-12 text-gray-400">尚無資料</div>
-                ) : leaders[leaderTab].map((site, i) => (
-                  <div key={site.id}
-                    className="flex items-center gap-4 px-6 py-4 border-b border-orange-50 last:border-0 hover:bg-white/30 transition-colors">
-                    <div className="w-8 text-center flex-shrink-0">
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' :
-                        <span className="text-gray-400 text-sm font-mono">{i + 1}</span>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-800 font-medium truncate">{site.name}</span>
-                      </div>
-                      <div className="text-gray-400 text-xs truncate">{site.url}</div>
-                    </div>
-
-                    {/* AI 友善度：顯示 SEO + AEO + GEO 三欄 */}
-                    {leaderTab === 'total' && (
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
-                          <div key={label} className="text-center hidden sm:block">
-                            <div className={`text-sm font-bold ${scoreColor(score)}`}>{score}</div>
-                            <div className="text-xs text-gray-400">{label}</div>
-                          </div>
-                        ))}
-                        <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(site.total_score)}`}>
-                          {site.total_score}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* AI 引用潛力：AEO + GEO 合計 */}
-                    {leaderTab === 'ai' && (
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <div className="text-center hidden sm:block">
-                          <div className={`text-sm font-bold ${scoreColor(site.aeo_score)}`}>{site.aeo_score}</div>
-                          <div className="text-xs text-gray-400">AEO</div>
-                        </div>
-                        <div className="text-center hidden sm:block">
-                          <div className={`text-sm font-bold ${scoreColor(site.geo_score)}`}>{site.geo_score}</div>
-                          <div className="text-xs text-gray-400">GEO</div>
-                        </div>
-                        <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(Math.round((site.aeo_score + site.geo_score) / 2))}`}>
-                          {Math.round((site.aeo_score + site.geo_score) / 2)}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 進步最多：首次 → 現在 + 進步分數 */}
-                    {leaderTab === 'progress' && (
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-gray-400 text-sm hidden sm:block">{site.first_total_score} →</span>
-                        <span className={`text-sm font-bold hidden sm:block ${scoreColor(site.total_score)}`}>{site.total_score}</span>
-                        <span className="px-2 py-1 bg-green-100 text-green-600 rounded-lg font-bold text-sm">+{site.improvement}</span>
-                      </div>
-                    )}
-
-                    {leaderTab === 'recent' && (
-                      <div className="text-gray-500 text-sm flex-shrink-0">{timeAgo(site.last_scanned_at)}</div>
-                    )}
-
-                    {leaderTab === 'crawled' && (
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-orange-500 font-bold">{site.scan_count}</span>
-                        <span className="text-gray-400 text-xs">次掃描</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* ===== Section 3: 成功案例 ===== */}
-            {successStories.length > 0 && (
-              <section className="mb-14">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                  📖 成功案例
-                  <span className="text-sm font-normal text-gray-400">分數進步 20 分以上</span>
-                </h2>
-                <div className="overflow-hidden relative">
-                  {/* fade edges */}
-                  <div className="absolute left-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
-                    style={{ background: isDark ? 'linear-gradient(to right, rgba(5,2,8,0.98), transparent)' : 'linear-gradient(to right, rgba(255,250,245,0.98), transparent)' }} />
-                  <div className="absolute right-0 top-0 bottom-0 w-12 z-10 pointer-events-none"
-                    style={{ background: isDark ? 'linear-gradient(to left, rgba(5,2,8,0.98), transparent)' : 'linear-gradient(to left, rgba(255,250,245,0.98), transparent)' }} />
-                  <div className="flex gap-4 pb-4 animate-ticker" style={{ width: 'max-content' }}>
-                    {[...successStories, ...successStories].map((site, idx) => (
-                      <div key={idx}
-                        className="flex-shrink-0 w-72 p-6 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60">
-                        <div className="text-gray-800 font-semibold mb-1 truncate">{site.name}</div>
-                        <div className="text-gray-400 text-xs mb-5 truncate">{site.url}</div>
-                        <div className="flex items-center gap-3 mb-5">
-                          <div className="text-center">
-                            <div className="text-xl font-bold text-gray-400">{site.first_total_score}</div>
-                            <div className="text-xs text-gray-400 mt-1">首次</div>
-                          </div>
-                          <div className="text-gray-300 text-lg">→</div>
-                          <div className="text-center">
-                            <div className={`text-xl font-bold ${scoreColor(site.total_score)}`}>{site.total_score}</div>
-                            <div className="text-xs text-gray-400 mt-1">現在</div>
-                          </div>
-                          <div className="ml-auto px-3 py-1.5 bg-green-500/20 rounded-lg border border-green-500/30 flex-shrink-0">
-                            <span className="text-green-500 font-bold text-lg">+{site.improvement}</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
-                            <span key={label}
-                              className={`text-xs px-2 py-1 rounded-full font-medium ${score >= 70
-                                ? 'bg-green-500/20 text-green-500'
-                                : score >= 40
-                                ? 'bg-yellow-500/20 text-yellow-600'
-                                : 'bg-red-500/20 text-red-500'}`}>
-                              {label} {score}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* ===== Section 4: 全部目錄 ===== */}
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  📋 全部網站
-                </h2>
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-400 text-sm hidden sm:block">排序：</span>
-                  <select value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(0) }}
-                    className="bg-white/60 border border-orange-100 text-gray-800 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
-                    <option value="total_score">總分</option>
-                    <option value="last_scanned_at">最近更新</option>
-                    <option value="scan_count">掃描次數</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 overflow-hidden">
-                {/* 表頭 */}
-                <div className="grid grid-cols-12 gap-2 px-6 py-3 border-b border-orange-100 text-gray-400 text-xs font-medium uppercase tracking-wide">
-                  <div className="col-span-1">#</div>
-                  <div className="col-span-4">網站</div>
-                  <div className="col-span-2 text-center">SEO</div>
-                  <div className="col-span-2 text-center">AEO</div>
-                  <div className="col-span-2 text-center">GEO</div>
-                  <div className="col-span-1 text-center">總分</div>
-                </div>
-
-                {paged.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400">尚無資料</div>
-                ) : paged.map((site, i) => (
-                  <div key={site.id}
-                    className="grid grid-cols-12 gap-2 px-6 py-4 border-b border-orange-50 last:border-0 hover:bg-white/30 transition-colors items-center">
-                    <div className="col-span-1 text-gray-400 text-sm font-mono">{page * PAGE_SIZE + i + 1}</div>
-                    <div className="col-span-4 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-gray-800 font-medium text-sm truncate">{site.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full">
-                          🤖 AI 已讀取 {timeAgo(site.last_scanned_at)}
-                        </span>
-                      </div>
-                    </div>
-                    {[site.seo_score, site.aeo_score, site.geo_score].map((score, si) => (
-                      <div key={si} className="col-span-2 flex flex-col items-center gap-1.5">
-                        <span className={`text-sm font-bold ${scoreColor(score)}`}>{score}</span>
-                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div className={`h-1.5 rounded-full ${scoreBgColor(score)}`} style={{ width: `${score}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                    <div className={`col-span-1 text-center text-lg font-bold ${scoreColor(site.total_score)}`}>
-                      {site.total_score}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* 分頁 */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-5">
-                  <span className="text-gray-400 text-sm">
-                    目前展示 {Math.min((page + 1) * PAGE_SIZE, sites.length)} 筆 · 共 {sites.length} 筆
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                      className="px-3 py-1.5 bg-orange-100 border border-orange-200 text-gray-500 rounded-lg disabled:opacity-30 hover:bg-orange-200 transition-colors text-sm">
-                      ← 上一頁
-                    </button>
-                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                      const p = totalPages <= 5 ? i : Math.max(0, Math.min(page - 2, totalPages - 5)) + i
-                      return (
-                        <button key={p} onClick={() => setPage(p)}
-                          className={`w-8 h-8 rounded-lg text-sm transition-colors ${p === page
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-orange-100 border border-orange-200 text-gray-500 hover:bg-orange-200'}`}>
-                          {p + 1}
-                        </button>
-                      )
-                    })}
-                    <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                      className="px-3 py-1.5 bg-orange-100 border border-orange-200 text-gray-500 rounded-lg disabled:opacity-30 hover:bg-orange-200 transition-colors text-sm">
-                      下一頁 →
-                    </button>
-                  </div>
-                </div>
+                </section>
               )}
 
-              {totalPages <= 1 && sites.length > 0 && (
-                <div className="mt-4 text-gray-400 text-sm text-center">
-                  共 {sites.length} 筆
+              {/* ===== Section 4: 全部目錄 ===== */}
+              <section>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    📋 全部網站
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <span className="text-white/50 text-sm hidden sm:block">排序：</span>
+                    <select value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(0) }}
+                      className="bg-black/40 border border-white/15 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
+                      <option value="total_score">總分</option>
+                      <option value="last_scanned_at">最近更新</option>
+                      <option value="scan_count">掃描次數</option>
+                    </select>
+                  </div>
                 </div>
-              )}
-            </section>
-          </>
-        )}
-      </main>
+
+                <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden">
+                  {/* 表頭 */}
+                  <div className="grid grid-cols-12 gap-2 px-6 py-3 border-b border-white/10 text-white/40 text-xs font-medium uppercase tracking-wide">
+                    <div className="col-span-1">#</div>
+                    <div className="col-span-4">網站</div>
+                    <div className="col-span-2 text-center">SEO</div>
+                    <div className="col-span-2 text-center">AEO</div>
+                    <div className="col-span-2 text-center">GEO</div>
+                    <div className="col-span-1 text-center">總分</div>
+                  </div>
+
+                  {paged.length === 0 ? (
+                    <div className="text-center py-12 text-white/50">尚無資料</div>
+                  ) : paged.map((site, i) => (
+                    <div key={site.id}
+                      className="grid grid-cols-12 gap-2 px-6 py-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors items-center">
+                      <div className="col-span-1 text-white/40 text-sm font-mono">{page * PAGE_SIZE + i + 1}</div>
+                      <div className="col-span-4 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-medium text-sm truncate">{site.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-orange-500/15 text-orange-300 rounded-full">
+                            🤖 AI 已讀取 {timeAgo(site.last_scanned_at)}
+                          </span>
+                        </div>
+                      </div>
+                      {[site.seo_score, site.aeo_score, site.geo_score].map((score, si) => (
+                        <div key={si} className="col-span-2 flex flex-col items-center gap-1.5">
+                          <span className={`text-sm font-bold ${scoreColor(score)}`}>{score}</span>
+                          <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className={`h-1.5 rounded-full ${scoreBgColor(score)}`} style={{ width: `${score}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                      <div className={`col-span-1 text-center text-lg font-bold ${scoreColor(site.total_score)}`}>
+                        {site.total_score}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 分頁 */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-5">
+                    <span className="text-white/50 text-sm">
+                      目前展示 {Math.min((page + 1) * PAGE_SIZE, sites.length)} 筆 · 共 {sites.length} 筆
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                        className="px-3 py-1.5 bg-white/5 border border-white/10 text-white/70 rounded-lg disabled:opacity-30 hover:bg-white/10 transition-colors text-sm">
+                        ← 上一頁
+                      </button>
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        const p = totalPages <= 5 ? i : Math.max(0, Math.min(page - 2, totalPages - 5)) + i
+                        return (
+                          <button key={p} onClick={() => setPage(p)}
+                            className={`w-8 h-8 rounded-lg text-sm transition-colors ${p === page
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'}`}>
+                            {p + 1}
+                          </button>
+                        )
+                      })}
+                      <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
+                        className="px-3 py-1.5 bg-white/5 border border-white/10 text-white/70 rounded-lg disabled:opacity-30 hover:bg-white/10 transition-colors text-sm">
+                        下一頁 →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {totalPages <= 1 && sites.length > 0 && (
+                  <div className="mt-4 text-white/40 text-sm text-center">
+                    共 {sites.length} 筆
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+        </main>
       </div>
+      <Footer dark />
+    </PageBg>
+  )
+}
+
+// 暗色背景 wrapper（與其他 audit 頁同款：黑底 + 上方青綠漸層 + 雜訊）
+function PageBg({ children }) {
+  return (
+    <div className="min-h-screen relative overflow-hidden" style={{ background: '#000' }}>
+      <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '3000px',
+        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
+      }} />
+      <div className="absolute inset-0 pointer-events-none z-0" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+        opacity: 0.12,
+        mixBlendMode: 'overlay',
+      }} />
+      {children}
     </div>
   )
 }
