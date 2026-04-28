@@ -252,6 +252,21 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-04-28
+**Dashboard 雷達圖改為 5 大面向 + 軸標籤/資料點面向色 + 單一翠綠連線（取代原紫色雙線）:**
+- 💡 **靈感來源**：用戶分享參考圖（5 軸雷達圖，每軸標籤用對應面向色 + 各頂點同色圓點 + 單條翠綠多邊形），指明「5 大面向分析，紫色線條部分改成像這樣的表現方式」。原本的雷達圖內容是 SEO 5 個子指標（Meta/H1/Alt/Mobile/Speed），與標題「5 大面向分析」不符；總覽 tab 上方已有 5 張面向分數卡，再用同樣 5 個面向重畫雷達能更直觀對比五個面向的形狀缺口。
+- ✅ **`radarData` 從 SEO 5 子指標改為 5 大面向**（[src/pages/Dashboard.jsx:358-373](src/pages/Dashboard.jsx#L358-L373)）：data 改用 `seoScore / aeoScore / geoScore / eeatScore / contentScore || 0` 五個值；新增 `FACE_COLORS` 字典 mapping subject → token 色（SEO=`T.seo` 藍 / AEO=`T.aeo` 紫 / GEO=`T.geo` 綠 / E-E-A-T=`T.eeat` 琥珀 / 內容=`#ec4899` 粉），與 5 張面向卡的色相一致。
+- ✅ **`PolarAngleAxis` `tick` 改為 function component**（[src/pages/Dashboard.jsx:996-1006](src/pages/Dashboard.jsx)）：原本是 `tick={{ fontSize: 12, fill: '#ffffff' }}` 統一白色，改為 `tick={(props) => <text fill={FACE_COLORS[payload.value]} fontSize={13} fontWeight={600}>...</text>}`，每個軸標籤吃對應面向色，立刻能辨識五個方向各自代表哪個面向。
+- ✅ **`<Radar>` 從原本「目標 dashed + 現況紫實線」雙線改為單一翠綠連線**：刪掉 `name="目標"` dashed Radar 與 `name="現況"` 紫色 Radar，留下一條 `stroke="#10b981" fill="#10b981" fillOpacity={0.18} strokeWidth={2}`。連帶 `<Legend>` 也刪掉（單線不需圖例）。
+- ✅ **`<Radar dot={...}>` 自訂頂點顏色**：每個資料點用 SVG `<circle r={5} fill={FACE_COLORS[payload.subject]} stroke="#0a0e14" strokeWidth={2} />` 渲染 — 5 個頂點各自吃面向色（藍/紫/綠/琥珀/粉），與軸標籤呼應，`stroke="#0a0e14" + 2px` 給點一圈深色描邊，跟翠綠連線重疊時還能讀清楚。
+- ✅ **底部 5 軸數值說明 subject 文字也改吃面向色**：原本 `text-white/60` 統一灰白，改為 inline `style={{ color: FACE_COLORS[item.subject] }}` + `font-semibold`，跟雷達圖軸標籤一致，整張卡的色彩語言統一。
+- ✅ **GlassCard color 從 `T.seo` 換 `T.geo`**：因為連線色現在是翠綠（取代原紫色），外框 hover 邊框跟連線色相呼應比 SEO 藍更協調；況且 SEO 已不再是這張卡的唯一主題（5 個面向都有）。
+- ✅ **標題與副標更新**：「SEO 5 項檢測分析」→「5 大面向分析」，副標「Meta · H1 · Alt · Mobile · Speed」→「SEO · AEO · GEO · E-E-A-T · 內容」，InfoTooltip 內容也重寫為 5 個面向的解釋。
+- ✅ **編譯驗證**：node + @babel/parser parse Dashboard.jsx 通過 (`OK`)。
+- 🔖 **取捨：拋棄原本的「目標 dashed」概念**：原本紫色實線 vs 綠色 dashed 是「現況 vs 目標」對比，但用戶參考圖只有單一連線。考慮到 5 個面向各自有自己的「目標分數」（80~85 不等），畫成一條虛線意義有限；且 5 張面向卡上方已用 verdict 文字（「目前幾乎不會被 AI 引用」）告訴用戶該不該擔心，雷達圖只負責呈現「形狀缺口」就好，不必再背負對比責任。
+- 🔖 **取捨：用 token 色（`T.seo`/`T.aeo` 等）而非新 hex**：FACE_COLORS 直接吃既有 design tokens，未來若調整面向主色（例如某天 SEO 從藍換成青）會自動同步，不會出現「面向卡是新色、雷達圖還是舊色」的不一致。
+- 🔖 **取捨：保留 5 SEO 子指標雷達？決議不保留**：原本 Meta/H1/Alt/Mobile/Speed 5 軸的細部資訊雖有價值，但用戶可以透過點 SEO 面向卡進入 `/seo-audit/:id` 詳細頁看完整 5 項拆解（且 SEOAudit 頁本身就有更詳盡的 IssueBoard 看板）。Dashboard 總覽應聚焦「五個面向的整體形狀」，子指標讓子頁負責，符合 dashboard → drill-down 的層級邏輯。
+
+### 2026-04-28
 **Dashboard 總覽 tab 新增「修復清單預覽」+ Pro CTA banner + 5 顆面向報告 pill 導航（借鏡 Claude Design v3）:**
 - 💡 **靈感來源**：用戶分享 Claude Design 的儀表板下半部設計稿，把「優化建議」從藏在「優化工具」tab 升級為總覽 tab 的 first-class 元素，並加上 conversion 路徑更短的 Pro CTA banner 與面向報告 pill 導航。比對後共識：抽 4 個重點借鏡（修復清單上首頁 + 時間估計 + Pro CTA + 5 顆 pill），不照抄（雷達圖/趨勢圖/checklist 是現有差異化資產要留）。
 - ✅ **`getImprovementSuggestions()` 重構為 `getAllImprovements()` + thin wrapper**（[src/pages/Dashboard.jsx:556-575](src/pages/Dashboard.jsx)）：原本只回傳 `slice(0, 5)` 的 5 條，改為 `getAllImprovements()` 回傳完整列表（最多 13 條根據 audit 結果）+ `getImprovementSuggestions()` = `getAllImprovements().slice(0, 5)`（給優化工具 tab 用）。每個 tip 物件新增兩個欄位：`face`（'SEO'/'AEO'/'GEO'/'EEAT' — 用來顯示色點）+ `time`（'30m'/'1h'/'2h'/'4h' — 預估修復時間給用戶心理預期）。13 條 tips 的 face 對應：llms.txt=GEO、json_ld/faq_schema/open_graph/question_headings/canonical/breadcrumbs=AEO、about/contact/privacy/organization=EEAT、h1/alt=SEO；time 估計依複雜度（建檔 30m / 寫文案 2h / 補圖片 4h 等）。

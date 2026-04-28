@@ -355,13 +355,20 @@ export default function Dashboard() {
   const geoScore = geoAudit?.score || 0
   const eeatScore = eeatAudit?.score || 0
 
-  // 雷達圖數據 - 5 項 SEO 檢測
+  // 5 大面向雷達圖 — 軸標籤、資料點以對應面向 token 色顯示，連線統一翠綠
+  const FACE_COLORS = {
+    'SEO': T.seo,
+    'AEO': T.aeo,
+    'GEO': T.geo,
+    'E-E-A-T': T.eeat,
+    '內容': '#ec4899',
+  }
   const radarData = [
-    { subject: 'Meta 標籤', score: seoAudit?.meta_tags?.score || 0, target: 80, fullMark: 100 },
-    { subject: 'H1 結構', score: seoAudit?.h1_structure?.score || 0, target: 80, fullMark: 100 },
-    { subject: 'Alt 屬性', score: seoAudit?.alt_tags?.score || 0, target: 75, fullMark: 100 },
-    { subject: '行動版相容', score: seoAudit?.mobile_compatible?.score || 0, target: 85, fullMark: 100 },
-    { subject: '載入速度', score: seoAudit?.page_speed?.score || 0, target: 75, fullMark: 100 },
+    { subject: 'SEO', score: seoScore, fullMark: 100 },
+    { subject: 'AEO', score: aeoScore, fullMark: 100 },
+    { subject: 'GEO', score: geoScore, fullMark: 100 },
+    { subject: 'E-E-A-T', score: eeatScore, fullMark: 100 },
+    { subject: '內容', score: contentScore || 0, fullMark: 100 },
   ]
 
   // 歷史趨勢數據（從最新紀錄對齊，避免各模組筆數不同時錯位）
@@ -985,48 +992,51 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {activeTab === 'overview' && <>
         {/* 圖表區域 */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* 雷達圖 - 5 項 SEO 檢測（GlassCard 吃 SEO 藍） */}
-          <GlassCard color={T.seo} style={{ padding: 24 }}>
-            <h3 className="font-semibold mb-2 text-white">SEO 5 項檢測分析<InfoTooltip text={`以雷達圖呈現 5 項 SEO 核心指標得分\n・Meta 標籤：標題與描述是否完整且長度符合規範\n・H1 結構：頁面是否只有一個清晰的主標題\n・Alt 屬性：圖片是否都有描述文字\n・行動版相容：是否適合手機瀏覽（Google 行動優先索引）\n・載入速度：頁面回應時間，影響排名與跳出率`} /></h3>
-            <p className="text-sm mb-4 text-white/60">Meta · H1 · Alt · Mobile · Speed</p>
+          {/* 5 大面向雷達圖（GlassCard 吃 GEO 翠綠，呼應整體連線色） */}
+          <GlassCard color={T.geo} style={{ padding: 24 }}>
+            <h3 className="font-semibold mb-2 text-white">5 大面向分析<InfoTooltip text={`以雷達圖呈現五大 AI 能見度面向得分\n・SEO：傳統搜尋優化基礎\n・AEO：問答引擎適配（FAQ Schema 等）\n・GEO：生成式 AI 引用優化（llms.txt 等）\n・E-E-A-T：經驗/專業/權威/可信度\n・內容：文章結構與引用適合度`} /></h3>
+            <p className="text-sm mb-4 text-white/60">SEO · AEO · GEO · E-E-A-T · 內容</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData}>
                 <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: '#ffffff' }} />
+                <PolarAngleAxis
+                  dataKey="subject"
+                  tick={(props) => {
+                    const { payload, x, y, textAnchor } = props
+                    const color = FACE_COLORS[payload.value] || '#ffffff'
+                    return (
+                      <text x={x} y={y} textAnchor={textAnchor} fill={color} fontSize={13} fontWeight={600}>
+                        {payload.value}
+                      </text>
+                    )
+                  }}
+                />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)' }} />
                 <Radar
-                  name="目標"
-                  dataKey="target"
+                  name="本站表現"
+                  dataKey="score"
                   stroke="#10b981"
                   fill="#10b981"
-                  fillOpacity={0.08}
-                  strokeDasharray="5 3"
-                  strokeWidth={1.5}
-                />
-                <Radar
-                  name="現況"
-                  dataKey="score"
-                  stroke="#8b5cf6"
-                  fill="#8b5cf6"
-                  fillOpacity={0.3}
+                  fillOpacity={0.18}
                   strokeWidth={2}
-                />
-                <Legend
-                  iconType="line"
-                  formatter={(value) => <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{value}</span>}
+                  dot={(props) => {
+                    const { cx, cy, payload } = props
+                    const color = FACE_COLORS[payload.subject] || '#10b981'
+                    return <circle cx={cx} cy={cy} r={5} fill={color} stroke="#0a0e14" strokeWidth={2} />
+                  }}
                 />
                 <Tooltip
                   contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 12, color: '#fff' }}
-                  formatter={(v, name) => [`${v} 分`, name]}
+                  formatter={(v) => [`${v} 分`, '得分']}
                 />
               </RadarChart>
             </ResponsiveContainer>
-            {/* 檢測結果說明 */}
+            {/* 5 軸數值說明 — 面向名稱沿用對應 token 色 */}
             <div className="grid grid-cols-5 gap-2 mt-2">
               {radarData.map((item) => (
                 <div key={item.subject} className="text-center">
                   <div className="text-lg font-bold text-white">{item.score}</div>
-                  <div className="text-xs text-white/60">{item.subject}</div>
+                  <div className="text-xs font-semibold" style={{ color: FACE_COLORS[item.subject] }}>{item.subject}</div>
                 </div>
               ))}
             </div>
