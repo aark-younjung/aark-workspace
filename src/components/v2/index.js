@@ -4,3 +4,4 @@
 export { default as GlassCard } from './GlassCard'
 export { default as Btn } from './Btn'
 export { useCountUp } from './useCountUp'
+export { default as IssueBoard, IssueBoardSkeleton } from './IssueBoard'

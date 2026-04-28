@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeGEO } from '../services/geoAnalyzer'
+import { useAuth } from '../context/AuthContext'
 import { T } from '../styles/v2-tokens'
-import { GlassCard } from '../components/v2'
+import { GlassCard, IssueBoard, IssueBoardSkeleton } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
+
+const GEO_ACCENT = T.geo
+const GEO_ACCENT2 = '#14b8a6'
 
 const GEO_CHECKS = [
   {
@@ -13,61 +17,70 @@ const GEO_CHECKS = [
     name: 'llms.txt',
     description: '網站根目錄是否有 /llms.txt 檔案，讓 ChatGPT、Claude、Perplexity 等 AI 工具能識別你的品牌與服務內容',
     icon: '🤖',
-    recommendation: '在根目錄建立 /llms.txt，用自然語言描述你的品牌、服務與聯絡方式'
+    priority: 'P1',
+    recommendation: '在根目錄建立 /llms.txt，用自然語言描述你的品牌、服務與聯絡方式',
   },
   {
     id: 'robots_ai',
     name: 'AI 爬蟲開放性',
     description: '檢測 robots.txt 是否封鎖 GPTBot、PerplexityBot、Google-Extended 等主要 AI 爬蟲',
     icon: '🚦',
-    recommendation: '確認 robots.txt 沒有 Disallow GPTBot 或 Google-Extended，允許 AI 爬蟲索引你的內容'
+    priority: 'P1',
+    recommendation: '確認 robots.txt 沒有 Disallow GPTBot 或 Google-Extended，允許 AI 爬蟲索引你的內容',
   },
   {
     id: 'sitemap',
     name: 'Sitemap.xml',
     description: '網站根目錄是否有 /sitemap.xml，幫助 AI 爬蟲發現並索引你的所有頁面',
     icon: '🗺️',
-    recommendation: '建立並提交 sitemap.xml，確保所有重要頁面都被 AI 爬蟲發現'
+    priority: 'P2',
+    recommendation: '建立並提交 sitemap.xml，確保所有重要頁面都被 AI 爬蟲發現',
   },
   {
     id: 'open_graph',
     name: 'Open Graph',
     description: '是否有完整的 og:title、og:description、og:image、og:url 標籤，AI 引用時作為內容摘要依據',
     icon: '🔗',
-    recommendation: '為每個頁面添加完整的 Open Graph 標籤，讓 AI 引用時能呈現正確的標題與描述'
+    priority: 'P2',
+    recommendation: '為每個頁面添加完整的 Open Graph 標籤，讓 AI 引用時能呈現正確的標題與描述',
   },
   {
     id: 'twitter_card',
     name: 'Twitter Card',
     description: '是否有 twitter:card、twitter:title、twitter:image 標籤，強化 AI 摘要中的社群信號',
     icon: '🐦',
-    recommendation: '添加 Twitter Card 標籤（twitter:card, twitter:title, twitter:image）'
+    priority: 'P3',
+    recommendation: '添加 Twitter Card 標籤（twitter:card, twitter:title, twitter:image）',
   },
   {
     id: 'json_ld_citation',
     name: 'JSON-LD 引用信號',
     description: '結構化資料中是否包含 author、publisher、datePublished 等可信度資訊，讓 AI 判斷內容可信度',
     icon: '📜',
-    recommendation: '在 JSON-LD 中加入 author（作者）、publisher（出版者）、datePublished（發布日期）'
+    priority: 'P2',
+    recommendation: '在 JSON-LD 中加入 author（作者）、publisher（出版者）、datePublished（發布日期）',
   },
   {
     id: 'canonical',
     name: 'Canonical 標籤',
     description: '是否有 canonical 標籤，告訴 AI 正確的引用來源 URL，避免引用到重複頁面',
     icon: '🔒',
-    recommendation: '在每個頁面 <head> 設置 <link rel="canonical" href="...">，確保 AI 引用正確 URL'
+    priority: 'P1',
+    recommendation: '在每個頁面 <head> 設置 <link rel="canonical" href="...">，確保 AI 引用正確 URL',
   },
   {
     id: 'https',
     name: 'HTTPS 安全連線',
     description: '網站是否使用 HTTPS，AI 傾向引用安全可信的來源',
     icon: '🔐',
-    recommendation: '確保網站使用 HTTPS，向 AI 傳遞「此網站安全可信」的信號'
-  }
+    priority: 'P1',
+    recommendation: '確保網站使用 HTTPS，向 AI 傳遞「此網站安全可信」的信號',
+  },
 ]
 
 export default function GEOAudit() {
   const { id } = useParams()
+  const { isPro } = useAuth()
   const [website, setWebsite] = useState(null)
   const [geoAudit, setGeoAudit] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -126,6 +139,13 @@ export default function GEOAudit() {
   const passedCount = GEO_CHECKS.filter(check => getCheckStatus(check.id) === 'pass').length
   const totalCount = GEO_CHECKS.length
   const score = geoAudit ? geoAudit.score : Math.round((passedCount / totalCount) * 100)
+
+  // 把 GEO_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
+  const checks = GEO_CHECKS.map(c => ({
+    ...c,
+    passed: getCheckStatus(c.id) === 'pass',
+    detail: c.description,
+  }))
 
   if (loading) {
     return (
@@ -237,43 +257,13 @@ export default function GEOAudit() {
             </div>
           </GlassCard>
 
-          {/* 檢測項目列表 */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {GEO_CHECKS.map((check) => {
-              const status = getCheckStatus(check.id)
-              const statusColor = status === 'pass' ? T.pass : status === 'fail' ? T.fail : null
-              return (
-                <GlassCard key={check.id} color={statusColor} style={{ padding: 24 }}>
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">{check.icon}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2 gap-2">
-                        <h3 className="font-semibold" style={{ color: T.text }}>{check.name}</h3>
-                        <span
-                          className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                          style={{
-                            background: status === 'pass' ? T.pass + '26' : status === 'fail' ? T.fail + '26' : 'rgba(255,255,255,0.06)',
-                            color: status === 'pass' ? '#86efac' : status === 'fail' ? '#fca5a5' : T.textMid,
-                          }}
-                        >
-                          {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
-                        </span>
-                      </div>
-                      <p className="text-sm mb-4" style={{ color: T.textMid }}>{check.description}</p>
-                      {status === 'fail' && (
-                        <div
-                          className="p-3 rounded-lg"
-                          style={{ background: T.geo + '14', border: `1px solid ${T.geo}33` }}
-                        >
-                          <p className="text-xs font-medium mb-1" style={{ color: '#6ee7b7' }}>💡 建議優化</p>
-                          <p className="text-sm" style={{ color: T.textMid }}>{check.recommendation}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </GlassCard>
-              )
-            })}
+          {/* 詳細檢測項目（看板式 IssueBoard）— 與 SEO 同款 */}
+          <div style={{ marginBottom: 14 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 4 }}>詳細檢測項目</h2>
+            <div style={{ fontSize: 12, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
+          </div>
+          <div style={{ marginBottom: 32 }}>
+            {!geoAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={GEO_ACCENT} accentGlow={`${GEO_ACCENT}28`} />}
           </div>
 
           {/* 生成式 AI 優化建議 */}

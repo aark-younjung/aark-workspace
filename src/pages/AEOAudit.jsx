@@ -3,11 +3,13 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { useAuth } from '../context/AuthContext'
-import FixGuide from '../components/FixGuide'
 import { T } from '../styles/v2-tokens'
-import { GlassCard } from '../components/v2'
+import { GlassCard, IssueBoard, IssueBoardSkeleton } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
+
+const AEO_ACCENT = T.aeo
+const AEO_ACCENT2 = '#6366f1'
 
 const AEO_CHECKS = [
   {
@@ -15,57 +17,65 @@ const AEO_CHECKS = [
     name: 'JSON-LD 結構化資料',
     description: '驗證網頁是否包含 schema.org JSON-LD 標記（特別是 FAQ/HowTo），幫助 Google 理解內容結構',
     icon: '📋',
-    recommendation: '使用 schema.org 標準添加 JSON-LD 標記，至少包含 WebSite 或 Organization schema'
+    priority: 'P1',
+    recommendation: '使用 schema.org 標準添加 JSON-LD 標記，至少包含 WebSite 或 Organization schema',
   },
   {
     id: 'faq_schema',
     name: 'FAQ Schema',
     description: '檢測是否含有 FAQPage 或 QAPage 類型的結構化資料，直接影響 Google 精選摘要呈現',
     icon: '❓',
-    recommendation: '為常見問題區塊添加 FAQPage schema，每個 Q&A 需包含 Question 和 Answer 節點'
+    priority: 'P1',
+    recommendation: '為常見問題區塊添加 FAQPage schema，每個 Q&A 需包含 Question 和 Answer 節點',
   },
   {
     id: 'canonical',
     name: 'Canonical 標籤',
     description: '驗證 canonical 標籤是否正確設置，防止重複內容影響精選摘要排名',
     icon: '🔒',
-    recommendation: '在所有頁面 <head> 設置正確的 <link rel="canonical" href="..."> 標籤'
+    priority: 'P1',
+    recommendation: '在所有頁面 <head> 設置正確的 <link rel="canonical" href="..."> 標籤',
   },
   {
     id: 'breadcrumbs',
     name: '麵包屑導航',
     description: '檢測 BreadcrumbList schema，幫助 Google 理解網站層級結構並在搜尋結果中顯示路徑',
     icon: '🍞',
-    recommendation: '使用 schema.org BreadcrumbList 標記網站導航層級'
+    priority: 'P3',
+    recommendation: '使用 schema.org BreadcrumbList 標記網站導航層級',
   },
   {
     id: 'open_graph',
     name: 'Open Graph',
     description: '驗證 Open Graph 標籤（og:title、og:description、og:image、og:url），影響 Google 搜尋預覽品質',
     icon: '🔗',
-    recommendation: '添加完整的 og:title, og:description, og:image, og:url 四項標籤'
+    priority: 'P2',
+    recommendation: '添加完整的 og:title, og:description, og:image, og:url 四項標籤',
   },
   {
     id: 'question_headings',
     name: 'H2/H3 問句式標題',
     description: '檢測 H2/H3 標題是否以問句形式呈現，問答式內容更容易被 Google 選為精選摘要',
     icon: '💬',
-    recommendation: '將部分 H2/H3 標題改為問句格式（例如「什麼是...？」「如何...？」）'
+    priority: 'P2',
+    recommendation: '將部分 H2/H3 標題改為問句格式（例如「什麼是...？」「如何...？」）',
   },
   {
     id: 'meta_desc_length',
     name: 'Meta 描述長度',
     description: '檢測 Meta 描述是否在 120-160 字元範圍內，精簡描述更容易出現在 Google 精選摘要',
     icon: '📝',
-    recommendation: '將 Meta 描述控制在 120-160 字元，簡潔說明頁面核心內容'
+    priority: 'P2',
+    recommendation: '將 Meta 描述控制在 120-160 字元，簡潔說明頁面核心內容',
   },
   {
     id: 'structured_answer',
     name: '結構化答案段落',
     description: '檢測頁面是否包含清楚的問答格式內容（FAQ 區塊、問句段落、details/summary 元素）',
     icon: '📖',
-    recommendation: '在頁面中加入 FAQ 區塊，或使用 Q&A 格式撰寫內容，首段直接給出答案'
-  }
+    priority: 'P3',
+    recommendation: '在頁面中加入 FAQ 區塊，或使用 Q&A 格式撰寫內容，首段直接給出答案',
+  },
 ]
 
 export default function AEOAudit() {
@@ -127,6 +137,13 @@ export default function AEOAudit() {
   const passedCount = AEO_CHECKS.filter(check => getCheckStatus(check.id) === 'pass').length
   const totalCount = AEO_CHECKS.length
   const score = Math.round((passedCount / totalCount) * 100)
+
+  // 把 AEO_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
+  const checks = AEO_CHECKS.map(c => ({
+    ...c,
+    passed: getCheckStatus(c.id) === 'pass',
+    detail: c.description,
+  }))
 
   if (loading) {
     return (
@@ -227,52 +244,13 @@ export default function AEOAudit() {
             </div>
           </GlassCard>
 
-          {/* 檢測項目列表 */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {AEO_CHECKS.map((check) => {
-              const status = getCheckStatus(check.id)
-              const statusColor = status === 'pass' ? T.pass : status === 'fail' ? T.fail : null
-              return (
-                <GlassCard key={check.id} color={statusColor} style={{ padding: 24 }}>
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">{check.icon}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2 gap-2">
-                        <h3 className="font-semibold" style={{ color: T.text }}>{check.name}</h3>
-                        <span
-                          className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                          style={{
-                            background: status === 'pass' ? T.pass + '26' : status === 'fail' ? T.fail + '26' : 'rgba(255,255,255,0.06)',
-                            color: status === 'pass' ? '#86efac' : status === 'fail' ? '#fca5a5' : T.textMid,
-                          }}
-                        >
-                          {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
-                        </span>
-                      </div>
-                      <p className="text-sm mb-4" style={{ color: T.textMid }}>{check.description}</p>
-
-                      {status === 'fail' && (
-                        isPro ? (
-                          <FixGuide checkId={check.id} />
-                        ) : (
-                          <div
-                            className="p-3 rounded-lg flex items-center justify-between gap-3"
-                            style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}` }}
-                          >
-                            <p className="text-xs blur-sm select-none flex-1" style={{ color: T.textLow }}>升級 Pro 查看平台別修復指南升級 Pro 查看平台別修復指南</p>
-                            <Link
-                              to="/pricing"
-                              className="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 hover:opacity-80"
-                              style={{ background: T.orange + '26', color: '#fdba74' }}
-                            >🔒 升級 Pro</Link>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </GlassCard>
-              )
-            })}
+          {/* 詳細檢測項目（看板式 IssueBoard）— 與 SEO 同款 */}
+          <div style={{ marginBottom: 14 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 4 }}>詳細檢測項目</h2>
+            <div style={{ fontSize: 12, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
+          </div>
+          <div style={{ marginBottom: 32 }}>
+            {!aeoAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={AEO_ACCENT} accentGlow={`${AEO_ACCENT}28`} />}
           </div>
 
           {/* AI 搜尋優化建議 */}

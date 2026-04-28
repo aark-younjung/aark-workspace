@@ -3,11 +3,13 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { useAuth } from '../context/AuthContext'
-import FixGuide from '../components/FixGuide'
 import { T } from '../styles/v2-tokens'
-import { GlassCard } from '../components/v2'
+import { GlassCard, IssueBoard, IssueBoardSkeleton } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
+
+const EEAT_ACCENT = T.eeat
+const EEAT_ACCENT2 = T.orange
 
 const EEAT_CHECKS = [
   {
@@ -15,57 +17,65 @@ const EEAT_CHECKS = [
     name: '作者資訊',
     description: '頁面是否有可識別的作者姓名或署名，Google 與 AI 透過作者資訊判斷內容的「經驗（Experience）」與「專業度（Expertise）」',
     icon: '✍️',
-    recommendation: '在文章或頁面中加入作者姓名，可使用 <span itemprop="author"> 或 JSON-LD 的 "author" 欄位標記作者資訊'
+    priority: 'P1',
+    recommendation: '在文章或頁面中加入作者姓名，可使用 <span itemprop="author"> 或 JSON-LD 的 "author" 欄位標記作者資訊',
   },
   {
     id: 'about_page',
     name: '關於我們頁面',
     description: '網站是否有「關於我們」頁面，幫助 Google 與 AI 了解網站背後的品牌或組織，強化「權威性（Authoritativeness）」',
     icon: '🏢',
-    recommendation: '建立 /about 或 /about-us 頁面，說明公司背景、使命與核心服務，並在導航列加入連結'
+    priority: 'P1',
+    recommendation: '建立 /about 或 /about-us 頁面，說明公司背景、使命與核心服務，並在導航列加入連結',
   },
   {
     id: 'contact_page',
     name: '聯絡方式',
     description: '是否有聯絡頁面或可見的聯絡方式（email、電話），讓訪客和搜尋引擎確認網站是真實存在的機構',
     icon: '📞',
-    recommendation: '建立 /contact 頁面，提供 email 或電話，或在頁尾加入 <a href="mailto:..."> 聯絡資訊'
+    priority: 'P1',
+    recommendation: '建立 /contact 頁面，提供 email 或電話，或在頁尾加入 <a href="mailto:..."> 聯絡資訊',
   },
   {
     id: 'privacy_policy',
     name: '隱私權政策',
     description: '是否有隱私權政策頁面，是合規與信任的基本要求，影響「可信度（Trustworthiness）」評估',
     icon: '🔏',
-    recommendation: '建立 /privacy-policy 頁面，說明資料收集與使用方式，並在頁尾加入連結'
+    priority: 'P2',
+    recommendation: '建立 /privacy-policy 頁面，說明資料收集與使用方式，並在頁尾加入連結',
   },
   {
     id: 'organization_schema',
     name: 'Organization Schema',
     description: '是否有 Organization 或 LocalBusiness 結構化資料，讓 Google 與 AI 明確識別網站的品牌身份與行業類別',
     icon: '🏷️',
-    recommendation: '在 JSON-LD 中加入 Organization schema，包含 name、url、logo、contactPoint 等欄位'
+    priority: 'P2',
+    recommendation: '在 JSON-LD 中加入 Organization schema，包含 name、url、logo、contactPoint 等欄位',
   },
   {
     id: 'date_published',
     name: '內容發布日期',
     description: '是否標示文章或內容的發布/更新日期，讓 AI 評估內容的「新鮮度」與「時效性」，優先引用近期更新的內容',
     icon: '📅',
-    recommendation: '在 JSON-LD 加入 datePublished 和 dateModified，或使用 <time datetime="..."> 標記發布時間'
+    priority: 'P2',
+    recommendation: '在 JSON-LD 加入 datePublished 和 dateModified，或使用 <time datetime="..."> 標記發布時間',
   },
   {
     id: 'social_links',
     name: '社群媒體連結',
     description: '是否有連結到品牌的社群媒體帳號（Facebook、Instagram、LinkedIn 等），強化品牌的跨平台「權威性」',
     icon: '📱',
-    recommendation: '在頁首或頁尾加入品牌的社群媒體連結，並確保各平台的品牌名稱一致'
+    priority: 'P3',
+    recommendation: '在頁首或頁尾加入品牌的社群媒體連結，並確保各平台的品牌名稱一致',
   },
   {
     id: 'outbound_links',
     name: '外部權威連結',
     description: '是否有連結到外部可信來源（至少 2 個），引用外部資料可強化內容的「專業度」與「可信度」',
     icon: '🔗',
-    recommendation: '在內容中引用並連結到官方資料、研究報告或知名媒體，使用 target="_blank" 開新分頁'
-  }
+    priority: 'P3',
+    recommendation: '在內容中引用並連結到官方資料、研究報告或知名媒體，使用 target="_blank" 開新分頁',
+  },
 ]
 
 export default function EEATAudit() {
@@ -156,6 +166,12 @@ export default function EEATAudit() {
     }
   }
 
+  // 把 EEAT_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
+  const checks = EEAT_CHECKS.map(c => ({
+    ...c,
+    passed: getCheckStatus(c.id) === 'pass',
+    detail: c.description,
+  }))
   const passedCount = EEAT_CHECKS.filter(c => getCheckStatus(c.id) === 'pass').length
   const score = eeatAudit ? eeatAudit.score : Math.round((passedCount / EEAT_CHECKS.length) * 100)
 
@@ -282,51 +298,13 @@ export default function EEATAudit() {
             ))}
           </div>
 
-          {/* 檢測項目列表 */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {EEAT_CHECKS.map((check) => {
-              const status = getCheckStatus(check.id)
-              const statusColor = status === 'pass' ? T.pass : status === 'fail' ? T.fail : null
-              return (
-                <GlassCard key={check.id} color={statusColor} style={{ padding: 24 }}>
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">{check.icon}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2 gap-2">
-                        <h3 className="font-semibold" style={{ color: T.text }}>{check.name}</h3>
-                        <span
-                          className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                          style={{
-                            background: status === 'pass' ? T.pass + '26' : status === 'fail' ? T.fail + '26' : 'rgba(255,255,255,0.06)',
-                            color: status === 'pass' ? '#86efac' : status === 'fail' ? '#fca5a5' : T.textMid,
-                          }}
-                        >
-                          {status === 'pass' ? '✓ 通過' : status === 'fail' ? '✗ 未通過' : '⏳ 未知'}
-                        </span>
-                      </div>
-                      <p className="text-sm mb-4" style={{ color: T.textMid }}>{check.description}</p>
-                      {status === 'fail' && (
-                        isPro ? (
-                          <FixGuide checkId={check.id} />
-                        ) : (
-                          <div
-                            className="p-3 rounded-lg flex items-center justify-between gap-3"
-                            style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}` }}
-                          >
-                            <p className="text-xs blur-sm select-none flex-1" style={{ color: T.textLow }}>升級 Pro 查看平台別修復指南升級 Pro 查看平台別修復指南</p>
-                            <Link
-                              to="/pricing"
-                              className="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 hover:opacity-80"
-                              style={{ background: T.orange + '26', color: '#fdba74' }}
-                            >🔒 升級 Pro</Link>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </GlassCard>
-              )
-            })}
+          {/* 詳細檢測項目（看板式 IssueBoard）— 與 SEO 同款 */}
+          <div style={{ marginBottom: 14 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 4 }}>詳細檢測項目</h2>
+            <div style={{ fontSize: 12, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
+          </div>
+          <div style={{ marginBottom: 32 }}>
+            {!eeatAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={EEAT_ACCENT} accentGlow={`${EEAT_ACCENT}28`} />}
           </div>
 
           {/* 優化行動計畫（付費功能） */}
