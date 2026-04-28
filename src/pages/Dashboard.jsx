@@ -2389,6 +2389,17 @@ function PageBg({ children }) {
           zIndex: 0,
         }}
       />
+      {/* 右下青綠漸層光暈 — 與 HomeDark 一致（335deg = 155deg 雙軸鏡像）*/}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0"
+        style={{
+          height: 4500,
+          background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+          mixBlendMode: 'lighten',
+          zIndex: 0,
+        }}
+      />
       {/* SVG fractalNoise 質感雜訊 */}
       <svg
         aria-hidden
