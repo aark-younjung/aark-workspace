@@ -67,12 +67,24 @@ export default function Register() {
     }
   }
 
-  // 共用的暗色背景 wrapper（含青綠頂部漸層 + 雜訊疊層）
+  // 共用的暗色背景 wrapper（雙端大面積漸層 + 雜訊疊層，與 HomeDark / Login 一致）
   const PageBg = ({ children }) => (
     <div
       className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden"
-      style={{ background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)' }}
+      style={{ background: '#000' }}
     >
+      {/* 上方青綠 → 深藍漸層（lighten 混合） */}
+      <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '3000px',
+        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
+      }} />
+      {/* 右下青綠漸層光暈（335deg = 155deg 雙軸鏡像） */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '4500px',
+        background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
+      }} />
       {/* 雜訊疊層 — 與 HomeDark / Login 一致 */}
       <div className="absolute inset-0 pointer-events-none z-0" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
