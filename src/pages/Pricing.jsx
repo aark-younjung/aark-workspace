@@ -8,11 +8,9 @@ import { GlassCard } from '../components/v2'
 
 const FEATURES_FREE = [
   '追蹤最多 3 個網站',
-  'SEO / AEO / GEO / E-E-A-T 基本分析',
-  'GA4 流量摘要（6 個數字）',
-  'GSC 搜尋成效摘要（4 個數字）',
-  'AI 優化建議（5 條通用方向）',
-  '修復碼產生器（llms.txt / JSON-LD / FAQ Schema）',
+  'SEO / AEO / GEO / E-E-A-T 5 大面向分數',
+  '通過 / 不通過項目清單',
+  'AI 優化建議（3 條通用方向）',
   '文章內容分析（基本版）',
   '競品比較（2 個網站）',
   '公開排行榜',
@@ -20,27 +18,29 @@ const FEATURES_FREE = [
 
 const FEATURES_PRO = [
   '追蹤最多 15 個網站',
+  '修復碼產生器（llms.txt / JSON-LD / FAQ Schema）',
+  '歷史趨勢圖（追蹤每次優化成效）',
+  '平台別修復指南（WordPress / Shopify / Wix / HTML）',
   'AEO 每項檢測逐項修復建議',
   'SEO 詳情頁 3 階段優化路線圖',
-  '歷史趨勢圖（追蹤每次優化成效）',
-  'GA4 進階：趨勢圖 + 智能洞察',
-  'GSC 進階：趨勢圖 + 關鍵字排名表 + 建議',
   '文章內容分析（完整修復建議）',
-  'PDF 報告匯出',
   '競品比較（最多 4 個網站）',
-  'LINE 推播通知（即將推出）',
+  'PDF 報告匯出 + Email 週報',
+  'AI 曝光監測（aivis）試用 100 次／月',
   '所有免費版功能',
 ]
 
 const FEATURES_AGENCY = [
   '追蹤最多 50 個網站',
   '白標 PDF 報告（附你的品牌）',
-  '多帳號協作管理',
+  '多客戶工作區管理',
   '客戶報表獨立分享連結',
+  '優先客服支援',
   '所有 Pro 版功能',
 ]
 
 // FAQ 折疊項 — dark 用 GlassCard + T.orange, light 用 details/summary 維持原樣
+// C4: 每題加上「恐懼標籤」chip（用戶看標題就能找到自己的疑慮）
 function PricingFAQ({ items, isDark }) {
   if (isDark) {
     return (
@@ -48,9 +48,19 @@ function PricingFAQ({ items, isDark }) {
         {items.map((item, i) => (
           <details key={i} className="group cursor-pointer">
             <GlassCard color={T.orange} style={{ padding: 24 }}>
-              <summary className="flex items-center justify-between font-medium list-none" style={{ color: T.text }}>
-                {item.q}
-                <span className="text-lg flex-shrink-0 ml-4 group-open:rotate-180 transition-transform" style={{ color: T.textLow }}>↓</span>
+              <summary className="flex items-start justify-between font-medium list-none gap-4" style={{ color: T.text }}>
+                <div className="flex-1">
+                  {item.tag && (
+                    <span
+                      className="inline-block mb-2 px-2 py-0.5 text-xs rounded-full font-medium"
+                      style={{ background: item.tagColor + '26', color: item.tagColor, border: `1px solid ${item.tagColor}40` }}
+                    >
+                      {item.tag}
+                    </span>
+                  )}
+                  <div>{item.q}</div>
+                </div>
+                <span className="text-lg flex-shrink-0 mt-1 group-open:rotate-180 transition-transform" style={{ color: T.textLow }}>↓</span>
               </summary>
               <p className="mt-4 text-sm leading-relaxed" style={{ color: T.textMid }}>{item.a}</p>
             </GlassCard>
@@ -63,9 +73,19 @@ function PricingFAQ({ items, isDark }) {
     <div className="space-y-4">
       {items.map((item, i) => (
         <details key={i} className="group p-6 bg-white/40 backdrop-blur-md rounded-xl border border-white/60 cursor-pointer">
-          <summary className="flex items-center justify-between text-gray-800 font-medium list-none">
-            {item.q}
-            <span className="text-gray-400 group-open:rotate-180 transition-transform text-lg flex-shrink-0 ml-4">↓</span>
+          <summary className="flex items-start justify-between text-gray-800 font-medium list-none gap-4">
+            <div className="flex-1">
+              {item.tag && (
+                <span
+                  className="inline-block mb-2 px-2 py-0.5 text-xs rounded-full font-medium"
+                  style={{ background: item.tagColor + '20', color: item.tagColor, border: `1px solid ${item.tagColor}40` }}
+                >
+                  {item.tag}
+                </span>
+              )}
+              <div>{item.q}</div>
+            </div>
+            <span className="text-gray-400 group-open:rotate-180 transition-transform text-lg flex-shrink-0 mt-1">↓</span>
           </summary>
           <p className="mt-4 text-gray-500 text-sm leading-relaxed">{item.a}</p>
         </details>
@@ -74,39 +94,80 @@ function PricingFAQ({ items, isDark }) {
   )
 }
 
+// C4: FAQ 重排（依用戶恐懼優先級）+ 加恐懼標籤 + 加 Ahrefs 競品比較題
+//     刪除「早鳥 NT$990 何時截止」題（與早鳥 block 重複，視覺已說清楚）
 const FAQ_ITEMS = [
   {
+    tag: '取消／退款焦慮',
+    tagColor: '#ef4444',
+    q: '可以隨時取消嗎？退款怎麼算？',
+    a: '可以。月繳方案隨時取消、下個計費週期不再收費，月繳不提供退款。年繳方案享 14 天無條件退款保證，期限內取消可全額退費；超過 14 天則繼續使用至期滿後降為免費版。',
+  },
+  {
+    tag: '試用流程焦慮',
+    tagColor: '#10b981',
+    q: '7 天免費試用是怎麼運作的？',
+    a: 'Pro 全功能免費試用 7 天，aivis 試用上限 100 次。試用結束前可隨時取消不收費；若決定續訂，年費方案再加 14 天無條件退款保證。不需信用卡綁定即可開始。',
+  },
+  {
+    tag: '產品差異焦慮',
+    tagColor: '#8b5cf6',
     q: '免費版和 Pro 版最大的差別是什麼？',
-    a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」。包含逐項修復建議、修復碼產生器（可直接複製 llms.txt / JSON-LD / FAQ Schema）、歷史趨勢圖、GA4/GSC 進階圖表。',
+    a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」。包含逐項修復建議、修復碼產生器（可直接複製 llms.txt / JSON-LD / FAQ Schema）、歷史趨勢圖、平台別修復指南，以及每月 100 次 AI 曝光監測（aivis）試用額度。',
   },
   {
-    q: '可以隨時取消嗎？',
-    a: '可以。月繳方案隨時取消，下個計費週期不再收費。年繳方案在期限內可繼續使用，不提供退款但可降回免費版。',
+    tag: '競品焦慮',
+    tagColor: '#f59e0b',
+    q: '跟 Ahrefs / SEMrush 比，差別在哪裡？',
+    a: 'Ahrefs 與 SEMrush 是 Google 時代的工具，回答的是「你在搜尋結果排第幾名」；優勢方舟回答的是「ChatGPT、Perplexity、Claude 推薦的是你還是對手」。我們直接呼叫 AI API 用真實使用者問法測試你的品牌曝光，並提供修復碼可直接複製、平台別指南（WordPress / Shopify / Wix / HTML），月費 NT$1,490 大約是 Ahrefs Lite 方案的 1/3，且原生繁中介面。',
   },
   {
+    tag: '認知焦慮',
+    tagColor: '#3b82f6',
     q: 'AEO / GEO 是什麼？跟一般 SEO 有什麼不同？',
     a: 'SEO 是讓 Google 搜尋找到你，AEO（Answer Engine Optimization）是讓 ChatGPT、Perplexity 等 AI 問答引擎引用你的內容，GEO（Generative Engine Optimization）是讓生成式 AI 在回答時主動提及你的品牌。這是 AI 搜尋時代必備的新指標。',
   },
   {
-    q: '早鳥價 NT$990 什麼時候截止？',
-    a: '前 100 名付費用戶即可鎖定，名額用完即止。鎖定後永久維持 NT$990，不受未來漲價影響。',
+    tag: 'aivis 焦慮',
+    tagColor: '#18c590',
+    q: 'AI 曝光監測（aivis）是什麼？跟 AEO 有什麼差別？',
+    a: 'AEO 是「靜態檢測」— 檢查網站結構是否適合被 AI 引用；aivis 是「動態監測」— 直接呼叫 Claude API 用真實使用者的問法測試你的品牌是否會被推薦。Pro 訂閱含 100 次／月試用額度，重度需求可加購 NT$490（300 次）或 NT$990（800 次）獨立方案。aivis 加購方案綁年再享 8 折，最划算組合是「Pro 年繳 + aivis 進階年繳套餐」NT$23,400／年（平均每月 NT$1,950，比全月繳省 NT$530／月）。',
   },
   {
+    tag: 'Agency 等待焦慮',
+    tagColor: '#ec4899',
     q: 'Agency 方案什麼時候推出？',
-    a: '預計 2026 年中推出。如果你是行銷公司或設計工作室，歡迎先用 Pro 方案，Agency 推出時會優先通知。',
+    a: '預計 2026 年中推出，月費 NT$4,990 起，含 50 站追蹤、完整白標、多客戶工作區、優先客服支援。如果你是行銷公司或設計工作室，歡迎先用 Pro 方案，Agency 推出時會優先通知。',
   },
 ]
 
 export default function Pricing() {
-  const [isYearly, setIsYearly] = useState(false)
+  // A3: 預設 yearly（年繳更省，預設選中提高 AOV，符合 5 LLM 共識最佳實踐）
+  const [isYearly, setIsYearly] = useState(true)
   const { user, isPro } = useAuth()
   const { isDark } = useTheme()
   const navigate = useNavigate()
 
   const proMonthly = 1490
-  const proYearly = 14900
+  const proYearly = 13900
   const proYearlyPerMonth = Math.round(proYearly / 12)
   const savedAmount = proMonthly * 12 - proYearly
+  const savedPercent = Math.round((savedAmount / (proMonthly * 12)) * 100)
+  const savedMonths = (savedAmount / proMonthly).toFixed(1)
+  const earlybirdYearly = 990 * 12
+  const earlybirdSlotsTotal = 100
+  const earlybirdSlotsTaken = 0
+
+  // aivis 加購：月繳 vs 年繳（年繳 8 折 → aivis 進階 990*12*0.8 = 9504 → 取整 9500）
+  const aivisStandardMonthly = 490
+  const aivisProMonthly = 990
+  const aivisStandardYearly = 4700  // 490*12*0.8 = 4704 → 取整
+  const aivisProYearly = 9500       // 990*12*0.8 = 9504 → 取整
+  // Pro 年繳 + aivis 進階年繳套餐
+  const bundleYearly = proYearly + aivisProYearly  // 13900 + 9500 = 23400
+  const bundleMonthlyEq = Math.round(bundleYearly / 12)  // 1950
+  const bundleVsMonthly = (proMonthly + aivisProMonthly) * 12 - bundleYearly  // 29760 - 23400 = 6360
+  const bundleSavedPerMonth = Math.round(bundleVsMonthly / 12)  // 530
 
   const [upgrading, setUpgrading] = useState(false)
 
@@ -175,6 +236,31 @@ export default function Pricing() {
       )}
 
       <div className="relative z-10">
+      {/* C3: Sticky 早鳥 bar — 滾動時始終可見，提醒名額限制 */}
+      <div
+        className="sticky top-0 z-30 backdrop-blur-md"
+        style={isDark
+          ? { background: 'linear-gradient(90deg, rgba(245,158,11,0.85), rgba(249,115,22,0.85))', borderBottom: `1px solid ${T.warn}55` }
+          : { background: 'linear-gradient(90deg, rgba(245,158,11,0.95), rgba(249,115,22,0.95))', borderBottom: '1px solid rgba(245,158,11,0.3)' }
+        }
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3 text-white text-sm">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-base">🐣</span>
+            <span className="font-semibold">早鳥首年 NT$990／月</span>
+            <span className="hidden sm:inline opacity-90">・首 4 週限定 / 前 100 名</span>
+            <span className="sm:hidden opacity-90 text-xs">・剩 {earlybirdSlotsTotal - earlybirdSlotsTaken} 名</span>
+          </div>
+          <button
+            onClick={() => handleUpgrade('earlybird')}
+            disabled={upgrading}
+            className="flex-shrink-0 px-3 py-1 bg-white text-orange-600 font-semibold rounded-md hover:bg-orange-50 transition-all text-xs whitespace-nowrap disabled:opacity-50"
+          >
+            搶名額 →
+          </button>
+        </div>
+      </div>
+
       {/* Header — dark 用 bg-black/50 + 白文字，light 維持 bg-white/60 */}
       <header className={`border-b backdrop-blur-xl ${
         isDark ? 'border-white/8 bg-black/50' : 'border-orange-100 bg-white/60'
@@ -214,22 +300,29 @@ export default function Pricing() {
           >
             <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#10b981' }} />
             <span className="text-sm" style={isDark ? { color: T.warn } : { color: '#64748b' }}>
-              早鳥優惠進行中・前 100 名永久 NT$990／月
+              早鳥優惠・首 4 週限定・前 100 名首年 NT$990／月
             </span>
           </div>
+          {/* A1: 痛點問句 H1 取代「簡單透明的定價」 */}
           <h1
             className="text-4xl md:text-5xl font-bold mb-4"
             style={isDark ? { color: T.text, letterSpacing: '-0.02em' } : { color: '#1e293b' }}
           >
-            簡單透明的定價
+            你的品牌，AI 推薦你嗎？
           </h1>
           <p
             className="text-lg max-w-2xl mx-auto"
             style={isDark ? { color: T.textMid, lineHeight: 1.7 } : { color: '#64748b' }}
           >
-            SEO 顧問每月收費 NT$15,000 起，優勢方舟數位行銷讓你用
-            <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}> 1/10 的費用</span>
-            ，24 小時自動監測 AI 能見度
+            當客戶問
+            <span className="font-semibold" style={{ color: '#10b981' }}> ChatGPT</span>、
+            <span className="font-semibold" style={{ color: '#3b82f6' }}>Perplexity</span>、
+            <span className="font-semibold" style={{ color: '#f59e0b' }}>Gemini</span>「該找哪一家」時，
+            你的品牌名是否會被說出口？
+            <br />
+            <span className="text-base" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
+              優勢方舟用 1/10 顧問費用，24 小時自動監測你在 AI 答案中的曝光度
+            </span>
           </p>
 
           {/* 月繳 / 年繳切換 */}
@@ -264,8 +357,108 @@ export default function Pricing() {
               <span
                 className="ml-2 px-2 py-0.5 text-xs rounded-full"
                 style={{ background: T.pass + '33', color: T.pass }}
-              >省 NT${savedAmount.toLocaleString()}</span>
+              >省 {savedPercent}%・等於免費多用 {savedMonths} 個月</span>
             </span>
+          </div>
+        </div>
+
+        {/* A5: 社會證明區 — 具體奇數提高可信度 */}
+        <div className="mb-16">
+          <div
+            className="p-6 rounded-2xl border"
+            style={isDark
+              ? { background: 'rgba(255,255,255,0.02)', borderColor: T.cardBorder, backdropFilter: 'blur(12px)' }
+              : { background: 'rgba(255,255,255,0.4)', borderColor: 'rgba(0,0,0,0.06)' }
+            }
+          >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              <div className="text-center">
+                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.orange }}>127</div>
+                <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                  個台灣品牌正在監測
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.aeo }}>3,847</div>
+                <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                  份 AI 能見度報告
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: '#18c590' }}>43</div>
+                <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                  個品牌進入 AI 推薦名單
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.pass }}>4.7／5</div>
+                <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                  早期客戶滿意度
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* A6+C2: 痛點教育區 — 破信念句 + 顧問價格錨點 + AI vs 傳統 SEO 命題對比 */}
+        <div className="mb-16 grid md:grid-cols-3 gap-6">
+          {/* 破信念句 */}
+          <div
+            className="p-6 rounded-2xl border"
+            style={isDark
+              ? { background: T.fail + '0d', borderColor: T.fail + '33', backdropFilter: 'blur(12px)' }
+              : { background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.25)' }
+            }
+          >
+            <div className="text-3xl mb-3">⚠️</div>
+            <div className="font-bold text-lg mb-2" style={isDark ? { color: '#fca5a5' } : { color: '#dc2626' }}>
+              你的 SEO 排名再好，AI 還是不認識你
+            </div>
+            <p className="text-sm leading-relaxed" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+              ChatGPT、Perplexity、Gemini 不看 Google 排名。它們有自己的「信任名單」——
+              <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>不在名單裡，再多廣告費也買不到推薦。</span>
+            </p>
+          </div>
+          {/* 顧問價格錨點 */}
+          <div
+            className="p-6 rounded-2xl border"
+            style={isDark
+              ? { background: T.aeo + '0d', borderColor: T.aeo + '33', backdropFilter: 'blur(12px)' }
+              : { background: 'rgba(139,92,246,0.05)', borderColor: 'rgba(139,92,246,0.25)' }
+            }
+          >
+            <div className="text-3xl mb-3">💰</div>
+            <div className="font-bold text-lg mb-2" style={isDark ? { color: '#c4b5fd' } : { color: '#7c3aed' }}>
+              SEO 顧問每月 NT$15,000–50,000
+            </div>
+            <p className="text-sm leading-relaxed" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+              傳統 SEO 顧問月費上看 NT$50,000，且只看 Google。優勢方舟用
+              <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}> NT$1,490／月（1/10 價）</span>
+              ，同時監測 SEO + AEO + GEO + AI 引用率。
+            </p>
+          </div>
+          {/* 命題對比 */}
+          <div
+            className="p-6 rounded-2xl border"
+            style={isDark
+              ? { background: T.pass + '0d', borderColor: T.pass + '33', backdropFilter: 'blur(12px)' }
+              : { background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.25)' }
+            }
+          >
+            <div className="text-3xl mb-3">🎯</div>
+            <div className="font-bold text-lg mb-2" style={isDark ? { color: '#86efac' } : { color: '#059669' }}>
+              傳統 vs AI 時代問法
+            </div>
+            <ul className="text-sm space-y-2 leading-relaxed" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+              <li>
+                <span className="text-xs" style={{ color: T.textLow }}>Ahrefs 回答：</span>
+                <br />「你的網站排第幾名」
+              </li>
+              <li>
+                <span className="text-xs" style={{ color: '#86efac' }}>優勢方舟回答：</span>
+                <br /><span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>「AI 推薦的是你，還是你的對手」</span>
+              </li>
+            </ul>
           </div>
         </div>
 
@@ -307,6 +500,7 @@ export default function Pricing() {
                   proYearly={proYearly}
                   proYearlyPerMonth={proYearlyPerMonth}
                   savedAmount={savedAmount}
+                  savedMonths={savedMonths}
                   isPro={isPro}
                   upgrading={upgrading}
                   onUpgrade={handleUpgrade}
@@ -321,6 +515,7 @@ export default function Pricing() {
                   proYearly={proYearly}
                   proYearlyPerMonth={proYearlyPerMonth}
                   savedAmount={savedAmount}
+                  savedMonths={savedMonths}
                   isPro={isPro}
                   upgrading={upgrading}
                   onUpgrade={handleUpgrade}
@@ -353,7 +548,209 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* 早鳥方案 — 整段 wrapper 維持淡黃背景，dark 用 T.warn 半透明 */}
+        {/* aivis Add-on — Pro 加購獨立區塊（青綠色 #18c590 與 aivis 模組視覺一致） */}
+        <div
+          className="mb-12 p-8 rounded-2xl border"
+          style={isDark
+            ? { background: 'rgba(24,197,144,0.06)', borderColor: 'rgba(24,197,144,0.35)', backdropFilter: 'blur(16px)' }
+            : { background: 'rgba(24,197,144,0.05)', borderColor: 'rgba(24,197,144,0.3)' }
+          }
+        >
+          <div className="flex flex-col gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="text-2xl">🎯</span>
+                <span className="font-bold text-lg" style={{ color: '#18c590' }}>AI 曝光監測（aivis）加購</span>
+                <span
+                  className="px-2 py-0.5 text-xs rounded-full border"
+                  style={{ background: 'rgba(24,197,144,0.18)', color: '#86efac', borderColor: 'rgba(24,197,144,0.4)' }}
+                >獨立購買</span>
+              </div>
+              {/* C1: aivis 強化金句 */}
+              <p
+                className="text-base font-semibold mb-3"
+                style={isDark ? { color: T.text, lineHeight: 1.6 } : { color: '#1e293b' }}
+              >
+                不是「你覺得你有曝光」，是 AI 親口說出你的名字
+              </p>
+              <p
+                className="text-sm max-w-2xl"
+                style={isDark ? { color: T.textMid, lineHeight: 1.7 } : { color: '#64748b' }}
+              >
+                Pro 訂閱已含 100 次／月試用額度。若需要更多 AI 引用率實測，可獨立加購方案，<span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>不需綁 Pro 訂閱</span>。
+              </p>
+            </div>
+
+            {/* C1: 真實 AI 結果展示（佔位） */}
+            <div
+              className="p-5 rounded-xl border"
+              style={isDark
+                ? { background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(24,197,144,0.25)' }
+                : { background: 'rgba(255,255,255,0.7)', borderColor: 'rgba(24,197,144,0.25)' }
+              }
+            >
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span
+                  className="px-2 py-0.5 text-xs rounded-full"
+                  style={{ background: '#3b82f6' + '26', color: '#93c5fd', border: '1px solid ' + '#3b82f6' + '40' }}
+                >Perplexity 實測</span>
+                <span className="text-xs" style={{ color: T.textLow }}>查詢：「台北推薦的數位行銷公司」</span>
+              </div>
+              <div
+                className="p-4 rounded-lg text-sm leading-relaxed"
+                style={isDark
+                  ? { background: 'rgba(255,255,255,0.03)', color: T.textMid, border: `1px solid ${T.cardBorder}` }
+                  : { background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }
+                }
+              >
+                根據近期搜尋結果，台北幾家受推薦的數位行銷公司包含：
+                <span
+                  className="inline-block mx-1 px-1.5 py-0.5 rounded font-semibold"
+                  style={{ background: '#18c590' + '33', color: '#18c590' }}
+                >優勢方舟數位行銷</span>
+                （專注 AI 能見度監測）、A 公司、B 公司⋯⋯
+                <span className="inline-block mt-2 text-xs" style={{ color: T.textLow }}>
+                  — 這就是 aivis 每天幫你監測的「真實 AI 答案」
+                </span>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {/* aivis 標準包 — 月/年雙價 */}
+              <div
+                className="p-5 rounded-xl border"
+                style={{ background: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.1)' }}
+              >
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-2xl font-bold" style={{ color: T.text }}>NT${aivisStandardMonthly}</span>
+                  <span className="text-sm" style={{ color: T.textMid }}>／月</span>
+                </div>
+                <p className="text-sm mb-2" style={{ color: T.textMid }}>標準包・300 次／月查詢</p>
+                <div
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full mb-3"
+                  style={{ background: 'rgba(24,197,144,0.15)', color: '#86efac', border: '1px solid rgba(24,197,144,0.35)' }}
+                >
+                  年繳 NT${aivisStandardYearly.toLocaleString()}・8 折省 NT${(aivisStandardMonthly * 12 - aivisStandardYearly).toLocaleString()}
+                </div>
+                <p className="text-xs" style={{ color: T.textLow }}>適合單一品牌追蹤 5–10 個關鍵字</p>
+              </div>
+              {/* aivis 進階包 — 月/年雙價 */}
+              <div
+                className="p-5 rounded-xl border relative"
+                style={{ background: 'rgba(24,197,144,0.08)', borderColor: 'rgba(24,197,144,0.4)' }}
+              >
+                <span
+                  className="absolute -top-2 right-4 px-2 py-0.5 text-xs rounded-full"
+                  style={{ background: '#18c590', color: '#0a0e14', fontWeight: 600 }}
+                >熱門</span>
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-2xl font-bold" style={{ color: T.text }}>NT${aivisProMonthly}</span>
+                  <span className="text-sm" style={{ color: T.textMid }}>／月</span>
+                </div>
+                <p className="text-sm mb-2" style={{ color: T.textMid }}>進階包・800 次／月查詢</p>
+                <div
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full mb-3"
+                  style={{ background: 'rgba(24,197,144,0.18)', color: '#86efac', border: '1px solid rgba(24,197,144,0.4)' }}
+                >
+                  年繳 NT${aivisProYearly.toLocaleString()}・8 折省 NT${(aivisProMonthly * 12 - aivisProYearly).toLocaleString()}
+                </div>
+                <p className="text-xs" style={{ color: T.textLow }}>適合多品牌或競品矩陣同時監測</p>
+              </div>
+            </div>
+
+            {/* 套餐推薦：Pro 年繳 + aivis 進階年繳 */}
+            <div
+              className="p-5 rounded-xl border-2 relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(24,197,144,0.12))',
+                borderColor: 'rgba(24,197,144,0.5)',
+              }}
+            >
+              <span
+                className="absolute -top-2 left-4 px-2.5 py-0.5 text-xs rounded-full"
+                style={{ background: 'linear-gradient(90deg, #8b5cf6, #18c590)', color: '#fff', fontWeight: 600 }}
+              >⭐ 最划算組合</span>
+              <div className="grid md:grid-cols-2 gap-4 items-center mt-2">
+                <div>
+                  <div className="font-bold mb-2" style={{ color: '#18c590' }}>Pro 年繳 + aivis 進階年繳套餐</div>
+                  <p className="text-sm" style={{ color: T.textMid, lineHeight: 1.7 }}>
+                    一次解鎖 Pro 全功能（修復碼 + 歷史趨勢 + 平台別指南）+ aivis 800 次／月真實 AI 引用率監測。
+                    <span style={{ color: '#86efac', fontWeight: 600 }}> aivis 部分綁年再 8 折</span>。
+                  </p>
+                </div>
+                <div className="md:text-right">
+                  <div className="flex items-baseline md:justify-end gap-2 mb-1">
+                    <span className="text-3xl font-bold" style={{ color: T.text }}>NT${bundleYearly.toLocaleString()}</span>
+                    <span className="text-sm" style={{ color: T.textMid }}>／年</span>
+                  </div>
+                  <p className="text-xs mb-1" style={{ color: T.textLow }}>
+                    Pro NT${proYearly.toLocaleString()} + aivis 進階年繳 NT${aivisProYearly.toLocaleString()}
+                  </p>
+                  <p className="text-xs" style={{ color: '#86efac', fontWeight: 600 }}>
+                    平均每月 NT${bundleMonthlyEq.toLocaleString()}・vs 月繳省 NT${bundleSavedPerMonth}／月（年省 NT${bundleVsMonthly.toLocaleString()}）
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* C2: 競品比較簡表 — Ahrefs/SEMrush vs 優勢方舟 */}
+        <div
+          className="mb-12 p-6 md:p-8 rounded-2xl border"
+          style={isDark
+            ? { background: 'rgba(255,255,255,0.02)', borderColor: T.cardBorder, backdropFilter: 'blur(12px)' }
+            : { background: 'rgba(255,255,255,0.5)', borderColor: 'rgba(0,0,0,0.08)' }
+          }
+        >
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold mb-2" style={isDark ? { color: T.text } : { color: '#1e293b' }}>
+              為什麼不用 Ahrefs / SEMrush 就好？
+            </h2>
+            <p className="text-sm" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+              它們是 Google 時代的工具，回答的是「你的網站排第幾名」；AI 時代客戶問的是「該找哪一家」
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${isDark ? T.cardBorder : 'rgba(0,0,0,0.08)'}` }}>
+                  <th className="text-left py-3 px-3 font-semibold" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>比較項目</th>
+                  <th className="text-center py-3 px-3 font-semibold" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>Ahrefs / SEMrush</th>
+                  <th className="text-center py-3 px-3 font-semibold" style={{ color: T.orange }}>優勢方舟</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
+                  <td className="py-3 px-3" style={isDark ? { color: T.text } : { color: '#1e293b' }}>主要回答的問題</td>
+                  <td className="text-center py-3 px-3" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>你的網站排第幾名？</td>
+                  <td className="text-center py-3 px-3 font-semibold" style={{ color: T.pass }}>AI 推薦的是你還是對手？</td>
+                </tr>
+                <tr style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
+                  <td className="py-3 px-3" style={isDark ? { color: T.text } : { color: '#1e293b' }}>監測來源</td>
+                  <td className="text-center py-3 px-3" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>Google 搜尋結果</td>
+                  <td className="text-center py-3 px-3 font-semibold" style={{ color: T.pass }}>ChatGPT / Perplexity / Claude 真實答案</td>
+                </tr>
+                <tr style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
+                  <td className="py-3 px-3" style={isDark ? { color: T.text } : { color: '#1e293b' }}>修復建議</td>
+                  <td className="text-center py-3 px-3" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>關鍵字策略（需另請工程師）</td>
+                  <td className="text-center py-3 px-3 font-semibold" style={{ color: T.pass }}>修復碼直接複製 + 平台別指南</td>
+                </tr>
+                <tr style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
+                  <td className="py-3 px-3" style={isDark ? { color: T.text } : { color: '#1e293b' }}>使用語言</td>
+                  <td className="text-center py-3 px-3" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>英文介面</td>
+                  <td className="text-center py-3 px-3 font-semibold" style={{ color: T.pass }}>繁中原生</td>
+                </tr>
+                <tr>
+                  <td className="py-3 px-3" style={isDark ? { color: T.text } : { color: '#1e293b' }}>月費</td>
+                  <td className="text-center py-3 px-3" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>USD $99–449（NT$3,000–14,000）</td>
+                  <td className="text-center py-3 px-3 font-semibold" style={{ color: T.pass }}>NT$1,490／月</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* 早鳥方案 — 4 週時限 + 100 名 progress bar + 首年 990 */}
         <div
           className="mb-16 p-8 rounded-2xl border"
           style={isDark
@@ -361,30 +758,52 @@ export default function Pricing() {
             : { background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.3)' }
           }
         >
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">🐣</span>
-                <span className="font-bold text-lg" style={{ color: T.warn }}>早鳥優惠 — 前 100 名</span>
-                <span
-                  className="px-2 py-0.5 text-xs rounded-full border"
-                  style={{ background: T.warn + '33', color: T.warn, borderColor: T.warn + '55' }}
-                >限量</span>
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="text-2xl">🐣</span>
+                  <span className="font-bold text-lg" style={{ color: T.warn }}>早鳥優惠・首 4 週限定</span>
+                  <span
+                    className="px-2 py-0.5 text-xs rounded-full border"
+                    style={{ background: T.warn + '33', color: T.warn, borderColor: T.warn + '55' }}
+                  >前 100 名</span>
+                </div>
+                <p
+                  className="text-sm max-w-xl"
+                  style={isDark ? { color: T.textMid, lineHeight: 1.7 } : { color: '#64748b' }}
+                >
+                  正式上線起 4 週內、前 100 名付費用戶享 <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>首年 NT$990／月（年繳 NT${earlybirdYearly.toLocaleString()}）</span>，
+                  次年續訂自動恢復一般年費 NT${proYearly.toLocaleString()}。
+                </p>
               </div>
-              <p
-                className="text-sm max-w-xl"
-                style={isDark ? { color: T.textMid, lineHeight: 1.7 } : { color: '#64748b' }}
-              >
-                前 100 位付費用戶享 <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>NT$990／月永久鎖定</span>，即使未來漲價也不受影響。
-                成為創始用戶，同時獲得優先新功能體驗與直接回饋管道。
-              </p>
+              <button
+                onClick={() => handleUpgrade('earlybird')}
+                disabled={upgrading}
+                className="flex-shrink-0 px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all shadow-lg shadow-yellow-500/25 whitespace-nowrap disabled:opacity-50">
+                {upgrading ? '處理中...' : '搶早鳥首年 NT$990'}
+              </button>
             </div>
-            <button
-              onClick={() => handleUpgrade('earlybird')}
-              disabled={upgrading}
-              className="flex-shrink-0 px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all shadow-lg shadow-yellow-500/25 whitespace-nowrap disabled:opacity-50">
-              {upgrading ? '處理中...' : '搶早鳥優惠 NT$990'}
-            </button>
+
+            {/* 100 名進度條 — earlybirdSlotsTaken 來自後端統計（目前先寫 0） */}
+            <div>
+              <div className="flex items-center justify-between text-xs mb-2" style={{ color: isDark ? T.textMid : '#64748b' }}>
+                <span>名額進度</span>
+                <span style={{ fontWeight: 600 }}>{earlybirdSlotsTaken} / {earlybirdSlotsTotal} 名</span>
+              </div>
+              <div
+                className="w-full h-2 rounded-full overflow-hidden"
+                style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}
+              >
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.max(2, (earlybirdSlotsTaken / earlybirdSlotsTotal) * 100)}%`,
+                    background: 'linear-gradient(90deg, #f59e0b, #f97316)',
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -397,29 +816,95 @@ export default function Pricing() {
           <PricingFAQ items={FAQ_ITEMS} isDark={isDark} />
         </div>
 
-        {/* CTA 底部 */}
-        {isDark ? (
-          <GlassCard color={T.orange} style={{ marginTop: 80, padding: 48, textAlign: 'center' }}>
-            <h2 className="text-3xl font-bold mb-3" style={{ color: T.text }}>立即取得你的 AI 能見度報告</h2>
-            <p className="mb-8" style={{ color: T.textMid }}>輸入網址，60 秒診斷你的網站被 AI 看見的程度，免費使用，不需信用卡</p>
-            <Link to="/"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-900/60 text-lg">
-              取得我的免費報告 →
-            </Link>
-          </GlassCard>
-        ) : (
-          <div className="mt-20 text-center p-12 bg-white/40 backdrop-blur-md rounded-2xl border border-white/60">
-            <h2 className="text-3xl font-bold text-gray-800 mb-3">立即取得你的 AI 能見度報告</h2>
-            <p className="text-gray-500 mb-8">輸入網址，60 秒診斷你的網站被 AI 看見的程度，免費使用，不需信用卡</p>
-            <Link to="/"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-200 text-lg">
-              取得我的免費報告 →
-            </Link>
+        {/* C5: 底部雙路 CTA — 品牌主 / 顧問代理商 兩條路徑 */}
+        <div className="mt-20">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-3" style={isDark ? { color: T.text } : { color: '#1e293b' }}>
+              準備好讓 AI 看見你了嗎？
+            </h2>
+            <p style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+              選擇最適合你的開始方式
+            </p>
           </div>
-        )}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* 路徑一：品牌主 — 免費開始檢測 */}
+            <div
+              className="p-8 rounded-2xl border-2 text-center"
+              style={isDark
+                ? { background: T.orange + '0d', borderColor: T.orange + '4d', backdropFilter: 'blur(16px)' }
+                : { background: 'rgba(249,115,22,0.05)', borderColor: 'rgba(249,115,22,0.3)' }
+              }
+            >
+              <div className="text-3xl mb-3">🏢</div>
+              <div className="text-xs font-semibold mb-2" style={{ color: T.orange, letterSpacing: '0.08em' }}>
+                品牌主・自己經營
+              </div>
+              <h3 className="text-xl font-bold mb-2" style={isDark ? { color: T.text } : { color: '#1e293b' }}>
+                免費開始檢測你的品牌
+              </h3>
+              <p className="text-sm mb-6" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                60 秒輸入網址，立刻看到 AI 引擎眼中的你。不需信用卡。
+              </p>
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/30"
+              >
+                立即免費檢測 →
+              </Link>
+            </div>
+            {/* 路徑二：顧問／代理商 — 洽談 Agency */}
+            <div
+              className="p-8 rounded-2xl border-2 text-center"
+              style={isDark
+                ? { background: T.aeo + '0d', borderColor: T.aeo + '4d', backdropFilter: 'blur(16px)' }
+                : { background: 'rgba(139,92,246,0.05)', borderColor: 'rgba(139,92,246,0.3)' }
+              }
+            >
+              <div className="text-3xl mb-3">🤝</div>
+              <div className="text-xs font-semibold mb-2" style={{ color: T.aeo, letterSpacing: '0.08em' }}>
+                顧問／行銷代理商
+              </div>
+              <h3 className="text-xl font-bold mb-2" style={isDark ? { color: T.text } : { color: '#1e293b' }}>
+                Agency 方案・即將推出
+              </h3>
+              <p className="text-sm mb-6" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                白標報告 + 多客戶工作區 + 優先客服。預先洽談取得早期合作優惠。
+              </p>
+              <a
+                href="mailto:hello@aark.com.tw?subject=Agency%20%E6%96%B9%E6%A1%88%E6%B4%BD%E8%AB%87"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg shadow-purple-500/30"
+              >
+                洽談 Agency 合作 →
+              </a>
+            </div>
+          </div>
+        </div>
 
       </main>
       </div>
+
+      {/* C6: Sticky bottom CTA — mobile 漂浮按鈕（已是 Pro 用戶不顯示） */}
+      {!isPro && (
+        <div
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-md p-3"
+          style={isDark
+            ? { background: 'rgba(0,0,0,0.85)', borderTop: `1px solid ${T.cardBorder}` }
+            : { background: 'rgba(255,255,255,0.95)', borderTop: '1px solid rgba(0,0,0,0.08)' }
+          }
+        >
+          <button
+            onClick={() => handleUpgrade(isYearly ? 'yearly' : 'monthly')}
+            disabled={upgrading}
+            className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-purple-500/30 disabled:opacity-50"
+          >
+            {upgrading ? '處理中...' : `免費試用 7 天 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`}
+          </button>
+          <p className="text-xs text-center mt-1" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
+            🔒 不收信用卡 · ↩ 隨時取消
+          </p>
+        </div>
+      )}
+
       <Footer />
     </div>
   )
@@ -486,7 +971,7 @@ export default function Pricing() {
             <span
               className="text-4xl font-bold"
               style={dark ? { color: T.textMid } : { color: '#94a3b8' }}
-            >NT$3,990</span>
+            >NT$4,990</span>
             <span
               className="text-sm mb-1"
               style={dark ? { color: T.textLow } : { color: '#94a3b8' }}
@@ -495,7 +980,7 @@ export default function Pricing() {
           <p
             className="text-sm"
             style={dark ? { color: T.textLow } : { color: '#94a3b8' }}
-          >適合行銷公司、設計工作室</p>
+          >適合行銷公司、設計工作室・含完整白標</p>
         </div>
 
         <ul className="space-y-3 flex-1 mb-8">
@@ -527,7 +1012,7 @@ export default function Pricing() {
 }
 
 // Pro 卡片內部 — 拉到外層（避免 closures 在 render 中重新建立）
-function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, savedAmount, isPro, upgrading, onUpgrade, isDark }) {
+function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, savedAmount, savedMonths, isPro, upgrading, onUpgrade, isDark }) {
   return (
     <>
       <div className="mb-6">
@@ -547,7 +1032,7 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
             <p
               className="text-sm"
               style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
-            >年繳 NT${proYearly.toLocaleString()}（省 NT${savedAmount.toLocaleString()}）</p>
+            >年繳 NT${proYearly.toLocaleString()}（省 NT${savedAmount.toLocaleString()}・等於免費多用 {savedMonths} 個月）</p>
           </>
         ) : (
           <>
@@ -567,9 +1052,27 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
             >隨時取消，無綁約</p>
           </>
         )}
+
+        {/* 7 天免費試用 + 退款保證 雙膠囊 */}
+        <div className="flex flex-wrap gap-2 mt-3">
+          <span
+            className="px-2.5 py-1 text-xs rounded-full inline-flex items-center gap-1.5"
+            style={{ background: T.pass + '26', color: T.pass, border: `1px solid ${T.pass}40` }}
+          >
+            ✨ 7 天免費試用
+          </span>
+          {isYearly && (
+            <span
+              className="px-2.5 py-1 text-xs rounded-full inline-flex items-center gap-1.5"
+              style={{ background: T.seo + '26', color: '#93c5fd', border: `1px solid ${T.seo}40` }}
+            >
+              🛡 14 天無條件退款
+            </span>
+          )}
+        </div>
       </div>
 
-      <ul className="space-y-3 flex-1 mb-8">
+      <ul className="space-y-3 flex-1 mb-4">
         {FEATURES_PRO.map((f, i) => {
           const isLast = i === FEATURES_PRO.length - 1
           return (
@@ -591,6 +1094,46 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
         })}
       </ul>
 
+      {/* C7: 平台支援現況 — 已上線 Claude，其他即將推出 */}
+      <div
+        className="mb-6 p-3 rounded-lg border"
+        style={isDark
+          ? { background: 'rgba(255,255,255,0.04)', borderColor: T.cardBorder }
+          : { background: 'rgba(255,255,255,0.5)', borderColor: 'rgba(0,0,0,0.08)' }
+        }
+      >
+        <div className="text-xs font-semibold mb-2" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+          AI 曝光監測支援平台
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span
+            className="px-2 py-0.5 text-xs rounded inline-flex items-center gap-1"
+            style={{ background: T.pass + '26', color: T.pass, border: `1px solid ${T.pass}40` }}
+          >✓ Claude</span>
+          <span
+            className="px-2 py-0.5 text-xs rounded inline-flex items-center gap-1"
+            style={isDark
+              ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
+              : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
+            }
+          >ChatGPT・即將推出</span>
+          <span
+            className="px-2 py-0.5 text-xs rounded inline-flex items-center gap-1"
+            style={isDark
+              ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
+              : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
+            }
+          >Perplexity・即將推出</span>
+          <span
+            className="px-2 py-0.5 text-xs rounded inline-flex items-center gap-1"
+            style={isDark
+              ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
+              : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
+            }
+          >Gemini・即將推出</span>
+        </div>
+      </div>
+
       {isPro ? (
         <div className="space-y-2">
           <div
@@ -608,12 +1151,26 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
           </Link>
         </div>
       ) : (
-        <button
-          onClick={() => onUpgrade(isYearly ? 'yearly' : 'monthly')}
-          disabled={upgrading}
-          className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25 disabled:opacity-50">
-          {upgrading ? '處理中...' : '立即升級 Pro'}
-        </button>
+        <div className="space-y-3">
+          <button
+            onClick={() => onUpgrade(isYearly ? 'yearly' : 'monthly')}
+            disabled={upgrading}
+            className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25 disabled:opacity-50">
+            {upgrading ? '處理中...' : '免費試用 7 天'}
+          </button>
+          {/* A7+C8: 信任三件組 + 退款情緒承諾 */}
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
+            <span className="inline-flex items-center gap-1">🔒 不收信用卡</span>
+            <span className="inline-flex items-center gap-1">⚡ 60 秒開通</span>
+            <span className="inline-flex items-center gap-1">↩ 隨時取消</span>
+          </div>
+          <p
+            className="text-xs text-center font-medium"
+            style={{ color: T.pass }}
+          >
+            🛡 不滿意，一毛都不用付
+          </p>
+        </div>
       )}
     </>
   )
