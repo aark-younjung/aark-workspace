@@ -3,6 +3,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import SiteHeader from '../components/v2/SiteHeader'
+import AnnouncementBanner from '../components/AnnouncementBanner'
 import Footer from '../components/Footer'
 import { GlassCard } from '../components/v2'
 import { T } from '../styles/v2-tokens'
@@ -749,6 +750,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
     <PageBg>
       <SiteHeader />
       <div className="relative z-10">
+      {/* 站內公告 banner */}
+      <AnnouncementBanner />
       {/* 升級成功提示 */}
       {upgradeSuccess && (
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center py-3 px-6 text-sm font-semibold">

@@ -26,7 +26,7 @@ const FEATURES_PRO = [
   '文章內容分析（完整修復建議）',
   '競品比較（最多 4 個網站）',
   'PDF 報告匯出 + Email 週報',
-  'AI 曝光監測（aivis）試用 100 次／月',
+  'AI 曝光監測（aivis）每月 150 次查詢額度',
   '所有免費版功能',
 ]
 
@@ -43,27 +43,40 @@ const FEATURES_AGENCY = [
 // C4: 每題加上「恐懼標籤」chip（用戶看標題就能找到自己的疑慮）
 function PricingFAQ({ items, isDark }) {
   if (isDark) {
+    // ⚠ 重要：<summary> 必須是 <details> 的「直接」子元素，不可被 GlassCard 等 div 包住
+    //   否則瀏覽器會把整個 details 視為無 summary、預設 collapsed、只渲染預設「Details」黑字
+    //   把 GlassCard 樣式內聯到 <details> 本體，summary 才能正確點開展開
     return (
       <div className="space-y-4">
         {items.map((item, i) => (
-          <details key={i} className="group cursor-pointer">
-            <GlassCard color={T.orange} style={{ padding: 24 }}>
-              <summary className="flex items-start justify-between font-medium list-none gap-4" style={{ color: T.text }}>
-                <div className="flex-1">
-                  {item.tag && (
-                    <span
-                      className="inline-block mb-2 px-2 py-0.5 text-xs rounded-full font-medium"
-                      style={{ background: item.tagColor + '26', color: item.tagColor, border: `1px solid ${item.tagColor}40` }}
-                    >
-                      {item.tag}
-                    </span>
-                  )}
-                  <div>{item.q}</div>
-                </div>
-                <span className="text-lg flex-shrink-0 mt-1 group-open:rotate-180 transition-transform" style={{ color: T.textLow }}>↓</span>
-              </summary>
-              <p className="mt-4 text-sm leading-relaxed" style={{ color: T.textMid }}>{item.a}</p>
-            </GlassCard>
+          <details
+            key={i}
+            className="group cursor-pointer"
+            style={{
+              background: T.cardBg,                              // 玻璃擬態深底
+              backdropFilter: 'blur(28px)',
+              WebkitBackdropFilter: 'blur(28px)',
+              border: `1px solid ${T.orange}28`,                 // 橘色透明邊框（與其他 GlassCard 一致）
+              borderRadius: T.rL,                                // 16px 圓角
+              padding: 24,
+              boxShadow: '0 2px 20px rgba(0,0,0,.45)',           // 與 GlassCard 預設投影一致
+            }}
+          >
+            <summary className="flex items-start justify-between font-medium list-none gap-4" style={{ color: T.text }}>
+              <div className="flex-1">
+                {item.tag && (
+                  <span
+                    className="inline-block mb-2 px-2 py-0.5 text-xs rounded-full font-medium"
+                    style={{ background: item.tagColor + '26', color: item.tagColor, border: `1px solid ${item.tagColor}40` }}
+                  >
+                    {item.tag}
+                  </span>
+                )}
+                <div>{item.q}</div>
+              </div>
+              <span className="text-lg flex-shrink-0 mt-1 group-open:rotate-180 transition-transform" style={{ color: T.textLow }}>↓</span>
+            </summary>
+            <p className="mt-4 text-sm leading-relaxed" style={{ color: T.textMid }}>{item.a}</p>
           </details>
         ))}
       </div>
@@ -107,13 +120,13 @@ const FAQ_ITEMS = [
     tag: '試用流程焦慮',
     tagColor: '#10b981',
     q: '7 天免費試用是怎麼運作的？',
-    a: 'Pro 全功能免費試用 7 天，aivis 試用上限 100 次。試用結束前可隨時取消不收費；若決定續訂，年費方案再加 14 天無條件退款保證。不需信用卡綁定即可開始。',
+    a: 'Pro 全功能免費試用 7 天，aivis 試用期間上限 50 次（避免被刷）。試用結束前可隨時取消不收費；若決定續訂，年費方案再加 14 天無條件退款保證。不需信用卡綁定即可開始。',
   },
   {
     tag: '產品差異焦慮',
     tagColor: '#8b5cf6',
     q: '免費版和 Pro 版最大的差別是什麼？',
-    a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」。包含逐項修復建議、修復碼產生器（可直接複製 llms.txt / JSON-LD / FAQ Schema）、歷史趨勢圖、平台別修復指南，以及每月 100 次 AI 曝光監測（aivis）試用額度。',
+    a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」+「持續監測」。包含逐項修復建議、修復碼產生器（可直接複製 llms.txt / JSON-LD / FAQ Schema）、歷史趨勢圖、平台別修復指南，以及每月 150 次 AI 曝光監測（aivis）— 直接呼叫 ChatGPT / Perplexity / Claude 看你的品牌是否還在 AI 推薦名單裡。',
   },
   {
     tag: '競品焦慮',
@@ -131,7 +144,7 @@ const FAQ_ITEMS = [
     tag: 'aivis 焦慮',
     tagColor: '#18c590',
     q: 'AI 曝光監測（aivis）是什麼？跟 AEO 有什麼差別？',
-    a: 'AEO 是「靜態檢測」— 檢查網站結構是否適合被 AI 引用；aivis 是「動態監測」— 直接呼叫 Claude API 用真實使用者的問法測試你的品牌是否會被推薦。Pro 訂閱含 100 次／月試用額度，重度需求可加購 NT$490（300 次）或 NT$990（800 次）獨立方案。aivis 加購方案綁年再享 8 折，最划算組合是「Pro 年繳 + aivis 進階年繳套餐」NT$23,400／年（平均每月 NT$1,950，比全月繳省 NT$530／月）。',
+    a: 'AEO 是「靜態檢測」— 檢查網站結構是否適合被 AI 引用；aivis 是「動態監測」— 直接呼叫 Claude / ChatGPT / Perplexity API 用真實使用者的問法，看 AI 是否會推薦你的品牌。Pro 訂閱每月內含 150 次查詢額度（aivis 不單獨販售），這是 Pro 持續訂閱的核心價值 — SEO 改完是有限的事，但 AI 引用率天天在變、競爭對手也天天在優化。若用量接近上限，系統會在 dashboard 通知你，可選擇加購額外次數包繼續使用。',
   },
   {
     tag: 'Agency 等待焦慮',
@@ -158,16 +171,16 @@ export default function Pricing() {
   const earlybirdSlotsTotal = 100
   const earlybirdSlotsTaken = 0
 
-  // aivis 加購：月繳 vs 年繳（年繳 8 折 → aivis 進階 990*12*0.8 = 9504 → 取整 9500）
-  const aivisStandardMonthly = 490
-  const aivisProMonthly = 990
-  const aivisStandardYearly = 4700  // 490*12*0.8 = 4704 → 取整
-  const aivisProYearly = 9500       // 990*12*0.8 = 9504 → 取整
-  // Pro 年繳 + aivis 進階年繳套餐
-  const bundleYearly = proYearly + aivisProYearly  // 13900 + 9500 = 23400
-  const bundleMonthlyEq = Math.round(bundleYearly / 12)  // 1950
-  const bundleVsMonthly = (proMonthly + aivisProMonthly) * 12 - bundleYearly  // 29760 - 23400 = 6360
-  const bundleSavedPerMonth = Math.round(bundleVsMonthly / 12)  // 530
+  // aivis 已整合進 Pro 核心（每月 150 次內含），超量 Top-up 不在定價頁陳列
+  // 設計理由：(1) 避免「改完 SEO 就退訂」流失 → 用 aivis 持續性綁住 Pro 訂閱
+  //          (2) Top-up 採 just-in-time 揭露 — 用戶到 aivis dashboard 接近上限時才彈出加購
+  //              避免定價頁出現「還要再加錢嗎」的隱憂稀釋 Pro 卡訴求
+  // Top-up 規格（後端 / dashboard 實作時參考）：
+  //   - 小包：NT$490 / +300 次（每次 NT$1.63，補檔用）
+  //   - 大包：NT$990 / +800 次（每次 NT$1.24，多品牌或競品矩陣）
+  //   - 一次性購買、不過期、用完為止、不綁訂閱
+  //   - 每月查詢硬上限 1,000 次（內含 + Top-up 合計），Agency 推出後解除
+  const aivisIncludedPerMonth = 150
 
   const [upgrading, setUpgrading] = useState(false)
 
@@ -548,7 +561,7 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* aivis Add-on — Pro 加購獨立區塊（青綠色 #18c590 與 aivis 模組視覺一致） */}
+        {/* aivis 已含在 Pro 核心 — 每月 150 次，超量才賣 Top-up（青綠色 #18c590 與 aivis 模組一致） */}
         <div
           className="mb-12 p-8 rounded-2xl border"
           style={isDark
@@ -560,13 +573,13 @@ export default function Pricing() {
             <div>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className="text-2xl">🎯</span>
-                <span className="font-bold text-lg" style={{ color: '#18c590' }}>AI 曝光監測（aivis）加購</span>
+                <span className="font-bold text-lg" style={{ color: '#18c590' }}>AI 曝光監測（aivis）已含在 Pro 中</span>
                 <span
                   className="px-2 py-0.5 text-xs rounded-full border"
                   style={{ background: 'rgba(24,197,144,0.18)', color: '#86efac', borderColor: 'rgba(24,197,144,0.4)' }}
-                >獨立購買</span>
+                >每月 {aivisIncludedPerMonth} 次</span>
               </div>
-              {/* C1: aivis 強化金句 */}
+              {/* aivis 強化金句 */}
               <p
                 className="text-base font-semibold mb-3"
                 style={isDark ? { color: T.text, lineHeight: 1.6 } : { color: '#1e293b' }}
@@ -577,11 +590,11 @@ export default function Pricing() {
                 className="text-sm max-w-2xl"
                 style={isDark ? { color: T.textMid, lineHeight: 1.7 } : { color: '#64748b' }}
               >
-                Pro 訂閱已含 100 次／月試用額度。若需要更多 AI 引用率實測，可獨立加購方案，<span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>不需綁 Pro 訂閱</span>。
+                Pro 訂閱每月內含 <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>{aivisIncludedPerMonth} 次 AI 引用率實測</span>，足以追蹤單一品牌 10–15 個核心關鍵字。SEO 修復是一次性的，但 AI 在持續更新、競爭對手在持續優化—— aivis 每月幫你看 ChatGPT、Perplexity、Claude 是否還推薦你。
               </p>
             </div>
 
-            {/* C1: 真實 AI 結果展示（佔位） */}
+            {/* 真實 AI 結果展示（佔位） */}
             <div
               className="p-5 rounded-xl border"
               style={isDark
@@ -614,83 +627,7 @@ export default function Pricing() {
                 </span>
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {/* aivis 標準包 — 月/年雙價 */}
-              <div
-                className="p-5 rounded-xl border"
-                style={{ background: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.1)' }}
-              >
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-2xl font-bold" style={{ color: T.text }}>NT${aivisStandardMonthly}</span>
-                  <span className="text-sm" style={{ color: T.textMid }}>／月</span>
-                </div>
-                <p className="text-sm mb-2" style={{ color: T.textMid }}>標準包・300 次／月查詢</p>
-                <div
-                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full mb-3"
-                  style={{ background: 'rgba(24,197,144,0.15)', color: '#86efac', border: '1px solid rgba(24,197,144,0.35)' }}
-                >
-                  年繳 NT${aivisStandardYearly.toLocaleString()}・8 折省 NT${(aivisStandardMonthly * 12 - aivisStandardYearly).toLocaleString()}
-                </div>
-                <p className="text-xs" style={{ color: T.textLow }}>適合單一品牌追蹤 5–10 個關鍵字</p>
-              </div>
-              {/* aivis 進階包 — 月/年雙價 */}
-              <div
-                className="p-5 rounded-xl border relative"
-                style={{ background: 'rgba(24,197,144,0.08)', borderColor: 'rgba(24,197,144,0.4)' }}
-              >
-                <span
-                  className="absolute -top-2 right-4 px-2 py-0.5 text-xs rounded-full"
-                  style={{ background: '#18c590', color: '#0a0e14', fontWeight: 600 }}
-                >熱門</span>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-2xl font-bold" style={{ color: T.text }}>NT${aivisProMonthly}</span>
-                  <span className="text-sm" style={{ color: T.textMid }}>／月</span>
-                </div>
-                <p className="text-sm mb-2" style={{ color: T.textMid }}>進階包・800 次／月查詢</p>
-                <div
-                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full mb-3"
-                  style={{ background: 'rgba(24,197,144,0.18)', color: '#86efac', border: '1px solid rgba(24,197,144,0.4)' }}
-                >
-                  年繳 NT${aivisProYearly.toLocaleString()}・8 折省 NT${(aivisProMonthly * 12 - aivisProYearly).toLocaleString()}
-                </div>
-                <p className="text-xs" style={{ color: T.textLow }}>適合多品牌或競品矩陣同時監測</p>
-              </div>
-            </div>
 
-            {/* 套餐推薦：Pro 年繳 + aivis 進階年繳 */}
-            <div
-              className="p-5 rounded-xl border-2 relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(24,197,144,0.12))',
-                borderColor: 'rgba(24,197,144,0.5)',
-              }}
-            >
-              <span
-                className="absolute -top-2 left-4 px-2.5 py-0.5 text-xs rounded-full"
-                style={{ background: 'linear-gradient(90deg, #8b5cf6, #18c590)', color: '#fff', fontWeight: 600 }}
-              >⭐ 最划算組合</span>
-              <div className="grid md:grid-cols-2 gap-4 items-center mt-2">
-                <div>
-                  <div className="font-bold mb-2" style={{ color: '#18c590' }}>Pro 年繳 + aivis 進階年繳套餐</div>
-                  <p className="text-sm" style={{ color: T.textMid, lineHeight: 1.7 }}>
-                    一次解鎖 Pro 全功能（修復碼 + 歷史趨勢 + 平台別指南）+ aivis 800 次／月真實 AI 引用率監測。
-                    <span style={{ color: '#86efac', fontWeight: 600 }}> aivis 部分綁年再 8 折</span>。
-                  </p>
-                </div>
-                <div className="md:text-right">
-                  <div className="flex items-baseline md:justify-end gap-2 mb-1">
-                    <span className="text-3xl font-bold" style={{ color: T.text }}>NT${bundleYearly.toLocaleString()}</span>
-                    <span className="text-sm" style={{ color: T.textMid }}>／年</span>
-                  </div>
-                  <p className="text-xs mb-1" style={{ color: T.textLow }}>
-                    Pro NT${proYearly.toLocaleString()} + aivis 進階年繳 NT${aivisProYearly.toLocaleString()}
-                  </p>
-                  <p className="text-xs" style={{ color: '#86efac', fontWeight: 600 }}>
-                    平均每月 NT${bundleMonthlyEq.toLocaleString()}・vs 月繳省 NT${bundleSavedPerMonth}／月（年省 NT${bundleVsMonthly.toLocaleString()}）
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 

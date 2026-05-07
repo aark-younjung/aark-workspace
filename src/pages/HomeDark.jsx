@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Footer from '../components/Footer'
+import AnnouncementBanner from '../components/AnnouncementBanner'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
@@ -575,6 +576,11 @@ export default function HomeDark() {
           </div>
         </div>
       </header>
+
+      {/* 站內公告 banner（admin 後臺管理） */}
+      <div className="relative z-10">
+        <AnnouncementBanner />
+      </div>
 
       {/* Hero */}
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-24 overflow-visible">

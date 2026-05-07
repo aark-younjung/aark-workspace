@@ -203,11 +203,17 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 | 方案 | 月費 | 年費 | 功能 |
 |------|------|------|------|
 | 免費版 | $0 | — | 5 大面向分數、通過/不通過清單、3 條優化建議、競品比較 2 個、文章分析基本版、追蹤 3 站 |
-| **Pro 版** | NT$1,490／月 | NT$13,900（**省 22%・等於免費多用 2.6 個月**） | 修復碼產生器、歷史趨勢圖、平台別修復指南（WP/Shopify/Wix/HTML）、競品比較 4 個、PDF 匯出、Email 週報、文章分析完整版、aivis 試用 100 次/月、追蹤 15 站 |
-| aivis Add-on 標準 | NT$490／月（300 次） | NT$4,700（**綁年 8 折・省 NT$1,180**） | AI 曝光監測獨立加購，不需綁 Pro 訂閱 |
-| aivis Add-on 進階 | NT$990／月（800 次） | NT$9,500（**綁年 8 折・省 NT$2,380**） | 多品牌或競品矩陣同時監測 |
-| **🌟 套餐：Pro 年繳 + aivis 進階年繳** | — | **NT$23,400**（年省 NT$6,360・平均月繳 NT$1,950） | 最划算組合：Pro 全功能 + 800 次／月 AI 引用實測，aivis 部分綁年再 8 折 |
+| **Pro 版** | NT$1,490／月 | NT$13,900（**省 22%・等於免費多用 2.6 個月**） | 修復碼產生器、歷史趨勢圖、平台別修復指南（WP/Shopify/Wix/HTML）、競品比較 4 個、PDF 匯出、Email 週報、文章分析完整版、**AI 曝光監測（aivis）每月 150 次**、追蹤 15 站 |
 | Agency 版 | NT$4,990／月起（即將推出） | — | 50 站、白標 PDF、多客戶工作區、優先客服、所有 Pro 功能 |
+
+**aivis 設計原則：** 已整合進 Pro 核心，不可獨立訂閱（5 LLM 共識）。理由：SEO 修復是一次性的，但 AI 引用率天天在變、競爭對手天天在優化 — aivis 是 Pro 持續訂閱的核心鉤子，把它獨立加購會讓用戶「改完就退訂」。
+
+**aivis Top-up 加購（隱藏於定價頁，just-in-time 揭露）：**
+- 小包：NT$490 / +300 次（每次 NT$1.63，補檔用）
+- 大包：NT$990 / +800 次（每次 NT$1.24，多品牌或競品矩陣）
+- 一次性購買、不過期、用完為止、不綁訂閱
+- 每月查詢硬上限 1,000 次（內含 + Top-up 合計），Agency 推出後解除
+- **不在定價頁陳列**：避免「還要再加錢嗎」的隱憂稀釋 Pro 卡訴求；改在 aivis dashboard 用量達 80%（120 次）顯示 banner、達 100%（150 次）跳 modal 提示加購
 
 **早鳥優惠：** 正式上線起 **4 週內・前 100 名**付費用戶享首年 NT$990／月（年繳 NT$11,880），次年續訂自動恢復 NT$13,900／年。雙條件擇先觸發者截止。
 
@@ -265,6 +271,86 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ---
 
 ## 工作日誌
+
+### 2026-05-07
+**清理已執行完畢的 SQL migration 檔（共 9 支）:**
+- ✅ 移除 `announcements.sql` / `aivis-topup-admin-rls.sql` / `admin-rls-policies.sql` / `aivis-prompt-limit.sql` / `aivis-tables-phase2.sql` / `aivis-tables.sql` / `aivis-topup-credits.sql` / `clear-test-revenue.sql` / `seo-tables.sql` — 全部已在 Supabase SQL Editor 跑完，DB 端 schema/policy/function 都已建立。
+- 🔖 **取捨：不保留為 schema 紀錄**：用戶指示一起清。Supabase Dashboard 本身可看 schema，且日後若要重建環境，從 Supabase 端 export 比讀分散的 .sql 檔更可靠。CLAUDE.md 工作日誌已記錄每個 SQL 的用途與欄位設計，需要回查時讀此檔。
+
+### 2026-05-07
+**站內公告系統（後臺管理第三階段第一支）— announcements 表 + AdminAnnouncements 後臺 CRUD + AnnouncementBanner 公開元件:**
+- ✅ **新增 [announcements.sql](announcements.sql)**：建表 `announcements`（id / title / content / kind CHECK ('info','warn','promo','success') / target CHECK ('all','free','pro') / link_url + link_text / is_active / starts_at + ends_at / timestamps）+ partial index `(is_active, starts_at, ends_at) WHERE is_active = true`（前端 SELECT 吃此索引）+ `set_updated_at()` trigger 自動維護 updated_at。RLS 四條 policy：`everyone_read_active_announcements`（所有人含 anon 訪客都能讀啟用中且在期間內的公告）、admin 各自 SELECT/INSERT/UPDATE/DELETE 全權。**用戶側待辦**：在 Supabase SQL Editor 執行此 SQL。
+- ✅ **新增 [src/pages/admin/AdminAnnouncements.jsx](src/pages/admin/AdminAnnouncements.jsx)**：完整 CRUD 後臺頁。列表顯示 5 欄（標題+內容預覽 / 類型 chip+對象 / 期間 / 狀態 / 操作）+ 狀態自動判定（`!is_active=已停用` / `starts_at>now=排程中` / `ends_at<now=已過期` / 否則=`顯示中`）。新增/編輯走 modal，欄位含標題（必填）/ 內容（textarea）/ 類型 4 選 1 button group / 對象 3 選 1 button group / CTA url+text 雙欄 / 開始-結束時間 datetime-local（空白=立即/永不過期）/ is_active checkbox。timezone 處理：`tsToLocalInput()` UTC→本地時區字串、`localInputToIso()` 反向；DB 端用 timestamptz 存 UTC，UI 用本地時區顯示與輸入。樂觀更新：toggle is_active 立刻變 UI、失敗 rollback。
+- ✅ **新增 [src/components/AnnouncementBanner.jsx](src/components/AnnouncementBanner.jsx)**：公開 banner 元件。fetch active 公告（DB 端 RLS 已過濾期間，client 只需過濾 target：`all` 給全部、`pro` 給 isPro=true、`free` 給 isPro=false）。每張 banner 吃 4 種 kind 配色（info=藍 / warn=琥珀 / promo=橘紅漸層 / success=綠）+ emoji + 標題 + 內容（whitespace pre-wrap）+ 選填 CTA 按鈕（`/^https?:\/\//` 用 `<a target=_blank>` 開新分頁、否則用 `<Link to>`）+ ✕ 關閉按鈕。dismiss state 寫 localStorage `dismissed_announcements`（comma-separated UUID），同 user 同瀏覽器只關一次；換瀏覽器 / 清 cache 會再出現 — 對「重要訊息」是 feature 不是 bug。authLoading 守衛防 isPro 從 undefined→true 切換時 target=pro 公告誤顯示給訪客。
+- ✅ **[AdminLayout.jsx](src/pages/admin/AdminLayout.jsx) NAV 加 「站內公告」項**（📢 emoji，第 5 順位在營收儀表板之後）。
+- ✅ **[App.jsx](src/App.jsx) 路由 `/admin/announcements`**：import + Route 新增。
+- ✅ **三處掛載 banner**：[HomeDark.jsx](src/pages/HomeDark.jsx)（header 之後、Hero 之前 — 訪客都會看到）/ [Dashboard.jsx](src/pages/Dashboard.jsx)（SiteHeader 之後、升級成功提示之前 — 登入用戶看到）/ [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)（背景之後、返回連結之前 — aivis 用戶看到）。三頁都用同一個 `<AnnouncementBanner />`，banner 自帶 padding 與容器寬度。
+- ✅ **parse 驗證**：7 個改動 / 新增檔案全數 node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：用 localStorage dismiss 而非 DB 表**：原本可以開一張 `announcement_dismissals (user_id, announcement_id)` 表記錄，但這會增加 (1) 訪客（未登入）無法 dismiss、(2) 多一張表的 RLS 複雜度、(3) 每次 fetch 多 1 個 left join。localStorage 的「換 device 會再看到」對重要訊息反而是好事（提醒用戶第二次），且訪客也能 dismiss。代價是同瀏覽器的 incognito mode 看到舊 banner — 邊界 case 可接受。
+- 🔖 **取捨：target 過濾走 client 而非 RLS USING 子句**：RLS 端要做 target 過濾就得 join profiles 拿 is_pro，每筆查詢都付這個成本不值得。client 端只接收 active 公告（量很小，<10 筆典型），用 JS array filter 微秒級。RLS 端只負責「啟用中 + 在期間內」的硬性條件。
+- 🔖 **取捨：banner 在三頁手動掛而非 App 層 wrapper**：Login / Register / Audit 詳細頁等不需要 banner（會干擾流程或視覺擁擠），手動掛在「主要 landing 頁」三處更精準。如果未來 banner 太常出現要全站統一，再升級為 layout wrapper。
+- 🔖 **取捨：沒做「banner 點擊埋點 / 觸及率統計」**：本次先把 send → display → dismiss 的閉環做出來，分析資料層留待第三階段「內容管理」整批設計時做（届時可加 click 寫進 `announcement_clicks` 或直接 GA event）。
+- 🔖 **取捨：sql 檔案命名 `announcements.sql` 不加 `aivis_` 前綴**：站內公告是站內基礎設施，跨所有產品模組共用（首頁訪客 / Dashboard / aivis），不屬於 aivis 模組，所以表名與檔名都不掛 aivis 前綴。
+
+### 2026-05-07
+**aivis Top-up 後端優化（Stripe 註冊卡關期間先做不依賴 Stripe 的 UI 優化）— AdminUsers Top-up 餘額顯示 + fetch.js quota 即時更新 banner:**
+- ✅ **新增 [aivis-topup-admin-rls.sql](aivis-topup-admin-rls.sql)**：給 `aivis_topup_credits` 表加 admin SELECT policy（複用 `is_admin()` helper），讓 AdminUsers 能讀全部用戶的 Top-up credits。INSERT/UPDATE/DELETE 不開放給 admin — 真要手動補發走 service role 跑 SQL Editor，避免 admin UI 誤操作改額度。**用戶側待辦**：在 Supabase SQL Editor 執行此 SQL 一次。
+- ✅ **[AdminUsers.jsx](src/pages/admin/AdminUsers.jsx) 加 Top-up 加購餘額區塊**：在「AI 曝光監測 — API 成本（內部）」與「已分析的網站」之間插入新區塊。展開用戶時並行查 `aivis_topup_credits where user_id = X order by purchased_at desc`，列出每筆 pack（小包 300 / 大包 800 chip + 購買日期 + 剩餘/總量 + 已用），上方匯總卡顯示「目前可用次數 N」+「共 N 個點數包」。已耗盡的 pack 用淡灰色（quota_remaining === 0）視覺降階，仍顯示但不搶版面。
+- ✅ **[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) runScan 利用 quota meta 即時更新 banner**：每跑完一條 prompt 拿到 fetch.js 回傳的 `json.quota.used_after` → 立刻 `setUserMonthQueries(used_after)`，不等掃完全部再 loadAll()。多 prompt 掃描時 banner 進度條與「已用 X / 150」會逐條前進，視覺即時感強。同時累加 `totalTopupConsumed`（從每次回應的 `topup_consumed_this_call`），若本次掃描有用到 Top-up 則 toast 補一段「（含 N 次 Top-up）」讓用戶清楚知道內含已用完、Top-up 在扣。
+- ✅ **runScan catch 分支也加 loadAll()**：原本只成功路徑才 reload，現在失敗也 reload — 因為若是 fetch.js 跑到第 3 條 prompt 時撞到硬上限或 API 失敗，前 2 條已經寫進 DB 了，banner 必須對齊真實狀態。
+- ✅ **parse 驗證**：[AdminUsers.jsx](src/pages/admin/AdminUsers.jsx) + [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) 皆 node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：AdminUsers 直接 select aivis_topup_credits 表，不打 `aivis_topup_balance` RPC**：RPC 只回 sum 數字，無法列出每包明細。直接 select 多 1 個欄位，admin 透過新加的 RLS policy 已可繞 RLS 看全部，且能看出「3 個小包都是 4/14 同一天買的（可疑）」這種模式檢測。RPC 留給用戶端 dashboard 用（用戶只需要知道餘額不需要看明細）。
+- 🔖 **取捨：runScan 即時更新 + 收尾再 loadAll()，不只擇一**：純 quota.used_after 推進雖然快，但只更新 userMonthQueries 一個 state — responses / mentions / 趨勢圖 仍要靠 loadAll() 補齊。同時做兩件事不衝突，且即時感與資料完整性都顧到。
+- ⚠️ **Stripe 註冊仍卡關**：Stripe Dashboard 連線慢 + Taiwan country 缺問題未解，本次跳過。等用戶用 VPN / 手機熱點 / 換時段重試，或走 Stripe Atlas 路線。Top-up 後端 100% 寫好擺著，拿到 price_xxx ID 直接貼 Vercel env 就會跑。
+
+### 2026-05-07
+**aivis Top-up 後端串接完成：SQL migration + checkout-topup endpoint + webhook 分支 A + fetch.js 額度攔截 + TopupModal 接 Stripe Checkout:**
+- ✅ **新增 [aivis-topup-credits.sql](aivis-topup-credits.sql)**：建表 `aivis_topup_credits`（id / user_id REFS auth.users / pack_size CHECK ('small','large') / quota_total / quota_remaining / purchased_at / expires_at NULL=不過期 / source_payment_id UNIQUE 防 webhook 重送 / notes 客服手動開通用）+ partial index `(user_id, purchased_at) WHERE quota_remaining > 0`（fetch.js FIFO 查詢吃此索引）。RLS：用戶可讀自己 credits、不開放任何用戶端寫入（只 service role bypass）。
+- ✅ **新增原子扣除 RPC `aivis_consume_topup_credit(p_user_id uuid)`**：用 `SELECT ... FOR UPDATE SKIP LOCKED LIMIT 1` 鎖一筆 quota_remaining > 0 的 credit（依 purchased_at ASC 取 FIFO 先買的先扣），找不到回 false、找到就 `quota_remaining -= 1` 回 true。SECURITY DEFINER + 不 grant 給 authenticated → 只有 service role（fetch.js）能呼叫，避免用戶端繞過 fetch.js 直接耗 credits。
+- ✅ **新增 helper `aivis_topup_balance(p_user_id uuid)`**：回 user 當下 sum(quota_remaining) 給 dashboard 顯示用，grant 給 authenticated。
+- ✅ **新增 [api/aivis/checkout-topup.js](api/aivis/checkout-topup.js)**：`POST` body `{ userId, email, pack: 'small' | 'large', returnUrl }` → `PACK_SPEC` 對映 pack → priceEnvKey + quota → 建立 Stripe `checkout.sessions` with `mode: 'payment'`（**非** subscription，因為 Top-up 是一次性付款）+ metadata `{ userId, kind: 'aivis_topup', pack, quota }`（webhook 端用 `kind` 辨識「不是 Pro 訂閱」）+ `success_url` 帶 `?topup_success={pack}` 回原頁、`cancel_url` 回原頁。Env var：`STRIPE_TOPUP_SMALL_PRICE_ID`、`STRIPE_TOPUP_LARGE_PRICE_ID`、`NEXT_PUBLIC_SITE_URL`。
+- ✅ **修改 [api/stripe-webhook.js](api/stripe-webhook.js) 加分支 A**：`checkout.session.completed` 事件原本只處理 Pro 訂閱（更新 `profiles.is_pro = true`），新增前置判斷：若 `metadata.kind === 'aivis_topup' && session.mode === 'payment'` → 走分支 A：upsert 一筆 `aivis_topup_credits`（quota_total = quota_remaining = metadata.quota，source_payment_id = session.id）+ `onConflict: 'source_payment_id', ignoreDuplicates: true` 防 webhook 重送重複入帳（Stripe 會 retry，第二次 INSERT 會撞 UNIQUE 並被靜默跳過）。分支 B（Pro 訂閱）邏輯完全不動。
+- ✅ **修改 [api/aivis/fetch.js](api/aivis/fetch.js) 加額度攔截**：常數 `AIVIS_QUOTA_PER_MONTH = 150`、`AIVIS_HARD_CAP = 1000`（與前端 [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) 同步）。在 prompt + brand 取出後、進入 runs loop 前查 `aivis_responses count where user_id = prompt.user_id AND created_at >= monthStart`（UTC calendar month），若 count >= 1000 → 直接回 HTTP 429 `monthly_hard_cap_exceeded`。loop 內每次 Claude 呼叫前算 `wouldBeNthQuery = monthCount + usedThisCall + 1`：(1) > 1000 → 中斷 loop 回 429 with `completed_runs: i - 1` (2) > 150 → 打 `supabase.rpc('aivis_consume_topup_credit', { p_user_id })`，false → 回 429 `monthly_quota_exhausted`、true → `topupConsumedThisCall += 1` (3) ≤ 150 → 走月內含。response 寫入成功後才 `usedThisCall += 1`（避免 Claude 失敗 / DB 失敗時誤扣）。回應加 `quota: { used_after, quota_per_month, hard_cap, topup_consumed_this_call }` meta，前端可即時更新 banner 不必重打 count。
+- ✅ **TopupModal 接 Stripe Checkout**：原本 'soft' kind 是 mailto 客服手動開通，改為每張 Top-up 卡加「立即加購」按鈕 → `handleBuy(packId)` POST 到 `/api/aivis/checkout-topup`（帶 `userId / email / pack / returnUrl: window.location.href`）→ 拿 `data.url` 後 `window.location.href = url` 整頁跳轉到 Stripe（不開新分頁，避免 `success_url` 回不來原頁迷路）。`buying` state 防連點 + loading「⏳ 跳轉中…」、`buyError` 顯示失敗訊息。大包按鈕用青綠漸層 + 陰影（推薦樣式），小包用半透明青綠（次級樣式）。`'hard'` kind 仍走 Agency 預登記 mailto（沒得救）。
+- ✅ **parse 驗證**：[fetch.js](api/aivis/fetch.js) + [checkout-topup.js](api/aivis/checkout-topup.js) + [stripe-webhook.js](api/stripe-webhook.js) + [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) 全數 node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：fetch.js 單一交易內每次 run 各打一次 RPC，不批次 reserve**：runs 上限 5、若 5 次都要走 Top-up 路徑就打 5 次 RPC，看似重，但 reserve N 次再回填會碰到 mid-loop Claude 失敗 → 已扣的 credits 還要回滾的醜邏輯。每 run 各扣一次的好處是 Claude 失敗 / DB 失敗時，「未實際寫入 response 的 run」對應的 credit 直接不再扣下去（藉由「response 寫入成功才 += 1」這個順序），不必補償。
+- 🔖 **取捨：硬上限攔截走 monthCount + usedThisCall 而非每次重查 DB**：每跑 1 次 run 重查 1 次 monthly count 浪費，且本次 call 內的 1~5 次新增本來就由 `usedThisCall` 即時累計、加上 loop 進入前已抓過的 `monthCount` 起點，數字一致正確。並發風險（同 user 兩個 tab 同時打 fetch）容忍 — 兩邊各自查一次拿到同 monthCount，極端情況下可能合計超過 hard cap 1~2 次，這個 leak 對毛利結構影響可忽略，下個月 monthCount 重算就回正。
+- 🔖 **取捨：Stripe success_url 回原 dashboard URL（含 ?topup_success=）而非獨立成功頁**：用戶在 dashboard 觸發 Top-up 是「正在跑掃描被攔截 → 加購 → 立刻想繼續跑」的 flow，回獨立成功頁要再點一次「回 dashboard」中斷思路。返回原頁 + query string 標記讓未來能加 toast 「✓ Top-up 已入帳」。webhook 把 credits 寫入是非同步的（Stripe 後台跑），所以使用者回來時 credits 可能還沒寫入；前端 toast 要靠輪詢 / Realtime 才確定能跑掃描，本次先不做。
+- 🔖 **取捨：source_payment_id UNIQUE + onConflict ignoreDuplicates，不用 idempotency key 表**：Stripe webhook 可能 retry 同一個 event，最簡單的保護是 INSERT 撞 UNIQUE 就靜默跳過。專屬 idempotency 表能記錄 event_id 細粒度（同 session 不同事件類型也能 dedupe），但目前 webhook 只認 `checkout.session.completed`，session.id 已足夠當「這次付款是否處理過」的去重 key。未來若加上更多事件類型（refund / dispute）再考慮升級。
+- ⚠️ **用戶側待辦（部署前）**：(1) Stripe Dashboard 建立兩個 **one-time** price item — NT$490 / NT$990（記得是 one-time，不是 recurring）、貨幣 TWD、metadata 可空；(2) Vercel 環境變數加上 `STRIPE_TOPUP_SMALL_PRICE_ID` 與 `STRIPE_TOPUP_LARGE_PRICE_ID`（從 Stripe Price ID 複製，格式 `price_xxx`），Production / Preview / Development 三環境都要設；(3) 確認 `NEXT_PUBLIC_SITE_URL` 已設為 `https://aark-workspace.vercel.app`；(4) Supabase SQL Editor 跑 [aivis-topup-credits.sql](aivis-topup-credits.sql) 一次（建表 + RLS + 兩個 function）；(5) 跑完用 `SELECT * FROM pg_proc WHERE proname LIKE 'aivis_%'` 確認 function 存在。
+- ⚠️ **未來要做（不阻塞上線）**：(1) AdminUsers 展開明細顯示用戶 Top-up 餘額（`SUM(quota_remaining)`）；(2) Top-up 入帳後從 dashboard 即時看到（webhook → Realtime broadcast → banner 更新）；(3) 用戶取消 Pro 訂閱時的 Top-up credits 處置政策（建議：保留 90 天）；(4) Stripe webhook 端在 `payment_intent.payment_failed` / `charge.refunded` 時對應扣回 credits（防退款後仍能用次數）。
+
+### 2026-05-07
+**Pricing FAQ details/summary 嵌套 bug 修復 + aivis Dashboard 月內含額度 banner / Top-up modal UI:**
+- 🐛 **Pricing FAQ 黑字看不到 bug 起因**：`PricingFAQ` dark 分支把 `<summary>` 包在 `<GlassCard>` 的 div 內，違反 HTML 規範（`<summary>` 必須是 `<details>` 的「直接」子元素）。瀏覽器把整個 details 視為「無 summary」、預設 collapsed 狀態，只渲染預設「Details」黑字標記，整段 FAQ 內容（含問題與答案）都被瀏覽器當成隱藏內容。用戶看到的「常見問題內容都看不到」就是這個 — 不是 CSS 黑字，是 HTML 結構導致內容直接不渲染。
+- ✅ **修法**：把 `<GlassCard color={T.orange}>` 的玻璃擬態樣式（背景、邊框、blur、padding、boxShadow）內聯到 `<details>` 元素本體上，讓 `<summary>` 直接掛在 details 下。視覺一致、結構合法。註解寫明「`<summary>` 必須是 `<details>` 的直接子元素」這條 HTML 規範陷阱，避免未來複製這段時又包進 div。
+- ✅ **aivis Dashboard 新增 UsageBanner（用量提示條）**：當本月查詢用量 ≥80%（120 次）時於「立即執行掃描」CTA 上方顯示。三段式配色 + 文案：80%~99% 黃色（剩餘 N 次內含 + 「了解加購」）/ 100%~999 橘色（已用完，加購 Top-up 繼續）/ ≥1000 紅色（已達硬上限）。內含進度條（鎖在 100%，超量 Top-up 不再延伸）+ 三段式 emoji（⚠️ / 🔔 / 🚫）。CTA 點擊開啟 TopupModal。
+- ✅ **aivis Dashboard 新增 TopupModal（加購次數包 modal）**：兩種 kind — `'soft'`（月內含 150 用完）顯示 Top-up 兩張卡（小包 NT$490/+300、大包 NT$990/+800，大包標「🔥 最划算」chip）+「規則說明」（不過期/月內含先扣/硬上限 1,000）+「💳 加購功能即將開放」disclaimer + mailto 申請手動開通；`'hard'`（≥1,000）顯示「為什麼有硬上限」說明 + Agency 方案 2026 Q3 預告 + Agency 預登記 mailto。背景 backdrop-blur + 點擊外部關閉。後端 Stripe 一次性購買尚未串接，目前只導向客服 mailto，避免假按鈕欺騙用戶。
+- ✅ **runScan 加上額度攔截**：在進入掃描動畫前先檢查 `userMonthQueries`：(1) 達硬上限或本次掃描會破 1,000 → 開啟 `'hard'` modal、return（沒得救）(2) 達月內含 150 → 開啟 `'soft'` modal、return（可加購）(3) 否則正常掃描。攔截走 modal 而非 toast，因為這是付費決策時刻、需要時間閱讀加購方案。
+- ✅ **新增 user-scope 月查詢計數 query**：`loadAll()` 新增 `aivis_responses` count 查詢（`.eq('user_id', user.id).gte('created_at', monthStartIso)` + `head: true` 只回 count 不抓資料），存到 `userMonthQueries` state。注意：原本的 `responses` state 是 brand-scope 30 天，與額度判斷需要的 user-scope 本月不同 — 額度是 per-user per-calendar-month，跨所有品牌合計。
+- ✅ **常數新增**：`AIVIS_QUOTA_PER_MONTH = 150`、`AIVIS_HARD_CAP = 1000`、`AIVIS_WARN_RATIO = 0.8`、`TOPUP_PACKS` 陣列（小包/大包 + perCall 單價 + hint 文案），與 [Pricing.jsx](src/pages/Pricing.jsx) `aivisIncludedPerMonth=150` 同步。
+- ✅ **parse 驗證**：[Pricing.jsx](src/pages/Pricing.jsx) + [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) 皆 node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：banner 80% 才出現，不是一進來就秀**：50% 太早會讓用戶覺得被催促升級（dashboard 主訴求是「監測 AI 對你的引用」不是賣 Top-up），90% 又太晚（連 1 次 prompt × 3 runs 都來不及買 Top-up）。80% 對應 120 次，距 150 還有 30 次緩衝（10 次掃描），剛好給用戶 1-2 天思考時間決定要不要加購。
+- 🔖 **取捨：modal 兩種 kind 共用同一個 component，不拆兩個元件**：UI 結構 80% 相同（標題 + emoji + 說明 + CTA），差別只在 'soft' 多一層 Top-up 兩卡、'hard' 多一層 Agency 預登記。共用 modal 殼比拆兩個重複實作 backdrop / close button 邏輯划算。差異走 `isHard` 分支即可。
+- 🔖 **取捨：Top-up 還沒做後端就先放 modal**：Stripe 一次性購買 + `aivis_topup_credits` 表都還沒實作，但 banner / modal 是純前端視覺，把 UI 先做出來能讓用戶在到達上限時看到清楚的下一步（即使是 mailto 客服），比起到 150 次只能停權靜默更友善。後端 ready 後把 mailto 換成真的 Stripe Checkout 即可，UI 殼不用重做。
+- ⚠️ **後端待辦（task 3）**：(1) Stripe 建立兩個 one-time price item 並把 ID 寫進 env var；(2) 建 `aivis_topup_credits` 表（user_id / pack_size / quota_remaining / purchased_at / source_payment_id）；(3) 新增 `/api/aivis/checkout-topup.js` 建立 Stripe Checkout session（mode: payment, not subscription）；(4) `/api/stripe-webhook.js` 處理 `checkout.session.completed` + `mode === 'payment'` → 寫入 topup_credits；(5) `/api/aivis/fetch.js` 寫入 response 前檢查 `user_month_count + 即將寫入的 1 次 ≤ 1000`，扣額順序月內含 → topup_credits → 拒絕。
+
+### 2026-05-06
+**aivis 從獨立加購收回 Pro 核心 + Pro 內含額度 100 → 150 次（避免「改完就退訂」流失）:**
+- 💡 **決策來源**：用戶提出盲點—— aivis 獨立加購（NT$490/990）會讓 Pro 失去持續訂閱動力，因為「SEO 改完就改完了，剩下的 SEO 持續監測需求不足以支撐月費」。請 5 家 LLM（ChatGPT / Claude / Gemini / Grok / Perplexity）就「aivis 是否該放回 Pro 獨佔」給建議，匯整成 [aivis-decision-comparison.md](../../../Cowork/定價決策/aivis-decision-comparison.md)。**5/5 LLM 全體共識**：用戶判斷對、aivis 必須放回 Pro 核心、成本完全 OK（毛利 60-74%）。最大共識引用：Claude「SEO 修復是有限事，AI 曝光監測天生是動態的——競爭對手在變、AI 引用演算法在更新」、Gemini「不要把鑽石（aivis）從皇冠（Pro）中抽離」。
+- ✅ **Pro 內含 aivis 額度 100 → 150 次**（[Pricing.jsx](src/pages/Pricing.jsx)）：FEATURES_PRO 從「aivis 試用 100 次／月」改為「AI 曝光監測（aivis）每月 150 次查詢額度」。150 次可覆蓋單一品牌追蹤 10–15 個核心關鍵字，是保守派 LLM（ChatGPT/Gemini/Perplexity 建議 100-200）與大方派（Grok 建議 600-800）的折衷起點。先用 150 次保守上線，等實際使用分佈出來再放寬，避免 day-1 把毛利讓出去。
+- ✅ **aivis 加購區塊整段重寫為「Pro 內含 + 超量 Top-up」單軌制**：移除原本「aivis 標準包 NT$490/月（300 次）」「aivis 進階包 NT$990/月（800 次）」「最划算組合套餐 NT$23,400/年」三段獨立訂閱方案。新區塊改為：(1) Pro 訂閱已含 150 次/月（不可獨立購買 aivis）(2) 用超過 150 次才需加購 Top-up 次數包，NT$490（+300 次）/ NT$990（+800 次），**一次性購買、不過期、用完為止、不綁訂閱**。視覺上保留青綠色 #18c590 主題與「Perplexity 實測」展示卡，標題從「aivis 加購」改為「aivis 已含在 Pro 中・每月 150 次」chip。
+- ✅ **新增每月查詢硬上限 1,000 次**：內含 150 + Top-up 合計上限 1,000 次/月，避免重度用戶吃毛利血崩（Claude 在 LLM 比較中明確警告的風險）。底部 disclaimer：「Agency 方案推出後將解除上限」，給未來 Agency 客戶留 escape hatch。
+- ✅ **常數重構**：移除 `aivisStandardMonthly/Yearly`、`aivisProMonthly/Yearly`、`bundleYearly/MonthlyEq/VsMonthly/SavedPerMonth` 四組共 8 個常數；新增 `aivisIncludedPerMonth=150`、`topupSmallPrice=490`/`topupSmallQuota=300`、`topupLargePrice=990`/`topupLargeQuota=800`、`aivisHardCap=1000` 共 6 個常數。每張 Top-up 卡顯示「每次 NT$X.XX」單價（小包 NT$1.63/次、大包 NT$1.24/次），讓用戶一看就懂買大包比較划算。
+- ✅ **FAQ 三題改寫**：(1) aivis 那題從「Pro 含 100 次／月試用額度，重度需求可加購獨立方案」改為「Pro 訂閱每月內含 150 次（aivis 不單獨販售），這是 Pro 持續訂閱的核心價值 — SEO 改完是有限的事，但 AI 引用率天天在變」+ Top-up 說明 (2) 7 天試用題 aivis 額度從「100 次」改為「50 次（避免被刷）」(3) 免費 vs Pro 差別題加上「Pro 版告訴你『怎麼修』+『持續監測』」並把 100 次改為 150 次。
+- ✅ **CLAUDE.md 商業模式表整段重寫**：表格從 6 row 縮為 4 row（免費 / Pro / Top-up 小包 / Top-up 大包 / Agency），把 aivis Standard / Pro Add-on / 套餐三 row 砍掉。Pro 那 row 把「aivis 試用 100 次/月」加粗改為「**AI 曝光監測（aivis）每月 150 次**」凸顯這是核心價值。Top-up 兩 row 標明「一次性、不過期、不綁訂閱」。表格下方新增「**aivis 設計原則**」段落寫明 5 LLM 共識的決策邏輯與每月硬上限 1,000 次。
+- ✅ **Pricing.jsx parse 驗證**：node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：先 150 次保守上線，不一步到位給 600-800 次**：Grok 建議大方派 600-800 次（Pro 月費 1,490 對應毛利仍有 60-70%），但風險是 day-1 就把毛利讓掉，且 0 個真實用戶使用分佈下無法判斷 150 是否真的不夠。先 150 起跳、上線 1-2 個月看實際 P50/P90 用量，再決定是否上調至 200/300/500 次。LLM 共識多數派（ChatGPT/Gemini/Perplexity）也都站 100-200 區間。
+- 🔖 **取捨：Top-up 用「次數包」而非「按次計費」**：Grok 建議混用（次數包 + 超量 NT$0.8-1.2/次），但「按次計費」會讓用戶每次掃描都焦慮（「再點一次又花錢」），影響 aivis 使用意願。改為純次數包「一次買一次用完」，跟手機電信「儲值卡」概念一致，心理負擔輕。重度需求改買大包（NT$1.24/次）已經比小包便宜。
+- 🔖 **取捨：Top-up 不過期 vs 月過期**：選擇「不過期、用完為止」是因為 Top-up 是補足月內含的緊急方案，若再加月過期限制會讓用戶覺得「買了沒用完還要被沒收」，破壞 trust。技術上 Top-up 額度跟月內含分開計算，月內含每月歸零、Top-up 永久 carry over。
+- 🔖 **取捨：硬上限 1,000 次/月而非無上限**：Claude 在 LLM 比較中警告「重度用戶若每月跑 800 次以上查詢，會把毛利吃光」。設 1,000 次硬上限剛好能容納「150 內含 + 大包 800 次 + 小包 50 次補檔」，超過此用量的用戶 = Agency 級別，引導他們等 Agency 方案。資料層需在 `aivis_responses` 寫入時檢查 user_id 當月 count，達到 1,000 次直接拒絕並提示。
+- 🔖 **取捨：保留「Perplexity 實測」展示卡（佔位）**：原本是 aivis 加購區塊的 social proof，現在 aivis 已內含但展示卡仍有教育價值（讓沒看過 aivis dashboard 的訪客理解「真實 AI 答案」是什麼樣子），所以留下。等正式有客戶授權公開引用案例後改為真實截圖。
+- ⚠️ **後端待辦（上線前需確認）**：(1) Stripe 需建立兩個 one-time price item（NT$490 / NT$990）對應兩種 Top-up 包，跟 Pro 訂閱 price 分開；(2) `/api/stripe-webhook.js` 需處理 one-time payment 事件、寫入 `aivis_topup_credits` 表（待建）；(3) `aivis_responses` 寫入時的扣額順序：先扣月內含 150 → 用完後扣 Top-up credits → 達 1,000 次硬上限拒絕；(4) AdminUsers 展開明細需顯示用戶 Top-up 餘額；(5) 用戶若取消 Pro 訂閱，剩餘 Top-up credits 處理規則（建議：保留 90 天可續訂後恢復、之後失效）。
 
 ### 2026-05-04
 **Pricing 頁全面重構（A+B+C+D 11 區塊結構，整合 5 LLM 結構彙整方案）:**

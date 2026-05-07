@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import AnnouncementBanner from '../components/AnnouncementBanner'
 
 /**
  * AI 曝光監測 — 單一品牌儀表板（Phase 2c v2 版型）
@@ -52,6 +53,20 @@ const AIVIS_TEAL = '#18c590'
 const AIVIS_TEAL_DEEP = '#0d7a58'
 const PROMPT_CAP = 10
 const SCAN_RUNS = 3 // 每條 prompt 跑幾次取平均
+
+// 月查詢額度（與 Pricing.jsx aivisIncludedPerMonth=150 / Top-up hard cap 1000 同步）
+// - AIVIS_QUOTA_PER_MONTH：Pro 訂閱每月內含 150 次（每月 1 號歸零）
+// - AIVIS_HARD_CAP：內含 + Top-up 合計每月硬上限 1,000 次（避免毛利血崩）
+// - AIVIS_WARN_RATIO：用量達 80%（120 次）時提示加購，避免用滿才驚慌
+const AIVIS_QUOTA_PER_MONTH = 150
+const AIVIS_HARD_CAP = 1000
+const AIVIS_WARN_RATIO = 0.8
+
+// Top-up 包規格（後端尚未實作，目前 modal 內 disclaimer 引導聯繫客服）
+const TOPUP_PACKS = [
+  { id: 'small', label: '小包', price: 490, quota: 300, perCall: 1.63, hint: '補檔用，月底用量緊張時補一包' },
+  { id: 'large', label: '大包', price: 990, quota: 800, perCall: 1.24, hint: '多品牌或競品矩陣，每次最划算' },
+]
 
 // =====================================================
 // 工具函式
@@ -157,6 +172,12 @@ export default function AIVisibilityDashboard() {
   const [trendError, setTrendError] = useState(false)
   const [activeHistoryDay, setActiveHistoryDay] = useState(null) // YYYY-MM-DD
 
+  // 月查詢額度（user-scope：跨所有品牌的本月查詢總數）
+  // 注意：與 responses state（brand-scope 30 天）不同 — 額度是 per-user per-calendar-month
+  const [userMonthQueries, setUserMonthQueries] = useState(0)
+  // Top-up modal：null | 'soft'（達月內含上限）| 'hard'（達 1000 硬上限）
+  const [showTopupModal, setShowTopupModal] = useState(null)
+
   // ---------- 資料載入 ----------
   useEffect(() => {
     if (authLoading) return
@@ -186,15 +207,20 @@ export default function AIVisibilityDashboard() {
         .from('aivis_prompts').select('*')
         .eq('brand_id', id).order('created_at')
 
-      // 4. 抓 30 天內的 responses + mentions
+      // 4. 抓 30 天內的 responses + mentions（brand-scope）+ 本月 user-scope 查詢計數（額度判斷用）
       const since = new Date(Date.now() - 30 * 86400_000).toISOString()
-      const [respRes, mentRes] = await Promise.all([
+      const monthStartIso = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+      const [respRes, mentRes, userMonthRes] = await Promise.all([
         supabase.from('aivis_responses')
           .select('id, prompt_id, run_index, raw_response, brand_mentioned, cost_usd, created_at')
           .eq('brand_id', id).gte('created_at', since).order('created_at', { ascending: false }),
         supabase.from('aivis_mentions')
           .select('response_id, position, context, created_at')
           .eq('brand_id', id).gte('created_at', since),
+        // user-scope 本月查詢數（跨所有品牌，head: true 只回 count 不抓資料省流量）
+        supabase.from('aivis_responses')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id).gte('created_at', monthStartIso),
       ])
 
       setBrand(bRow)
@@ -202,6 +228,7 @@ export default function AIVisibilityDashboard() {
       setPrompts(pRows || [])
       setResponses(respRes.data || [])
       setMentions(mentRes.data || [])
+      setUserMonthQueries(userMonthRes.count || 0)
 
       // 預設展開最新 prompt
       const firstActive = (pRows || []).find(p => p.is_active)
@@ -219,6 +246,16 @@ export default function AIVisibilityDashboard() {
   const activePrompts = useMemo(() => prompts.filter(p => p.is_active), [prompts])
   const activeCount = activePrompts.length
   const atCap = activeCount >= PROMPT_CAP
+
+  // ---------- 月查詢額度狀態 ----------
+  // 給 banner / modal / runScan 攔截用，全部以 user-scope 計算（跨所有品牌）
+  const remainingMonthly = Math.max(0, AIVIS_QUOTA_PER_MONTH - userMonthQueries)     // 還剩幾次內含
+  const remainingHard = Math.max(0, AIVIS_HARD_CAP - userMonthQueries)               // 距硬上限剩幾次
+  const atWarn = userMonthQueries >= AIVIS_QUOTA_PER_MONTH * AIVIS_WARN_RATIO        // ≥120 顯示 banner
+  const atSoftLimit = userMonthQueries >= AIVIS_QUOTA_PER_MONTH                      // ≥150 月內含已用完
+  const atHardCap = userMonthQueries >= AIVIS_HARD_CAP                               // ≥1000 完全擋住
+  const plannedRuns = activeCount * SCAN_RUNS                                        // 本次掃描預計花幾次
+  const wouldExceedHard = userMonthQueries + plannedRuns > AIVIS_HARD_CAP            // 掃下去會破 1000
 
   // 30 天內 mention rate 概況
   const totalRuns = responses.length
@@ -381,8 +418,17 @@ export default function AIVisibilityDashboard() {
       setTimeout(() => setToast(null), 2800)
       return
     }
+    // 額度攔截：硬上限優先（連 Top-up 都救不了）→ 月內含上限（可加購）
+    if (atHardCap || wouldExceedHard) {
+      setShowTopupModal('hard')
+      return
+    }
+    if (atSoftLimit) {
+      setShowTopupModal('soft')
+      return
+    }
     setScanning(true); setScanPhase(0); setScanTotal(activePrompts.length)
-    let totalMentioned = 0, totalRunsCount = 0
+    let totalMentioned = 0, totalRunsCount = 0, totalTopupConsumed = 0
     try {
       for (let i = 0; i < activePrompts.length; i++) {
         const p = activePrompts[i]
@@ -394,12 +440,19 @@ export default function AIVisibilityDashboard() {
         }
         totalMentioned += json.mentioned_count
         totalRunsCount += json.runs
+        // 即時用 fetch.js 回傳的 quota meta 更新 banner — 不等 loadAll() 完成才 refresh
+        // 好處：跑多條 prompt 時 banner / 進度條會逐條前進，視覺即時感更強
+        if (json.quota?.used_after !== undefined) {
+          setUserMonthQueries(json.quota.used_after)
+        }
+        totalTopupConsumed += json.quota?.topup_consumed_this_call || 0
       }
       const rate = totalRunsCount > 0 ? Math.round(totalMentioned / totalRunsCount * 100) : 0
       setScanning(false)
+      const topupNote = totalTopupConsumed > 0 ? `（含 ${totalTopupConsumed} 次 Top-up）` : ''
       setToast({
         kind: 'success',
-        msg: `✅ 掃描完成 — ${activePrompts.length} prompt × ${SCAN_RUNS} 次 = ${totalRunsCount} 次呼叫，平均提及率 ${rate}%`,
+        msg: `✅ 掃描完成 — ${activePrompts.length} prompt × ${SCAN_RUNS} 次 = ${totalRunsCount} 次呼叫${topupNote}，平均提及率 ${rate}%`,
       })
       setTimeout(() => setToast(null), 5500)
       loadAll()
@@ -407,6 +460,8 @@ export default function AIVisibilityDashboard() {
       setScanning(false)
       setToast({ kind: 'warn', msg: `掃描失敗：${err.message}` })
       setTimeout(() => setToast(null), 4500)
+      // 失敗仍 reload 一次：可能跑了一半才炸（前 N 條成功寫進 DB），banner 數字要對齊
+      loadAll()
     }
   }
 
@@ -444,6 +499,9 @@ export default function AIVisibilityDashboard() {
         position: 'fixed', inset: 0, zIndex: -1,
         background: `linear-gradient(155deg, ${AIVIS_TEAL} 0%, ${AIVIS_TEAL_DEEP} 18%, #084773 32%, #011520 52%, #000000 72%)`,
       }} />
+
+      {/* 站內公告 banner */}
+      <AnnouncementBanner />
 
       {/* 返回連結 */}
       <header style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 24px 0' }}>
@@ -542,6 +600,25 @@ export default function AIVisibilityDashboard() {
           }
         </div>
 
+        {/* ── 月內含額度提示 banner ─────────────────────────
+            觸發條件：用量 ≥80%（120 次）才顯示，避免一進來就被「快用完」嚇到
+            兩階段：
+              - 80%~99%：黃色提醒 + 「了解加購」按鈕（軟性 upsell）
+              - 100%+：紅色警示 + 「立即加購」按鈕（硬性 upsell，掃描已被 runScan 攔住）
+        ── */}
+        {!isLoading && atWarn && (
+          <UsageBanner
+            used={userMonthQueries}
+            quota={AIVIS_QUOTA_PER_MONTH}
+            remaining={remainingMonthly}
+            atSoftLimit={atSoftLimit}
+            atHardCap={atHardCap}
+            hardCap={AIVIS_HARD_CAP}
+            remainingHard={remainingHard}
+            onTopupClick={() => setShowTopupModal(atHardCap ? 'hard' : 'soft')}
+          />
+        )}
+
         {/* ── 區塊 3：手動掃描 CTA ──────────────────────── */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18,
@@ -597,6 +674,16 @@ export default function AIVisibilityDashboard() {
         }
 
         {scanning && <ScanOverlay phase={scanPhase} total={scanTotal} prompts={activePrompts} />}
+        {showTopupModal && (
+          <TopupModal
+            kind={showTopupModal}
+            used={userMonthQueries}
+            quota={AIVIS_QUOTA_PER_MONTH}
+            hardCap={AIVIS_HARD_CAP}
+            user={user}
+            onClose={() => setShowTopupModal(null)}
+          />
+        )}
         {toast && <Toast {...toast} />}
       </div>
     </>
@@ -1466,6 +1553,287 @@ function Toast({ kind, msg }) {
       animation: 'fadeUp .3s ease',
     }}>
       <span style={{ fontSize: 13, color: T.text, fontWeight: 500, fontFamily: T.font }}>{msg}</span>
+    </div>
+  )
+}
+
+// =====================================================
+// UsageBanner（月內含額度提示條）
+// 觸發：用量 ≥80% 才出現（atWarn === true）
+// 狀態：warn（120~149）/ soft（150~999）/ hard（1000+）— 3 段配色與文案
+// =====================================================
+function UsageBanner({ used, quota, remaining, atSoftLimit, atHardCap, hardCap, remainingHard, onTopupClick }) {
+  // 進度條最大顯示百分比（可超過 100% 進入「Top-up 區段」，但視覺鎖在 100%）
+  const pct = Math.min(100, Math.round((used / quota) * 100))
+  const overUsed = Math.max(0, used - quota) // 已用了幾次 Top-up
+
+  // 三段狀態決定主色 + 標題文案 + CTA 字
+  let mainColor, bgGrad, title, hint, ctaText
+  if (atHardCap) {
+    mainColor = T.fail
+    bgGrad = `linear-gradient(135deg, ${T.fail}1a, ${T.fail}08)`
+    title = `本月查詢已達硬上限 1,000 次`
+    hint = `為保護毛利結構，每位用戶每月最多 ${hardCap.toLocaleString()} 次。Agency 方案推出後將解除上限。`
+    ctaText = '查看詳情'
+  } else if (atSoftLimit) {
+    mainColor = T.orange
+    bgGrad = `linear-gradient(135deg, ${T.orange}1a, ${T.orange}08)`
+    title = `本月內含 ${quota} 次已用完`
+    hint = `已使用 ${used.toLocaleString()} 次（含 Top-up ${overUsed} 次）· 距硬上限還剩 ${remainingHard.toLocaleString()} 次 · 加購次數包繼續使用`
+    ctaText = '加購次數包'
+  } else {
+    mainColor = T.warn
+    bgGrad = `linear-gradient(135deg, ${T.warn}1a, ${T.warn}08)`
+    title = `本月已使用 ${used} / ${quota} 次（${pct}%）`
+    hint = `剩餘 ${remaining} 次內含額度 · 用完可加購 Top-up 次數包繼續監測，不會中斷`
+    ctaText = '了解加購'
+  }
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+      background: bgGrad,
+      border: `1px solid ${mainColor}55`,
+      borderRadius: T.rL, padding: '16px 22px', marginBottom: 18, flexWrap: 'wrap',
+    }}>
+      {/* 左：圖示 + 標題 + 提示 + 進度條 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 280 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 10,
+          background: `${mainColor}33`, border: `1px solid ${mainColor}66`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 20 }}>{atHardCap ? '🚫' : atSoftLimit ? '🔔' : '⚠️'}</span>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 4 }}>
+            {title}
+          </div>
+          <div style={{ fontSize: 12, color: T.textMid, marginBottom: 8, lineHeight: 1.5 }}>
+            {hint}
+          </div>
+          {/* 進度條 — 鎖在 100%，超量時尾端顯示橘色「+N Top-up」標記 */}
+          <div style={{
+            width: '100%', height: 6, borderRadius: 3,
+            background: 'rgba(255,255,255,0.08)', overflow: 'hidden',
+          }}>
+            <div style={{
+              width: `${pct}%`, height: '100%',
+              background: `linear-gradient(90deg, ${mainColor}, ${mainColor}cc)`,
+              transition: 'width .4s',
+            }} />
+          </div>
+        </div>
+      </div>
+      {/* 右：CTA — 硬上限狀態下不引導加購（無解），其他兩段都導去 TopupModal */}
+      <button onClick={onTopupClick}
+        style={{
+          fontSize: 13, padding: '10px 18px', whiteSpace: 'nowrap',
+          border: `1px solid ${mainColor}88`, borderRadius: 8, fontWeight: 700,
+          fontFamily: T.font, background: `${mainColor}1a`, color: mainColor,
+          cursor: 'pointer', transition: 'all .2s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = `${mainColor}33` }}
+        onMouseLeave={e => { e.currentTarget.style.background = `${mainColor}1a` }}>
+        {ctaText} →
+      </button>
+    </div>
+  )
+}
+
+// =====================================================
+// TopupModal（加購次數包 / 硬上限說明 — 視 kind 切換內容）
+// kind === 'soft'：兩張 Top-up 卡（小/大），按鈕 POST /api/aivis/checkout-topup → 跳 Stripe Checkout
+// kind === 'hard'：硬上限說明 + Agency 預告（無 Top-up 可救，走 Agency 預登記 mailto）
+// =====================================================
+function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
+  const isHard = kind === 'hard'
+  const [buying, setBuying] = useState(null)  // 'small' | 'large' | null（防連點 + loading state）
+  const [buyError, setBuyError] = useState(null)
+
+  // 點 Top-up 卡的「立即加購」→ 打 /api/aivis/checkout-topup → 拿到 Stripe URL → 整頁跳轉
+  // 不開新分頁是因為 Stripe Checkout flow 結束後要靠 success_url 帶回原頁，新分頁會迷路
+  async function handleBuy(packId) {
+    if (!user?.id || !user?.email) {
+      setBuyError('請先登入後再加購')
+      return
+    }
+    setBuying(packId)
+    setBuyError(null)
+    try {
+      const r = await fetch('/api/aivis/checkout-topup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          pack: packId,
+          returnUrl: window.location.href,
+        }),
+      })
+      const data = await r.json()
+      if (!r.ok || !data?.url) {
+        throw new Error(data?.error || '建立 Checkout 失敗')
+      }
+      window.location.href = data.url
+    } catch (err) {
+      setBuyError(err.message || '無法啟動 Stripe Checkout，請稍後再試')
+      setBuying(null)
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 290,
+        background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+        animation: 'fadeUp .25s ease',
+      }}>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          maxWidth: isHard ? 480 : 620, width: '100%', maxHeight: '92vh', overflowY: 'auto',
+          background: 'rgba(8,12,18,0.96)', border: `1px solid ${isHard ? T.fail : AIVIS_TEAL}44`,
+          borderRadius: T.rXL, padding: 28, fontFamily: T.font,
+          boxShadow: `0 24px 80px ${isHard ? T.fail : AIVIS_TEAL}33`,
+        }}>
+        {/* 關閉按鈕（右上角，flex 定位避免 absolute 對齊問題） */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -8 }}>
+          <button onClick={onClose} aria-label="關閉" style={{
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: T.textMid, fontSize: 20, padding: 4, lineHeight: 1,
+          }}>
+            ✕
+          </button>
+        </div>
+
+        {/* 標題區 */}
+        <div style={{ textAlign: 'center', marginBottom: 22 }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>{isHard ? '🚫' : '🎯'}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 6 }}>
+            {isHard ? '已達每月查詢硬上限' : `本月內含 ${quota} 次已用完`}
+          </div>
+          <div style={{ fontSize: 13, color: T.textMid }}>
+            {isHard
+              ? `本月已使用 ${used.toLocaleString()} / ${hardCap.toLocaleString()} 次 · 為保護毛利結構，已暫停查詢`
+              : `本月已使用 ${used} 次 · 加購 Top-up 次數包，繼續監測 AI 對你的引用`}
+          </div>
+        </div>
+
+        {isHard ? (
+          // ── 硬上限版：直接停權說明 + Agency 預告 ──
+          <div>
+            <div style={{
+              padding: 18, borderRadius: T.rM,
+              background: `${T.fail}10`, border: `1px solid ${T.fail}33`,
+              marginBottom: 20, fontSize: 13, color: T.text, lineHeight: 1.7,
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>為什麼有 1,000 次硬上限？</div>
+              每月查詢上限為內含 + Top-up 合計 {hardCap.toLocaleString()} 次。
+              這是 Pro 訂閱在 0 真實用戶階段的保守設定，避免少數重度用戶吃光毛利後影響其他客戶體驗。
+              <br /><br />
+              <div style={{ fontWeight: 700, marginBottom: 8, color: T.aivis }}>Agency 方案推出後將解除上限</div>
+              預計 2026 Q3 推出 Agency 方案（NT$4,990／月起），含 50 站、白標 PDF、多客戶工作區，
+              查詢上限解除。如果你已是重度需求，歡迎先預登記。
+            </div>
+            <a href="mailto:hello@aark.com.tw?subject=Agency 方案預登記&body=我目前每月需要超過 1,000 次 aivis 查詢，希望優先取得 Agency 方案資訊。"
+              style={{
+                display: 'block', textAlign: 'center',
+                padding: '14px 24px', borderRadius: 10, fontWeight: 700, fontSize: 14,
+                background: `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`,
+                color: '#fff', textDecoration: 'none',
+                boxShadow: `0 8px 24px ${AIVIS_TEAL}55`,
+              }}>
+              📧 寄信預登記 Agency 方案
+            </a>
+          </div>
+        ) : (
+          // ── 月內含上限版：兩張 Top-up 卡 + 即將開放 disclaimer ──
+          <div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 18,
+            }}>
+              {TOPUP_PACKS.map((pack, idx) => {
+                const isBuying = buying === pack.id
+                const isOtherBuying = buying && buying !== pack.id
+                return (
+                  <div key={pack.id} style={{
+                    padding: 20, borderRadius: T.rM,
+                    background: `${AIVIS_TEAL}0a`,
+                    border: `1px solid ${AIVIS_TEAL}${idx === 1 ? '66' : '33'}`,  // 大包邊框較亮 = 推薦
+                    position: 'relative',
+                    opacity: isOtherBuying ? 0.5 : 1,
+                  }}>
+                    {idx === 1 && (
+                      <div style={{
+                        position: 'absolute', top: -10, right: 12,
+                        padding: '3px 10px', borderRadius: 12,
+                        background: AIVIS_TEAL, color: '#001b12',
+                        fontSize: 10, fontWeight: 800, letterSpacing: '0.05em',
+                      }}>🔥 最划算</div>
+                    )}
+                    <div style={{ fontSize: 12, color: T.textMid, marginBottom: 6, fontWeight: 600 }}>
+                      Top-up {pack.label}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+                      <span style={{ fontSize: 28, fontWeight: 800, color: T.text }}>
+                        NT${pack.price}
+                      </span>
+                      <span style={{ fontSize: 13, color: T.textMid }}>
+                        / +{pack.quota} 次
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: AIVIS_TEAL, marginBottom: 10, fontWeight: 600 }}>
+                      每次 NT${pack.perCall.toFixed(2)}
+                    </div>
+                    <div style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, marginBottom: 14 }}>
+                      {pack.hint}
+                    </div>
+                    <button
+                      onClick={() => handleBuy(pack.id)}
+                      disabled={!!buying}
+                      style={{
+                        width: '100%', padding: '10px 14px', borderRadius: 8,
+                        border: 'none', cursor: buying ? 'wait' : 'pointer',
+                        background: idx === 1
+                          ? `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`
+                          : `${AIVIS_TEAL}22`,
+                        color: idx === 1 ? '#fff' : AIVIS_TEAL,
+                        fontWeight: 700, fontSize: 13,
+                        boxShadow: idx === 1 ? `0 6px 18px ${AIVIS_TEAL}44` : 'none',
+                      }}>
+                      {isBuying ? '⏳ 跳轉中…' : '立即加購'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div style={{
+              padding: 14, borderRadius: T.rM,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+              marginBottom: 14, fontSize: 12, color: T.textMid, lineHeight: 1.6,
+            }}>
+              <div style={{ fontWeight: 700, color: T.text, marginBottom: 6 }}>規則說明</div>
+              · 一次性購買、不過期、用完為止、不綁訂閱<br />
+              · 月內含 {quota} 次先扣 → 用完才扣 Top-up credits<br />
+              · 每月查詢硬上限 {hardCap.toLocaleString()} 次（內含 + Top-up 合計）
+            </div>
+
+            {buyError && (
+              <div style={{
+                padding: 12, borderRadius: T.rM,
+                background: `${T.fail}14`, border: `1px solid ${T.fail}44`,
+                fontSize: 12, color: '#fca5a5', lineHeight: 1.6,
+              }}>
+                ⚠️ {buyError}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

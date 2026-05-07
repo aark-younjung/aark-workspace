@@ -3,8 +3,9 @@
  * 處理 Stripe Webhook 事件
  *
  * 事件：
- *   checkout.session.completed     → 付款成功，設定 profiles.is_pro = true
- *   customer.subscription.deleted  → 訂閱取消，設定 profiles.is_pro = false
+ *   checkout.session.completed (mode=subscription)         → 付款成功，設定 profiles.is_pro = true
+ *   checkout.session.completed (mode=payment, kind=aivis_topup) → 寫入 aivis_topup_credits（次數包儲值）
+ *   customer.subscription.deleted                          → 訂閱取消，設定 profiles.is_pro = false
  *
  * Env:
  *   STRIPE_SECRET_KEY        — Stripe Secret Key
@@ -60,13 +61,48 @@ export default async function handler(req, res) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
     const userId = session.metadata?.userId
-    const customerId = session.customer
-    const subscriptionId = session.subscription
+    const kind = session.metadata?.kind                  // 'aivis_topup' | undefined（訂閱）
 
     if (!userId) {
       console.error('No userId in session metadata')
       return res.status(400).json({ error: 'Missing userId in metadata' })
     }
+
+    // 分支 A：aivis Top-up 一次性購買 — 寫入次數包儲值表
+    if (kind === 'aivis_topup' && session.mode === 'payment') {
+      const pack = session.metadata?.pack                // 'small' | 'large'
+      const quota = parseInt(session.metadata?.quota || '0', 10)
+
+      if (!pack || !quota) {
+        console.error('Missing pack or quota in topup metadata')
+        return res.status(400).json({ error: 'Missing pack or quota in topup metadata' })
+      }
+
+      // session.id 作為 source_payment_id（UNIQUE 約束）防止 webhook 重送重複入帳
+      // 第二次被觸發時 INSERT 會炸 unique violation，靠 onConflict ignore 跳過
+      const { error: topupErr } = await supabase
+        .from('aivis_topup_credits')
+        .upsert({
+          user_id: userId,
+          pack_size: pack,
+          quota_total: quota,
+          quota_remaining: quota,
+          source_payment_id: session.id,
+          purchased_at: new Date().toISOString(),
+        }, { onConflict: 'source_payment_id', ignoreDuplicates: true })
+
+      if (topupErr) {
+        console.error('Topup credit insert error:', topupErr)
+        return res.status(500).json({ error: topupErr.message })
+      }
+
+      console.log(`User ${userId} purchased aivis Top-up ${pack} (+${quota} 次)`)
+      return res.status(200).json({ received: true, kind: 'aivis_topup' })
+    }
+
+    // 分支 B：Pro 訂閱 — 既有邏輯，不變
+    const customerId = session.customer
+    const subscriptionId = session.subscription
 
     const { error } = await supabase
       .from('profiles')

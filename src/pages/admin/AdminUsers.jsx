@@ -15,6 +15,7 @@ export default function AdminUsers() {
   const [toggling, setToggling] = useState(null)
   const [userWebsites, setUserWebsites] = useState({})
   const [userAivis, setUserAivis] = useState({}) // { userId: { monthUsd, totalUsd, monthRuns, totalRuns } }
+  const [userTopup, setUserTopup] = useState({}) // { userId: { balance, packs } } — Top-up 加購剩餘次數 + 各包明細
   const [grantEmail, setGrantEmail] = useState('')
   const [granting, setGranting] = useState(false)
   const [grantResult, setGrantResult] = useState(null) // { type: 'success'|'error'|'info', msg }
@@ -79,6 +80,18 @@ export default function AdminUsers() {
           monthRuns: monthRows.length, totalRuns: all.length,
         },
       }))
+    }
+    // 載入 Top-up 加購餘額（aivis_topup_credits 表）
+    // 直接 select 列出每包明細，順便算 sum，不另打 RPC（admin 端可繞 RLS 看全部）
+    if (!userTopup[userId]) {
+      const { data: packs } = await supabase
+        .from('aivis_topup_credits')
+        .select('id, pack_size, quota_total, quota_remaining, purchased_at')
+        .eq('user_id', userId)
+        .order('purchased_at', { ascending: false })
+      const list = packs || []
+      const balance = list.reduce((s, p) => s + Number(p.quota_remaining || 0), 0)
+      setUserTopup(prev => ({ ...prev, [userId]: { balance, packs: list } }))
     }
   }
 
@@ -348,6 +361,52 @@ export default function AdminUsers() {
                               <p className="text-slate-500 text-xs mb-1">累積 API 呼叫</p>
                               <p className="text-slate-200 text-lg font-bold">{userAivis[u.id].totalRuns}</p>
                               <p className="text-slate-500 text-xs">次</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Top-up 加購餘額（aivis_topup_credits 累計） */}
+                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-5 mb-3">AI 曝光監測 — Top-up 加購餘額</p>
+                        {!userTopup[u.id] ? (
+                          <p className="text-slate-500 text-sm">載入中...</p>
+                        ) : userTopup[u.id].packs.length === 0 ? (
+                          <p className="text-slate-500 text-sm">尚未加購任何 Top-up 點數包</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {/* 餘額總計 */}
+                            <div className="bg-slate-800 rounded-lg px-4 py-3 flex items-center justify-between">
+                              <div>
+                                <p className="text-slate-500 text-xs mb-1">目前可用次數</p>
+                                <p className="text-emerald-400 text-2xl font-bold">{userTopup[u.id].balance} <span className="text-slate-500 text-sm font-normal">次</span></p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-slate-500 text-xs">共 {userTopup[u.id].packs.length} 個點數包</p>
+                              </div>
+                            </div>
+                            {/* 各點數包明細 */}
+                            <div className="space-y-1">
+                              {userTopup[u.id].packs.map(pack => {
+                                const used = pack.quota_total - pack.quota_remaining
+                                const isExhausted = pack.quota_remaining === 0
+                                return (
+                                  <div
+                                    key={pack.id}
+                                    className={`flex items-center justify-between rounded-md px-3 py-2 text-xs ${
+                                      isExhausted ? 'bg-slate-800/40 text-slate-500' : 'bg-slate-800/70 text-slate-300'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                        pack.pack_size === 'large' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-300'
+                                      }`}>
+                                        {pack.pack_size === 'large' ? '大包 800' : '小包 300'}
+                                      </span>
+                                      <span>{new Date(pack.purchased_at).toLocaleDateString('zh-TW')}</span>
+                                    </div>
+                                    <span>剩 <strong>{pack.quota_remaining}</strong> / {pack.quota_total}（已用 {used}）</span>
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
                         )}
