@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
@@ -90,6 +90,8 @@ function AppInner() {
         {/* AI 曝光監測（aivis）— Phase 1 基礎 */}
         <Route path="/ai-visibility" element={<AIVisibility />} />
         <Route path="/ai-visibility/:id" element={<AIVisibilityDashboard />} />
+        {/* 任何未匹配的 URL 一律導回首頁，避免空白頁（例如 Stripe 回跳路徑誤輸入） */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   )
