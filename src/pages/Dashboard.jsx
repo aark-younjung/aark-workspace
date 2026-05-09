@@ -876,36 +876,49 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* 總分數卡片 — 5 張並排（4 大面向 + 內容品質）GlassCard 各自吃對應色 */}
+        {/* 總分數卡片 — 5 張並排（4 大面向 + 內容品質）GlassCard 各自吃對應色，整張卡可點進詳細報告頁 */}
         <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4 sm:gap-6 mb-8">
-          {scoreData.map((item) => (
-            <GlassCard key={item.name} color={item.color} style={{ padding: 24 }}>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{item.icon}</span>
-                  <h3 className="font-semibold text-white/90">{item.name}</h3>
-                </div>
-                <div className="text-right">
-                  {item.loading ? (
-                    <div className="w-8 h-8 rounded-full border-2 border-pink-300/30 border-t-pink-400 animate-spin ml-auto" />
-                  ) : (
-                    <>
-                      <span className="text-3xl font-bold" style={{ color: item.color }}>{item.value ?? '—'}</span>
-                      <p className="text-xs leading-tight text-white/40">{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
-                    </>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
-              <div className="h-2 rounded-full overflow-hidden mb-3 bg-white/10">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${item.value ?? 0}%`, backgroundColor: item.color }}
-                />
-              </div>
-              <p className="text-xs leading-relaxed text-white/60">{item.detail}</p>
-            </GlassCard>
-          ))}
+          {scoreData.map((item) => {
+            // name → 詳情頁路由：4 大面向走 /:face-audit/:id，內容品質走 ad-hoc 的 /content-audit
+            const routeMap = {
+              'SEO': `/seo-audit/${id}`,
+              'AEO': `/aeo-audit/${id}`,
+              'GEO': `/geo-audit/${id}`,
+              'E-E-A-T': `/eeat-audit/${id}`,
+              '內容品質': '/content-audit',
+            }
+            return (
+              <Link key={item.name} to={routeMap[item.name]} className="block">
+                <GlassCard color={item.color} style={{ padding: 24, cursor: 'pointer', height: '100%' }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{item.icon}</span>
+                      <h3 className="font-semibold text-white/90">{item.name}</h3>
+                    </div>
+                    <div className="text-right">
+                      {item.loading ? (
+                        <div className="w-8 h-8 rounded-full border-2 border-pink-300/30 border-t-pink-400 animate-spin ml-auto" />
+                      ) : (
+                        <>
+                          <span className="text-3xl font-bold" style={{ color: item.color }}>{item.value ?? '—'}</span>
+                          <p className="text-xs leading-tight text-white/40">{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
+                  <div className="h-2 rounded-full overflow-hidden mb-3 bg-white/10">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${item.value ?? 0}%`, backgroundColor: item.color }}
+                    />
+                  </div>
+                  <p className="text-xs leading-relaxed text-white/60">{item.detail}</p>
+                  <p className="text-xs mt-3 font-medium" style={{ color: item.color, opacity: 0.85 }}>查看詳細報告 →</p>
+                </GlassCard>
+              </Link>
+            )
+          })}
         </div>
 
         {/* 被 AI 引用的關鍵條件 checklist */}

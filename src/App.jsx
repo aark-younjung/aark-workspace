@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
@@ -55,6 +55,16 @@ function GlobalDarkBg() {
   )
 }
 
+// 路由切換時自動把捲動位置拉回頂端 — 解決從 Dashboard 滑到一半點進報告頁時，
+// 瀏覽器/React Router 預設會保留 Y 軸位置造成「進頁就在中間」的體感
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
+
 function AppInner() {
   const { isDark } = useTheme()
   useEffect(() => {
@@ -63,6 +73,7 @@ function AppInner() {
   return (
     <>
       {isDark && <GlobalDarkBg />}
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomeDark />} />
         <Route path="/login" element={<Login />} />

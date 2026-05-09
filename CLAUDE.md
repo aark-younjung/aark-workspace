@@ -272,6 +272,16 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 
 ## 工作日誌
 
+### 2026-05-10
+**Dashboard 5 張分數卡可點進詳情 + 全站路由切換自動捲回頂端（兩個小 UX 修補）:**
+- 🐛 **Bug 起因 1（進報告頁就在頁面中間）**：用戶反映「進到 SEO/AEO/GEO/EEAT/內容品質報告頁，都會直接連到頁面中央」，懷疑是錨點。實際 grep 整個 src 目錄 `scrollIntoView` / `window.scrollTo` / `autoFocus` / `.focus()` — 5 個 audit 頁與 v2 元件都沒有。根因是 React Router v7 預設不重設捲動位置：用戶在 Dashboard 滑到一半（例如 5 大面向卡 / 雷達圖區）再點報告頁，瀏覽器保留同樣 Y 軸位置 → 新頁正好停在中間。
+- ✅ **修法**：在 [App.jsx](src/App.jsx) 的 `AppInner` 加一個 `<ScrollToTop />` 子元件 — `useLocation()` 取 pathname、`useEffect` 依 pathname 變動就 `window.scrollTo(0, 0)`。掛在 `<Routes>` 上方，整站每條路由切換都會自動回頂端。回首頁 / Dashboard / 任何頁面都受益，不只報告頁。
+- ✅ **Dashboard 5 張分數卡可點進詳情頁**（[Dashboard.jsx:880](src/pages/Dashboard.jsx)）：原本 `scoreData.map` 渲染 `<GlassCard>` 純展示，改為外層包 `<Link to={routeMap[item.name]}>`。`routeMap` 依 name 對映：SEO/AEO/GEO/EEAT 走 `/{face}-audit/${id}`、內容品質走 ad-hoc `/content-audit`（無 :id，因為 ContentAudit 是「輸入網址 → 即時分析」的獨立流程）。GlassCard 加 `cursor: 'pointer'` + `height: '100%'`（讓 5 張等高），底部新增「查看詳細報告 →」提示文字（吃 item.color、opacity 0.85），不留猜測空間給用戶。
+- ✅ **parse 驗證**：[App.jsx](src/App.jsx) + [Dashboard.jsx](src/pages/Dashboard.jsx) 皆 node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：用全站 ScrollToTop 而非每頁 useEffect**：原本可以在 5 個 audit 頁各自加 `useEffect(() => window.scrollTo(0, 0), [])`，但 (1) 5 處重複 (2) 未來新增頁面容易漏寫 (3) Dashboard / Pricing / FAQ 等頁面也會撞到同樣問題（從子頁返回上一層時殘留 Y 軸）。一次在 App.jsx 解決最乾淨。
+- 🔖 **取捨：內容品質卡連 `/content-audit` 不帶網址 prefill**：ContentAudit 頁是 ad-hoc URL 輸入流程，沒辦法用 website.id 帶入。理想體驗是「點內容品質卡 → /content-audit?url=xxx 自動填入」，但 ContentAudit 內部 state 邏輯改動較大，本次先讓使用者自行輸入網址（與從首頁進來體驗一致），之後若用戶反映再加 query param prefill。
+- 🔖 **取捨：cards 加「查看詳細報告 →」提示文字而非僅依靠 cursor pointer**：cursor 在 mobile 看不到、desktop 也得 hover 才知道可點。明確的文字 + 箭頭符號讓「整張卡可點」這件事一秒被讀懂，符合 nngroup「affordance 要顯性」原則。
+
 ### 2026-05-07
 **清理已執行完畢的 SQL migration 檔（共 9 支）:**
 - ✅ 移除 `announcements.sql` / `aivis-topup-admin-rls.sql` / `admin-rls-policies.sql` / `aivis-prompt-limit.sql` / `aivis-tables-phase2.sql` / `aivis-tables.sql` / `aivis-topup-credits.sql` / `clear-test-revenue.sql` / `seo-tables.sql` — 全部已在 Supabase SQL Editor 跑完，DB 端 schema/policy/function 都已建立。
