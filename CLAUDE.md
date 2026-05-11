@@ -225,11 +225,18 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 
 **網站追蹤上限：** Free = 3 個、Pro = 15 個、Agency = 50 個
 
-付款流程：Stripe Checkout → Webhook → `profiles.is_pro = true`
+付款流程：**Phase 1 NewebPay**（TW/NT$、主力，沙盒審核中）→ Notify → `profiles.is_pro = true`；**Phase 2 Stripe Atlas**（國際/USD、備用，因 HK 帳號鎖死暫緩）保留 code（`/api/aivis/checkout-topup.js`、`stripe-webhook.js`）。
 
-**⚠️ 上線前需確認：**
-- Stripe 自動退款流程（年繳 14 天）是否已串好（`/api/cancel-subscription.js` 與 webhook 退款邏輯）
-- Supabase Auth 是否已限制單 IP / 單裝置註冊頻率（避免 7 天試用被刷）
+**⚠️ 上線前需確認（依執行順序）：**
+- ~~A5 假 KPI（127 / 3,847 / 43 / 4.7）改 dynamic query~~ — ✅ 2026-05-11 完成，改吃 `/api/public-stats` 後端 service role 聚合
+- ~~Supabase Auth 註冊頻率限制~~ — ✅ 2026-05-11 程式碼完成（Cloudflare Turnstile + Supabase captchaToken），剩下用戶側 Cloudflare 申請 + Supabase Dashboard 啟用
+- **7 天免費試用 end-to-end 驗證** — trial flag 寫入 / 到期前 email 提醒 / 到期自動轉訂閱 or 降回 Free 全鏈未測
+- **NewebPay 沙盒測試 Phase 1 Step 1**（Top-up）— 等沙盒帳號核發後即可測
+- **NewebPay Phase 1 Step 2（Pro 年繳一次性 NT$13,900）** — 未開發，14 天退款的前置
+- **NewebPay 退款 API 串接**（信用卡走 API 直退 / VACC・WEBATM 走手動轉帳指引）+ 串到 Account 取消按鈕 + 14 天彈退款確認 modal — 沙盒到手後 1 週內可完成（不用等正式審核）
+- **NewebPay 正式商家審核通過** → 換 env vars 上線（被動等待 1-2 週）
+
+備註：Top-up 政策為「不過期、用完為止、不退款」，退款流程只針對 Pro 年繳。Top-up 客訴 / 盜刷情境走手動處理（NewebPay 後台 + Supabase 手動扣 credits）。
 
 ---
 
@@ -271,6 +278,63 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ---
 
 ## 工作日誌
+
+### 2026-05-12
+**Vercel Hobby 12 functions 上限破表修復 — 把 4 個休眠 API 搬到 `_archived/`:**
+- 🐛 **問題起因**：Turnstile env var 設好後 redeploy，Vercel build 出現 `Build Failed: No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan`。原因是 2026-05-11 NewebPay Phase 1 Step 1 新增 3 個 API（`api/aivis/checkout-topup-newebpay.js` / `api/newebpay-notify.js` / `api/lib/newebpay.js` 不算 function 但前兩個算）+ `api/public-stats.js`（A5 KPI dynamic）→ 累積到 15 個 functions，破 Hobby 12 上限。連帶 12 小時前的 NewebPay commit 與 11 小時前的 README commit 都已經炸過、用戶當時沒注意；剛剛 Turnstile redeploy 才回頭發現。
+- ✅ **建 `_archived/api/` 目錄收納休眠檔**：Vercel 只認 `api/` 底下檔案為 serverless function，把不在用的搬到 `_archived/` 就不算 function；git 還在、未來要復用直接搬回。
+- ✅ **搬 4 個檔案（git mv 保 history）**：
+  - `api/ga4-data.js` → `_archived/api/ga4-data.js`（GA4 入口已於 2026-04-28 隱藏，Google OAuth 未送審）
+  - `api/gsc-data.js` → `_archived/api/gsc-data.js`（同上）
+  - `api/aivis/checkout-topup.js` → `_archived/api/aivis/checkout-topup.js`（Stripe top-up，已被 NewebPay 取代）
+  - `api/cancel-subscription.js` → `_archived/api/cancel-subscription.js`（Stripe Pro 訂閱取消，Phase 2 才用）
+- ✅ **前端 fetch 引用安全性檢查**：grep `/api/(ga4-data|gsc-data|cancel-subscription|aivis/checkout-topup)` 共 7 處引用，全在「已隱藏 UI」或「已切換金流」的死路徑上 — `ga4Analyzer.js` / `gscAnalyzer.js` 雖仍 fetch，但 Dashboard 流量 tab 已 commented out 不會觸發；`Account.jsx` 取消訂閱按鈕只有 Stripe sub 用戶會點，目前無人有 Stripe sub（Pro 全是手動補升）；`AIVisibilityDashboard.jsx` 兩處只是註解，實際 fetch 已切到 `checkout-topup-newebpay`。即使有人誤觸 404 也只是「取消失敗」這種非關鍵流程，不影響核心使用。
+- ✅ **functions 計數從 15 → 11**：安全壓在 12 以下，留 1 個額度給未來新 endpoint（例如 NewebPay refund API 串接時）。
+- 🔖 **取捨：搬到 `_archived/` 不刪除**：CLAUDE.md 既有方針「Stripe code 完整保留供 Phase 2 切回」，刪除違反此原則。`_archived/` 不在 Vercel deploy 範圍，但 git track 著、IDE 也找得到，等於零成本保留。比起 git revert 或 stash，搬目錄這做法可逆性最強。
+- 🔖 **取捨：不升級 Vercel Pro**：每月 $20 USD 固定成本，目前用戶基數還不到值得付的程度。等真的撞到 cron 100 次/天 / 4 個 cron jobs / build 時數等其他 Hobby 限制再考慮。
+- ⚠️ **未來新加 API 注意事項**：再加 1 個就破 12 上限。優先考慮 (1) 多個小端點合併成單一 router file（`api/admin/index.js` 用 query param 分發） (2) 或刪掉真正不用的 — 例如 Stripe 三劍客（`stripe-webhook.js` / `create-checkout-session.js`）若決定 Phase 2 不切回也可搬走。
+
+### 2026-05-11
+**Cloudflare Turnstile + Supabase captchaToken 串接（上線前必修 #2 — 防 7 天試用刷單）:**
+- 💡 **背景**：上線前必修清單第 2 項 — 防 bot 大量註冊刷 7 天 Pro 試用拿 aivis 150 次/月 × N 個帳號的無限掃描。3 個候選方案中選 Cloudflare Turnstile：免費、無圖片驗證（比 reCAPTCHA / hCaptcha 友善）、5–10 分鐘設定完，擋 80% bot 流量。同人手動多 email 的 case 留待裝置指紋（FingerprintJS）或 trial flag e2e 驗證階段再處理。
+- ✅ **`npm install @marsidev/react-turnstile`**：用社群維護的 React wrapper（5KB，比直接拉 Cloudflare 原生 script 整潔）。提供 `<Turnstile ref onSuccess onExpire onError options>` API 與 `ref.current.reset()` 重置 widget 取新 token。
+- ✅ **[src/context/AuthContext.jsx](src/context/AuthContext.jsx) signIn/signUp 加 captchaToken 參數**：兩個 function 都加可選 `captchaToken` 末端參數 → 帶進 `supabase.auth.signInWithPassword({ options: { captchaToken } })` 與 `supabase.auth.signUp({ options: { ...data, captchaToken } })`。Supabase Dashboard 啟用 CAPTCHA 後**兩個都會 enforce**（不只 signup），所以兩處都改。
+- ✅ **[src/pages/Register.jsx](src/pages/Register.jsx) + [src/pages/Login.jsx](src/pages/Login.jsx) 加 Turnstile widget**：兩頁同模式 — `useRef` 拿 widget ref、`captchaToken` state、`<Turnstile theme="dark" size="normal">` 放在 submit 鈕上方。submit 鈕 `disabled={loading || !captchaToken}`，submit 前 guard `if (!captchaToken) return setError('請先完成人機驗證')`。失敗後 `turnstileRef.current?.reset() + setCaptchaToken('')` — Supabase 用過的 token 不能重送，每次失敗都要取新 token。
+- ✅ **dev fallback site key**：`const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'` — Cloudflare 官方測試 key（永遠通過驗證），讓 dev 環境照常運作。Production 必須在 Vercel env 設真實 key 才有實際擋 bot 效果。
+- ✅ **[.env.local](.env.local) 加 `VITE_TURNSTILE_SITE_KEY=` 空位**：含申請流程註解（Cloudflare Dashboard → Turnstile → Add Site，widget mode 選 Managed）+ Supabase Dashboard 啟用步驟註解 + 測試 key 標記。
+- ✅ **parse 驗證**：[Register.jsx](src/pages/Register.jsx) + [Login.jsx](src/pages/Login.jsx) + [AuthContext.jsx](src/context/AuthContext.jsx) 全數 node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：Turnstile 兩頁都加（不只 Register）**：Supabase Dashboard 的 CAPTCHA setting 是 site-wide — 啟用後 POST /signup / POST /token / POST /recover 三個 endpoint 都會強制要 captcha token。如果只 Register 加 widget，Login 會直接登入失敗。Login 也加 widget 反而是順帶得到「防暴力密碼破解」的副作用，沒壞處。
+- 🔖 **取捨：dev 預設用 Cloudflare 測試 key 而非「env 沒設就不渲染 widget」**：4 個失敗模式中 (1) siteKey 空 + Supabase 沒啟用 = dev OK / (2) siteKey 有 + Supabase 啟用 = prod OK / (3) siteKey 空 + Supabase 啟用 = 用戶 stuck / (4) siteKey 有 + Supabase 沒啟用 = OK 但無效。模式 3 危險：如果 prod 漏設 env 但 Supabase 已啟用，前端不渲染 widget 但後端拒絕 → 用戶完全無法註冊。改為 fallback 測試 key 後，模式 3 變成「widget 渲染 + 拿 testing token + 後端通過驗證但實際無防護」— 沒擋到 bot 但至少用戶能註冊，failure mode 降一級。
+- 🔖 **取捨：theme="dark" + size="normal"**：兩頁都是 dark 背景，dark widget 視覺融合。compact size（150x65px）太小用戶容易沒看到，normal（300x65px）剛好。
+- 🔖 **取捨：失敗後 reset widget 取新 token**：Supabase Auth 端會 validate 每個 captcha token 只能用 1 次（防 replay attack）。如果失敗後讓用戶重 submit 沒 reset 就會永遠 fail，UX 很差。`ref.current.reset()` 自動 fetch 新 token，0.5 秒內就能再 submit。
+- ⚠️ **用戶側待辦（部署前必做）**：
+  1. **Cloudflare 申請 Turnstile**：https://dash.cloudflare.com → Turnstile → Add Site → 填 hostname `aark-workspace.vercel.app`（dev 加 `localhost`）→ Widget Mode: Managed → 拿 **Site Key**（public）+ **Secret Key**（private）
+  2. **Vercel env vars**：`VITE_TURNSTILE_SITE_KEY=<site_key>` 加進 Production / Preview / Development 三環境
+  3. **Supabase Dashboard 啟用 CAPTCHA**：Authentication → Attack Protection → CAPTCHA → Provider 選 Turnstile → 貼 **Secret Key** → Save
+  4. **驗證**：dev 試註冊（用測試 key 應該秒過）→ prod 試註冊（應該彈 Turnstile 挑戰 1–3 秒）→ 試「同 email 重複註冊」確認 captcha 用過 1 次後需要重新挑戰
+
+### 2026-05-11
+**A5 社會證明 KPI 從 hardcode 改 dynamic query（上線前必修 #1 — 完成）:**
+- 🐛 **問題起因**：[Pricing.jsx](src/pages/Pricing.jsx) line 388–410 的 4 格社會證明 KPI（127 個品牌 / 3,847 份報告 / 43 個品牌進入 AI 推薦名單 / 4.7／5 滿意度）是 2026-05-04 改版時硬寫的占位值（具體奇數比整數可信），但上線後若被識破會傷信任，是「上線前需確認」清單第 1 項。本次解掉。
+- ✅ **新增 [api/public-stats.js](api/public-stats.js)**：`GET /api/public-stats` 端點。並行 7 查 — `aivis_brands` 總數（正在監測品牌數）+ `seo_audits / aeo_audits / geo_audits / eeat_audits` 四表 count 加總（AI 能見度報告份數）+ `aivis_mentions where brand_mentioned=true` 次數（品牌被 AI 主動提及）+ `aivis_responses` 總數（累積 AI 掃描次數）。全部用 `{ count: 'exact', head: true }` 只回聚合數字不抓 row 資料。`Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=600` — CDN 5 分鐘 cache + 10 分鐘 stale-while-revalidate，這些數字不需要 real-time，降低 Supabase 查詢負擔。
+- ✅ **後端走 service role 而非前端直查**：訪客 anon role 對 user-scoped 資料表（aivis_*、*_audits）的 RLS 是 `auth.uid()` 對齊，匿名訪客直接 select count 會拿到 0 或 null。service role 在後端繞過 RLS 拿聚合 count，只回數字、不回 row data，沒有隱私洩漏問題。
+- ✅ **[Pricing.jsx](src/pages/Pricing.jsx) 接後端**：`useState` import 加 `useEffect`，新增 `stats` state（4 個 null）+ mount 時 fetch `/api/public-stats`、失敗就維持 null。`fmt()` helper 把 number 轉 `.toLocaleString()`、null 顯示 `—`，避免顯示「0」造成「沒人用」的反效果。4 格 KPI 數字全部改吃 `stats.brands / reports / mentions / scans`。
+- ✅ **第 3、4 格 KPI 文案調整對齊真實資料源**：第 3 格「個品牌進入 AI 推薦名單」→「次品牌被 AI 主動提及」（aivis_mentions 數的是 row 而非 distinct brand）；第 4 格「4.7／5 早期客戶滿意度」→「次累積 AI 掃描」（無滿意度資料源，改秀 aivis_responses 總數，凸顯實際使用量）。
+- ✅ **CLAUDE.md 上線前需確認清單**：A5 項目標 strikethrough + ✅ 完成註記，剩下 6 項依執行順序排（Supabase Auth 限頻 → 7 天試用 e2e → NewebPay 沙盒 → Pro 年繳付款 → NewebPay 退款 API → 等正式商家審核）。
+- ✅ **parse 驗證**：[Pricing.jsx](src/pages/Pricing.jsx) + [api/public-stats.js](api/public-stats.js) 皆 node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：4 個查詢併 1 個 API endpoint 而非各自獨立**：前端只需要 1 個 fetch 拿 4 個數字，4 個 endpoint 會多 3 次 round-trip 又拆 CDN cache。Promise.all 在 Vercel function 內並行打 Supabase，最慢的那條決定 latency，整體 < 200ms。
+- 🔖 **取捨：null 顯示 `—` 而非 `0`**：首次 mount 時 stats 是 null，若直接 `||` fallback 成 0，使用者會看到「0 個品牌正在監測」造成 trust 反效果。`—` 明確表達「載入中或暫無資料」，比假數字「127」也比真實 0 更誠實。
+- 🔖 **取捨：第 4 格從滿意度改累積 AI 掃描次數**：原 4.7／5 滿意度沒有資料源（沒做用戶評分系統），最少阻力做法是把這格換成另一個有 row count 可拉的指標。aivis_responses 數字會隨產品使用成長、視覺上跟其他 3 格同質（都是 count），且「累積 N 次 AI 掃描」也是社會證明的一種。
+- 🔖 **取捨：CDN cache 5 分鐘 + stale-while-revalidate 10 分鐘**：這 4 個 KPI 一天可能成長個 10–50 次，5 分鐘 stale 完全可接受。stale-while-revalidate 讓 cache 過期後仍會先回舊資料、背景去 Supabase 取新，使用者永遠不會等到「冷啟動 Supabase query」的延遲。
+
+### 2026-05-11
+**上線前需確認清單修正 — 拆除 Stripe 退款假設，改為 NewebPay 為主的依執行順序清單:**
+- 🐛 **問題起因**：商業模式 section 的「上線前需確認」清單沿用 2026-05-04 寫的 Stripe 思路 — 「Stripe 自動退款流程（年繳 14 天）是否已串好（`/api/cancel-subscription.js` 與 webhook 退款邏輯）」。但金流已於 2026-05-11 切到 NewebPay 為主（Phase 1）、Stripe 降為 Phase 2 備用，此項目實質已過期且會誤導未來閱讀者。
+- ✅ **付款流程行重寫**：原「Stripe Checkout → Webhook → is_pro=true」改為雙階段描述（Phase 1 NewebPay 主力沙盒審核中 / Phase 2 Stripe Atlas 備用因 HK 帳號鎖死暫緩 + Stripe code 整段保留供未來切回）。
+- ✅ **「上線前需確認」清單從 2 項擴為 7 項，依執行順序排**：A5 假 KPI dynamic 化（半天可解、上線即被識破信任風險）→ Supabase Auth 註冊頻率限制（防 7 天試用刷單）→ 7 天試用 e2e 驗證（trial flag / 提醒 / 自動轉訂閱）→ NewebPay 沙盒測 Top-up（等沙盒帳號）→ **新增** Phase 1 Step 2 Pro 年繳一次性付款（未開發，14 天退款的前置）→ **新增** NewebPay 退款 API 串接（信用卡 API 直退 / VACC・WEBATM 手動轉帳，沙盒到手即可寫測，不用等正式審核）→ 等正式審核換 env vars 上線。
+- ✅ **加註：Top-up 政策為「不過期、用完為止、不退款」**，退款流程只針對 Pro 年繳。Top-up 客訴 / 盜刷情境走手動處理（NewebPay 後台 + Supabase 手動扣 credits），不需自動退款流程。
+- 🔖 **取捨：保留舊工作日誌不改寫，只修正當下會誤導的「上線前需確認」段落**：工作日誌是時間序紀錄，2026-05-04 那筆寫「Stripe 退款」是當時事實沒錯（當時策略還是 Stripe 主力），改寫會破壞紀錄真實性。誤導風險集中在「上線前需確認」這種「未完成事項清單」段落，修這裡即可。
+- 🔖 **取捨：退款 API 不等正式審核**：NewebPay 退款 API 在沙盒環境就能測（用沙盒測試金鑰跑完整流程），不必卡正式審核 1-2 週。正式上線前換 env vars 即可。這意味著 Phase 1 Step 2 + 退款 API 可在沙盒到手後 1 週內全跑完。
 
 ### 2026-05-11
 **NewebPay 藍新金流 Phase 1 Step 1（Top-up MPG 一次性付款）後端 + 前端串接完成（Stripe 留作 Phase 2 備用）:**

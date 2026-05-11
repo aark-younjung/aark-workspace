@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -181,6 +181,20 @@ export default function Pricing() {
   //   - 一次性購買、不過期、用完為止、不綁訂閱
   //   - 每月查詢硬上限 1,000 次（內含 + Top-up 合計），Agency 推出後解除
   const aivisIncludedPerMonth = 150
+
+  // A5 社會證明 KPI：上線前必修項，從 /api/public-stats 拉真實聚合數字
+  // 走後端 service role 而非前端直查 Supabase — 訪客 anon role 對 user-scoped 表的 RLS 會拿到 0
+  // 載入中 / 失敗顯示 '—'，避免假數字外露被質疑
+  const [stats, setStats] = useState({ brands: null, reports: null, mentions: null, scans: null })
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/public-stats')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setStats(d) })
+      .catch(() => { /* 失敗就維持 null → 顯示 — */ })
+    return () => { cancelled = true }
+  }, [])
+  const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—')
 
   const [upgrading, setUpgrading] = useState(false)
 
@@ -386,27 +400,27 @@ export default function Pricing() {
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.orange }}>127</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.orange }}>{fmt(stats.brands)}</div>
                 <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
-                  個台灣品牌正在監測
+                  個品牌正在監測
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.aeo }}>3,847</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.aeo }}>{fmt(stats.reports)}</div>
                 <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
                   份 AI 能見度報告
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: '#18c590' }}>43</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: '#18c590' }}>{fmt(stats.mentions)}</div>
                 <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
-                  個品牌進入 AI 推薦名單
+                  次品牌被 AI 主動提及
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.pass }}>4.7／5</div>
+                <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.pass }}>{fmt(stats.scans)}</div>
                 <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
-                  早期客戶滿意度
+                  次累積 AI 掃描
                 </div>
               </div>
             </div>

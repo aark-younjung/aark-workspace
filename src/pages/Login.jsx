@@ -1,9 +1,14 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { useAuth } from '../context/AuthContext'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
+
+// Cloudflare Turnstile site key — Supabase 啟用 CAPTCHA 後 signin 也會強制要求 token
+// env 沒設時用測試 key（永遠通過）避免 dev 卡住
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -13,6 +18,8 @@ export default function Login() {
   const [error, setError] = useState('')
   const [showInAppWarning, setShowInAppWarning] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const turnstileRef = useRef(null)
   const { signIn, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -55,12 +62,16 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email || !password) return
+    if (!captchaToken) { setError('請先完成人機驗證'); return }
     setLoading(true)
     setError('')
-    const { error } = await signIn(email, password)
+    const { error } = await signIn(email, password, captchaToken)
     if (error) {
       setError(error.message === 'Invalid login credentials' ? '帳號或密碼錯誤' : error.message)
       setLoading(false)
+      // 用過的 token 不能重送，失敗後 reset widget 取新 token
+      turnstileRef.current?.reset()
+      setCaptchaToken('')
     } else {
       navigate(from, { replace: true })
     }
@@ -212,9 +223,21 @@ export default function Login() {
               </div>
             )}
 
+            {/* Cloudflare Turnstile 人機驗證 — Supabase 啟用 CAPTCHA 後 signin 也必須帶 token */}
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken('')}
+                onError={() => setCaptchaToken('')}
+                options={{ theme: 'dark', size: 'normal' }}
+              />
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !captchaToken}
               className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-900/50">
               {loading ? '登入中...' : '登入'}
             </button>

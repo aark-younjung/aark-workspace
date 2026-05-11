@@ -1,9 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { Turnstile } from '@marsidev/react-turnstile'
 import { useAuth } from '../context/AuthContext'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
+
+// Cloudflare Turnstile site key — 防 7 天試用刷單
+// env 沒設時用 Cloudflare 官方測試 key（永遠通過驗證），讓 dev 環境照常運作
+// Production 必須在 Vercel env 設 VITE_TURNSTILE_SITE_KEY + Supabase Dashboard 啟用 CAPTCHA
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -17,6 +23,8 @@ export default function Register() {
   const [success, setSuccess] = useState(false)
   const [showInAppWarning, setShowInAppWarning] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const turnstileRef = useRef(null)
   const { signUp, signInWithGoogle } = useAuth()
 
   // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth）
@@ -55,13 +63,17 @@ export default function Register() {
     if (!name || !email || !password || !confirm) return setError('請填寫所有欄位')
     if (password.length < 6) return setError('密碼至少需要 6 個字元')
     if (password !== confirm) return setError('兩次密碼輸入不一致')
+    if (!captchaToken) return setError('請先完成人機驗證')
 
     setLoading(true)
     setError('')
-    const { error } = await signUp(email, password, name, marketingConsent)
+    const { error } = await signUp(email, password, name, marketingConsent, captchaToken)
     if (error) {
       setError(error.message === 'User already registered' ? '此信箱已註冊，請直接登入' : error.message)
       setLoading(false)
+      // Supabase 用過的 captcha token 不能重送，失敗後 reset widget 取新 token
+      turnstileRef.current?.reset()
+      setCaptchaToken('')
     } else {
       setSuccess(true)
     }
@@ -249,9 +261,21 @@ export default function Register() {
               </span>
             </label>
 
+            {/* Cloudflare Turnstile 人機驗證 — 防 bot 刷 7 天試用 */}
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={setCaptchaToken}
+                onExpire={() => setCaptchaToken('')}
+                onError={() => setCaptchaToken('')}
+                options={{ theme: 'dark', size: 'normal' }}
+              />
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !captchaToken}
               className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-900/50">
               {loading ? '建立中...' : '立即取得免費分析額度'}
             </button>
