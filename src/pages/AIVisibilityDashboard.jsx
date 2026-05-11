@@ -1651,8 +1651,9 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
   const [buying, setBuying] = useState(null)  // 'small' | 'large' | null（防連點 + loading state）
   const [buyError, setBuyError] = useState(null)
 
-  // 點 Top-up 卡的「立即加購」→ 打 /api/aivis/checkout-topup → 拿到 Stripe URL → 整頁跳轉
-  // 不開新分頁是因為 Stripe Checkout flow 結束後要靠 success_url 帶回原頁，新分頁會迷路
+  // 點 Top-up 卡的「立即加購」→ 打 /api/aivis/checkout-topup-newebpay → 拿到 NewebPay form 欄位
+  // → 動態建 <form> 自動 submit 跳轉至 NewebPay 付款頁
+  // Phase 1 走 NewebPay（TW/NT$）；Phase 2 Stripe Atlas 上線後會切回 Stripe（程式碼保留在 checkout-topup.js）
   async function handleBuy(packId) {
     if (!user?.id || !user?.email) {
       setBuyError('請先登入後再加購')
@@ -1661,7 +1662,7 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
     setBuying(packId)
     setBuyError(null)
     try {
-      const r = await fetch('/api/aivis/checkout-topup', {
+      const r = await fetch('/api/aivis/checkout-topup-newebpay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1672,12 +1673,25 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
         }),
       })
       const data = await r.json()
-      if (!r.ok || !data?.url) {
-        throw new Error(data?.error || '建立 Checkout 失敗')
+      if (!r.ok || !data?.apiUrl || !data?.fields) {
+        throw new Error(data?.error || '建立付款連結失敗')
       }
-      window.location.href = data.url
+      // NewebPay 規範：把 fields 寫成 hidden inputs，form POST 整頁跳轉到金流頁
+      const form = document.createElement('form')
+      form.method = 'POST'
+      form.action = data.apiUrl
+      form.style.display = 'none'
+      Object.entries(data.fields).forEach(([key, value]) => {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = key
+        input.value = value
+        form.appendChild(input)
+      })
+      document.body.appendChild(form)
+      form.submit()
     } catch (err) {
-      setBuyError(err.message || '無法啟動 Stripe Checkout，請稍後再試')
+      setBuyError(err.message || '無法啟動付款流程，請稍後再試')
       setBuying(null)
     }
   }
