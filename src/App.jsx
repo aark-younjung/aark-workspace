@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
@@ -32,6 +32,7 @@ import AIVisibilityDashboard from './pages/AIVisibilityDashboard'
 import Terms from './pages/legal/Terms'
 import Privacy from './pages/legal/Privacy'
 import ConsumerRights from './pages/legal/ConsumerRights'
+import NotFound from './pages/NotFound'
 
 const DARK_CIRCLES = [65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157]
 
@@ -109,8 +110,9 @@ function AppInner() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/consumer-rights" element={<ConsumerRights />} />
-        {/* 任何未匹配的 URL 一律導回首頁，避免空白頁（例如 Stripe 回跳路徑誤輸入） */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 任何未匹配的 URL 顯示 404 頁面（含明確訊息 + 常用連結 escape hatch），
+            而非靜默 Navigate to /（會讓用戶誤以為頁面正常但找不到內容） */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   )

@@ -280,6 +280,18 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-05-13
+**上線前小修補批次 — 404 頁面 + sitemap 擴充 + OG/Twitter meta 補完:**
+- 💡 **背景**：等 NewebPay 審核期間（3-5 工作天）做幾個不阻塞、不依賴外部、不佔 Vercel functions 額度（已 12/12）的上線前小修補。挑了 3 個 trust 與 SEO/SMO 的基本要素：404 死路徑 / 部分頁面未進 sitemap / OG 缺圖。
+- ✅ **新增 [src/pages/NotFound.jsx](src/pages/NotFound.jsx) + [App.jsx](src/App.jsx) 替換 catch-all**：原本 `<Route path="*" element={<Navigate to="/" replace />} />` 把任何錯誤 URL 靜默 redirect 回首頁 — 用戶不知道自己點錯、首頁載完也不知道為什麼來這。改為 `<NotFound />` 顯示：(1) 巨大 404 橘紅漸層數字 (2) 「找不到這個頁面」+ 一段說明 (3) 主 CTA「← 回到首頁分析」橘紅漸層 + 副 CTA「查看方案 →」半透明 (4) 4 顆常用連結（排行榜 / 競品比較 / 文章分析 / 常見問題）作為 escape hatch (5) 底部 mailto 回報壞連結。沿用 LegalPageLayout 同款外殼（青綠雙端漸層 + 雜訊 + SiteHeader + Footer），視覺與其他頁一致。連帶移除 `Navigate` import（不再用到）。
+- ✅ **擴充 [public/sitemap.xml](public/sitemap.xml) 從 4 → 9 URLs**：原本只列了 / / pricing / showcase / compare 4 頁，補上 /faq / /content-audit（內容類，weekly+0.7）+ /terms / /privacy / /consumer-rights（法律類，monthly+0.4）。`/dashboard/:id` / `/seo-audit/:id` 等 user-scope 頁面不放進 sitemap（屬於登入後個人化內容，Googlebot 也爬不到）。
+- ✅ **[index.html](index.html) 補 OG + Twitter Card meta**：原本只有 og:title/description/url/type/locale 5 個，補上 og:site_name（社群顯示「優勢方舟數位行銷 — AI能見度（AIVIS）」品牌名）/ og:image + og:image:width/height/alt（1200×630 標準尺寸 + 替代文字）+ Twitter Card 4 個（card=summary_large_image + title + description + image）。FB / LINE / Slack / X 分享預覽會吃這些 tag，沒設 og:image 的話縮圖會空白傷 CTR。
+- ✅ **parse 驗證**：[NotFound.jsx](src/pages/NotFound.jsx) + [App.jsx](src/App.jsx) 皆 node + @babel/parser parse 通過 (`OK`)。sitemap.xml 9 URLs / index.html 4 個新 meta key 全部就位確認。
+- 🔖 **取捨：404 用 SPA route 而非真正的 HTTP 404 status**：理想是讓伺服器回 404 status code（讓 Googlebot 不索引這條 URL），但這需要 Vercel rewrite/edge function 或改 Vite 出 fallback 機制。SPA 路由 catch-all 出 HTTP 200 + 客戶端顯示 404 內容是 React SPA 通用 trade-off，視覺體驗已對齊；SEO 端如果之後要嚴格做 404 status 再加 vercel.json rewrite 或 middleware（多 1 個 function 又要破 12/12 上限，所以暫不做）。
+- 🔖 **取捨：og-image.png 沒生成、只留 reference**：1200×630 OG 圖需要設計師 / Figma 出，這次只先把 meta tag 補上、reference path `/og-image.png`，等用戶把實際圖片放進 `public/og-image.png` 即可生效。未放圖前 FB/X 抓圖會 fallback 沒圖（不會壞，只是縮圖空白）。
+- ⚠️ **URL 不一致提醒**：sitemap.xml / index.html / robots.txt 都用 `https://www.a-ark.com.tw/`，但 production 實際是 `aark-workspace.vercel.app`（CLAUDE.md 也記錄如此）。法律頁內文寫的也是 `aark-workspace.vercel.app`。兩種網址同時存在是因為自訂網域 a-ark.com.tw 可能規劃中但未指到 Vercel。**用戶側待決定**：(a) 把 a-ark.com.tw 指到 Vercel 並設為正式 URL，sitemap/canonical 維持現狀 (b) 改為 aark-workspace.vercel.app（要改 3 個檔案 + index.html canonical）。本次先不動 URL，等用戶確認 canonical domain。
+- ⚠️ **用戶側待辦（不阻塞上線）**：(1) 出一張 1200×630 的 og-image.png（建議：黑底 + 橘紅 logo + 「在 AI 搜尋時代讓品牌被看見」標語 + 雷達圖示意），放進 `aark-workspace/public/og-image.png` (2) 確認 canonical domain 與 sitemap URL 一致（見上面 URL 不一致提醒）。
+
+### 2026-05-13
 **NewebPay Phase 1 Step 2 — Pro 年繳一次性付款（NT$13,900 + 早鳥 NT$11,880）後端 + 前端串接完成:**
 - 💡 **背景**：14 天無條件退款的前置必備。Phase 1 Step 1（Top-up）已於 2026-05-11 完成、法律頁三件套已於 2026-05-12 補完並重新送 NewebPay 審核，趁等待審核（3-5 工作天）期間把 Step 2 寫好，等沙盒帳號 + 正式商家代號核發後可直接打開上線。月繳（Phase 1 Step 3 定期定額）暫時仍走 Stripe 通道、後續另行處理。
 - ✅ **新增 [api/checkout-pro-yearly-newebpay.js](api/checkout-pro-yearly-newebpay.js)**：`POST` body `{ userId, email, plan: 'yearly'|'earlybird', returnUrl }` → `PLAN_SPEC` 對映 plan → amount + label（yearly=NT$13,900 / earlybird=NT$11,880 = 990×12）。流程沿用 Top-up 同模式：(1) INSERT `aivis_newebpay_pending`（kind='pro_yearly'、pack=plan、amount=spec.amount，兩個 plan 共用 kind 因為 DB CHECK constraint 只允許 4 種值；用 pack 欄位區分早鳥 vs 一般年繳）(2) 組 trade params（RespondType=JSON、NotifyURL=`${SITE}/api/newebpay-notify`、ReturnURL 帶 `?pro_success={plan}` 回原頁、ClientBackURL=/pricing、CREDIT/VACC/WEBATM/CVS/BARCODE 全開沙盒先全試）(3) `buildPaymentForm()` 產 form fields 回前端。merchantOrderNo prefix `py` / `peb` 讓人眼看訂單前綴就能辨識早鳥 vs 一般。
