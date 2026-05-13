@@ -28,6 +28,10 @@ import AdminRevenue from './pages/admin/AdminRevenue'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AIVisibility from './pages/AIVisibility'
 import AIVisibilityDashboard from './pages/AIVisibilityDashboard'
+// 法律頁（NewebPay 商家審核必備）— 服務條款 / 隱私權 / 消費者權益保障
+import Terms from './pages/legal/Terms'
+import Privacy from './pages/legal/Privacy'
+import ConsumerRights from './pages/legal/ConsumerRights'
 
 const DARK_CIRCLES = [65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157]
 
@@ -101,6 +105,10 @@ function AppInner() {
         {/* AI 曝光監測（aivis）— Phase 1 基礎 */}
         <Route path="/ai-visibility" element={<AIVisibility />} />
         <Route path="/ai-visibility/:id" element={<AIVisibilityDashboard />} />
+        {/* 法律頁 — NewebPay 商家審核要求必備揭露 */}
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/consumer-rights" element={<ConsumerRights />} />
         {/* 任何未匹配的 URL 一律導回首頁，避免空白頁（例如 Stripe 回跳路徑誤輸入） */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
