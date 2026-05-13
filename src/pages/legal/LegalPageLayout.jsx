@@ -7,16 +7,21 @@ import { GlassCard } from '../../components/v2'
  * 三個法律頁（Terms / Privacy / ConsumerRights）共用，避免重複寫三次背景 + header */
 export default function LegalPageLayout({ title, subtitle, lastUpdated, children }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#000', position: 'relative', overflow: 'hidden' }}>
-      {/* 頂部單向漸層（法律頁高度約 2000-3000px，下方不需漸層） */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: '2400px', pointerEvents: 'none', zIndex: 0,
+    <div className="min-h-screen relative overflow-hidden" style={{ background: '#000' }}>
+      {/* 上方青綠漸層光暈 — 與 HomeDark 一致（155deg 左上亮、3000px 高度、lighten 混合） */}
+      <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '3000px',
         background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
         mixBlendMode: 'lighten',
       }} />
-      {/* 雜訊疊層 — 與其他暗色頁面一致 */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+      {/* 下方青綠漸層光暈 — 從頁尾右下往左上擴散（335deg = 155deg 雙軸鏡像） */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '4500px',
+        background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
+      }} />
+      {/* 顆粒感疊層 — 與 HomeDark 一致 */}
+      <div className="absolute inset-0 pointer-events-none z-0" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
         opacity: 0.12, mixBlendMode: 'overlay',
       }} />
