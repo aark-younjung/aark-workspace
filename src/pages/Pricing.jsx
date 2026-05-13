@@ -203,6 +203,39 @@ export default function Pricing() {
     if (isPro) { navigate('/'); return }
     setUpgrading(true)
     try {
+      // 年繳 + 早鳥走 NewebPay 一次性付款（Phase 1 Step 2）— 拿到 form fields 後動態建表單整頁跳轉
+      if (priceType === 'yearly' || priceType === 'earlybird') {
+        const res = await fetch('/api/checkout-pro-yearly-newebpay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            email: user.email,
+            plan: priceType,
+            returnUrl: window.location.href,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok || !data.apiUrl || !data.fields) {
+          alert(data.error || '建立付款頁面失敗，請稍後再試')
+          setUpgrading(false)
+          return
+        }
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = data.apiUrl
+        Object.entries(data.fields).forEach(([name, value]) => {
+          const input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = name
+          input.value = String(value)
+          form.appendChild(input)
+        })
+        document.body.appendChild(form)
+        form.submit()
+        return
+      }
+      // 月繳暫時保留 Stripe 通道（Phase 1 Step 3 定期定額尚未串接 NewebPay）
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

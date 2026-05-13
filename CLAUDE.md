@@ -279,6 +279,19 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 
 ## 工作日誌
 
+### 2026-05-13
+**NewebPay Phase 1 Step 2 — Pro 年繳一次性付款（NT$13,900 + 早鳥 NT$11,880）後端 + 前端串接完成:**
+- 💡 **背景**：14 天無條件退款的前置必備。Phase 1 Step 1（Top-up）已於 2026-05-11 完成、法律頁三件套已於 2026-05-12 補完並重新送 NewebPay 審核，趁等待審核（3-5 工作天）期間把 Step 2 寫好，等沙盒帳號 + 正式商家代號核發後可直接打開上線。月繳（Phase 1 Step 3 定期定額）暫時仍走 Stripe 通道、後續另行處理。
+- ✅ **新增 [api/checkout-pro-yearly-newebpay.js](api/checkout-pro-yearly-newebpay.js)**：`POST` body `{ userId, email, plan: 'yearly'|'earlybird', returnUrl }` → `PLAN_SPEC` 對映 plan → amount + label（yearly=NT$13,900 / earlybird=NT$11,880 = 990×12）。流程沿用 Top-up 同模式：(1) INSERT `aivis_newebpay_pending`（kind='pro_yearly'、pack=plan、amount=spec.amount，兩個 plan 共用 kind 因為 DB CHECK constraint 只允許 4 種值；用 pack 欄位區分早鳥 vs 一般年繳）(2) 組 trade params（RespondType=JSON、NotifyURL=`${SITE}/api/newebpay-notify`、ReturnURL 帶 `?pro_success={plan}` 回原頁、ClientBackURL=/pricing、CREDIT/VACC/WEBATM/CVS/BARCODE 全開沙盒先全試）(3) `buildPaymentForm()` 產 form fields 回前端。merchantOrderNo prefix `py` / `peb` 讓人眼看訂單前綴就能辨識早鳥 vs 一般。
+- ✅ **修改 [src/pages/Pricing.jsx](src/pages/Pricing.jsx) `handleUpgrade` 分流**：`priceType === 'yearly' || 'earlybird'` 走新的 NewebPay endpoint → 拿到 `{ apiUrl, fields }` → `document.createElement('form') + 5 個 hidden inputs（MerchantID/TradeInfo/TradeSha/Version/EncryptType）+ appendChild + form.submit()` 整頁跳轉到 NewebPay 付款頁。`priceType === 'monthly'` 維持 fetch `/api/create-checkout-session` 走 Stripe（暫時保留，Phase 1 Step 3 定期定額串好後再切換）。涵蓋四個 CTA 觸發點：Sticky top bar 搶名額（earlybird）/ Pro 卡片立即升級（yearly 或 monthly）/ 早鳥 block 搶早鳥按鈕（earlybird）/ Mobile sticky bottom CTA（依 isYearly 切換 yearly / monthly）。
+- ✅ **notify handler `pro_yearly` 分支已就緒**：[api/newebpay-notify.js](api/newebpay-notify.js) 早在 Phase 1 Step 1 寫 Top-up 時就把 `pro_yearly` 分支寫好了 — 收到 paid 通知後 `update profiles set is_pro=true, payment_gateway='newebpay', subscribed_at=now() where id=pending.user_id`。本次 endpoint 寫入的 pending row（kind='pro_yearly'）正好對應這個分支，無需動 notify handler。
+- ✅ **parse 驗證**：[api/checkout-pro-yearly-newebpay.js](api/checkout-pro-yearly-newebpay.js) + [src/pages/Pricing.jsx](src/pages/Pricing.jsx) 皆 node + @babel/parser parse 通過 (`OK`)。
+- 🔖 **取捨：yearly + earlybird 共用 kind='pro_yearly'，用 amount + pack 區分**：DB CHECK 只開 4 個值（topup_small/topup_large/pro_yearly/pro_monthly_first），不想為早鳥再 ALTER TABLE 加新值（會造成既有 row 反查麻煩）。同樣是「一年期 Pro 訂閱」，notify 端的 profiles 更新邏輯也完全一致（is_pro=true + subscribed_at=now），差別只在收的錢不一樣。pack 欄位記 'yearly'/'earlybird' 給 AdminRevenue 報表區分這筆是否為早鳥優惠，未來計算 LTV / 早鳥名額耗用時可用。
+- 🔖 **取捨：月繳暫時不切走 NewebPay**：NewebPay 定期定額需要另外申請「定期定額授權」資格、API 跟一次性付款 (MPG) 不同（要走 NPA 信用卡定期定額），這條鏈未串通前先讓 yearly + earlybird 跑起來，month 訂閱用戶數量小（多數會被早鳥 + 年繳折扣拉走）影響有限。Phase 1 Step 3 視 NewebPay 正式核發後實際支援哪些 API 再決定。
+- 🔖 **取捨：成功 returnUrl 帶 `?pro_success={plan}` query string 但前端目前不消費**：NewebPay form-submit 完成後瀏覽器跳回 returnUrl（通常是 /pricing 或 /account），帶這個 flag 未來想顯示「✓ 升級成功」toast 時直接讀 `URLSearchParams` 即可，本次先佈線不做 UI。實際入帳是非同步走 notify URL 寫 DB，前端 toast 只是給用戶心理確認，不依賴 NewebPay redirect 帶資料。
+- 🔖 **Vercel functions 計數 11 → 12（剛好頂到 Hobby 上限）**：本 commit 新增 1 個 endpoint 後 functions 計數 = 12，正好是 Hobby plan 上限。未來再需新加 API 必須先合併現有端點（例如把 admin 系列收進單一 router file）或升級 Vercel Pro。NewebPay 退款 API（Phase 1 Step 4 待辦）有兩種做法可避免再 +1：(a) 與 notify handler 合併（用 query param 分發 `/api/newebpay-notify?action=refund`）(b) 升級 Vercel Pro。本次先讓 yearly 上線。
+- ⚠️ **用戶側待辦（上線前）**：跟 Phase 1 Step 1 共用同一批前置條件，無新增項目 — (1) NewebPay 沙盒帳號核發後填 env vars（NEWEBPAY_MERCHANT_ID/HASH_KEY/HASH_IV）(2) Supabase SQL Editor 跑 [newebpay-pending-orders.sql](newebpay-pending-orders.sql)（如尚未跑）(3) 沙盒測一次年繳全流程：點「立即升級 Pro」→ 跳轉 NewebPay → 沙盒測試卡（4000-2211-1111-1111）付款 → notify 回寫 profiles.is_pro=true。
+
 ### 2026-05-12
 **NewebPay 商家審核退件修復 — 補上 3 個法律頁 + Footer 揭露商家資訊:**
 - 🐛 **退件起因**：NewebPay 商家審核回覆「暫時拒絕」，兩個原因 — (1) 網站客服聯絡資訊與商家申請資料不一致（網站上沒揭露負責人姓名、營業地址、客服電話）(2) 缺少法律頁三件套（消費者權益、服務條款、隱私權政策）。這兩個是 NewebPay 對所有電商商家的硬性審核要求，沒做完不會核發正式商家代號。
