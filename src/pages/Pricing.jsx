@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import Footer from '../components/Footer'
@@ -157,9 +157,10 @@ const FAQ_ITEMS = [
 export default function Pricing() {
   // A3: 預設 yearly（年繳更省，預設選中提高 AOV，符合 5 LLM 共識最佳實踐）
   const [isYearly, setIsYearly] = useState(true)
-  const { user, isPro } = useAuth()
+  const { user, isPro, isTrial, hasTrialedBefore, trialDaysRemaining, startTrial } = useAuth()
   const { isDark } = useTheme()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const proMonthly = 1490
   const proYearly = 13900
@@ -169,7 +170,6 @@ export default function Pricing() {
   const savedMonths = (savedAmount / proMonthly).toFixed(1)
   const earlybirdYearly = 990 * 12
   const earlybirdSlotsTotal = 100
-  const earlybirdSlotsTaken = 0
 
   // aivis 已整合進 Pro 核心（每月 150 次內含），超量 Top-up 不在定價頁陳列
   // 設計理由：(1) 避免「改完 SEO 就退訂」流失 → 用 aivis 持續性綁住 Pro 訂閱
@@ -185,7 +185,8 @@ export default function Pricing() {
   // A5 社會證明 KPI：上線前必修項，從 /api/public-stats 拉真實聚合數字
   // 走後端 service role 而非前端直查 Supabase — 訪客 anon role 對 user-scoped 表的 RLS 會拿到 0
   // 載入中 / 失敗顯示 '—'，避免假數字外露被質疑
-  const [stats, setStats] = useState({ brands: null, reports: null, mentions: null, scans: null })
+  // earlybird_taken 同源 — Pricing 早鳥進度條也吃這個（已售 N / 100 名動態顯示）
+  const [stats, setStats] = useState({ brands: null, reports: null, mentions: null, scans: null, earlybird_taken: null })
   useEffect(() => {
     let cancelled = false
     fetch('/api/public-stats')
@@ -195,8 +196,54 @@ export default function Pricing() {
     return () => { cancelled = true }
   }, [])
   const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—')
+  // 早鳥已售名額：API 回 null 則 fallback 0（避免進度條跑掉），用於三處 UI（top bar 剩餘 / 進度條 / 文案）
+  const earlybirdSlotsTaken = stats.earlybird_taken ?? 0
+
+  // NewebPay 跳回 returnUrl 帶 ?pro_success={yearly|earlybird} — 顯示「✓ 升級成功」toast
+  // 入帳是非同步走 notify URL 寫 DB（profile.is_pro 可能還沒刷到），toast 只是給用戶即時心理確認
+  // 顯示後立刻清掉 query string 防重整再彈、6 秒後自動消失
+  const [proSuccessPlan, setProSuccessPlan] = useState(null)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const plan = params.get('pro_success')
+    if (plan === 'yearly' || plan === 'earlybird') {
+      setProSuccessPlan(plan)
+      navigate(location.pathname, { replace: true })
+      const t = setTimeout(() => setProSuccessPlan(null), 6000)
+      return () => clearTimeout(t)
+    }
+  }, [location.search, location.pathname, navigate])
 
   const [upgrading, setUpgrading] = useState(false)
+  const [startingTrial, setStartingTrial] = useState(false)
+
+  // 啟動 7 天免費試用 — 只給「已登入但從未試用過、也不是 Pro」的用戶
+  // 其他情境：未登入 → /register、已試用過 → 走付款流程、已是 Pro → 回首頁
+  const handleStartTrial = async () => {
+    if (!user) { navigate('/register'); return }
+    if (isPro) { navigate('/'); return }
+    if (hasTrialedBefore) {
+      // 試用次數用過了，引導去付費（依當前 toggle 決定年繳/月繳）
+      return handleUpgrade(isYearly ? 'yearly' : 'monthly')
+    }
+    setStartingTrial(true)
+    try {
+      const result = await startTrial()
+      if (result?.ok) {
+        // 成功啟動 — 導向首頁讓他立刻試用 Pro 功能
+        navigate('/')
+      } else if (result?.error === 'already_trialed') {
+        alert('您已經啟用過 7 天試用了，請選擇付費方案繼續使用 Pro 功能')
+        await handleUpgrade(isYearly ? 'yearly' : 'monthly')
+      } else if (result?.error === 'already_pro') {
+        navigate('/')
+      } else {
+        alert('啟動試用失敗，請稍後再試或聯絡客服')
+      }
+    } finally {
+      setStartingTrial(false)
+    }
+  }
 
   const handleUpgrade = async (priceType = 'monthly') => {
     if (!user) { navigate('/register'); return }
@@ -296,6 +343,47 @@ export default function Pricing() {
       )}
 
       <div className="relative z-10">
+      {/* NewebPay 付款完成跳回 — 綠色升級成功 toast（右上 fixed，6 秒後自動消失） */}
+      {/* 入帳走非同步 notify，profile 可能 1-30 秒後才刷到 is_pro=true；toast 只給即時心理確認 */}
+      {proSuccessPlan && (
+        <div
+          className="fixed top-16 right-4 z-50 max-w-sm rounded-xl shadow-2xl backdrop-blur-md"
+          style={{
+            background: `linear-gradient(135deg, ${T.pass}f0 0%, #0d9488f0 100%)`,
+            border: `1px solid ${T.pass}66`,
+            padding: '14px 18px',
+            color: '#ffffff',
+            animation: 'slideInRight 0.4s ease-out',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="text-2xl leading-none flex-shrink-0" aria-hidden>✓</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-base">
+                {proSuccessPlan === 'earlybird' ? '🐣 早鳥首年購買成功！' : '✨ Pro 年繳升級成功！'}
+              </div>
+              <div className="text-sm mt-1 opacity-90 leading-relaxed">
+                付款已送出，系統入帳處理中。Pro 功能將於數十秒內全部解鎖，可重整頁面確認方案徽章。
+              </div>
+            </div>
+            <button
+              onClick={() => setProSuccessPlan(null)}
+              className="text-white/80 hover:text-white text-lg leading-none flex-shrink-0"
+              aria-label="關閉"
+            >
+              ×
+            </button>
+          </div>
+          {/* 進場動畫 keyframes — 內聯定義避免污染全域 CSS */}
+          <style>{`
+            @keyframes slideInRight {
+              from { opacity: 0; transform: translateX(40px); }
+              to { opacity: 1; transform: translateX(0); }
+            }
+          `}</style>
+        </div>
+      )}
+
       {/* C3: Sticky 早鳥 bar — 滾動時始終可見，提醒名額限制 */}
       <div
         className="sticky top-0 z-30 backdrop-blur-md"
@@ -562,8 +650,13 @@ export default function Pricing() {
                   savedAmount={savedAmount}
                   savedMonths={savedMonths}
                   isPro={isPro}
+                  isTrial={isTrial}
+                  trialDaysRemaining={trialDaysRemaining}
+                  hasTrialedBefore={hasTrialedBefore}
                   upgrading={upgrading}
+                  startingTrial={startingTrial}
                   onUpgrade={handleUpgrade}
+                  onStartTrial={handleStartTrial}
                   isDark
                 />
               </GlassCard>
@@ -577,8 +670,13 @@ export default function Pricing() {
                   savedAmount={savedAmount}
                   savedMonths={savedMonths}
                   isPro={isPro}
+                  isTrial={isTrial}
+                  trialDaysRemaining={trialDaysRemaining}
+                  hasTrialedBefore={hasTrialedBefore}
                   upgrading={upgrading}
+                  startingTrial={startingTrial}
                   onUpgrade={handleUpgrade}
+                  onStartTrial={handleStartTrial}
                   isDark={false}
                 />
               </div>
@@ -877,11 +975,15 @@ export default function Pricing() {
           }
         >
           <button
-            onClick={() => handleUpgrade(isYearly ? 'yearly' : 'monthly')}
-            disabled={upgrading}
+            onClick={() => (hasTrialedBefore ? handleUpgrade(isYearly ? 'yearly' : 'monthly') : handleStartTrial())}
+            disabled={upgrading || startingTrial}
             className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-purple-500/30 disabled:opacity-50"
           >
-            {upgrading ? '處理中...' : `免費試用 7 天 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`}
+            {(upgrading || startingTrial)
+              ? '處理中...'
+              : hasTrialedBefore
+                ? `立即升級 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`
+                : `免費試用 7 天 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`}
           </button>
           <p className="text-xs text-center mt-1" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
             🔒 不收信用卡 · ↩ 隨時取消
@@ -996,7 +1098,7 @@ export default function Pricing() {
 }
 
 // Pro 卡片內部 — 拉到外層（避免 closures 在 render 中重新建立）
-function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, savedAmount, savedMonths, isPro, upgrading, onUpgrade, isDark }) {
+function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, savedAmount, savedMonths, isPro, isTrial, trialDaysRemaining, hasTrialedBefore, upgrading, startingTrial, onUpgrade, onStartTrial, isDark }) {
   return (
     <>
       <div className="mb-6">
@@ -1118,7 +1220,24 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
         </div>
       </div>
 
-      {isPro ? (
+      {isPro && isTrial ? (
+        // 試用中 — 顯示倒數 + 引導到 Account 管理（轉訂閱）
+        <div className="space-y-2">
+          <div
+            className="w-full py-3 text-center rounded-xl font-semibold border"
+            style={{ background: T.pass + '33', color: T.pass, borderColor: T.pass + '4d' }}
+          >
+            ✨ 試用中・剩 {trialDaysRemaining ?? 0} 天
+          </div>
+          <Link
+            to="/account"
+            className="block w-full py-2 text-center text-xs transition-colors"
+            style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
+          >
+            管理訂閱 →
+          </Link>
+        </div>
+      ) : isPro ? (
         <div className="space-y-2">
           <div
             className="w-full py-3 text-center rounded-xl font-semibold border"
@@ -1135,12 +1254,17 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
           </Link>
         </div>
       ) : (
+        // 未試用過 → 顯示「免費試用 7 天」直接啟動試用；試用過 → 顯示「立即升級」走付款
         <div className="space-y-3">
           <button
-            onClick={() => onUpgrade(isYearly ? 'yearly' : 'monthly')}
-            disabled={upgrading}
+            onClick={() => (hasTrialedBefore ? onUpgrade(isYearly ? 'yearly' : 'monthly') : onStartTrial())}
+            disabled={upgrading || startingTrial}
             className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25 disabled:opacity-50">
-            {upgrading ? '處理中...' : '免費試用 7 天'}
+            {(upgrading || startingTrial)
+              ? '處理中...'
+              : hasTrialedBefore
+                ? `立即升級 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`
+                : '免費試用 7 天'}
           </button>
           {/* A7+C8: 信任三件組 + 退款情緒承諾 */}
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>

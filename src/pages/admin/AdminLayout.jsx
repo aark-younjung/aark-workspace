@@ -7,6 +7,8 @@ const NAV = [
   { path: '/admin/websites', label: '掃描紀錄', icon: '🌐' },
   { path: '/admin/revenue', label: '營收儀表板', icon: '💰' },
   { path: '/admin/announcements', label: '站內公告', icon: '📢' },
+  { path: '/admin/showcase', label: '排行榜審核', icon: '⭐' },
+  { path: '/admin/monitoring', label: '系統監控', icon: '📡' },
 ]
 
 export default function AdminLayout({ children }) {

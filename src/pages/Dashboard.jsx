@@ -54,7 +54,7 @@ export default function Dashboard() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, isPro, userName, refreshProfile } = useAuth()
+  const { user, isPro, isTrial, trialEndsAt, trialDaysRemaining, userName, refreshProfile } = useAuth()
   const [upgradeSuccess, setUpgradeSuccess] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
   const [website, setWebsite] = useState(null)
@@ -75,6 +75,8 @@ export default function Dashboard() {
   const [bizInfo, setBizInfo] = useState({ phone: '', address: '', hours: '', description: '' })
   const [pinging, setPinging] = useState(false)
   const [pingResult, setPingResult] = useState(null)
+  // 提交至排行榜（Showcase 審核）— 寫 submitted_at 進待審佇列，admin 核准後才出現在 /showcase
+  const [submittingShowcase, setSubmittingShowcase] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   
   const [contentScore, setContentScore] = useState(null)
@@ -537,6 +539,34 @@ export default function Dashboard() {
     }
   }
 
+  // 提交至排行榜 — confirm 後寫 submitted_at=now()，進 admin 待審佇列
+  // 已提交（待審 / 已核准 / 已拒絕）就不再顯示按鈕，TopBar 改顯示狀態 chip
+  const handleSubmitToShowcase = async () => {
+    if (!website?.id || submittingShowcase) return
+    const ok = window.confirm(
+      '提交至公開排行榜後，本網站將進入管理員待審佇列。\n\n' +
+      '・審核通常 1-3 個工作天\n' +
+      '・核准後會出現在 /showcase 公開展示，所有訪客可看到\n' +
+      '・若內容不符（測試 URL / 不雅內容 / 競品代發）會被退回\n\n' +
+      '確認要提交嗎？'
+    )
+    if (!ok) return
+    setSubmittingShowcase(true)
+    try {
+      const { error } = await supabase
+        .from('websites')
+        .update({ submitted_at: new Date().toISOString() })
+        .eq('id', website.id)
+      if (error) throw error
+      setWebsite({ ...website, submitted_at: new Date().toISOString() })
+    } catch (err) {
+      console.error('Submit to showcase failed:', err)
+      alert('提交失敗，請稍後再試')
+    } finally {
+      setSubmittingShowcase(false)
+    }
+  }
+
   // ─── 通知搜尋引擎 ────────────────────────────────────────────────
   const handlePingEngines = async () => {
     if (!website?.url || pinging) return
@@ -752,6 +782,45 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
       <div className="relative z-10">
       {/* 站內公告 banner */}
       <AnnouncementBanner />
+      {/* 試用倒數 banner — 試用期間提醒到期日 + 升級入口 */}
+      {isTrial && trialEndsAt && (
+        <div
+          className="border-b backdrop-blur-xl"
+          style={{
+            background: `linear-gradient(90deg, ${T.pass}1f 0%, ${T.pass}14 50%, ${T.aeo}1f 100%)`,
+            borderColor: T.pass + '33',
+          }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <span className="text-xl flex-shrink-0">✨</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold" style={{ color: T.text }}>
+                  Pro 試用中・剩 <span style={{ color: T.pass }}>{trialDaysRemaining} 天</span>
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: T.textMid }}>
+                  {new Date(trialEndsAt).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })} 到期・升級訂閱可無縫銜接所有功能
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link
+                to="/account"
+                className="text-xs px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+                style={{ color: T.textMid, border: `1px solid ${T.cardBorder}` }}
+              >
+                查看試用詳情
+              </Link>
+              <Link
+                to="/pricing"
+                className="text-xs px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-lg transition-all shadow-lg shadow-orange-900/30 whitespace-nowrap"
+              >
+                立即升級 Pro →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 升級成功提示 */}
       {upgradeSuccess && (
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center py-3 px-6 text-sm font-semibold">
@@ -864,6 +933,58 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-orange-400/30 text-orange-300 hover:bg-orange-500/15 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
               >
                 🔒 <span className="hidden sm:inline">匯出 PDF</span> (Pro)
+              </button>
+            )}
+            {/* 提交至排行榜：依 website 狀態 4 分支 — 未提交可點 / 待審 / 已核准 / 已拒絕 */}
+            {website?.is_approved ? (
+              <Link
+                to="/showcase"
+                className="flex-shrink-0 px-3 py-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 rounded-lg text-xs font-medium hover:bg-emerald-500/25 transition-colors flex items-center gap-1.5"
+                title="本網站已在公開排行榜，點擊查看"
+              >
+                <span>✅</span>
+                <span className="hidden sm:inline">已上排行榜</span>
+                <span className="sm:hidden">已上榜</span>
+              </Link>
+            ) : website?.rejection_reason ? (
+              <button
+                type="button"
+                onClick={() => alert(`提交至排行榜未通過審核：\n\n${website.rejection_reason}\n\n如需重新申請請聯絡客服 mark6465@gmail.com`)}
+                className="flex-shrink-0 px-3 py-1.5 bg-red-500/15 text-red-300 border border-red-400/30 rounded-lg text-xs font-medium hover:bg-red-500/25 transition-colors flex items-center gap-1.5"
+                title="點擊查看退件原因"
+              >
+                <span>🚫</span>
+                <span className="hidden sm:inline">排行榜申請被退回</span>
+                <span className="sm:hidden">已退回</span>
+              </button>
+            ) : website?.submitted_at ? (
+              <span className="flex-shrink-0 px-3 py-1.5 bg-amber-500/15 text-amber-300 border border-amber-400/30 rounded-lg text-xs font-medium flex items-center gap-1.5 whitespace-nowrap" title="管理員審核中，通常 1-3 個工作天">
+                <span>⏳</span>
+                <span className="hidden sm:inline">排行榜審核中</span>
+                <span className="sm:hidden">審核中</span>
+              </span>
+            ) : (
+              <button
+                onClick={handleSubmitToShowcase}
+                disabled={submittingShowcase}
+                className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-amber-400/30 text-amber-300 hover:bg-amber-500/15 rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+                title="提交本網站至公開排行榜 /showcase（需通過管理員審核）"
+              >
+                {submittingShowcase ? (
+                  <>
+                    <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    送出中...
+                  </>
+                ) : (
+                  <>
+                    <span>⭐</span>
+                    <span className="hidden sm:inline">提交至排行榜</span>
+                    <span className="sm:hidden">上排行榜</span>
+                  </>
+                )}
               </button>
             )}
             {!isPro && (

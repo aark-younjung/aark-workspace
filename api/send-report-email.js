@@ -1,7 +1,10 @@
 /**
  * POST /api/send-report-email
- * 傳送 AI 能見度報告到指定信箱
+ * 雙用途 endpoint（Vercel Hobby 12 functions 上限對策，用 ?action 分發）：
+ *   - 預設（無 action）：傳送 AI 能見度報告 — 公開呼叫，無需驗證
+ *   - ?action=admin_custom：客服寄自訂 email 給特定用戶 — 需 admin Bearer token
  *
+ * ─────────────────── 預設（報告 email）─────────────────────
  * Body: {
  *   email: string,
  *   website: { url, name },
@@ -9,8 +12,22 @@
  *   checks: { seo: [{name, passed}], aeo: [...], geo: [...], eeat: [...] }
  * }
  *
- * Env: RESEND_API_KEY
+ * ─────────────────── ?action=admin_custom ─────────────────────
+ * Header: Authorization: Bearer <user_access_token>（必須是 is_admin=true 的用戶）
+ * Body: { toUserId: uuid, subject: string, body: string (plain text), reason: string }
+ *
+ * 處理流程：
+ *   1. 驗 Bearer token → supabase.auth.getUser → 拿到 caller user.id
+ *   2. 查 caller 的 profile.is_admin（防非 admin 偽造 Authorization header）
+ *   3. 查 toUserId 的 email + name + admin_history
+ *   4. 用 buildCustomEmailHTML 組信件 → Resend 寄出
+ *   5. append admin_history 一筆稽核紀錄
+ *   6. 回 { success, message_id }
+ *
+ * Env: RESEND_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
+
+import { createClient } from '@supabase/supabase-js'
 
 function scoreColor(score) {
   if (score >= 70) return '#16a34a'
@@ -152,7 +169,7 @@ function buildEmailHTML({ website, scores, checks, dashboardUrl }) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -160,6 +177,11 @@ export default async function handler(req, res) {
   const RESEND_API_KEY = process.env.RESEND_API_KEY
   if (!RESEND_API_KEY) {
     return res.status(500).json({ error: 'RESEND_API_KEY not configured' })
+  }
+
+  // 分流：?action=admin_custom 走客服寄自訂 email 邏輯
+  if (req.query?.action === 'admin_custom') {
+    return handleAdminCustomEmail({ req, res, RESEND_API_KEY })
   }
 
   const { email, website, scores, checks, dashboardUrl } = req.body
@@ -198,6 +220,164 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, id: data.id })
   } catch (err) {
     console.error('Send email error:', err)
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+function buildCustomEmailHTML({ subject, body, recipientName }) {
+  const date = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
+  // body 是 plain text，前端輸入時用 \n 換行，這裡轉成 <br> 並逃逸 HTML
+  const safeBody = String(body || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>')
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'Microsoft JhengHei','PingFang TC',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+        <!-- Header -->
+        <tr><td style="background:linear-gradient(135deg,#1e293b 0%,#4c1d95 100%);padding:28px 40px;">
+          <div style="font-size:18px;font-weight:bold;color:white;letter-spacing:0.5px;">優勢方舟 AARK</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">AI 能見度儀表板 · 客戶服務</div>
+        </td></tr>
+
+        <!-- Greeting -->
+        <tr><td style="padding:28px 40px 8px;">
+          <div style="font-size:14px;color:#64748b;">${recipientName ? `${recipientName} 您好，` : '您好，'}</div>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:8px 40px 28px;">
+          <div style="font-size:14px;line-height:1.8;color:#1e293b;white-space:normal;">
+            ${safeBody}
+          </div>
+        </td></tr>
+
+        <!-- Sign-off -->
+        <tr><td style="padding:0 40px 24px;">
+          <div style="font-size:13px;color:#475569;line-height:1.7;">
+            如有任何問題，歡迎直接回信給我們。<br>
+            — 優勢方舟客服團隊
+          </div>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:18px 40px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
+          <p style="font-size:11px;color:#94a3b8;margin:0;">
+            優勢方舟 (AARK) · ${date}<br>
+            本信件由客服人員手動寄送，與系統自動通知不同
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+async function handleAdminCustomEmail({ req, res, RESEND_API_KEY }) {
+  const SUPABASE_URL = process.env.SUPABASE_URL
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(500).json({ error: 'Supabase env vars not configured' })
+  }
+
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token) {
+    return res.status(401).json({ error: 'Missing Bearer token' })
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+  // 1. 驗 token → 拿到 caller user
+  const { data: authData, error: authErr } = await supabase.auth.getUser(token)
+  if (authErr || !authData?.user) {
+    return res.status(401).json({ error: 'Invalid or expired token' })
+  }
+  const callerId = authData.user.id
+
+  // 2. 確認 caller 是 admin（防偽造 Authorization header）
+  const { data: callerProfile, error: callerErr } = await supabase
+    .from('profiles')
+    .select('is_admin, name, email')
+    .eq('id', callerId)
+    .single()
+  if (callerErr || !callerProfile?.is_admin) {
+    return res.status(403).json({ error: 'Forbidden: admin only' })
+  }
+
+  // 3. 驗 body
+  const { toUserId, subject, body, reason } = req.body || {}
+  if (!toUserId || !subject || !body || !reason) {
+    return res.status(400).json({ error: 'Missing toUserId / subject / body / reason' })
+  }
+  if (subject.length > 200) {
+    return res.status(400).json({ error: 'Subject too long (max 200 chars)' })
+  }
+  if (body.length > 10000) {
+    return res.status(400).json({ error: 'Body too long (max 10000 chars)' })
+  }
+
+  // 4. 查 recipient
+  const { data: recipient, error: recipErr } = await supabase
+    .from('profiles')
+    .select('id, email, name, admin_history')
+    .eq('id', toUserId)
+    .single()
+  if (recipErr || !recipient?.email) {
+    return res.status(404).json({ error: 'Recipient not found or has no email' })
+  }
+
+  // 5. 寄信
+  const html = buildCustomEmailHTML({ subject, body, recipientName: recipient.name })
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'AARK 優勢方舟客服 <support@aark.io>',
+        to: [recipient.email],
+        subject,
+        html,
+      }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      console.error('Resend admin_custom error:', data)
+      return res.status(500).json({ error: data.message || 'Failed to send email' })
+    }
+
+    // 6. append admin_history 稽核
+    const historyEntry = {
+      ts: new Date().toISOString(),
+      admin_id: callerId,
+      action: 'send_email',
+      subject,
+      reason,
+      message_id: data.id || null,
+    }
+    const newHistory = Array.isArray(recipient.admin_history)
+      ? [...recipient.admin_history, historyEntry]
+      : [historyEntry]
+    await supabase
+      .from('profiles')
+      .update({ admin_history: newHistory })
+      .eq('id', toUserId)
+
+    return res.status(200).json({ success: true, message_id: data.id })
+  } catch (err) {
+    console.error('Admin custom email error:', err)
     return res.status(500).json({ error: 'Internal server error' })
   }
 }

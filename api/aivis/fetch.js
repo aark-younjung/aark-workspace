@@ -29,6 +29,9 @@ const PRICE_OUTPUT_PER_TOKEN = 5 / 1_000_000  // $5 / MTok
 // 額度規則 — 與 [Pricing.jsx] 與 [AIVisibilityDashboard.jsx] 三邊同步
 const AIVIS_QUOTA_PER_MONTH = 150   // Pro 內含本月免費額度
 const AIVIS_HARD_CAP = 1000          // 每月查詢硬上限（內含 + Top-up 合計），Agency 推出後解除
+// 7 天試用期：總額度 50 次（不是每月，是整個 7 天試用期內合計），不可用 Top-up 加購
+// 設 50 而非更多是防止 bot 註冊試用帳號刷大量 AI 掃描；正常用戶 7 天試 50 次足夠評估產品
+const AIVIS_QUOTA_PER_TRIAL = 50
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -74,17 +77,39 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Brand not linked to this prompt' })
     }
 
-    // 額度前置檢查：本月（calendar month）user-scope 已寫入幾次 aivis_responses
-    // 之所以用「user-scope」不是「brand-scope」— 額度是 per-user per-month、跨品牌合計
-    const monthStart = new Date()
-    monthStart.setUTCDate(1)
-    monthStart.setUTCHours(0, 0, 0, 0)
+    // 拉用戶 profile 看是否為試用用戶 — 試用期額度與付費 Pro 不同（50 vs 150）
+    // 試用期計算起始也不一樣：付費 Pro 用 calendar month，試用用 trial_started_at
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('is_trial, trial_started_at')
+      .eq('id', prompt.user_id)
+      .maybeSingle()
+
+    if (profileErr) {
+      return res.status(500).json({ error: 'Failed to fetch profile', detail: profileErr.message })
+    }
+
+    const isTrial = !!profile?.is_trial && !!profile?.trial_started_at
+    const quotaLimit = isTrial ? AIVIS_QUOTA_PER_TRIAL : AIVIS_QUOTA_PER_MONTH
+    // 試用期硬上限 = quota（不開放 Top-up），付費 Pro 硬上限 = 1000
+    const hardCap = isTrial ? AIVIS_QUOTA_PER_TRIAL : AIVIS_HARD_CAP
+
+    // 計數起始：試用期從 trial_started_at 起算（整個 7 天試用期合計），付費 Pro 從本月 1 日 UTC 起算
+    let countSinceIso
+    if (isTrial) {
+      countSinceIso = profile.trial_started_at
+    } else {
+      const monthStart = new Date()
+      monthStart.setUTCDate(1)
+      monthStart.setUTCHours(0, 0, 0, 0)
+      countSinceIso = monthStart.toISOString()
+    }
 
     const { count: monthCountRaw, error: countErr } = await supabase
       .from('aivis_responses')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', prompt.user_id)
-      .gte('created_at', monthStart.toISOString())
+      .gte('created_at', countSinceIso)
 
     if (countErr) {
       return res.status(500).json({ error: 'Failed to check monthly quota', detail: countErr.message })
@@ -92,12 +117,15 @@ export default async function handler(req, res) {
     const monthCount = monthCountRaw || 0
 
     // 已達硬上限 → 直接拒絕（連 1 次都不能跑）
-    if (monthCount >= AIVIS_HARD_CAP) {
+    if (monthCount >= hardCap) {
       return res.status(429).json({
-        error: 'monthly_hard_cap_exceeded',
-        message: `本月查詢已達硬上限 ${AIVIS_HARD_CAP} 次，請等下個月或聯繫 Agency 方案`,
+        error: isTrial ? 'trial_quota_exhausted' : 'monthly_hard_cap_exceeded',
+        message: isTrial
+          ? `試用期 AI 曝光監測額度 ${AIVIS_QUOTA_PER_TRIAL} 次已用完，升級 Pro 訂閱即可恢復每月 150 次`
+          : `本月查詢已達硬上限 ${AIVIS_HARD_CAP} 次，請等下個月或聯繫 Agency 方案`,
         used: monthCount,
-        hard_cap: AIVIS_HARD_CAP,
+        hard_cap: hardCap,
+        is_trial: isTrial,
       })
     }
 
@@ -110,18 +138,22 @@ export default async function handler(req, res) {
       const wouldBeNthQuery = monthCount + usedThisCall + 1
 
       // 破硬上限 → 中斷 loop（不能再跑，回傳已完成數）
-      if (wouldBeNthQuery > AIVIS_HARD_CAP) {
+      // 試用用戶：hardCap = quota = 50，沒有 Top-up 路徑可走
+      if (wouldBeNthQuery > hardCap) {
         return res.status(429).json({
-          error: 'monthly_hard_cap_exceeded',
-          message: `本月查詢即將達硬上限 ${AIVIS_HARD_CAP} 次，已完成 ${i - 1} / ${runs} 次`,
+          error: isTrial ? 'trial_quota_exhausted' : 'monthly_hard_cap_exceeded',
+          message: isTrial
+            ? `試用期 AI 曝光監測額度 ${AIVIS_QUOTA_PER_TRIAL} 次即將用完，已完成 ${i - 1} / ${runs} 次，升級 Pro 訂閱即可恢復每月 150 次`
+            : `本月查詢即將達硬上限 ${AIVIS_HARD_CAP} 次，已完成 ${i - 1} / ${runs} 次`,
           completed_runs: i - 1,
           used: monthCount + usedThisCall,
-          hard_cap: AIVIS_HARD_CAP,
+          hard_cap: hardCap,
+          is_trial: isTrial,
         })
       }
 
-      // 已用完月內含 → 嘗試從 Top-up 扣 1 次
-      if (wouldBeNthQuery > AIVIS_QUOTA_PER_MONTH) {
+      // 已用完內含額度 → 嘗試從 Top-up 扣 1 次（試用用戶跳過此路徑，hardCap = quota 已擋）
+      if (!isTrial && wouldBeNthQuery > AIVIS_QUOTA_PER_MONTH) {
         const { data: consumed, error: consumeErr } = await supabase
           .rpc('aivis_consume_topup_credit', { p_user_id: prompt.user_id })
 
@@ -220,9 +252,10 @@ export default async function handler(req, res) {
       // 額度資訊（給前端 banner 即時更新用，免再打一次 count 查詢）
       quota: {
         used_after: monthCount + usedThisCall,
-        quota_per_month: AIVIS_QUOTA_PER_MONTH,
-        hard_cap: AIVIS_HARD_CAP,
+        quota_per_month: quotaLimit,
+        hard_cap: hardCap,
         topup_consumed_this_call: topupConsumedThisCall,
+        is_trial: isTrial,
       },
     })
 

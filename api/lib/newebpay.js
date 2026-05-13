@@ -101,6 +101,72 @@ export function buildPaymentForm(tradeParams) {
   }
 }
 
+// NewebPay 信用卡退款 API endpoint（沙盒 / 正式 base URL 與 MPG 不同，用 NEWEBPAY_REFUND_API_URL 覆寫）
+// 預設沙盒 https://ccore.newebpay.com/API/CreditCard/Close
+// 正式   https://core.newebpay.com/API/CreditCard/Close
+// CloseType=2 表示退款（=1 為請款，非本案使用情境）
+//
+// 退款流程：
+// 1. 組 PostData_ 內容（form string）— Amt + MerchantOrderNo + TimeStamp + IndexType=1 + CloseType=2
+// 2. AES 加密成 hex → 命名為 PostData_（注意末尾底線是 NewebPay 規範，不是 typo）
+// 3. POST form-urlencoded 給 NewebPay：MerchantID_ + PostData_
+// 4. NewebPay 回 JSON：{ Status: 'SUCCESS' | 'XXX', Message: '...', Result: { ... } }
+//
+// 一站式 helper：傳入 { merchantOrderNo, amount } → 回 NewebPay 解析後的 { ok, status, message, raw }
+export async function requestCreditCardRefund({ merchantOrderNo, amount }) {
+  const {
+    NEWEBPAY_MERCHANT_ID, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV,
+    NEWEBPAY_REFUND_API_URL,
+  } = process.env
+  if (!NEWEBPAY_MERCHANT_ID || !NEWEBPAY_HASH_KEY || !NEWEBPAY_HASH_IV) {
+    throw new Error('NewebPay env vars not configured: NEWEBPAY_MERCHANT_ID / NEWEBPAY_HASH_KEY / NEWEBPAY_HASH_IV')
+  }
+  const apiUrl = NEWEBPAY_REFUND_API_URL || 'https://ccore.newebpay.com/API/CreditCard/Close'
+  // NewebPay 退款 PostData 規範參數
+  const refundParams = {
+    RespondType: 'JSON',
+    Version: '1.0',
+    Amt: amount,
+    MerchantOrderNo: merchantOrderNo,
+    TimeStamp: Math.floor(Date.now() / 1000),
+    IndexType: 1,           // 1 = 用商家訂單編號（MerchantOrderNo）查；2 = NewebPay TradeNo
+    CloseType: 2,           // 2 = 退款（1 = 請款，不適用）
+  }
+  const formString = buildFormString(refundParams)
+  const encrypted = aesEncrypt(formString, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV)
+  // POST body 規範（注意 key 都帶底線）
+  const body = new URLSearchParams({
+    MerchantID_: NEWEBPAY_MERCHANT_ID,
+    PostData_: encrypted,
+  })
+  let response
+  try {
+    response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    })
+  } catch (err) {
+    return { ok: false, status: 'NETWORK_ERROR', message: err.message, raw: null }
+  }
+  // NewebPay 退款 API 即使業務失敗（如訂單不存在）也會回 HTTP 200，狀態看 body.Status
+  let parsed
+  try {
+    parsed = await response.json()
+  } catch {
+    const text = await response.text().catch(() => '')
+    return { ok: false, status: 'INVALID_RESPONSE', message: `Non-JSON response: ${text.slice(0, 200)}`, raw: text }
+  }
+  // 成功狀態：Status === 'SUCCESS'
+  const ok = parsed?.Status === 'SUCCESS'
+  return {
+    ok,
+    status: parsed?.Status || 'UNKNOWN',
+    message: parsed?.Message || '',
+    raw: parsed,
+  }
+}
+
 // 解 notify payload — 給 /api/newebpay-notify 用
 // 回 { ok, data, error }，data 是 NewebPay 回傳的 JSON 物件（已解密）
 export function parseNotifyPayload({ TradeInfo, TradeSha }) {

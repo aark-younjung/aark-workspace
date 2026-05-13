@@ -150,7 +150,9 @@ export default function Showcase() {
     setLoading(true)
     try {
       const [wRes, sRes, aRes, gRes] = await Promise.all([
-        supabase.from('websites').select('id, name, url, created_at').order('created_at', { ascending: true }),
+        // 只撈 admin 已核准的 websites（is_approved=true），未審核 / 已拒絕的不上排行榜，
+        // 避免有人刷奇怪測試 URL / 競品 / 不雅內容傷品牌；SAMPLE_SITES 是前端硬寫不受此影響。
+        supabase.from('websites').select('id, name, url, created_at').eq('is_approved', true).order('created_at', { ascending: true }),
         supabase.from('seo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
         supabase.from('aeo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
         supabase.from('geo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),

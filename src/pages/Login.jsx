@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
@@ -29,6 +30,13 @@ export default function Login() {
   const inApp = useMemo(() => isInAppBrowser(), [])
   const inAppName = useMemo(() => getInAppBrowserName(), [])
   const deviceOS = useMemo(() => getDeviceOS(), [])
+
+  // Supabase Free tier 冷啟動 warm-up — 用戶看到 Login 頁的瞬間就先打一次 getSession()
+  // 把 Supabase project 叫醒（5-15s 喚醒時間），等用戶按 Google 按鈕時已熱機完畢，
+  // 不必再等冷啟動。fire-and-forget，失敗也不影響登入流程
+  useEffect(() => {
+    supabase.auth.getSession().catch(() => {})
+  }, [])
 
   if (user) { navigate(from, { replace: true }); return null }
 

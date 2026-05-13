@@ -4,7 +4,10 @@ import { supabase } from '../../lib/supabase'
 import AdminLayout from './AdminLayout'
 import AdminGuard from './AdminGuard'
 
-const PRO_PRICE = 1490
+// 三種定價（與商業模式對齊，與 AdminRevenue 同步）
+const PRICE_STRIPE_MONTHLY = 1490 // Stripe 月繳（歷史/Phase 2 備用）
+
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -17,29 +20,45 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
+      const now = new Date()
+      const oneYearAgo = new Date(now.getTime() - ONE_YEAR_MS)
+
       const [
         { count: totalUsers },
         { count: proUsers },
-        { count: paidProUsers },
+        { count: stripePaidCount },
         { data: totalWebsites },
         { data: recent },
+        { data: newebpayOrdersRaw },
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_pro', true),
-        // MRR 只算實際刷卡付費（與 /admin/revenue 規則一致）
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_pro', true).not('stripe_subscription_id', 'is', null),
         supabase.from('websites').select('url'),
         supabase.from('profiles').select('id, name, email, is_pro, created_at').order('created_at', { ascending: false }).limit(5),
+        // NewebPay 年繳訂單（含早鳥、退款狀態）— 用於 MRR 月攤分
+        supabase.from('aivis_newebpay_pending').select('amount, paid_at, refund_status').eq('kind', 'pro_yearly').eq('status', 'paid'),
       ])
 
       // 依 URL 去重複計算唯一網站數
       const uniqueWebsites = new Set((totalWebsites || []).map(w => w.url)).size
 
+      // MRR = NewebPay 過去 12 月年繳營收 ÷ 12 + Stripe 月繳 × 1490
+      // 退款已完成 / 待手動轉帳的訂單不計入（pending 也視同已退）
+      const activeNewebpayRevenue = (newebpayOrdersRaw || [])
+        .filter(o =>
+          (o.refund_status === 'none' || !o.refund_status || o.refund_status === 'failed') &&
+          o.paid_at && new Date(o.paid_at) >= oneYearAgo
+        )
+        .reduce((s, o) => s + Number(o.amount || 0), 0)
+      const mrrFromNewebpay = Math.round(activeNewebpayRevenue / 12)
+      const mrrFromStripe = (stripePaidCount || 0) * PRICE_STRIPE_MONTHLY
+
       setStats({
         totalUsers: totalUsers || 0,
         proUsers: proUsers || 0,
         totalWebsites: uniqueWebsites,
-        mrr: (paidProUsers || 0) * PRO_PRICE,
+        mrr: mrrFromNewebpay + mrrFromStripe,
       })
       setRecentUsers(recent || [])
     } catch (e) {

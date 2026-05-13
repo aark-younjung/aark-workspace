@@ -26,6 +26,8 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminWebsites from './pages/admin/AdminWebsites'
 import AdminRevenue from './pages/admin/AdminRevenue'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
+import AdminShowcase from './pages/admin/AdminShowcase'
+import AdminMonitoring from './pages/admin/AdminMonitoring'
 import AIVisibility from './pages/AIVisibility'
 import AIVisibilityDashboard from './pages/AIVisibilityDashboard'
 // 法律頁（NewebPay 商家審核必備）— 服務條款 / 隱私權 / 消費者權益保障
@@ -103,6 +105,8 @@ function AppInner() {
         <Route path="/admin/websites" element={<AdminWebsites />} />
         <Route path="/admin/revenue" element={<AdminRevenue />} />
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+        <Route path="/admin/showcase" element={<AdminShowcase />} />
+        <Route path="/admin/monitoring" element={<AdminMonitoring />} />
         {/* AI 曝光監測（aivis）— Phase 1 基礎 */}
         <Route path="/ai-visibility" element={<AIVisibility />} />
         <Route path="/ai-visibility/:id" element={<AIVisibilityDashboard />} />

@@ -1,8 +1,11 @@
 /**
  * POST /api/newebpay-notify
- * NewebPay NotifyURL（server-to-server）— 接收付款結果通知
+ * 雙用途 endpoint（Vercel Hobby 12 functions 上限對策，用 ?action 分發）：
+ *   - 預設（無 action 或 action=notify）：NotifyURL server-to-server — 接收 NewebPay 付款結果
+ *   - ?action=refund：14 天無條件退款 user-initiated 端點，前端 Account 取消按鈕呼叫
  *
- * NewebPay 會以 application/x-www-form-urlencoded POST 過來：
+ * ─────────────────── action=notify（預設）─────────────────────
+ * NewebPay 以 application/x-www-form-urlencoded POST 過來：
  *   MerchantID, TradeInfo（AES 加密的 JSON 字串）, TradeSha, Version, Status
  *
  * 處理流程：
@@ -10,18 +13,29 @@
  *   2. 依 MerchantOrderNo 從 aivis_newebpay_pending 查回 user/kind/pack/quota
  *   3. 依 kind 寫入對應的目標表：
  *      - topup_small / topup_large → aivis_topup_credits
- *      - pro_yearly → profiles.is_pro = true (Phase 2 才會用到)
+ *      - pro_yearly → profiles.is_pro = true
  *   4. 把 pending 狀態更新為 paid，記錄 trade_no / payment_type / paid_at
  *   5. 回 NewebPay 200（status 不重要，但必須回，否則它會重送 8 次）
  *
- * Idempotency：用 source_payment_id UNIQUE 約束防重複入帳（NewebPay 可能 retry）
+ * ─────────────────── action=refund ─────────────────────
+ * Body: { userId, merchantOrderNo }（前端 JSON POST）
  *
- * 重要：Vercel Serverless 預設會 parse application/json，這裡 NewebPay 送 form-urlencoded，
- *      需要設 bodyParser config 接受 form。
+ * 處理流程：
+ *   1. 驗證 user — 從 Supabase auth header 拿 user.id 比對 body.userId（防偽造）
+ *   2. 查 pending 訂單 — 確認 user_id / kind='pro_yearly' / status='paid' / 14 天內 / refund_status='none'
+ *   3. 信用卡（payment_type 含 CREDIT）→ 呼叫 NewebPay `/API/CreditCard/Close` 直退
+ *      → 成功則 refund_status='completed' / refund_method='api_credit' / refunded_at=now
+ *      → 失敗則 refund_status='failed' + refund_note 記 NewebPay error message
+ *   4. 非信用卡（VACC/WEBATM/CVS/BARCODE）→ refund_status='pending' / refund_method='manual_transfer'
+ *      → 通知 admin（mark6465@gmail.com）7 工作天內手動轉帳
+ *   5. 不論哪條路徑，profile.is_pro=false 立即生效（不等手動轉帳完成）
+ *   6. 回 { success, refund_method, message } 給前端顯示對應提示
+ *
+ * Idempotency：notify 用 source_payment_id UNIQUE 約束、refund 用 refund_status !='none' 守門
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { parseNotifyPayload } from './lib/newebpay.js'
+import { parseNotifyPayload, requestCreditCardRefund } from './lib/newebpay.js'
 
 // Vercel/Next 預設 bodyParser 會接受 form-urlencoded 並解到 req.body — 不需要特別 raw body
 // 但要確認 NewebPay 送的 Content-Type 是 application/x-www-form-urlencoded
@@ -37,6 +51,12 @@ export default async function handler(req, res) {
     return res.status(500).send('Server misconfigured')
   }
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+  // 分流：?action=refund 走退款邏輯（user-initiated, JSON body）
+  // 預設 / action=notify 走付款結果通知（NewebPay server-to-server, form body）
+  if (req.query?.action === 'refund') {
+    return handleRefund({ req, res, supabase })
+  }
 
   const { TradeInfo, TradeSha, Status } = req.body || {}
   if (!TradeInfo || !TradeSha) {
@@ -165,4 +185,159 @@ export default async function handler(req, res) {
     .eq('merchant_order_no', merchantOrderNo)
 
   return res.status(200).send('OK')
+}
+
+// 14 天無條件退款 — 走 ?action=refund 分支
+// 前端 fetch('/api/newebpay-notify?action=refund', { method:'POST', body: JSON.stringify({ userId, merchantOrderNo }) })
+//
+// 安全考量：用 Authorization: Bearer <access_token> header 帶 Supabase session，
+// 後端用 service role 解 token 拿到 auth user.id，比對 body.userId 防偽造（不接受純信任前端傳的 userId）。
+async function handleRefund({ req, res, supabase }) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+  const { userId, merchantOrderNo } = req.body || {}
+  if (!userId || !merchantOrderNo) {
+    return res.status(400).json({ error: 'userId and merchantOrderNo are required' })
+  }
+
+  // 1. 驗證 user — 從 Bearer token 解出 auth user.id 比對 body.userId
+  const authHeader = req.headers?.authorization || req.headers?.Authorization
+  const accessToken = authHeader?.replace(/^Bearer\s+/i, '')
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Missing access token' })
+  }
+  const { data: authData, error: authErr } = await supabase.auth.getUser(accessToken)
+  if (authErr || !authData?.user) {
+    return res.status(401).json({ error: 'Invalid access token' })
+  }
+  if (authData.user.id !== userId) {
+    return res.status(403).json({ error: 'userId does not match authenticated user' })
+  }
+
+  // 2. 查 pending 訂單 — 必須是該 user 的 pro_yearly paid 訂單、14 天內、未退過
+  const { data: order, error: orderErr } = await supabase
+    .from('aivis_newebpay_pending')
+    .select('user_id, kind, pack, amount, status, payment_type, paid_at, refund_status')
+    .eq('merchant_order_no', merchantOrderNo)
+    .maybeSingle()
+  if (orderErr) {
+    console.error('Refund order lookup error:', orderErr)
+    return res.status(500).json({ error: 'Order lookup failed' })
+  }
+  if (!order) {
+    return res.status(404).json({ error: 'Order not found' })
+  }
+  if (order.user_id !== userId) {
+    return res.status(403).json({ error: 'Order does not belong to this user' })
+  }
+  if (order.kind !== 'pro_yearly') {
+    // Top-up 政策為「不過期、用完為止、不退款」(見 CLAUDE.md 商業模式)
+    return res.status(400).json({ error: 'Only Pro yearly orders are refundable. Top-up purchases are non-refundable.' })
+  }
+  if (order.status !== 'paid') {
+    return res.status(400).json({ error: `Order status is "${order.status}", only paid orders can be refunded.` })
+  }
+  if (order.refund_status !== 'none') {
+    return res.status(409).json({ error: `Order refund_status is already "${order.refund_status}".` })
+  }
+  // 14 天無條件退款窗口檢查
+  const paidAt = order.paid_at ? new Date(order.paid_at) : null
+  if (!paidAt) {
+    return res.status(400).json({ error: 'Order has no paid_at timestamp, cannot verify 14-day refund window.' })
+  }
+  const daysSincePaid = (Date.now() - paidAt.getTime()) / (24 * 3600 * 1000)
+  if (daysSincePaid > 14) {
+    return res.status(400).json({ error: `Order is ${daysSincePaid.toFixed(1)} days old, exceeds 14-day refund window.` })
+  }
+
+  // 3. 依付款方式分流：信用卡走 API 直退、其他走手動轉帳
+  // NewebPay payment_type 信用卡為 'CREDIT'（一次付清）或 'CREDITINST'（分期）— 都可走 Close API
+  const isCreditCard = order.payment_type && order.payment_type.toUpperCase().startsWith('CREDIT')
+
+  if (isCreditCard) {
+    // 信用卡：呼叫 NewebPay /API/CreditCard/Close 直退
+    let refundResult
+    try {
+      refundResult = await requestCreditCardRefund({
+        merchantOrderNo,
+        amount: order.amount,
+      })
+    } catch (err) {
+      console.error('NewebPay refund API call threw:', err)
+      await supabase
+        .from('aivis_newebpay_pending')
+        .update({
+          refund_status: 'failed',
+          refund_method: 'api_credit',
+          refund_note: `API call exception: ${err.message}`,
+        })
+        .eq('merchant_order_no', merchantOrderNo)
+      return res.status(502).json({ error: 'Refund API call failed', detail: err.message })
+    }
+
+    if (!refundResult.ok) {
+      // NewebPay 業務面失敗（如訂單已關帳超過退款期限）
+      await supabase
+        .from('aivis_newebpay_pending')
+        .update({
+          refund_status: 'failed',
+          refund_method: 'api_credit',
+          refund_note: `NewebPay ${refundResult.status}: ${refundResult.message}`,
+        })
+        .eq('merchant_order_no', merchantOrderNo)
+      return res.status(400).json({
+        error: 'NewebPay refund failed',
+        detail: `${refundResult.status}: ${refundResult.message}`,
+      })
+    }
+
+    // 信用卡退款成功
+    await supabase
+      .from('aivis_newebpay_pending')
+      .update({
+        refund_status: 'completed',
+        refund_method: 'api_credit',
+        refund_amount: order.amount,
+        refunded_at: new Date().toISOString(),
+        refund_note: `NewebPay SUCCESS: ${refundResult.message || 'refund accepted'}`,
+      })
+      .eq('merchant_order_no', merchantOrderNo)
+
+    // 立即降回 Free（不等對帳）
+    await supabase
+      .from('profiles')
+      .update({ is_pro: false })
+      .eq('id', userId)
+
+    return res.status(200).json({
+      success: true,
+      refund_method: 'api_credit',
+      message: `信用卡退款已成功送出，預計 7-14 個工作天內退回原卡。退款金額 NT$${order.amount.toLocaleString()}。`,
+    })
+  }
+
+  // 非信用卡（VACC / WEBATM / CVS / BARCODE）：手動轉帳路徑
+  await supabase
+    .from('aivis_newebpay_pending')
+    .update({
+      refund_status: 'pending',
+      refund_method: 'manual_transfer',
+      refund_amount: order.amount,
+      refund_note: `Awaiting manual transfer. Payment type: ${order.payment_type}. Customer: ${authData.user.email}`,
+    })
+    .eq('merchant_order_no', merchantOrderNo)
+
+  // 立即降回 Free（手動轉帳是金流側流程，產品端立即停權公平）
+  await supabase
+    .from('profiles')
+    .update({ is_pro: false })
+    .eq('id', userId)
+
+  return res.status(200).json({
+    success: true,
+    refund_method: 'manual_transfer',
+    message: `因您是以 ${order.payment_type} 方式付款，無法線上自動退款。我們的客服將於 7 個工作天內以 email 聯繫您索取銀行帳號，並完成手動轉帳。退款金額 NT$${order.amount.toLocaleString()}。`,
+  })
 }
