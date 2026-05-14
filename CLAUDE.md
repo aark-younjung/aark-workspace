@@ -279,6 +279,28 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 
 ## 工作日誌
 
+### 2026-05-14
+**NewebPay 沙盒實測 Flow 4 — 14 天退款 TRA10035「未請款狀態」fallback 補洞:**
+- 💡 **背景**：Flow 3 早鳥 NT$11,880 付款成功後立刻在 `/account` 按「取消訂閱 → 確認退款」，NewebPay 回 `TRA10035: 該交易非授權成功或已請款完成狀態`，退款失敗。Root cause 是 NewebPay 信用卡兩階段金流 — 授權 (Authorize) → D+1 自動請款 (Capture) — 而 Close API (CloseType=2) 退款只接受「已請款」狀態，剛付款 2 分鐘的交易仍停在「已授權未請款」階段被擋。**這個 bug 不修上線後會反覆出現**：客戶下午付完年繳、傍晚就反悔，必然踩到同個雷（NewebPay D+1 才請款是常態，不是沙盒特有行為）。
+- ✅ **新增 [api/lib/newebpay.js](api/lib/newebpay.js) `cancelCreditCardAuthorization()` helper**：對應 NewebPay `https://ccore.newebpay.com/API/CreditCard/Cancel`（正式 `core.newebpay.com`），PostData 規範比 Close 少一個 `CloseType` 欄位、其他皆同（RespondType / Version / Amt / MerchantOrderNo / TimeStamp / IndexType=1）。env 加可選 `NEWEBPAY_CANCEL_API_URL` 覆寫（沙盒/正式切換用，預設沙盒）。回傳介面與 `requestCreditCardRefund` 一致（`{ ok, status, message, raw }`），讓 caller 切換無痛。
+- ✅ **[api/newebpay-notify.js](api/newebpay-notify.js) `handleRefund` 加 TRA10035 fallback 分支**：信用卡 Close API 失敗時，先判斷 `refundResult.status === 'TRA10035'`（同時用正則覆蓋 `message` 內含 'TRA10035' 的情況容錯），若命中 → 呼叫 `cancelCreditCardAuthorization()` 取消授權。成功路徑：(a) 標 `refund_status='completed'` / `refund_method='api_credit'`（**沿用既有 method 標籤，差異記在 refund_note** — 避免再踩 CHECK constraint 雷，前科見上方 pack_check 條目）/ `refund_note='NewebPay CancelTrans SUCCESS (unsettled auth path): ...'` (b) `profiles.is_pro=false` 立即停權 (c) 回前端訊息差異化「因您剛完成付款不久（NewebPay 尚未請款），系統已直接取消授權，您的銀行帳戶不會被扣款，預留額度將於 1-3 個工作天內釋放回信用卡」(d) 失敗則 refund_note 記 `Close TRA10035 → Cancel {status}: {message}` 便於診斷雙重失敗。
+- ✅ **parse 驗證**：[api/lib/newebpay.js](api/lib/newebpay.js) + [api/newebpay-notify.js](api/newebpay-notify.js) @babel/parser sourceType=module 通過 (`OK`)。
+- 🔖 **取捨：用 refund_method='api_credit' 統一兩條路徑、差異塞 refund_note**：原本可加新值 `'api_cancel_auth'` 但會需要先 ALTER refund_method 的 CHECK constraint（如有），而今天才剛被 pack_check 咬一次。沿用 `api_credit` 對用戶面零差別（兩條路最終都是退到原卡），admin 端要差異化未來改寫 `refund_note LIKE '%CancelTrans%'` 即可，不開新 schema 戰場。
+- 🔖 **取捨：用 status 字串比對 'TRA10035' 而非加白名單 enum**：NewebPay 錯誤碼是 prefix-coded 字串（TRA / SYS / ...），未來可能新增更多「未請款相關」錯誤碼。當下只精確匹配 TRA10035（最常見場景）+ 正則容錯，避免過早抽象「任何未請款錯誤都 fallback」反而吃掉真實的退款失敗（如金額不符、訂單不存在）。發現第二個錯誤碼需要 fallback 時再擴。
+- 🔖 **取捨：CancelTrans 沒有 refund_amount 部分退款概念，仍寫整筆 order.amount**：NewebPay Cancel API 是「全額取消授權」、不支援部分。對 14 天無條件退款場景沒影響（本來就全退），未來若加部分退款功能必須走 Close API（已請款後才能部分退）+ 不同 endpoint，schema 已有 refund_amount 欄位先佔位。
+- ⏳ **驗收待跑**：deploy 後重置 `pebmp5c4p5euh07` 的 refund_status='none'，回 `/account` 再按一次「取消訂閱」，預期 alert「因您剛完成付款不久…預留額度將於 1-3 個工作天內釋放」+ DB 端 `refund_status='completed'` / `refund_method='api_credit'` / `refund_note` 開頭含 `CancelTrans SUCCESS` / `profiles.is_pro=false`。隔日 D+1 NewebPay 自動請款後可再付一次測「已請款 → CloseType=2 直退」path 補完雙路徑覆蓋。
+
+### 2026-05-14
+**NewebPay 沙盒實測 Flow 3 — Pro 年繳 / 早鳥結帳 CHECK constraint 漏網修補:**
+- 💡 **背景**：沙盒商家審核 2026-05-14 通過後，依序測 Flow 1 Top-up 小包 ✅ / Flow 2 Top-up 大包 ✅ / Flow 3 Pro 年繳。Pricing 頁「立即升級 Pro · NT$1,158／月」按下後彈出 `Pending order insert failed: new row for relation "aivis_newebpay_pending" violates check constraint "aivis_newebpay_pending_pack_check"`，付款流程中斷。**這是上線前抓到的關鍵 bug — 不修的話開賣第一天每個想付年繳的用戶都會踩到，年繳營收直接歸零**。
+- ✅ **Root cause**：[aivis_newebpay_pending](aark-workspace) 表的 `pack` 欄位 CHECK constraint 在 Phase 1 Step 1（2026-05-11，Top-up MPG 串接）建表時只寫 `CHECK pack IN ('small', 'large')`，後續 Phase 1 Step 2（2026-05-13，Pro 年繳 endpoint）寫 [api/checkout-pro-yearly-newebpay.js](api/checkout-pro-yearly-newebpay.js) 時 `pack: plan`（值為 `'yearly'` 或 `'earlybird'`）但忘了同步擴充 constraint。因為當時沒沙盒帳號無法 e2e 跑，所以 parse OK 就過了，constraint 漏網直到今天實測才暴露。
+- ✅ **修補 SQL**（Supabase Dashboard 已跑）：`ALTER TABLE aivis_newebpay_pending DROP CONSTRAINT IF EXISTS aivis_newebpay_pending_pack_check; ALTER TABLE aivis_newebpay_pending ADD CONSTRAINT aivis_newebpay_pending_pack_check CHECK (pack IN ('small', 'large', 'yearly', 'earlybird'));` — table-level 永久修補，所有未來用戶都安全，跟個別帳號無關。
+- ✅ **驗證**：修完重按「立即升級 Pro」成功跳轉 NewebPay 沙盒付款頁，pending row 寫入正常。
+- 🔖 **取捨：用 CHECK + IN list 而非 enum type**：原本可改成 PG enum (`CREATE TYPE pack_kind AS ENUM (...)`)，型別更嚴格、加值要 `ALTER TYPE ... ADD VALUE`。但 enum 改值是 PG 12+ 才完全支援、加值不能放交易裡、刪值更麻煩，相較之下 CHECK + IN list 改 constraint 是兩條 ALTER 完事、可重跑、無 migration 複雜度。pack 值未來大概率不會超過 4-5 種（再加 Agency 訂閱方案頂多 6 種），CHECK 表達力足夠。
+- 🔖 **取捨：constraint name 沿用 `aivis_newebpay_pending_pack_check`**：PG 自動命名遵循 `{table}_{column}_check`，DROP 後 ADD 用同名能讓 Supabase Dashboard 與 pg_dump 輸出一致，未來別人讀 schema 不會看到孤兒 constraint 名困惑「為什麼這個叫 pack_check_v2」。
+- ⚠️ **流程教訓**：Phase 1 Step 2 寫的時候若有沙盒帳號就能當天 e2e 跑、當天抓到 constraint 問題；本案是「程式碼 + DB schema 跨批次演進」典型場景 — 改 endpoint 時必須一併 review 它寫入的表的 constraint 是否還涵蓋新值。未來加新 `kind` / `pack` / `status` 等 enum-like 字串值前，先 grep 對應表的 SQL 定義確認 constraint 不會擋。
+- ⏳ **剩餘 NewebPay 沙盒測試**：Flow 3 Test A 年繳 NT$13,900 結帳完成 → 驗 notify 寫 `profiles.is_pro=true / payment_gateway='newebpay' / subscribed_at=now()` / Flow 3 Test B 早鳥 NT$11,880 結帳 → 驗 `aivis_newebpay_pending.pack='earlybird' AND status='paid'` 算進 public-stats earlybird_taken / Flow 4 14-day 退款流程。
+
 ### 2026-05-13
 **後臺第三階段 — Showcase 排行榜審核（admin approval gate + Dashboard 提交入口 + 4 分支狀態 UI）:**
 - 💡 **背景**：第三階段三項待辦中用戶選定優先級 (2) Showcase 審核 → (1) FAQ/定價管理 → (3) /crawl-check。原 Showcase 頁（/showcase）自動把所有 `scan_count > 0` 的 websites 列出來，開放上線後用戶會把測試 URL / 競品 / 不雅內容刷上去傷品牌，需 admin 審核 gate。本批次完整實作 admin 審核閉環：用戶在 Dashboard 提交網站 → 進待審佇列 → admin 在 /admin/showcase 核准 / 退回 → 核准的才出現在公開 /showcase，退回的把原因回顯給用戶。Vercel Hobby 12/12 functions 已頂死 → 全部走 admin 端 / 用戶端直寫 supabase + RLS（既有 `is_admin()` helper），不加新 endpoint。

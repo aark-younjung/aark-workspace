@@ -167,6 +167,67 @@ export async function requestCreditCardRefund({ merchantOrderNo, amount }) {
   }
 }
 
+// NewebPay 取消授權 API endpoint（信用卡剛授權成功、尚未請款時用）
+// 沙盒 https://ccore.newebpay.com/API/CreditCard/Cancel
+// 正式 https://core.newebpay.com/API/CreditCard/Cancel
+//
+// 為什麼需要這支：
+//   信用卡兩階段金流 — 授權 (Authorize) → NewebPay D+1 自動請款 (Capture)。
+//   Close API (CloseType=2) 退款只接受「已請款」狀態，剛付款的交易仍在「已授權未請款」會回
+//   TRA10035「該交易非授權成功或已請款完成狀態」。此時必須改打 Cancel API 取消授權，
+//   讓銀行端釋放預留額度（用戶看不到「退款」交易，因為錢從未真正扣下）。
+//
+// 用法與 requestCreditCardRefund 一致 — 傳入 { merchantOrderNo, amount } → 回 { ok, status, message, raw }
+export async function cancelCreditCardAuthorization({ merchantOrderNo, amount }) {
+  const {
+    NEWEBPAY_MERCHANT_ID, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV,
+    NEWEBPAY_CANCEL_API_URL,
+  } = process.env
+  if (!NEWEBPAY_MERCHANT_ID || !NEWEBPAY_HASH_KEY || !NEWEBPAY_HASH_IV) {
+    throw new Error('NewebPay env vars not configured: NEWEBPAY_MERCHANT_ID / NEWEBPAY_HASH_KEY / NEWEBPAY_HASH_IV')
+  }
+  const apiUrl = NEWEBPAY_CANCEL_API_URL || 'https://ccore.newebpay.com/API/CreditCard/Cancel'
+  // CancelTrans PostData 規範參數（與 Close 類似但無 CloseType）
+  const cancelParams = {
+    RespondType: 'JSON',
+    Version: '1.0',
+    Amt: amount,
+    MerchantOrderNo: merchantOrderNo,
+    TimeStamp: Math.floor(Date.now() / 1000),
+    IndexType: 1,           // 1 = 用商家訂單編號
+  }
+  const formString = buildFormString(cancelParams)
+  const encrypted = aesEncrypt(formString, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV)
+  const body = new URLSearchParams({
+    MerchantID_: NEWEBPAY_MERCHANT_ID,
+    PostData_: encrypted,
+  })
+  let response
+  try {
+    response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    })
+  } catch (err) {
+    return { ok: false, status: 'NETWORK_ERROR', message: err.message, raw: null }
+  }
+  let parsed
+  try {
+    parsed = await response.json()
+  } catch {
+    const text = await response.text().catch(() => '')
+    return { ok: false, status: 'INVALID_RESPONSE', message: `Non-JSON response: ${text.slice(0, 200)}`, raw: text }
+  }
+  const ok = parsed?.Status === 'SUCCESS'
+  return {
+    ok,
+    status: parsed?.Status || 'UNKNOWN',
+    message: parsed?.Message || '',
+    raw: parsed,
+  }
+}
+
 // 解 notify payload — 給 /api/newebpay-notify 用
 // 回 { ok, data, error }，data 是 NewebPay 回傳的 JSON 物件（已解密）
 export function parseNotifyPayload({ TradeInfo, TradeSha }) {

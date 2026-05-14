@@ -37,7 +37,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { parseNotifyPayload, requestCreditCardRefund } from './lib/newebpay.js'
+import { parseNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization } from './lib/newebpay.js'
 
 // Vercel/Next 預設 bodyParser 會接受 form-urlencoded 並解到 req.body — 不需要特別 raw body
 // 但要確認 NewebPay 送的 Content-Type 是 application/x-www-form-urlencoded
@@ -284,7 +284,67 @@ async function handleRefund({ req, res, supabase }) {
     }
 
     if (!refundResult.ok) {
-      // NewebPay 業務面失敗（如訂單已關帳超過退款期限）
+      // TRA10035 = 該交易非授權成功或已請款完成狀態 → 交易仍在「已授權未請款」階段
+      // NewebPay D+1 才自動請款，剛付款立刻退款（如沙盒測試或用戶秒反悔）會踩到此狀態。
+      // 改打 Cancel API 取消授權，效果等同退款（銀行端釋放預留額度，用戶不會被扣款）
+      const isUnsettledAuth = refundResult.status === 'TRA10035' ||
+        /TRA10035/i.test(refundResult.message || '')
+      if (isUnsettledAuth) {
+        let cancelResult
+        try {
+          cancelResult = await cancelCreditCardAuthorization({
+            merchantOrderNo,
+            amount: order.amount,
+          })
+        } catch (err) {
+          console.error('NewebPay cancel auth API call threw:', err)
+          await supabase
+            .from('aivis_newebpay_pending')
+            .update({
+              refund_status: 'failed',
+              refund_method: 'api_credit',
+              refund_note: `Close TRA10035 → Cancel API call exception: ${err.message}`,
+            })
+            .eq('merchant_order_no', merchantOrderNo)
+          return res.status(502).json({ error: 'Cancel auth API call failed', detail: err.message })
+        }
+        if (!cancelResult.ok) {
+          await supabase
+            .from('aivis_newebpay_pending')
+            .update({
+              refund_status: 'failed',
+              refund_method: 'api_credit',
+              refund_note: `Close TRA10035 → Cancel ${cancelResult.status}: ${cancelResult.message}`,
+            })
+            .eq('merchant_order_no', merchantOrderNo)
+          return res.status(400).json({
+            error: 'NewebPay refund failed',
+            detail: `Close TRA10035 then Cancel ${cancelResult.status}: ${cancelResult.message}`,
+          })
+        }
+        // 取消授權成功 — 視為退款完成
+        await supabase
+          .from('aivis_newebpay_pending')
+          .update({
+            refund_status: 'completed',
+            refund_method: 'api_credit',
+            refund_amount: order.amount,
+            refunded_at: new Date().toISOString(),
+            refund_note: `NewebPay CancelTrans SUCCESS (unsettled auth path): ${cancelResult.message || 'authorization cancelled'}`,
+          })
+          .eq('merchant_order_no', merchantOrderNo)
+        await supabase
+          .from('profiles')
+          .update({ is_pro: false })
+          .eq('id', userId)
+        return res.status(200).json({
+          success: true,
+          refund_method: 'api_credit',
+          message: `因您剛完成付款不久（NewebPay 尚未請款），系統已直接取消授權，您的銀行帳戶不會被扣款，預留額度將於 1-3 個工作天內釋放回信用卡。金額 NT$${order.amount.toLocaleString()}。`,
+        })
+      }
+
+      // 非 TRA10035 → 真正的退款失敗（訂單已關帳、超過退款期限、金額不符等）
       await supabase
         .from('aivis_newebpay_pending')
         .update({
