@@ -1,8 +1,10 @@
 /**
  * POST /api/newebpay-notify
- * 雙用途 endpoint（Vercel Hobby 12 functions 上限對策，用 ?action 分發）：
+ * 三用途 endpoint（Vercel Hobby 12 functions 上限對策，用 ?action 分發）：
  *   - 預設（無 action 或 action=notify）：NotifyURL server-to-server — 接收 NewebPay 付款結果
  *   - ?action=refund：14 天無條件退款 user-initiated 端點，前端 Account 取消按鈕呼叫
+ *   - ?action=return：ReturnURL 中介 — NewebPay 付款完成後瀏覽器 POST 回來，我們 302 跳到 SPA GET URL
+ *     （Vercel SPA fallback 不處理 POST，直接讓 NewebPay POST 到前端網址會 502；必須走 API 中介）
  *
  * ─────────────────── action=notify（預設）─────────────────────
  * NewebPay 以 application/x-www-form-urlencoded POST 過來：
@@ -53,7 +55,11 @@ export default async function handler(req, res) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
   // 分流：?action=refund 走退款邏輯（user-initiated, JSON body）
+  // ?action=return 走 ReturnURL 中介（NewebPay POST → 302 跳 SPA GET URL）
   // 預設 / action=notify 走付款結果通知（NewebPay server-to-server, form body）
+  if (req.query?.action === 'return') {
+    return handleReturn({ req, res })
+  }
   if (req.query?.action === 'refund') {
     return handleRefund({ req, res, supabase })
   }
@@ -340,4 +346,60 @@ async function handleRefund({ req, res, supabase }) {
     refund_method: 'manual_transfer',
     message: `因您是以 ${order.payment_type} 方式付款，無法線上自動退款。我們的客服將於 7 個工作天內以 email 聯繫您索取銀行帳號，並完成手動轉帳。退款金額 NT$${order.amount.toLocaleString()}。`,
   })
+}
+
+// ReturnURL 中介 — NewebPay 付款完成後瀏覽器 POST 回來，我們 302 跳到 SPA GET URL
+// Vercel SPA fallback 不處理 POST，直接讓 NewebPay POST 到前端網址會 502，必須走 API 中介
+// Query params:
+//   dest=<URL-encoded 目的地路徑>（必填，例如 /pricing 或 /account）
+//   flag=<URL-encoded 附加 query 片段>（選填，例如 pro_success=yearly）
+// Same-origin 守門：dest 必須是相對路徑（/開頭）或同 host，防 open redirect
+async function handleReturn({ req, res }) {
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.a-ark.com.tw'
+  const destRaw = req.query?.dest
+  const flagRaw = req.query?.flag
+
+  if (!destRaw || typeof destRaw !== 'string') {
+    return res.status(400).send('Missing dest query param')
+  }
+
+  let dest
+  try {
+    dest = decodeURIComponent(destRaw)
+  } catch {
+    return res.status(400).send('Invalid dest encoding')
+  }
+
+  // Same-origin 檢查：(1) 相對路徑 /xxx OK (2) 絕對 URL 必須是 SITE_URL host
+  let target
+  if (dest.startsWith('/')) {
+    target = `${SITE_URL.replace(/\/$/, '')}${dest}`
+  } else {
+    let destUrl
+    try {
+      destUrl = new URL(dest)
+    } catch {
+      return res.status(400).send('Invalid dest URL')
+    }
+    const siteHost = new URL(SITE_URL).host
+    if (destUrl.host !== siteHost) {
+      return res.status(400).send('dest must be same-origin')
+    }
+    target = destUrl.toString()
+  }
+
+  // 附加 flag（成功提示 query）
+  if (flagRaw && typeof flagRaw === 'string') {
+    let flag
+    try {
+      flag = decodeURIComponent(flagRaw)
+    } catch {
+      return res.status(400).send('Invalid flag encoding')
+    }
+    const sep = target.includes('?') ? '&' : '?'
+    target = `${target}${sep}${flag}`
+  }
+
+  res.setHeader('Location', target)
+  return res.status(302).end()
 }

@@ -88,9 +88,9 @@ export default async function handler(req, res) {
     Email: email,
     LoginType: 0,
     NotifyURL: `${SITE_URL}/api/newebpay-notify`,
-    ReturnURL: returnUrl
-      ? `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}pro_success=${plan}`
-      : `${SITE_URL}/account?pro_success=${plan}`,
+    // NewebPay 以 POST method redirect 到 ReturnURL，Vercel SPA fallback 只認 GET 會 502
+    // 走 /api/newebpay-notify?action=return 中介：API 接 POST 後 302 跳到 SPA GET URL
+    ReturnURL: `${SITE_URL}/api/newebpay-notify?action=return&dest=${encodeURIComponent(returnUrl || '/account')}&flag=${encodeURIComponent(`pro_success=${plan}`)}`,
     ClientBackURL: returnUrl || `${SITE_URL}/pricing`,
     CREDIT: 1,
     VACC: 1,

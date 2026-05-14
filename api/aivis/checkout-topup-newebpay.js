@@ -84,10 +84,10 @@ export default async function handler(req, res) {
     LoginType: 0,                                          // 不需登入 NewebPay 會員
     // server-to-server 通知（這條一定會收到，是寫 DB 的真正依據）
     NotifyURL: `${SITE_URL}/api/newebpay-notify`,
-    // 付款完成後 browser redirect 回前台（順便帶 success flag）
-    ReturnURL: returnUrl
-      ? `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}topup_success=${pack}`
-      : `${SITE_URL}/?topup_success=${pack}`,
+    // 付款完成後 NewebPay 會以 POST method redirect 回 ReturnURL
+    // Vercel SPA fallback 只處理 GET，直接 POST 到前端網址會 502
+    // 走 /api/newebpay-notify?action=return 中介：API 接 POST 後 302 跳到 SPA GET URL
+    ReturnURL: `${SITE_URL}/api/newebpay-notify?action=return&dest=${encodeURIComponent(returnUrl || '/')}&flag=${encodeURIComponent(`topup_success=${pack}`)}`,
     // 付款頁「取消」按鈕的去處
     ClientBackURL: returnUrl || `${SITE_URL}/`,
     // 支付方式：信用卡 + ATM + 網路 ATM + 超商代碼/條碼（沙盒先全開，正式可依需求調整）
