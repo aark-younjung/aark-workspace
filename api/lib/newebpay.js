@@ -91,6 +91,12 @@ export function buildPaymentForm(tradeParams) {
   const formString = buildFormString({ MerchantID: NEWEBPAY_MERCHANT_ID, ...tradeParams })
   const tradeInfo = aesEncrypt(formString, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV)
   const tradeSha = sha256Hash(tradeInfo, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV)
+  // TEMP DEBUG (2026-05-15 production smoke test diagnostics, 用完即刪)：印出 TradeInfo 加密前/後供 NewebPay 客服診斷
+  console.log('[NEWEBPAY DEBUG] apiUrl:', apiUrl)
+  console.log('[NEWEBPAY DEBUG] MerchantID:', NEWEBPAY_MERCHANT_ID)
+  console.log('[NEWEBPAY DEBUG] TradeInfo (cleartext / 加密前):', formString)
+  console.log('[NEWEBPAY DEBUG] TradeInfo (encrypted / 加密後):', tradeInfo)
+  console.log('[NEWEBPAY DEBUG] TradeSha:', tradeSha)
   return {
     MerchantID: NEWEBPAY_MERCHANT_ID,
     TradeInfo: tradeInfo,
