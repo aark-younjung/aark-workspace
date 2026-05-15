@@ -415,7 +415,7 @@ async function handleRefund({ req, res, supabase }) {
 //   flag=<URL-encoded 附加 query 片段>（選填，例如 pro_success=yearly）
 // Same-origin 守門：dest 必須是相對路徑（/開頭）或同 host，防 open redirect
 async function handleReturn({ req, res }) {
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.a-ark.com.tw'
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aark-workspace.vercel.app'
   const destRaw = req.query?.dest
   const flagRaw = req.query?.flag
 
