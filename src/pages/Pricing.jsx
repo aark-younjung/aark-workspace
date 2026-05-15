@@ -114,7 +114,7 @@ const FAQ_ITEMS = [
     tag: '取消／退款焦慮',
     tagColor: '#ef4444',
     q: '可以隨時取消嗎？退款怎麼算？',
-    a: '可以。月繳方案隨時取消、下個計費週期不再收費，月繳不提供退款。年繳方案享 14 天無條件退款保證，期限內取消可全額退費；超過 14 天則繼續使用至期滿後降為免費版。',
+    a: '可以。年繳方案享 14 天無條件退款保證，期限內取消可全額退費；超過 14 天則繼續使用至期滿後降為免費版。月繳定期定額方案正在串接中，預計上線後 1-2 週內開放。',
   },
   {
     tag: '試用流程焦慮',
@@ -155,8 +155,8 @@ const FAQ_ITEMS = [
 ]
 
 export default function Pricing() {
-  // A3: 預設 yearly（年繳更省，預設選中提高 AOV，符合 5 LLM 共識最佳實踐）
-  const [isYearly, setIsYearly] = useState(true)
+  // Phase 1 上線鎖年繳；月繳定期定額待 NPA 串接後再開放
+  const isYearly = true
   const { user, isPro, isTrial, hasTrialedBefore, trialDaysRemaining, startTrial } = useAuth()
   const { isDark } = useTheme()
   const navigate = useNavigate()
@@ -223,8 +223,8 @@ export default function Pricing() {
     if (!user) { navigate('/register'); return }
     if (isPro) { navigate('/'); return }
     if (hasTrialedBefore) {
-      // 試用次數用過了，引導去付費（依當前 toggle 決定年繳/月繳）
-      return handleUpgrade(isYearly ? 'yearly' : 'monthly')
+      // 試用次數用過了，引導去付費（Phase 1 上線只開放年繳，月繳定期定額待 NPA 串接後開放）
+      return handleUpgrade('yearly')
     }
     setStartingTrial(true)
     try {
@@ -234,7 +234,7 @@ export default function Pricing() {
         navigate('/')
       } else if (result?.error === 'already_trialed') {
         alert('您已經啟用過 7 天試用了，請選擇付費方案繼續使用 Pro 功能')
-        await handleUpgrade(isYearly ? 'yearly' : 'monthly')
+        await handleUpgrade('yearly')
       } else if (result?.error === 'already_pro') {
         navigate('/')
       } else {
@@ -245,60 +245,43 @@ export default function Pricing() {
     }
   }
 
-  const handleUpgrade = async (priceType = 'monthly') => {
+  const handleUpgrade = async (priceType = 'yearly') => {
     if (!user) { navigate('/register'); return }
     if (isPro) { navigate('/'); return }
+    // Phase 1 上線只開放年繳 + 早鳥，月繳定期定額待 NPA 串接後開放
+    const plan = priceType === 'earlybird' ? 'earlybird' : 'yearly'
     setUpgrading(true)
     try {
-      // 年繳 + 早鳥走 NewebPay 一次性付款（Phase 1 Step 2）— 拿到 form fields 後動態建表單整頁跳轉
-      if (priceType === 'yearly' || priceType === 'earlybird') {
-        const res = await fetch('/api/checkout-pro-yearly-newebpay', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user.id,
-            email: user.email,
-            plan: priceType,
-            returnUrl: window.location.href,
-          }),
-        })
-        const data = await res.json()
-        if (!res.ok || !data.apiUrl || !data.fields) {
-          alert(data.error || '建立付款頁面失敗，請稍後再試')
-          setUpgrading(false)
-          return
-        }
-        const form = document.createElement('form')
-        form.method = 'POST'
-        form.action = data.apiUrl
-        Object.entries(data.fields).forEach(([name, value]) => {
-          const input = document.createElement('input')
-          input.type = 'hidden'
-          input.name = name
-          input.value = String(value)
-          form.appendChild(input)
-        })
-        document.body.appendChild(form)
-        form.submit()
-        return
-      }
-      // 月繳暫時保留 Stripe 通道（Phase 1 Step 3 定期定額尚未串接 NewebPay）
-      const res = await fetch('/api/create-checkout-session', {
+      const res = await fetch('/api/checkout-pro-yearly-newebpay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
           email: user.email,
+          plan,
           returnUrl: window.location.href,
-          priceType,
         }),
       })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else alert(data.error || '建立付款頁面失敗，請稍後再試')
+      if (!res.ok || !data.apiUrl || !data.fields) {
+        alert(data.error || '建立付款頁面失敗，請稍後再試')
+        setUpgrading(false)
+        return
+      }
+      const form = document.createElement('form')
+      form.method = 'POST'
+      form.action = data.apiUrl
+      Object.entries(data.fields).forEach(([name, value]) => {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = name
+        input.value = String(value)
+        form.appendChild(input)
+      })
+      document.body.appendChild(form)
+      form.submit()
     } catch {
       alert('連線失敗，請稍後再試')
-    } finally {
       setUpgrading(false)
     }
   }
@@ -473,39 +456,19 @@ export default function Pricing() {
             </span>
           </p>
 
-          {/* 月繳 / 年繳切換 */}
-          <div className="flex items-center justify-center gap-4 mt-8">
+          {/* Phase 1 上線只開放年繳，月繳定期定額待 NPA 串接後再開放；以年繳省錢膠囊取代月/年切換 */}
+          <div className="flex items-center justify-center gap-3 mt-8 flex-wrap">
             <span
-              className="text-sm font-medium transition-colors"
-              style={isDark
-                ? { color: !isYearly ? T.text : T.textLow }
-                : { color: !isYearly ? '#0f172a' : '#94a3b8' }
-              }
-            >月繳</span>
-            <button
-              onClick={() => setIsYearly(v => !v)}
-              className="relative w-14 h-7 rounded-full transition-colors duration-300"
-              style={{ background: isYearly ? T.aeo : T.orange }}
-              aria-label="切換月繳/年繳"
+              className="px-4 py-2 text-sm font-semibold rounded-full"
+              style={{ background: T.pass + '26', color: T.pass, border: `1px solid ${T.pass}55` }}
             >
-              <span
-                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${
-                  isYearly ? 'translate-x-7' : 'translate-x-0'
-                }`}
-              />
-            </button>
+              ✨ 年繳省 {savedPercent}%・等於免費多用 {savedMonths} 個月
+            </span>
             <span
-              className="text-sm font-medium transition-colors"
-              style={isDark
-                ? { color: isYearly ? T.text : T.textLow }
-                : { color: isYearly ? '#0f172a' : '#94a3b8' }
-              }
+              className="text-xs"
+              style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
             >
-              年繳
-              <span
-                className="ml-2 px-2 py-0.5 text-xs rounded-full"
-                style={{ background: T.pass + '33', color: T.pass }}
-              >省 {savedPercent}%・等於免費多用 {savedMonths} 個月</span>
+              月繳方案即將開放
             </span>
           </div>
         </div>

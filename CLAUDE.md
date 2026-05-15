@@ -279,6 +279,19 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 
 ## 工作日誌
 
+### 2026-05-15
+**Phase 1 上線備戰 — 月繳按鈕暫關 + Account 退款狀態收尾 (Route B 啟動):**
+- 💡 **背景**：2026-05-14 NewebPay 同日通過 MPG + Close API + **NPA**（11:28:46 客服信件確認），正式商家代號 `MS3830621445`。但 NPA 後台啟用需 1-3 工作天（最晚 2026-05-20），程式串接月繳 `MPG_API/period` endpoint 還沒寫。決策：**Route B — 立即用 MPG-only 上線**（早鳥 + Pro 年繳 + Top-up），月繳按鈕先藏起來、NPA 串接 1-2 週後補。理由：早鳥 NT$11,880 比月繳 NT$1,388×12=NT$16,656 划算 29%，市場心理會自動把多數客戶導向年繳，月繳市占短期 < 20% 不急。
+- ✅ **[Pricing.jsx](src/pages/Pricing.jsx) 月繳/年繳 toggle 改為「月繳即將開放」單行提示**：(a) `handleUpgrade(billingCycle = 'yearly')` 預設值改 `'yearly'`，並移除原本 monthly 分支落地到 Stripe checkout 的 fallback（避免任何途徑觸發舊 Stripe 月繳 flow）(b) UI toggle 兩顆 pill button 整段刪除、換成置中微文案「月繳方案即將開放，目前提供年繳與早鳥優惠價」(c) `const isYearly = true` 固定常數，留下原本依賴 isYearly 的條件分支（line 1069 / 1113 / 1223 / 1229）作為 dead branch — 不清因為等 NPA 串接回來時要直接把這條改回 state 即可。diff 41 insertions / 75 deletions, parse OK。
+- ✅ **[Account.jsx](src/pages/Account.jsx) `latestProOrder` 查詢補 `refund_status='none'` filter + 退款成功自動 `fetchProfile`**：(a) line 9 `useAuth` destructure 加 `fetchProfile`（之前沒拿出來用）(b) `latestProOrder` Supabase query 加 `.eq('refund_status', 'none')` filter — 修補 [2026-05-14 沙盒 SQL 補丁的 TODO](#2026-05-14)，正式環境「客戶買→退→再買→再退」場景必踩雷，原本按 `paid_at DESC limit 1` 會抓到已退款訂單導致 handler 409 擋住第二次退款 (c) `handleRefundConfirm` 退款成功路徑加 `await fetchProfile(user.id)` — 因為 AuthContext 的 `isPro` 是 lazy state、退款 API 把 DB `profiles.is_pro=false` 後若沒重抓，前端 isPro 殘留 true 會造成「退款成功訊息卡」與「Pro 用戶介面」同時顯示的鬼畜場景。diff 5 lines, parse OK。
+- ✅ **`/refund-policy` 路徑驗證**：[ConsumerRights.jsx](src/pages/legal/ConsumerRights.jsx) 已含 Step 4「7 天鑑賞期說明」+ Step 5「退款政策」，含 14 天無條件退款條款（[2026-05-13 工作日誌](#2026-05-13)有完整定義）。App.jsx / Footer.jsx / Terms.jsx 三處 reference `/refund-policy` 與 `/consumer-rights` 路由均已掛載，**無須額外修改**。
+- 🔖 **取捨：留 dead `isYearly` 分支不清**：原本 4 處 `{isYearly ? A : B}` 三元式現在 B 分支永遠不到，clean code 觀點該刪。但 NPA 串接 1-2 週內就會回來把 `isYearly` 改回 useState、屆時 B 分支要復活，現在刪了等於先寫一次再寫一次。短期暫留可讀性沒差。
+- 🔖 **取捨：月繳 UI 完全藏掉而非「停售中」disabled 按鈕**：原本可保留月繳按鈕但加 disabled + tooltip「即將開放」當作 marketing teaser。但 (a) 按鈕被點到還是會走 handleUpgrade，要再加守衛邏輯保險 (b) toggle UI 留著但其中一邊不可點，比直接拿掉醜（UX 直覺「為什麼擺這顆」）。微文案一行直接告知更乾淨，等 NPA 上線時把 toggle 整段補回即可。
+- 🔖 **取捨：不在 commit 裡動 Stripe 月繳 endpoint**：原本 Pricing.jsx 月繳是走 Stripe `/api/create-checkout-session`，現在月繳路徑封死後 Stripe endpoint 變孤兒。但保留它 (a) 萬一 NewebPay 出包要回滾到 Stripe 月繳路徑成本低 (b) Vercel 12/12 functions 上限沒省的必要 (c) NPA 串完後若決策要保 Stripe 為國際版 fallback（Stripe Atlas Phase 2 路線圖[項目](memory/project_payment_strategy.md)），這條 endpoint 還能用。先放著不動。
+- ⏳ **用戶側操作 checklist（commit + push 後執行）**：(1) **Vercel env vars 切正式**：`NEWEBPAY_MERCHANT_ID=MS3830621445` / 正式 `NEWEBPAY_HASH_KEY` / `NEWEBPAY_HASH_IV`（向客服索取正式版）/ `NEWEBPAY_API_URL` 從 `ccore.newebpay.com` 換 `core.newebpay.com` / `NEWEBPAY_REFUND_API_URL` / `NEWEBPAY_CANCEL_API_URL` 對應替換 (2) **NewebPay 商家後台**「商店網址」從 `aark-workspace.vercel.app` 換 `app.a-ark.com.tw`（主網域）(3) **真卡 production smoke test**：自己刷 Top-up 小包 NT$490 → 收銀行 SMS → 收 NewebPay 入帳 email → 自己退款 → 收取消授權／退款 email → 完整鏈路在正式環境跑一次才開放給客戶 (4) **NPA 後台啟用驗證**（最晚 2026-05-20）：到 `會員中心 → 商店管理 → 商店設定 → 設定` 啟用「信用卡定期定額」，啟用後 `會員中心 → 信用卡定期定額管理 → 批次新增委託單` 的「選擇商店」dropdown 應跑出商店名稱才算開通成功。
+- ⏳ **NPA 程式串接 TODO**（NPA 啟用後 1-2 週內完成）：(1) 月繳 endpoint 新增走 NPA `MPG_API/period`（PostData_/PeriodType/PeriodPoint/PeriodStartType 等參數）(2) NPA Notify endpoint 另建（與 MPG Notify 不同 URL）(3) 取消委託 API 串接（月繳訂閱可隨時取消）(4) 沙盒實測月繳首次扣款 + 第二月自動扣款 + 取消委託三條 flow (5) Pricing.jsx 把月繳 UI toggle 補回，`isYearly` 改 state，把這次的 dead branch 復活。
+- ⏳ **電子發票**（法定 requirement）：仍未申請，可上線後補（先用人工開立或暫不開）— 走 NewebPay 加值或綠界 / ezPay，獨立工作項目。
+
 ### 2026-05-14
 **NewebPay 沙盒實測完整收尾 — 6 條 flow 全綠通過 + 退款雙 path 驗證 + NPA 月繳申請缺口確認:**
 - 💡 **背景**：2026-05-14 NewebPay 商家審核通過後同日完成沙盒端到端實測，把 MPG 一次性付款 + Close API 退款雙路徑全部驗證一輪，順手抓到並修補兩個上線級 bug（pack_check constraint 漏值、TRA10035 fallback）。是「程式碼寫完到能上線」之間最關鍵的一個 milestone。

@@ -6,7 +6,7 @@ import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
 
 export default function Account() {
-  const { user, profile, isPro, isTrial, trialEndsAt, trialDaysRemaining, userName, signOut } = useAuth()
+  const { user, profile, isPro, isTrial, trialEndsAt, trialDaysRemaining, userName, signOut, fetchProfile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [cancelling, setCancelling] = useState(false)
@@ -56,6 +56,7 @@ export default function Account() {
       .eq('user_id', user.id)
       .eq('kind', 'pro_yearly')
       .eq('status', 'paid')
+      .eq('refund_status', 'none')
       .order('paid_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -168,6 +169,8 @@ export default function Account() {
       setRefundResult({ method: data.refund_method, message: data.message })
       setCancelDone(true)
       setRefundModalOpen(false)
+      // 退款成功後刷 profile，避免本地 isPro 殘留 true 造成 UI 顯示 Pro
+      await fetchProfile(user.id)
     } catch {
       alert('連線失敗，請稍後再試')
     } finally {
