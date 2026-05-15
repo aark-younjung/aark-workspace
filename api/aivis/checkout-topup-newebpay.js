@@ -90,12 +90,13 @@ export default async function handler(req, res) {
     ReturnURL: `${SITE_URL}/api/newebpay-notify?action=return&dest=${encodeURIComponent(returnUrl || '/')}&flag=${encodeURIComponent(`topup_success=${pack}`)}`,
     // 付款頁「取消」按鈕的去處
     ClientBackURL: returnUrl || `${SITE_URL}/`,
-    // 支付方式：信用卡 + ATM + 網路 ATM + 超商代碼/條碼（沙盒先全開，正式可依需求調整）
+    // 只開信用卡：MS3830621445 商家只通過 MPG（信用卡）+ Close + NPA
+    // WebATM/VACC/CVS/BARCODE 未申請開通，送 1 會被 NewebPay 擋掉整筆交易（5 秒彈回）
     CREDIT: 1,
-    VACC: 1,
-    WEBATM: 1,
-    CVS: 1,
-    BARCODE: 1,
+    VACC: 0,
+    WEBATM: 0,
+    CVS: 0,
+    BARCODE: 0,
   }
 
   try {

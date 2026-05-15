@@ -92,11 +92,13 @@ export default async function handler(req, res) {
     // 走 /api/newebpay-notify?action=return 中介：API 接 POST 後 302 跳到 SPA GET URL
     ReturnURL: `${SITE_URL}/api/newebpay-notify?action=return&dest=${encodeURIComponent(returnUrl || '/account')}&flag=${encodeURIComponent(`pro_success=${plan}`)}`,
     ClientBackURL: returnUrl || `${SITE_URL}/pricing`,
+    // 只開信用卡：MS3830621445 商家只通過 MPG（信用卡）+ Close + NPA
+    // WebATM/VACC/CVS/BARCODE 未申請開通，送 1 會被 NewebPay 擋掉整筆交易
     CREDIT: 1,
-    VACC: 1,
-    WEBATM: 1,
-    CVS: 1,
-    BARCODE: 1,
+    VACC: 0,
+    WEBATM: 0,
+    CVS: 0,
+    BARCODE: 0,
   }
 
   try {
