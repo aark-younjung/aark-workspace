@@ -36,14 +36,20 @@
  * Idempotency：notify 用 source_payment_id UNIQUE 約束、refund 用 refund_status !='none' 守門
  */
 
+import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
-import { parseNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization } from './lib/newebpay.js'
+import { parseNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization, aesEncrypt, aesDecrypt } from './lib/newebpay.js'
 
 // Vercel/Next 預設 bodyParser 會接受 form-urlencoded 並解到 req.body — 不需要特別 raw body
 // 但要確認 NewebPay 送的 Content-Type 是 application/x-www-form-urlencoded
 // 若是 multipart 則要關掉 bodyParser 自己 parse — 目前 NewebPay 規範是 urlencoded
 
 export default async function handler(req, res) {
+  // debug-keys 走零成本診斷（GET 即可，不需 POST，不需 Supabase）— 在 method check 之前先處理
+  if (req.query?.action === 'debug-keys') {
+    return handleDebugKeys({ req, res })
+  }
+
   if (req.method !== 'POST') return res.status(405).send('Method not allowed')
 
   const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
@@ -462,4 +468,47 @@ async function handleReturn({ req, res }) {
 
   res.setHeader('Location', target)
   return res.status(302).end()
+}
+
+// 零成本診斷端點 — 不需 POST、不需刷卡、不需 Supabase
+// 回 HASH_KEY/HASH_IV 的 SHA256 指紋（前 8 碼）+ 長度 + 本地 encrypt→decrypt round-trip 自測
+// 用途：驗證 Vercel env var 與 NewebPay 後台金鑰是否一致（比對指紋即可，無需暴露明文）
+async function handleDebugKeys({ req, res }) {
+  const HASH_KEY = process.env.NEWEBPAY_HASH_KEY || ''
+  const HASH_IV = process.env.NEWEBPAY_HASH_IV || ''
+
+  const fingerprint = (s) => s ? crypto.createHash('sha256').update(s, 'utf8').digest('hex').slice(0, 8) : null
+
+  const result = {
+    hashKeyPresent: !!HASH_KEY,
+    hashKeyLength: HASH_KEY.length,
+    hashKeyFingerprint: fingerprint(HASH_KEY),
+    hashIvPresent: !!HASH_IV,
+    hashIvLength: HASH_IV.length,
+    hashIvFingerprint: fingerprint(HASH_IV),
+    expectedHashKeyLength: 32,
+    expectedHashIvLength: 16,
+    lengthsOk: HASH_KEY.length === 32 && HASH_IV.length === 16,
+    roundTripOk: false,
+    roundTripError: null,
+  }
+
+  // 本地 encrypt→decrypt 自測 — 若 key/iv 內部一致，明文應完全還原
+  if (HASH_KEY && HASH_IV) {
+    try {
+      const plaintext = 'aark-debug-roundtrip-test-' + Date.now()
+      const encrypted = aesEncrypt(plaintext, HASH_KEY, HASH_IV)
+      const decrypted = aesDecrypt(encrypted, HASH_KEY, HASH_IV)
+      result.roundTripOk = decrypted === plaintext
+      if (!result.roundTripOk) {
+        result.roundTripError = `decrypted mismatch: got "${decrypted}"`
+      }
+    } catch (err) {
+      result.roundTripError = err.message || String(err)
+    }
+  } else {
+    result.roundTripError = 'HASH_KEY or HASH_IV missing'
+  }
+
+  return res.status(200).json(result)
 }
