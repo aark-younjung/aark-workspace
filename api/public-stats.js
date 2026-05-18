@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       supabase.from('aivis_mentions').select('*', { count: 'exact', head: true }).eq('brand_mentioned', true),
       supabase.from('aivis_responses').select('*', { count: 'exact', head: true }),
       supabase.from('aivis_newebpay_pending').select('*', { count: 'exact', head: true })
-        .eq('pack', 'earlybird').eq('status', 'paid'),
+        .eq('pack', 'earlybird').eq('status', 'paid').neq('refund_status', 'completed'),
     ])
 
     const brands = brandsRes.count || 0

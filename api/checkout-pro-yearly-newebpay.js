@@ -60,6 +60,28 @@ export default async function handler(req, res) {
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+  // 早鳥 100 名守門：成功付款且未退款的早鳥單已達 100 → 擋下，引導改買年繳
+  // 退款（refund_status='completed'）的名額會回補池子，跟 public-stats earlybird_taken 同一邏輯
+  if (plan === 'earlybird') {
+    const { count, error: countErr } = await supabase
+      .from('aivis_newebpay_pending')
+      .select('*', { count: 'exact', head: true })
+      .eq('pack', 'earlybird')
+      .eq('status', 'paid')
+      .neq('refund_status', 'completed')
+    if (countErr) {
+      console.error('Failed to count earlybird slots:', countErr)
+      return res.status(500).json({ error: `Earlybird slot check failed: ${countErr.message}` })
+    }
+    if ((count || 0) >= 100) {
+      return res.status(400).json({
+        error: 'earlybird_sold_out',
+        message: '早鳥前 100 名額已售完，請改選年繳 NT$13,900 方案',
+      })
+    }
+  }
+
   // 訂單編號 prefix：py = pro_yearly、peb = pro_earlybird（仍寫 kind='pro_yearly' 但 prefix 方便人眼辨識）
   const merchantOrderNo = generateOrderNo(plan === 'earlybird' ? 'peb' : 'py')
 
