@@ -280,6 +280,11 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-05-18
+**aesDecrypt strip 放寬 N 上限 — NewebPay PKCS7-style with N=25 解謎:**
+- 🎯 **真正 root cause**：V0 加入後（直呼 production aesDecrypt）看到 `ok=true` 但 `utf8Tail` 末尾仍有 25 個 `\u0019` 殘留 + `plaintextLen=512`。轉譯：NewebPay 用 **PKCS7-style padding 但允許 N > block_size(16)** — 487-byte JSON 補 25 個 `0x19`（25=0x19）到 512 bytes。標準 PKCS7 規範 N ≤ 16，所以 Node `setAutoPadding(true)` 看到 0x19=25 認定非法 → bad_decrypt；我先前的 strip 也限制 `lastByte <= 16` 同樣沒剝 → V0 表面成功但 plaintext 留 25 個 0x19 → JSON.parse 仍會炸。
+- ✅ **[api/lib/newebpay.js](api/lib/newebpay.js) `aesDecrypt` 拿掉 N ≤ 16 上限**：(a) 末尾 strip 邏輯改成只要 `lastByte >= 1 && lastByte <= buf.length` 就嘗試剝（不限制 N ≤ 16）(b) 風險評估：要誤剝必須 plaintext 結尾真的有 N 個重複相同 byte 且該 byte = N，JSON 結尾固定是 `}` (0x7D=125)，要碰巧 125 個連續 `}` 才會誤剝，實務上零機率 (c) 同時兼容標準 PKCS7（N ≤ 16）+ NewebPay 變體（N > 16） — 我方 round-trip 情境也安全。+4 lines。
+
+### 2026-05-18
 **bad_decrypt root cause 定位 + aesDecrypt 修補 — V6 noPadding 揪出真兇:**
 - 🎯 **Root cause**：debug-decrypt-variants endpoint 跑 6 變體，V6 (`CBC + envIV + noPadding`) 唯一成功，解出完整 NewebPay JSON `{"Status":"SUCCESS","MerchantID":"MS3830621445","Amt":13900,...}` + `shaMatch: true`。確認：**KEY/IV/算法全對，唯獨 NewebPay 端 notify TradeInfo 不用 PKCS7 padding**（可能用 zero padding 或無 padding）。對稱矛盾：我方 checkout 送 PKCS7 給 NewebPay 他們解得開（授權 NT$13,900 成功），但 NewebPay 回 notify 卻用不同 padding 規範 — 兩個方向不對稱。
 - ✅ **[api/lib/newebpay.js](api/lib/newebpay.js) `aesDecrypt` 改用 noPadding + 智慧 strip**：(a) `setAutoPadding(false)` 不讓 Node 自動 strip，避免把真實 plaintext 末尾字元誤判為 padding (b) 智慧 strip 兩段：先試 PKCS7（末尾 N bytes 都等於 N 且 N 在 1-16 → 剝掉），不符則剝末尾連續 0x00（兼容 zero padding 或無 padding）(c) 為何兩段：要兼容**我方加密 TradeInfo round-trip** 情境（如 debug-keys endpoint 自我加解密測試、若未來有 checkout server-internal verify），那個方向用 PKCS7 (`aesEncrypt` 維持不變)，所以解密側必須能識別兩種 padding (d) JSON 結尾不會是 0x00，所以剝末尾 zero 安全，不會誤剝 plaintext 內容。+18 lines。

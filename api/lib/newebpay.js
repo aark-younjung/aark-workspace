@@ -32,25 +32,25 @@ export function aesEncrypt(plaintext, hashKey, hashIV) {
 // AES-256-CBC decrypt（接收 NewebPay notify payload 用）
 // 輸入 hex ciphertext → 回 utf8 plaintext
 //
-// NewebPay notify TradeInfo 實測非 PKCS7 padding（2026-05-18 debug-decrypt-variants V6 確認）：
-// 兩個方向 padding 規範不對稱 — checkout 送 PKCS7 給 NewebPay OK，但 NewebPay 回 notify 用
-// no-padding 或 zero-padding。`setAutoPadding(true)` 會把 plaintext 末尾真實字元當 padding 解讀
-// 而丟 bad_decrypt 錯誤。改為 noPadding + 自己 strip — 先試 PKCS7 pattern（兼容我方加密的
-// TradeInfo round-trip 情境），不符合則剝末尾連續 0x00（zero pad / no pad 都安全）。
+// NewebPay notify TradeInfo padding 規範實測（2026-05-18 debug-decrypt-variants V0 utf8Tail 確認）：
+// **PKCS7-style 但 N 可以 > block_size（16）**。例：487-byte JSON plaintext 補 25 個 0x19 = 512 bytes。
+// 標準 PKCS7 規範 N ≤ block_size，所以 Node `setAutoPadding(true)` 看到 0x19=25 > 16 認定非法 →
+// 丟 bad_decrypt。改為 noPadding + 自己 strip — 不限制 N 上限，只要末尾 N bytes 都等於 N 就剝。
+// JSON 結尾固定是 `}` (0x7D=125)，要碰巧 plaintext 末尾真有 125 個連續 `}` 才會誤剝，實務上不可能。
 export function aesDecrypt(ciphertext, hashKey, hashIV) {
   const decipher = crypto.createDecipheriv('aes-256-cbc', hashKey, hashIV)
   decipher.setAutoPadding(false)
   const buf = Buffer.concat([decipher.update(ciphertext, 'hex'), decipher.final()])
-  // 1. 先試 PKCS7：末尾 N bytes 都等於 N 且 N 在 1-16 → 是 PKCS7，剝掉
+  // 1. NewebPay 風格 padding：末尾 N bytes 都等於 N（N 可大於 16，兼容標準 PKCS7 + NewebPay 變體）
   const lastByte = buf[buf.length - 1]
-  if (lastByte >= 1 && lastByte <= 16 && buf.length >= lastByte) {
-    let isPkcs7 = true
+  if (lastByte >= 1 && lastByte <= buf.length) {
+    let isPad = true
     for (let i = buf.length - lastByte; i < buf.length; i++) {
-      if (buf[i] !== lastByte) { isPkcs7 = false; break }
+      if (buf[i] !== lastByte) { isPad = false; break }
     }
-    if (isPkcs7) return buf.slice(0, buf.length - lastByte).toString('utf8')
+    if (isPad) return buf.slice(0, buf.length - lastByte).toString('utf8')
   }
-  // 2. 否則剝末尾連續 0x00 — zero padding 或無 padding 兩種情境都安全（JSON 結尾不會是 0x00）
+  // 2. 否則剝末尾連續 0x00 — zero padding 或無 padding 都安全（JSON 結尾不會是 0x00）
   let end = buf.length
   while (end > 0 && buf[end - 1] === 0) end--
   return buf.slice(0, end).toString('utf8')
