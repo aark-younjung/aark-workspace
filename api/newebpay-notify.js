@@ -49,11 +49,6 @@ export default async function handler(req, res) {
   if (req.query?.action === 'debug-keys') {
     return handleDebugKeys({ req, res })
   }
-  // debug-decrypt-variants：拿最新一筆 notify log 的 TradeInfo 試 6 種解密變體
-  // 用途：bad_decrypt root cause hunt — KEY/IV fingerprint 對得上但 CBC decrypt 失敗時定位真正算法
-  if (req.query?.action === 'debug-decrypt-variants') {
-    return handleDebugDecryptVariants({ req, res })
-  }
 
   if (req.method !== 'POST') return res.status(405).send('Method not allowed')
 
@@ -456,10 +451,15 @@ async function handleRefund({ req, res, supabase }) {
 //   dest=<URL-encoded 目的地路徑>（必填，例如 /pricing 或 /account）
 //   flag=<URL-encoded 附加 query 片段>（選填，例如 pro_success=yearly）
 // Same-origin 守門：dest 必須是相對路徑（/開頭）或同 host，防 open redirect
+//
+// Bug A 修補（2026-05-18）：NewebPay 以 POST + form-urlencoded 帶回 Status 欄位，
+// 失敗時若仍掛 flag=pro_success=xxx 會讓前端誤顯示成功 toast。讀 req.body.Status，
+// 非 SUCCESS 則跳過 flag 附加（讓用戶乾淨落地，不誤判）。
 async function handleReturn({ req, res }) {
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aark-workspace.vercel.app'
   const destRaw = req.query?.dest
   const flagRaw = req.query?.flag
+  const paymentSuccess = (req.body?.Status === 'SUCCESS')
 
   if (!destRaw || typeof destRaw !== 'string') {
     return res.status(400).send('Missing dest query param')
@@ -490,8 +490,9 @@ async function handleReturn({ req, res }) {
     target = destUrl.toString()
   }
 
-  // 附加 flag（成功提示 query）
-  if (flagRaw && typeof flagRaw === 'string') {
+  // 附加 flag（成功提示 query）— 只有 NewebPay POST body Status='SUCCESS' 才掛
+  // 失敗時讓用戶乾淨落地（不誤顯示成功 toast）— Bug A 修補
+  if (flagRaw && typeof flagRaw === 'string' && paymentSuccess) {
     let flag
     try {
       flag = decodeURIComponent(flagRaw)
@@ -549,99 +550,3 @@ async function handleDebugKeys({ req, res }) {
   return res.status(200).json(result)
 }
 
-// bad_decrypt root cause hunt — 拿最新一筆 notify log TradeInfo 試 6 種解密變體
-// KEY/IV fingerprint 已對得上但 AES-256-CBC 解不開時，這支幫忙定位 NewebPay 端到底用啥算法
-// GET 觸發，不需刷卡（使用已存的 TradeInfo），會把 SHA 重算 + 6 變體 result 一次回傳
-async function handleDebugDecryptVariants({ req, res }) {
-  const HASH_KEY = process.env.NEWEBPAY_HASH_KEY || ''
-  const HASH_IV = process.env.NEWEBPAY_HASH_IV || ''
-  if (!HASH_KEY || !HASH_IV) return res.status(500).json({ error: 'KEY/IV missing' })
-
-  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return res.status(500).json({ error: 'Supabase env not configured' })
-  }
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-  // 抓最新一筆 — 若 ?orderNo=xxx 則指名抓那筆
-  let query = supabase
-    .from('aivis_newebpay_notify_log')
-    .select('created_at, trade_info, trade_sha')
-    .order('created_at', { ascending: false })
-    .limit(1)
-  if (req.query?.orderNo) query = query.eq('merchant_order_no', req.query.orderNo)
-  const { data, error } = await query.maybeSingle()
-  if (error || !data?.trade_info) {
-    return res.status(500).json({ error: error?.message || 'No TradeInfo in log' })
-  }
-  const TradeInfo = data.trade_info
-  const TradeSha = data.trade_sha
-
-  // 各變體共用 helper：吃 mode + key(Buffer/string) + iv(Buffer/string) + ciphertext hex
-  const tryDecrypt = (label, mode, key, iv, ciphertextHex, opts = {}) => {
-    const r = { label, mode, ciphertextHexLen: ciphertextHex?.length }
-    try {
-      const decipher = crypto.createDecipheriv(mode, key, iv)
-      if (opts.authTagHex) decipher.setAuthTag(Buffer.from(opts.authTagHex, 'hex'))
-      if (opts.noPadding) decipher.setAutoPadding(false)
-      const buf = Buffer.concat([decipher.update(ciphertextHex, 'hex'), decipher.final()])
-      r.ok = true
-      r.rawHexHead = buf.toString('hex').slice(0, 64)
-      r.utf8Head = buf.toString('utf8').slice(0, 200)
-    } catch (e) {
-      r.ok = false
-      r.error = e.message || String(e)
-    }
-    return r
-  }
-
-  const variants = []
-  // V0：直接呼叫 production aesDecrypt — 真正驗證我們的修補是否生效
-  const v0 = { label: 'V0 production aesDecrypt()', mode: 'aes-256-cbc (lib)', ciphertextHexLen: TradeInfo.length }
-  try {
-    const decrypted = aesDecrypt(TradeInfo, HASH_KEY, HASH_IV)
-    v0.ok = true
-    v0.utf8Head = decrypted.slice(0, 200)
-    v0.utf8Tail = decrypted.slice(-100)
-    v0.plaintextLen = decrypted.length
-  } catch (e) {
-    v0.ok = false
-    v0.error = e.message || String(e)
-  }
-  variants.push(v0)
-  // V1：CBC + env IV — 對照組（raw createDecipheriv 預設 PKCS7，已知失敗）
-  variants.push(tryDecrypt('V1 cbc + envIV (raw PKCS7)', 'aes-256-cbc', HASH_KEY, HASH_IV, TradeInfo))
-  // V2：CBC + IV 取自密文前 16 bytes (32 hex chars)
-  if (TradeInfo.length > 32) {
-    variants.push(tryDecrypt('V2 cbc + IV取密文前16B', 'aes-256-cbc', HASH_KEY,
-      Buffer.from(TradeInfo.slice(0, 32), 'hex'), TradeInfo.slice(32)))
-  }
-  // V3：CBC + zero IV
-  variants.push(tryDecrypt('V3 cbc + zero IV', 'aes-256-cbc', HASH_KEY, Buffer.alloc(16), TradeInfo))
-  // V4：GCM + env IV + auth tag 取自密文末 16 bytes
-  if (TradeInfo.length > 32) {
-    variants.push(tryDecrypt('V4 gcm + envIV + tag末16B', 'aes-256-gcm', HASH_KEY, HASH_IV,
-      TradeInfo.slice(0, -32), { authTagHex: TradeInfo.slice(-32) }))
-  }
-  // V5：CBC + KEY 前 16 字元當 IV（某些 NewebPay 實作這樣做）
-  variants.push(tryDecrypt('V5 cbc + KEY前16字當IV', 'aes-256-cbc', HASH_KEY, HASH_KEY.slice(0, 16), TradeInfo))
-  // V6：CBC + env IV + 關閉 padding（看 raw bytes 是不是有效 plaintext 只是 padding 異常）
-  variants.push(tryDecrypt('V6 cbc + envIV + noPadding', 'aes-256-cbc', HASH_KEY, HASH_IV, TradeInfo, { noPadding: true }))
-
-  // SHA 重算驗證 — 確認 SHA 真的通過
-  const computedSha = crypto.createHash('sha256')
-    .update(`HashKey=${HASH_KEY}&${TradeInfo}&HashIV=${HASH_IV}`)
-    .digest('hex').toUpperCase()
-
-  return res.status(200).json({
-    sourceLogCreatedAt: data.created_at,
-    tradeInfoLen: TradeInfo.length,
-    tradeShaReceived: TradeSha,
-    tradeShaComputed: computedSha,
-    shaMatch: computedSha === TradeSha,
-    keyLen: HASH_KEY.length,
-    ivLen: HASH_IV.length,
-    variants,
-  })
-}

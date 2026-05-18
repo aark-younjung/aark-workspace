@@ -280,6 +280,12 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-05-18
+**Phase 1 NewebPay 整合 end-to-end 完整收尾 + Phase A cleanup:**
+- 🎯 **Production smoke test 通過**：`a3ad41a` 部署後真卡 NT$13,900 Pro 年繳新單 `pympb1nqvxn28r` 完整跑通 — `decrypt_ok=true` / `status_decrypted=SUCCESS` / `payment_type=CREDIT` / `trade_no=26051818120456526` / `profiles.is_pro=true` / `payment_gateway=newebpay` / `subscribed_at=2026-05-18 10:12:49`。前端 Account 頁顯示 Pro badge + 訂閱日期 + 取消訂閱按鈕。bad_decrypt → padding strip 兩段式修補的整條 path 證明可行。
+- ✅ **Phase A cleanup（3 項並 1 commit）**：(a) **[api/lib/newebpay.js](api/lib/newebpay.js):92-96** 拆掉 `buildPaymentForm` 內 5 行 debug console.log（apiUrl/MerchantID/cleartext TradeInfo/encrypted TradeInfo/TradeSha）— 會把 plaintext 訂單資料印到 Vercel Function Logs，安全性 cleanup (b) **[api/newebpay-notify.js](api/newebpay-notify.js)** 整個拆掉 `?action=debug-decrypt-variants` dispatch + `handleDebugDecryptVariants` 函式 ~90 行 — root cause 已找到，留著佔 Vercel Hobby 12/12 function quota (c) **Bug A 修補**：`handleReturn` 加 `paymentSuccess = (req.body?.Status === 'SUCCESS')`，flag 附加條件改成「成功才掛」— 之前失敗也會帶 `pro_success=yearly` 讓前端誤跳成功 toast。-94 lines / +5 lines。
+- 📌 **下一步 Phase B smoke tests**：(a) Top-up 小包刷卡 (b) Top-up 大包刷卡 (c) Pro 年繳退款 — 測 Close API → TRA10035 → Cancel API fallback 雙路徑。趕在 D+1 自動請款（2026-05-19）前完成最完整測試。
+
+### 2026-05-18
 **aesDecrypt strip 放寬 N 上限 — NewebPay PKCS7-style with N=25 解謎:**
 - 🎯 **真正 root cause**：V0 加入後（直呼 production aesDecrypt）看到 `ok=true` 但 `utf8Tail` 末尾仍有 25 個 `\u0019` 殘留 + `plaintextLen=512`。轉譯：NewebPay 用 **PKCS7-style padding 但允許 N > block_size(16)** — 487-byte JSON 補 25 個 `0x19`（25=0x19）到 512 bytes。標準 PKCS7 規範 N ≤ 16，所以 Node `setAutoPadding(true)` 看到 0x19=25 認定非法 → bad_decrypt；我先前的 strip 也限制 `lastByte <= 16` 同樣沒剝 → V0 表面成功但 plaintext 留 25 個 0x19 → JSON.parse 仍會炸。
 - ✅ **[api/lib/newebpay.js](api/lib/newebpay.js) `aesDecrypt` 拿掉 N ≤ 16 上限**：(a) 末尾 strip 邏輯改成只要 `lastByte >= 1 && lastByte <= buf.length` 就嘗試剝（不限制 N ≤ 16）(b) 風險評估：要誤剝必須 plaintext 結尾真的有 N 個重複相同 byte 且該 byte = N，JSON 結尾固定是 `}` (0x7D=125)，要碰巧 125 個連續 `}` 才會誤剝，實務上零機率 (c) 同時兼容標準 PKCS7（N ≤ 16）+ NewebPay 變體（N > 16） — 我方 round-trip 情境也安全。+4 lines。
