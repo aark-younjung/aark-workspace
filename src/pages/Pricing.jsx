@@ -198,6 +198,10 @@ export default function Pricing() {
   const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—')
   // 早鳥已售名額：API 回 null 則 fallback 0（避免進度條跑掉），用於三處 UI（top bar 剩餘 / 進度條 / 文案）
   const earlybirdSlotsTaken = stats.earlybird_taken ?? 0
+  // 早鳥仍有名額 → Pro 卡顯示劃線價 + 990 + 進度條，CTA 走 earlybird endpoint
+  // 已售完 → Pro 卡顯示一般年繳 NT$1,158／月，CTA 走 yearly endpoint
+  // 這個旗標讓三處 UI 一鍵切換（Sticky bar / Hero 膠囊 / Pro 卡 / Mobile CTA）
+  const earlybirdAvailable = earlybirdSlotsTaken < earlybirdSlotsTotal
 
   // NewebPay 跳回 returnUrl 帶 ?pro_success={yearly|earlybird} — 顯示「✓ 升級成功」toast
   // 入帳是非同步走 notify URL 寫 DB（profile.is_pro 可能還沒刷到），toast 只是給用戶即時心理確認
@@ -612,6 +616,10 @@ export default function Pricing() {
                   proYearlyPerMonth={proYearlyPerMonth}
                   savedAmount={savedAmount}
                   savedMonths={savedMonths}
+                  earlybirdAvailable={earlybirdAvailable}
+                  earlybirdYearly={earlybirdYearly}
+                  earlybirdSlotsTaken={earlybirdSlotsTaken}
+                  earlybirdSlotsTotal={earlybirdSlotsTotal}
                   isPro={isPro}
                   isTrial={isTrial}
                   trialDaysRemaining={trialDaysRemaining}
@@ -632,6 +640,10 @@ export default function Pricing() {
                   proYearlyPerMonth={proYearlyPerMonth}
                   savedAmount={savedAmount}
                   savedMonths={savedMonths}
+                  earlybirdAvailable={earlybirdAvailable}
+                  earlybirdYearly={earlybirdYearly}
+                  earlybirdSlotsTaken={earlybirdSlotsTaken}
+                  earlybirdSlotsTotal={earlybirdSlotsTotal}
                   isPro={isPro}
                   isTrial={isTrial}
                   trialDaysRemaining={trialDaysRemaining}
@@ -795,62 +807,7 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* 早鳥方案 — 4 週時限 + 100 名 progress bar + 首年 990 */}
-        <div
-          className="mb-16 p-8 rounded-2xl border"
-          style={isDark
-            ? { background: T.warn + '0d', borderColor: T.warn + '4d', backdropFilter: 'blur(16px)' }
-            : { background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.3)' }
-          }
-        >
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="text-2xl">🐣</span>
-                  <span className="font-bold text-lg" style={{ color: T.warn }}>早鳥優惠・首 4 週限定</span>
-                  <span
-                    className="px-2 py-0.5 text-xs rounded-full border"
-                    style={{ background: T.warn + '33', color: T.warn, borderColor: T.warn + '55' }}
-                  >前 100 名</span>
-                </div>
-                <p
-                  className="text-sm max-w-xl"
-                  style={isDark ? { color: T.textMid, lineHeight: 1.7 } : { color: '#64748b' }}
-                >
-                  正式上線起 4 週內、前 100 名付費用戶享 <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>首年 NT$990／月（年繳 NT${earlybirdYearly.toLocaleString()}）</span>，
-                  次年續訂自動恢復一般年費 NT${proYearly.toLocaleString()}。
-                </p>
-              </div>
-              <button
-                onClick={() => handleUpgrade('earlybird')}
-                disabled={upgrading}
-                className="flex-shrink-0 px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all shadow-lg shadow-yellow-500/25 whitespace-nowrap disabled:opacity-50">
-                {upgrading ? '處理中...' : '搶早鳥首年 NT$990'}
-              </button>
-            </div>
-
-            {/* 100 名進度條 — earlybirdSlotsTaken 來自後端統計（目前先寫 0） */}
-            <div>
-              <div className="flex items-center justify-between text-xs mb-2" style={{ color: isDark ? T.textMid : '#64748b' }}>
-                <span>名額進度</span>
-                <span style={{ fontWeight: 600 }}>{earlybirdSlotsTaken} / {earlybirdSlotsTotal} 名</span>
-              </div>
-              <div
-                className="w-full h-2 rounded-full overflow-hidden"
-                style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}
-              >
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${Math.max(2, (earlybirdSlotsTaken / earlybirdSlotsTotal) * 100)}%`,
-                    background: 'linear-gradient(90deg, #f59e0b, #f97316)',
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* 早鳥方案 — 已整合進 Pro 卡（line 605 區塊內），避免兩顆 CTA 讓客戶猶豫 */}
 
         {/* FAQ */}
         <div className="max-w-3xl mx-auto">
@@ -938,15 +895,24 @@ export default function Pricing() {
           }
         >
           <button
-            onClick={() => (hasTrialedBefore ? handleUpgrade(isYearly ? 'yearly' : 'monthly') : handleStartTrial())}
+            onClick={() => {
+              if (!hasTrialedBefore) return handleStartTrial()
+              return handleUpgrade(earlybirdAvailable ? 'earlybird' : (isYearly ? 'yearly' : 'monthly'))
+            }}
             disabled={upgrading || startingTrial}
-            className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg shadow-purple-500/30 disabled:opacity-50"
+            className={`w-full py-3 text-white rounded-xl font-semibold shadow-lg disabled:opacity-50 ${
+              hasTrialedBefore && earlybirdAvailable
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 shadow-yellow-500/30'
+                : 'bg-gradient-to-r from-purple-500 to-blue-500 shadow-purple-500/30'
+            }`}
           >
             {(upgrading || startingTrial)
               ? '處理中...'
-              : hasTrialedBefore
-                ? `立即升級 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`
-                : `免費試用 7 天 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`}
+              : !hasTrialedBefore
+                ? `免費試用 7 天 · NT$${(earlybirdAvailable ? 990 : (isYearly ? proYearlyPerMonth : proMonthly)).toLocaleString()}／月`
+                : earlybirdAvailable
+                  ? '搶早鳥首年 NT$990／月'
+                  : `立即升級 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`}
           </button>
           <p className="text-xs text-center mt-1" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
             🔒 不收信用卡 · ↩ 隨時取消
@@ -1061,12 +1027,52 @@ export default function Pricing() {
 }
 
 // Pro 卡片內部 — 拉到外層（避免 closures 在 render 中重新建立）
-function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, savedAmount, savedMonths, isPro, isTrial, trialDaysRemaining, hasTrialedBefore, upgrading, startingTrial, onUpgrade, onStartTrial, isDark }) {
+function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, savedAmount, savedMonths, earlybirdAvailable, earlybirdYearly, earlybirdSlotsTaken, earlybirdSlotsTotal, isPro, isTrial, trialDaysRemaining, hasTrialedBefore, upgrading, startingTrial, onUpgrade, onStartTrial, isDark }) {
+  // 早鳥仍有名額 → 顯示劃線原價 + 早鳥價 + 進度條，按鈕走 earlybird endpoint
+  // 已售完   → 顯示一般年繳 NT$1,158／月（13900/12），按鈕走 yearly endpoint
+  // 設計理由：把早鳥與 Pro 整合在同一張卡，避免兩顆按鈕讓客戶猶豫該按哪個
+  const earlybirdMonthly = 990
   return (
     <>
       <div className="mb-6">
-        <div className="text-sm font-medium mb-2" style={{ color: T.aeo }}>Pro 方案</div>
-        {isYearly ? (
+        {/* 方案名稱 + 早鳥膠囊（有名額才顯示） */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className="text-sm font-medium" style={{ color: T.aeo }}>Pro 方案</span>
+          {earlybirdAvailable && (
+            <span
+              className="px-2 py-0.5 text-xs font-semibold rounded-full inline-flex items-center gap-1"
+              style={{ background: T.warn + '33', color: T.warn, border: `1px solid ${T.warn}55` }}
+            >🐣 早鳥首年限定・前 {earlybirdSlotsTotal} 名</span>
+          )}
+        </div>
+
+        {earlybirdAvailable ? (
+          <>
+            {/* 早鳥主價：NT$990／月（橘黃強調色） */}
+            <div className="flex items-end gap-2 mb-1">
+              <span
+                className="text-4xl font-bold"
+                style={{ color: T.warn }}
+              >NT${earlybirdMonthly.toLocaleString()}</span>
+              <span
+                className="text-sm mb-1"
+                style={isDark ? { color: T.textMid } : { color: '#64748b' }}
+              >／月</span>
+            </div>
+            {/* 副標：早鳥年繳金額 + 原價劃線對照 */}
+            <p
+              className="text-sm"
+              style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
+            >
+              年繳 <span className="font-semibold" style={{ color: T.warn }}>NT${earlybirdYearly.toLocaleString()}</span>
+              {' '}<span style={{ textDecoration: 'line-through', opacity: 0.7 }}>原價 NT${proYearly.toLocaleString()}</span>
+            </p>
+            <p
+              className="text-xs mt-1"
+              style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
+            >首年限定，次年續訂自動恢復一般年費 NT${proYearlyPerMonth.toLocaleString()}／月</p>
+          </>
+        ) : isYearly ? (
           <>
             <div className="flex items-end gap-2 mb-1">
               <span
@@ -1119,6 +1125,28 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
             </span>
           )}
         </div>
+
+        {/* 早鳥進度條（有名額才顯示）— 100 名 progress bar，吃 earlybirdSlotsTaken */}
+        {earlybirdAvailable && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: isDark ? T.textMid : '#64748b' }}>
+              <span>早鳥名額</span>
+              <span style={{ fontWeight: 600 }}>{earlybirdSlotsTaken} / {earlybirdSlotsTotal} 名</span>
+            </div>
+            <div
+              className="w-full h-2 rounded-full overflow-hidden"
+              style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}
+            >
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.max(2, (earlybirdSlotsTaken / earlybirdSlotsTotal) * 100)}%`,
+                  background: 'linear-gradient(90deg, #f59e0b, #f97316)',
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <ul className="space-y-3 flex-1 mb-4">
@@ -1218,16 +1246,26 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
         </div>
       ) : (
         // 未試用過 → 顯示「免費試用 7 天」直接啟動試用；試用過 → 顯示「立即升級」走付款
+        // 早鳥情境（earlybirdAvailable + 已試用過）→ 走 earlybird endpoint、按鈕換橘黃漸層強化稀缺感
         <div className="space-y-3">
           <button
-            onClick={() => (hasTrialedBefore ? onUpgrade(isYearly ? 'yearly' : 'monthly') : onStartTrial())}
+            onClick={() => {
+              if (!hasTrialedBefore) return onStartTrial()
+              return onUpgrade(earlybirdAvailable ? 'earlybird' : (isYearly ? 'yearly' : 'monthly'))
+            }}
             disabled={upgrading || startingTrial}
-            className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all font-semibold shadow-lg shadow-purple-500/25 disabled:opacity-50">
+            className={`w-full py-3 text-white rounded-xl transition-all font-semibold shadow-lg disabled:opacity-50 ${
+              hasTrialedBefore && earlybirdAvailable
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 shadow-yellow-500/25'
+                : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 shadow-purple-500/25'
+            }`}>
             {(upgrading || startingTrial)
               ? '處理中...'
-              : hasTrialedBefore
-                ? `立即升級 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`
-                : '免費試用 7 天'}
+              : !hasTrialedBefore
+                ? '免費試用 7 天'
+                : earlybirdAvailable
+                  ? '搶早鳥首年 NT$990／月'
+                  : `立即升級 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`}
           </button>
           {/* A7+C8: 信任三件組 + 退款情緒承諾 */}
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
