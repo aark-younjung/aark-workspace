@@ -597,8 +597,21 @@ async function handleDebugDecryptVariants({ req, res }) {
   }
 
   const variants = []
-  // V1：CBC + env IV — 等於現行 production decrypt，已知失敗，當對照組
-  variants.push(tryDecrypt('V1 cbc + envIV (現行)', 'aes-256-cbc', HASH_KEY, HASH_IV, TradeInfo))
+  // V0：直接呼叫 production aesDecrypt — 真正驗證我們的修補是否生效
+  const v0 = { label: 'V0 production aesDecrypt()', mode: 'aes-256-cbc (lib)', ciphertextHexLen: TradeInfo.length }
+  try {
+    const decrypted = aesDecrypt(TradeInfo, HASH_KEY, HASH_IV)
+    v0.ok = true
+    v0.utf8Head = decrypted.slice(0, 200)
+    v0.utf8Tail = decrypted.slice(-100)
+    v0.plaintextLen = decrypted.length
+  } catch (e) {
+    v0.ok = false
+    v0.error = e.message || String(e)
+  }
+  variants.push(v0)
+  // V1：CBC + env IV — 對照組（raw createDecipheriv 預設 PKCS7，已知失敗）
+  variants.push(tryDecrypt('V1 cbc + envIV (raw PKCS7)', 'aes-256-cbc', HASH_KEY, HASH_IV, TradeInfo))
   // V2：CBC + IV 取自密文前 16 bytes (32 hex chars)
   if (TradeInfo.length > 32) {
     variants.push(tryDecrypt('V2 cbc + IV取密文前16B', 'aes-256-cbc', HASH_KEY,
