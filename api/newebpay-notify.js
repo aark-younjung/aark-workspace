@@ -71,13 +71,44 @@ export default async function handler(req, res) {
   }
 
   const { TradeInfo, TradeSha, Status } = req.body || {}
+
+  // 持久化 notify log — 在任何 return / decrypt 前先寫進 Supabase
+  // Vercel Hobby 1 小時 log retention 過期後仍能查到原始 TradeInfo / decrypt error
+  // 非阻塞：log 寫失敗不影響 notify 處理（catch 後繼續走）
+  const logNotify = async (parsedResult) => {
+    try {
+      await supabase.from('aivis_newebpay_notify_log').insert({
+        trade_info: TradeInfo || null,
+        trade_info_length: TradeInfo ? TradeInfo.length : 0,
+        trade_sha: TradeSha || null,
+        status_query: Status || null,
+        status_decrypted: parsedResult?.data?.Status || null,
+        merchant_order_no: parsedResult?.data?.Result?.MerchantOrderNo || null,
+        decrypt_ok: !!parsedResult?.ok,
+        decrypt_error: parsedResult?.error || null,
+        payload: parsedResult?.ok ? parsedResult.data : null,
+        raw_body: req.body || null,
+        headers: {
+          'user-agent': req.headers['user-agent'] || null,
+          'content-type': req.headers['content-type'] || null,
+          'x-forwarded-for': req.headers['x-forwarded-for'] || null,
+          referer: req.headers.referer || null,
+        },
+      })
+    } catch (err) {
+      console.error('Failed to write notify log:', err)
+    }
+  }
+
   if (!TradeInfo || !TradeSha) {
     console.error('NewebPay notify missing TradeInfo/TradeSha:', req.body)
+    await logNotify(null)
     return res.status(400).send('Missing TradeInfo/TradeSha')
   }
 
   // 1. 驗 hash + 解密
   const parsed = parseNotifyPayload({ TradeInfo, TradeSha })
+  await logNotify(parsed)
   if (!parsed.ok) {
     console.error('NewebPay notify decrypt/verify failed:', parsed.error)
     return res.status(400).send(`Notify verification failed: ${parsed.error}`)

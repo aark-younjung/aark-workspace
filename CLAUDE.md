@@ -279,6 +279,12 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 
 ## 工作日誌
 
+### 2026-05-18
+**NewebPay notify 持久化 log — bad_decrypt 取證 (Path B):**
+- 💡 **背景**：2026-05-15 上線測試時真實卡片被授權 NT$13,900 × 4 次（全為授權保留、未實扣），webhook `/api/newebpay-notify` 回 400 `bad_decrypt`。Vercel Hobby plan 只保留 1 小時 Function Logs，等想看時原始 TradeInfo 與 decrypt error 已經消失，無法 reproduce 真因。決策走 **Path B — 持久化 inbound 紀錄**：另開一張 Supabase 表 `aivis_newebpay_notify_log`，notify handler 在任何 return / decrypt 前先寫入，永久保存 TradeInfo + decrypt_ok + decrypt_error + payload + raw_body + headers 供事後 forensics。理由：bad_decrypt root cause 五個劇本（env vars 有空白/換行、舊沙盒 TradeInfo replay、HashKey/IV 與 MerchantID 對不上、NewebPay 改加密格式、TradeInfo URL-encode 兩次）— 不靠完整 raw payload 沒法排除任何一個。
+- ✅ **[api/newebpay-notify.js](api/newebpay-notify.js):73-115 加 `logNotify` 非阻塞 helper**：(a) 在 `req.body` destructure 後立即定義 async 函式，try/catch 包覆 — log 寫失敗不影響 notify 主流程 (b) 兩個 call site：missing TradeInfo/TradeSha 早退時呼叫 `logNotify(null)`、parseNotifyPayload 後呼叫 `logNotify(parsed)` 帶上解密結果 (c) 捕捉欄位：`trade_info` / `trade_info_length` / `trade_sha` / `status_query`（query string Status）/ `status_decrypted`（解密後 Status）/ `merchant_order_no` / `decrypt_ok` / `decrypt_error` / `payload`（成功才寫）/ `raw_body` / `headers`（user-agent + content-type + x-forwarded-for + referer）。+31 lines。
+- 🔍 **「錯誤會不會發生在測試金流上」診斷分析**：用戶提問是否 Vercel env vars 可能殘留沙盒 HashKey/IV。三組反駁證據：(1) 真實 Visa 被銀行授權 NT$13,900 — 沙盒卡刷不出真錢 (2) 2026-05-15 Vercel logs 抓到 Referer `core.newebpay.com`（沙盒是 `ccore.newebpay.com`）(3) 若 KEY/IV 對不上 MerchantID，NewebPay 在送單階段就會擋下，到不了授權。結論：env vars 基本確認是 production，但無法 100% 排除空白/換行污染或舊沙盒 TradeInfo replay — 等 logNotify 上線後下次刷卡就有真相。
+
 ### 2026-05-15
 **Phase 1 上線備戰 — 月繳按鈕暫關 + Account 退款狀態收尾 (Route B 啟動):**
 - 💡 **背景**：2026-05-14 NewebPay 同日通過 MPG + Close API + **NPA**（11:28:46 客服信件確認），正式商家代號 `MS3830621445`。但 NPA 後台啟用需 1-3 工作天（最晚 2026-05-20），程式串接月繳 `MPG_API/period` endpoint 還沒寫。決策：**Route B — 立即用 MPG-only 上線**（早鳥 + Pro 年繳 + Top-up），月繳按鈕先藏起來、NPA 串接 1-2 週後補。理由：早鳥 NT$11,880 比月繳 NT$1,388×12=NT$16,656 划算 29%，市場心理會自動把多數客戶導向年繳，月繳市占短期 < 20% 不急。
