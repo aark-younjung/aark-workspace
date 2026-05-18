@@ -280,6 +280,12 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 ## 工作日誌
 
 ### 2026-05-18
+**bad_decrypt root cause 定位 + aesDecrypt 修補 — V6 noPadding 揪出真兇:**
+- 🎯 **Root cause**：debug-decrypt-variants endpoint 跑 6 變體，V6 (`CBC + envIV + noPadding`) 唯一成功，解出完整 NewebPay JSON `{"Status":"SUCCESS","MerchantID":"MS3830621445","Amt":13900,...}` + `shaMatch: true`。確認：**KEY/IV/算法全對，唯獨 NewebPay 端 notify TradeInfo 不用 PKCS7 padding**（可能用 zero padding 或無 padding）。對稱矛盾：我方 checkout 送 PKCS7 給 NewebPay 他們解得開（授權 NT$13,900 成功），但 NewebPay 回 notify 卻用不同 padding 規範 — 兩個方向不對稱。
+- ✅ **[api/lib/newebpay.js](api/lib/newebpay.js) `aesDecrypt` 改用 noPadding + 智慧 strip**：(a) `setAutoPadding(false)` 不讓 Node 自動 strip，避免把真實 plaintext 末尾字元誤判為 padding (b) 智慧 strip 兩段：先試 PKCS7（末尾 N bytes 都等於 N 且 N 在 1-16 → 剝掉），不符則剝末尾連續 0x00（兼容 zero padding 或無 padding）(c) 為何兩段：要兼容**我方加密 TradeInfo round-trip** 情境（如 debug-keys endpoint 自我加解密測試、若未來有 checkout server-internal verify），那個方向用 PKCS7 (`aesEncrypt` 維持不變)，所以解密側必須能識別兩種 padding (d) JSON 結尾不會是 0x00，所以剝末尾 zero 安全，不會誤剝 plaintext 內容。+18 lines。
+- 📌 **驗證計畫**：deploy 後重新觸發 `?action=debug-decrypt-variants`，預期 V1 (現行 path) 變 `ok=true`。**不需再刷實卡** — 已存的 TradeInfo 直接餵新版 aesDecrypt 就能驗證。
+
+### 2026-05-18
 **bad_decrypt root cause hunt — debug-decrypt-variants endpoint (L1 不打掉路線):**
 - 💡 **背景**：今日真卡 NT$13,900 Pro 年繳測試，`aivis_newebpay_notify_log` 抓到 2 筆 `decrypt_ok=false` + `bad decrypt` 錯誤（同筆訂單 retry，間隔 12 秒）。Vercel KEY/IV fingerprint 已與 NewebPay 後台 MS3830621445 商家 KEY/IV SHA256 fingerprint 比對通過、`trade_info_exact_match=true` 排除 body parser 破壞、`roundTripOk=true` 證明 KEY/IV self-consistent — 但 NewebPay 送的 TradeInfo 用我們的 KEY/IV 就是解不開。對稱加密邏輯上應該不可能，唯一剩餘解釋是 NewebPay 端用的加密規範 ≠ AES-256-CBC + PKCS7（最可能 GCM 或不同 IV 取法）。決策走 **L1 不打掉廠商也不換 npm 套件**，先寫 debug endpoint 試 6 種解密變體定位真實算法。
 - ✅ **[api/newebpay-notify.js](api/newebpay-notify.js) 加 `?action=debug-decrypt-variants` GET endpoint**：(a) dispatch 排在 `debug-keys` 後面、POST method check 之前（GET 即可觸發）(b) 不需刷卡 — 從 `aivis_newebpay_notify_log` 抓最新一筆 TradeInfo，可選 `?orderNo=xxx` 指名抓 (c) 共用 `tryDecrypt` helper 跑 6 變體：V1 CBC+envIV（對照組）/ V2 CBC+IV取密文前16B / V3 CBC+zero IV / V4 GCM+envIV+tag取密文末16B / V5 CBC+KEY前16字當IV / V6 CBC+envIV+noPadding（看 raw bytes 是不是有效但 padding 異常）(d) SHA 重算驗證 `shaMatch` 一起回，徹底排除 SHA path 干擾 (e) 每變體回 `ok` + `rawHexHead`(64 字元) + `utf8Head`(200 字元) 或 `error` message。+84 lines。
