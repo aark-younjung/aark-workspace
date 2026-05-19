@@ -949,7 +949,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             ) : website?.rejection_reason ? (
               <button
                 type="button"
-                onClick={() => alert(`提交至排行榜未通過審核：\n\n${website.rejection_reason}\n\n如需重新申請請聯絡客服 mark6465@gmail.com`)}
+                onClick={() => alert(`提交至排行榜未通過審核：\n\n${website.rejection_reason}\n\n如需重新申請請聯絡客服 aark.younjung@gmail.com`)}
                 className="flex-shrink-0 px-3 py-1.5 bg-red-500/15 text-red-300 border border-red-400/30 rounded-lg text-xs font-medium hover:bg-red-500/25 transition-colors flex items-center gap-1.5"
                 title="點擊查看退件原因"
               >

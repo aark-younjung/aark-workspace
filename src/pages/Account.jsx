@@ -111,12 +111,12 @@ export default function Account() {
   const handleCancel = () => {
     // (a) Stripe sub
     if (profile?.stripe_subscription_id) {
-      alert('您的訂閱由 Stripe 處理。請寄信至客服 mark6465@gmail.com 協助取消。')
+      alert('您的訂閱由 Stripe 處理。請寄信至客服 aark.younjung@gmail.com 協助取消。')
       return
     }
     // (d) 找不到 NewebPay order — 手動授予 Pro 用戶
     if (!latestProOrder) {
-      alert('找不到對應的付款訂單。如您的 Pro 方案為客服手動授予，請寄信至 mark6465@gmail.com 協助處理。')
+      alert('找不到對應的付款訂單。如您的 Pro 方案為客服手動授予，請寄信至 aark.younjung@gmail.com 協助處理。')
       return
     }
     // 計算 14 天視窗
@@ -129,7 +129,7 @@ export default function Account() {
       alert(
         `您的訂閱已超過 14 天無條件退款期（已使用 ${Math.floor(daysSincePaid)} 天）。\n\n` +
         `年繳方案可繼續使用至 ${expiryStr}，到期後自動降為免費版、不再續扣款。\n\n` +
-        `如有特殊情形需協助，請寄信至 mark6465@gmail.com。`
+        `如有特殊情形需協助，請寄信至 aark.younjung@gmail.com。`
       )
       return
     }
@@ -161,7 +161,7 @@ export default function Account() {
       })
       const data = await res.json()
       if (!res.ok || !data.success) {
-        alert(data.error || data.detail || '退款失敗，請聯繫客服 mark6465@gmail.com')
+        alert(data.error || data.detail || '退款失敗，請聯繫客服 aark.younjung@gmail.com')
         setCancelling(false)
         return
       }
@@ -192,7 +192,7 @@ export default function Account() {
         setRefundModalOpen(false)
         await fetchProfile(user.id)
       } else {
-        alert('系統處理時間較長，請重新整理頁面確認退款狀態；若 1 分鐘後仍未更新，請聯繫客服 mark6465@gmail.com')
+        alert('系統處理時間較長，請重新整理頁面確認退款狀態；若 1 分鐘後仍未更新，請聯繫客服 aark.younjung@gmail.com')
       }
     } finally {
       setCancelling(false)

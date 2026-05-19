@@ -29,7 +29,7 @@
  *      → 成功則 refund_status='completed' / refund_method='api_credit' / refunded_at=now
  *      → 失敗則 refund_status='failed' + refund_note 記 NewebPay error message
  *   4. 非信用卡（VACC/WEBATM/CVS/BARCODE）→ refund_status='pending' / refund_method='manual_transfer'
- *      → 通知 admin（mark6465@gmail.com）7 工作天內手動轉帳
+ *      → 通知 admin（aark.younjung@gmail.com）7 工作天內手動轉帳
  *   5. 不論哪條路徑，profile.is_pro=false 立即生效（不等手動轉帳完成）
  *   6. 回 { success, refund_method, message } 給前端顯示對應提示
  *

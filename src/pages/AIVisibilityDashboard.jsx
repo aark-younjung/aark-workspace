@@ -1855,7 +1855,7 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
                 · ⚠️ Top-up 屬於「一經提供即完成之線上服務」（消保法第 19 條第 2 項第 5 款），
                   付款完成、credits 入帳後不適用 7 天無條件解除權、亦不退款。
               </span><br />
-              · 如遇盜刷或交易爭議請聯繫客服 <a href="mailto:mark6465@gmail.com" style={{ color: AIVIS_TEAL, textDecoration: 'underline' }}>mark6465@gmail.com</a> 個案處理。
+              · 如遇盜刷或交易爭議請聯繫客服 <a href="mailto:aark.younjung@gmail.com" style={{ color: AIVIS_TEAL, textDecoration: 'underline' }}>aark.younjung@gmail.com</a> 個案處理。
             </div>
 
             {/* 同意 checkbox — 未勾不能按「立即加購」（按鈕已用 disabled={!agreed} 鎖住）*/}

@@ -230,7 +230,7 @@ function buildTrialEmailHTML({ kind, name, trialEndsAt, daysLeft, dashboardUrl, 
           <a href="${c.cta2.url}" style="display:inline-block;padding:10px 24px;color:#64748b;font-size:13px;text-decoration:none;border:1px solid #e2e8f0;border-radius:8px;margin-top:4px;">${c.cta2.label}</a>
         </td></tr>
         <tr><td style="padding:20px 40px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-          <p style="font-size:11px;color:#94a3b8;margin:0;">優勢方舟 (AARK) · AI 能見度儀表板<br>如有任何問題，歡迎回信至 mark6465@gmail.com</p>
+          <p style="font-size:11px;color:#94a3b8;margin:0;">優勢方舟 (AARK) · AI 能見度儀表板<br>如有任何問題，歡迎回信至 aark.younjung@gmail.com</p>
         </td></tr>
       </table>
     </td></tr>
