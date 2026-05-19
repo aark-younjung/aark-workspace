@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-05-19（深夜）
+**NPA 取消委託 AlterStatus 回應自身加密 — 第 6 個坑（修完月繳取消 e2e 打通）:**
+
+接續夜間月繳訂閱實測，繼續驗證「取消委託」第二條 NPA 關鍵路徑（用戶在 Account 頁按「取消委託」→ 後端打 NewebPay AlterStatus `terminate`）。Modal 確認後一直停在「處理中...」、瀏覽器 alert 跳「NewebPay period terminate failed」、SQL 看 `cancel_note='UNKNOWN:'` 空白訊息 — 拿不到 NewebPay 真正回什麼。
+
+- 🐛 **坑 7（10/10）：NPA AlterStatus 回應本身是 AES 加密的 — `{"period":"<encrypted hex>"}`（小寫 period）**：以為 NewebPay 文件範例的 `{Status, Message, Result}` 是直接拿到的扁平 JSON，所以原 `requestPeriodTerminate` 第一段 `JSON.parse(rawText)` 之後直接讀 `parsed.Status`。實際打 sandbox API 後加診斷 dump 才發現 envelope 不是這樣 — 整包真實 response body 是 `{"period":"b46b9cdf4134c35e55b5ae77eb...（一坨 hex）"}` —— **這個 `period` 跟 notify body 的 `Period` 一樣，是 AES 加密過的 JSON blob，要用同一組 HashKey/IV 解密**。文件範例那個扁平結構是另一條走 `RespondType=String` 的舊路徑；走 JSON 一律加密。
+  - **修法：**[api/lib/newebpay.js `requestPeriodTerminate`](api/lib/newebpay.js)（commit 449fdf0）— JSON parse 完先檢查 `outer.period`（小寫）是否存在，存在就 `aesDecrypt(outer.period, HashKey, IV)` + 二次 `JSON.parse` 拿真實 `{Status, Message, Result}` 再讀。decrypt 失敗時包成 `status='DECRYPT_FAILED'` + message 帶錯誤訊息回上層，比之前 `UNKNOWN:` 空白訊息容易看根因。
+  - **為什麼前夜踩 5 個坑沒踩到這個**：notify 路徑是 NewebPay 主動推、訂閱建立後馬上發第一筆 — 月繳訂閱階段已經解過一次 NPA `Period`，但**只解了 notify body 那一條**。AlterStatus 是商家 server 主動呼叫的另一支 REST API，response envelope 設計成同樣加密**沒有任何文件說明** — 沙盒實測拿到 dump 才看出規律。**串接 NPA 任何呼叫都應該預設「response body 可能是 `{"period":"<hex>"}`」**，不是只有 notify 收到時才加密。
+  - **加進 [feedback_payment_crypto_lessons.md](memory/feedback_payment_crypto_lessons.md) 第 10 條**：金流商「outbound REST API 的 response」也可能整包加密，不是只有 webhook/notify 加密。
+  - **診斷過程值得保留的部分（前一輪 commit 0a031bd 加的、本輪不再改動）：**`requestPeriodTerminate` 在 `JSON.parse` 失敗時把 rawText.slice(0,500) 寫進 console.error + `status='INVALID_RESPONSE'`、解密失敗包成 `'DECRYPT_FAILED'`、外層 Status 缺失時把整個 `parsed` JSON dump 進 message — 三層 fallback 讓 SQL `cancel_note` 一眼看出當下卡在哪一層（非 JSON / 解密失敗 / NewebPay 業務失敗），不再回空字串。
+
+**待驗證（用戶側）：** 重新按「取消委託」→ 應該看到 alert「月繳委託已取消」綠卡、SQL `aivis_newebpay_period.status='cancelled' cancelled_at=now() cancel_note='<NewebPay 真實成功訊息>'`、`profiles.is_pro=false`、NewebPay 沙盒後台「信用卡定期定額管理 → 委託管理」該筆狀態切「已終止」。如還失敗 alert 應該帶具體錯誤字串（不再是 `UNKNOWN:`）。
+
+**Commit:** 449fdf0
+
+---
+
 ### 2026-05-19（夜間）
 **NPA 月繳沙盒實測全綠 — 端到端打通 + 五個 NPA 文件沒講清楚的坑:**
 
