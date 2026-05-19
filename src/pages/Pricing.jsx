@@ -157,7 +157,7 @@ const FAQ_ITEMS = [
 export default function Pricing() {
   // 預設年繳（CTA 主推年繳的省錢敘事）；NPA 串接完成後重開月繳分支供用戶切換
   const [isYearly, setIsYearly] = useState(true)
-  const { user, isPro, isTrial, hasTrialedBefore, trialDaysRemaining, startTrial } = useAuth()
+  const { user, isPro, isTrial, hasTrialedBefore, trialDaysRemaining, startTrial, fetchProfile } = useAuth()
   const { isDark } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
@@ -206,6 +206,8 @@ export default function Pricing() {
   // NewebPay 跳回 returnUrl 帶 ?pro_success={yearly|earlybird} — 顯示「✓ 升級成功」toast
   // 入帳是非同步走 notify URL 寫 DB（profile.is_pro 可能還沒刷到），toast 只是給用戶即時心理確認
   // 顯示後立刻清掉 query string 防重整再彈、6 秒後自動消失
+  // 同步 refetch profile：notify 已把 is_pro 寫成 true，不主動 refetch 的話 isPro 不會更新、
+  // Pro 卡按鈕還會卡在「升級」狀態（用戶要手動 reload 才看到「目前方案」）
   const [proSuccessPlan, setProSuccessPlan] = useState(null)
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -213,10 +215,11 @@ export default function Pricing() {
     if (plan === 'yearly' || plan === 'earlybird' || plan === 'monthly') {
       setProSuccessPlan(plan)
       navigate(location.pathname, { replace: true })
+      if (user) fetchProfile(user.id)
       const t = setTimeout(() => setProSuccessPlan(null), 6000)
       return () => clearTimeout(t)
     }
-  }, [location.search, location.pathname, navigate])
+  }, [location.search, location.pathname, navigate, user, fetchProfile])
 
   const [upgrading, setUpgrading] = useState(false)
   const [startingTrial, setStartingTrial] = useState(false)

@@ -28,6 +28,8 @@ export default function Account() {
 
   // NewebPay 付款後跳回 /account?pro_success={yearly|earlybird|monthly} — 顯示升級成功 toast
   // 跟 Pricing.jsx 同模式：抓 query string → 顯示 → 立刻清 URL 防重整再彈 → 6 秒自動消失
+  // 同步 refetch profile：notify 已把 is_pro 寫成 true，但 AuthContext 的 isPro 是登入時 cache 的，
+  // 不主動 refetch 的話「目前方案」按鈕不會切換、Account 頁面卡片內容不會刷
   const [proSuccessPlan, setProSuccessPlan] = useState(null)
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -35,10 +37,11 @@ export default function Account() {
     if (plan === 'yearly' || plan === 'earlybird' || plan === 'monthly') {
       setProSuccessPlan(plan)
       navigate(location.pathname, { replace: true })
+      if (user) fetchProfile(user.id)
       const t = setTimeout(() => setProSuccessPlan(null), 6000)
       return () => clearTimeout(t)
     }
-  }, [location.search, location.pathname, navigate])
+  }, [location.search, location.pathname, navigate, user, fetchProfile])
 
   // Email 週報訂閱狀態（Pro 限定）
   const [emailSubs, setEmailSubs] = useState([])
