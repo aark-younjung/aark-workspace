@@ -43,9 +43,16 @@ import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { parseNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization, requestPeriodTerminate, aesEncrypt, aesDecrypt } from './lib/newebpay.js'
 
-// Vercel/Next 預設 bodyParser 會接受 form-urlencoded 並解到 req.body — 不需要特別 raw body
-// 但要確認 NewebPay 送的 Content-Type 是 application/x-www-form-urlencoded
-// 若是 multipart 則要關掉 bodyParser 自己 parse — 目前 NewebPay 規範是 urlencoded
+// 關閉 Vercel 預設 bodyParser — NewebPay NPA NotifyURL 用 multipart/form-data，預設 parser 不認識會留 req.body 空
+// 改成自己手動讀 stream，依 content-type 分支 parse 3 種：
+//   - application/json（前端 action=refund / cancel-period 呼叫）
+//   - application/x-www-form-urlencoded（MPG notify + MPG return）
+//   - multipart/form-data（NPA notify + NPA return — pay2go user-agent）
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}
 
 export default async function handler(req, res) {
   // debug-keys 走零成本診斷（GET 即可，不需 POST，不需 Supabase）— 在 method check 之前先處理
@@ -54,6 +61,29 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') return res.status(405).send('Method not allowed')
+
+  // 手動 parse body（bodyParser:false 之後 req.body 不會自動填）
+  // 三種 content-type 分支處理：JSON / urlencoded / multipart
+  try {
+    const chunks = []
+    for await (const chunk of req) chunks.push(chunk)
+    const rawBody = Buffer.concat(chunks).toString('utf-8')
+    const contentType = (req.headers['content-type'] || '').toLowerCase()
+    if (contentType.includes('application/json')) {
+      try { req.body = JSON.parse(rawBody) } catch { req.body = {} }
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      req.body = Object.fromEntries(new URLSearchParams(rawBody))
+    } else if (contentType.includes('multipart/form-data')) {
+      const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;\s]+))/)
+      const boundary = boundaryMatch?.[1] || boundaryMatch?.[2]
+      req.body = parseMultipartFormData(rawBody, boundary)
+    } else {
+      req.body = {}
+    }
+  } catch (err) {
+    console.error('Body parse failed:', err)
+    req.body = {}
+  }
 
   const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -790,5 +820,28 @@ async function handleDebugKeys({ req, res }) {
   }
 
   return res.status(200).json(result)
+}
+
+// 簡易 multipart/form-data parser — 只支援純文字欄位（NewebPay NPA notify 只送 Status / Message / Period 等字串）
+// 不支援檔案上傳（NewebPay 不會送檔案，且我們也不會用到）
+// rawBody 已是 utf-8 string；用 boundary 切段、抽 Content-Disposition 的 name="xxx" + 後續 value
+function parseMultipartFormData(rawBody, boundary) {
+  if (!boundary || !rawBody) return {}
+  const result = {}
+  const parts = rawBody.split(`--${boundary}`)
+  for (const part of parts) {
+    // 跳過空段與結尾標記（--<boundary>--）
+    if (!part || part === '--' || part === '--\r\n' || part.startsWith('--')) continue
+    const headerEnd = part.indexOf('\r\n\r\n')
+    if (headerEnd === -1) continue
+    const headerBlock = part.slice(0, headerEnd)
+    let value = part.slice(headerEnd + 4)
+    // 去掉每段尾巴的 \r\n
+    if (value.endsWith('\r\n')) value = value.slice(0, -2)
+    const nameMatch = headerBlock.match(/name="([^"]+)"/)
+    if (!nameMatch) continue
+    result[nameMatch[1]] = value
+  }
+  return result
 }
 
