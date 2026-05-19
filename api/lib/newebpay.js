@@ -319,15 +319,32 @@ export async function requestPeriodTerminate({ merOrderNo, periodNo }) {
   // 先抓原始 text — NewebPay AlterStatus 偶有回非 JSON / 不同 envelope（沙盒實測 cancel_note=UNKNOWN: 線索）
   // 兩階段 parse：先 text、再嘗試 JSON，失敗時把 raw text 帶回診斷
   const rawText = await response.text().catch(() => '')
-  let parsed
+  let outer
   try {
-    parsed = JSON.parse(rawText)
+    outer = JSON.parse(rawText)
   } catch {
     console.error('NPA AlterStatus non-JSON response:', rawText.slice(0, 500))
     return { ok: false, status: 'INVALID_RESPONSE', message: `Non-JSON response: ${rawText.slice(0, 200)}`, raw: rawText }
   }
-  // 沙盒實測 NewebPay AlterStatus 回的 envelope 不一定有外層 Status — 也可能整包包在 Result 內或欄位用小寫
-  // 失敗時把整個 parsed JSON dump 進 message 方便 SQL cancel_note 看到全貌
+  // 沙盒實測（2026-05-19）：AlterStatus 回的 envelope 是 `{"period":"<AES hex>"}`（小寫 period），
+  // 內容跟 notify Period 一樣是 AES 加密的 JSON。要先解密才拿得到真實 Status / Message。
+  // 文件範例給的扁平 {Status,Message} 是另一條走 RespondType=String 的舊路徑，JSON 走加密。
+  let parsed = outer
+  if (outer && typeof outer.period === 'string' && outer.period.length > 0) {
+    try {
+      const decrypted = aesDecrypt(outer.period, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV)
+      parsed = JSON.parse(decrypted)
+    } catch (err) {
+      console.error('NPA AlterStatus period decrypt failed:', err.message, 'raw period:', outer.period.slice(0, 80))
+      return {
+        ok: false,
+        status: 'DECRYPT_FAILED',
+        message: `Failed to decrypt period: ${err.message}`,
+        raw: outer,
+      }
+    }
+  }
+  // 解密後 NewebPay 規範回 { Status, Message, Result: {...} }（大寫 S/M），但保留小寫 fallback 防後續變更
   const ok = parsed?.Status === 'SUCCESS' || parsed?.status === 'SUCCESS'
   const statusVal = parsed?.Status || parsed?.status || 'UNKNOWN'
   const messageVal = parsed?.Message || parsed?.message ||
