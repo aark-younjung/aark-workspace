@@ -7,6 +7,23 @@
 ---
 
 ### 2026-05-19
+**Phase 1 NewebPay 整合全綠收尾 — 不退款 checkbox UI 驗證通過 + 客服信箱統一:**
+- 🎯 **不退款 checkbox UX 驗證通過**：暫降 `AIVIS_QUOTA_PER_MONTH=1` 推到 production、SQL 灌 aark6465 為 Pro → 進 aivis dashboard 開 TopupModal → 驗 (a) 未勾 checkbox 「立即加購」按鈕灰底寫「請先勾選下方同意」、cursor not-allowed (b) 規則說明區出現橘黃色「⚠️ Top-up 屬於『一經提供即完成之線上服務』（消保法第 19 條第 2 項第 5 款）」段落 + 客服 mailto (c) 勾後按鈕變橙色／青綠色可點。3 點全綠不刷卡。已還原 `AIVIS_QUOTA_PER_MONTH=150` + 改 aark6465 回 Free。
+- ✅ **客服信箱統一為 aark.younjung@gmail.com**：5 個 active 檔 — [AIVisibilityDashboard.jsx:1858](src/pages/AIVisibilityDashboard.jsx#L1858) TopupModal mailto / [Account.jsx](src/pages/Account.jsx) 取消訂閱 + 退款 5 個 alert / [Dashboard.jsx:952](src/pages/Dashboard.jsx#L952) 排行榜退件 alert / [newebpay-notify.js:32](api/newebpay-notify.js#L32) 手動轉帳 admin 通知 comment / [cron-weekly-reports.js:233](api/cron-weekly-reports.js#L233) 週報 footer。**未動**：`hello@aark.com.tw`（Agency 洽談 sales 用，不同範疇）/ `support@aark.io` + `report@aark.io`（Resend outgoing 寄件人，已驗證）/ WORKLOG.md 歷史紀錄 / docs/v3-unpacked mockup。
+- 🎯 **Phase 1 NewebPay 整合 100% 完成 — 7 條 path 全綠**：早鳥 NT$11,880 ✅／Pro 年繳 NT$13,900 ✅／Top-up 小包 NT$490 ✅／Top-up 大包 NT$990 ✅／14 天退款（Close API 直退 + CancelTrans fallback）✅／不退款事先同意 + aivis_topup_consents 法律證據表（消保法 § 19-II-5 合規）✅／客服信箱統一 ✅。
+- 📌 **下一步**：(1) NewebPay 商家正式審核通過後（沙盒帳號 → 正式商家代號）切換 Vercel env vars — `NEWEBPAY_MERCHANT_ID` / `NEWEBPAY_HASH_KEY` / `NEWEBPAY_HASH_IV` 三組 secrets + `NEWEBPAY_API_URL` 由 `ccore.newebpay.com` 改 `core.newebpay.com` (2) Vercel Dashboard → Settings → Environment Variables 改完要 redeploy 才生效 (3) **NPA 月繳定期定額** 申請狀態追蹤（見下方 NPA 段）。
+
+**NPA 月繳定期定額申請狀態 — 查詢方式:**
+- 📋 **NPA 是獨立服務、需另外申請**：NewebPay 商家代號核發後仍**不會自動帶 NPA 權限**，要在商家後台另外開「信用卡定期定額授權服務」。[CLAUDE.md](CLAUDE.md) 商業模式表月繳 NT$1,490 目前 UI 已暫關（Pricing toggle 鎖死 `isYearly=true`），等 NPA 開通才復活月繳分支。
+- 🔍 **查詢路徑**：登入 [NewebPay 商家後台](https://core.newebpay.com)（正式環境）→ 左側選單「**會員中心**」or「**商店管理**」→ 找「**申請服務**」or「**服務狀態**」or「**商店服務**」（NewebPay 後台命名版本不一定）→ 看「**信用卡定期定額授權**」狀態欄。三種狀態：未申請 / 審核中 / 已啟用。
+- 📋 **若顯示「未申請」**：點申請按鈕填表，準備文件通常包含：(a) 商品為訂閱制的營業說明 (b) 退款規則（前面已寫在法律頁三件套）(c) 預估月扣款筆數與金額。審核期 NewebPay 標準為 3-5 工作天，實際常拖 1-2 週。
+- 📋 **若顯示「審核中」**：等通知 email（會寄到 NewebPay 註冊信箱），或直接打 NewebPay 業務窗口（02-2370-6688）追進度。
+- 📋 **若顯示「已啟用」**：可串接 NPA API，前一輪 WORKLOG 提到的 NPA TODO 啟動 — (1) 月繳 endpoint 走 `MPG_API/period`（與 MPG 不同 URL）(2) NPA Notify endpoint 另建 (3) 取消委託 API (4) 沙盒實測首扣 + 第二月自動扣 + 取消委託 (5) Pricing.jsx `isYearly` 改 useState、把月繳 dead branch 復活。
+- 🔖 **判斷時機**：今天 2026-05-19。前序 WORKLOG 預估「最晚 2026-05-20 NPA 啟用」是樂觀估，實際看 NewebPay 後台為準。如果今明兩天仍「審核中」就要打電話追、不然 Phase 1 上線後月繳會空一陣子。
+
+---
+
+### 2026-05-19
 **Top-up「不退款」事先同意條款 — 消保法 § 19-II-5 合規 + aivis_topup_consents 法律證據表:**
 - ⚖️ **合規動機**：用戶提醒「既然規則是大小包都不退費，那這件事應該在下單前明確寫上去」。Phase 1 上線前必補的法律強制：**消保法第 19 條第 2 項第 5 款**規定，「一經提供即完成之線上服務」不適用 7 天無條件解除權，但**前提是消費者事先同意**。原本 TopupModal 只有一行「一次性購買、不過期、用完為止、不綁訂閱」隱晦帶過，沒有「不退款」明文 + 沒有用戶主動勾選 = 不符合「事先同意」要件，事後客訴會被裁罰。
 - ✅ **前端 [AIVisibilityDashboard.jsx TopupModal](src/pages/AIVisibilityDashboard.jsx#L1644)**：(a) 新增 `TOPUP_CONSENT_V1` 模組級常數定義同意書文案 v1（後端同步定義 `TOPUP_DISCLAIMER_V1` 比對一致）(b) 規則說明區改寫：把舊三行底下加入「⚠️ Top-up 屬於『一經提供即完成之線上服務』（消保法第 19 條第 2 項第 5 款），付款完成、credits 入帳後不適用 7 天無條件解除權、亦不退款」橘黃色強調 + 客服 mailto 鏈接 (c) 規則說明下方新增勾選框（淡綠 hover、勾選後變更背景）：「我已閱讀並同意：Top-up 加購屬於『一經提供即完成之線上服務』（消保法第 19 條第 2 項第 5 款），credits 入帳後**不適用 7 天無條件解除權、亦不退款**」(d) `[agreed, setAgreed]` state 控制 checkbox + 「立即加購」按鈕 `disabled={!!buying || !agreed}`，未勾按鈕灰底寫「請先勾選下方同意」+ cursor `not-allowed` (e) `handleBuy()` 多送 `agreed: true / consentVersion: 'v1' / consentText: TOPUP_CONSENT_V1` 三個欄位給後端。
