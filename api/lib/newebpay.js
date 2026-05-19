@@ -245,6 +245,93 @@ export async function cancelCreditCardAuthorization({ merchantOrderNo, amount })
   }
 }
 
+// ─────────────────── NPA 信用卡定期定額 (Period) ───────────────────
+// NPA endpoint：
+//   建立委託：POST /MPG/period      （form-urlencoded，body 只有 MerchantID_ + PostData_）
+//   取消委託：POST /MPG/period/AlterStatus
+//   通知：    NewebPay 每期扣款後 server-to-server POST 設定的 NotifyURL
+//             共用 newebpay-notify endpoint，靠 Result.PeriodNo 是否存在分辨 MPG vs NPA
+//
+// NPA 與 MPG 主要差異：
+//   - 欄位命名：NPA 用 MerOrderNo（MPG 用 MerchantOrderNo）/ ProdDesc（MPG 用 ItemDesc）
+//   - Form 欄位：NPA 只送 MerchantID_ + PostData_（MPG 還有 TradeInfo + TradeSha + Version + EncryptType）
+//   - Version: NPA = '1.5'（MPG = '2.0'）
+//   - PostData_ 加密內容含所有 period 參數（不像 MPG TradeInfo 額外用 TradeSha 校驗）
+//
+// 一站式：建立 NPA 委託 form fields
+// 回傳 { MerchantID_, PostData_, apiUrl } — 前端組 form POST 跳 NewebPay 付款頁
+export function buildPeriodForm(periodParams) {
+  const {
+    NEWEBPAY_MERCHANT_ID, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV,
+    NEWEBPAY_PERIOD_API_URL,
+  } = process.env
+  if (!NEWEBPAY_MERCHANT_ID || !NEWEBPAY_HASH_KEY || !NEWEBPAY_HASH_IV) {
+    throw new Error('NewebPay env vars not configured: NEWEBPAY_MERCHANT_ID / NEWEBPAY_HASH_KEY / NEWEBPAY_HASH_IV')
+  }
+  const apiUrl = NEWEBPAY_PERIOD_API_URL || 'https://ccore.newebpay.com/MPG/period'  // 預設沙盒
+  // NPA postData 不含 MerchantID（MerchantID 走 MerchantID_ 明文欄位，加密內容不重複）
+  const formString = buildFormString(periodParams)
+  const postData = aesEncrypt(formString, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV)
+  return {
+    MerchantID_: NEWEBPAY_MERCHANT_ID,
+    PostData_: postData,
+    apiUrl,
+  }
+}
+
+// NPA AlterStatus — 取消委託（AlterType=terminate，不可恢復）
+// 用法：傳入 { merOrderNo, periodNo } → 回 { ok, status, message, raw }
+// merOrderNo 是建立委託時送的訂單編號，periodNo 是 NewebPay 首期 notify 回的委託書編號
+export async function requestPeriodTerminate({ merOrderNo, periodNo }) {
+  const {
+    NEWEBPAY_MERCHANT_ID, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV,
+    NEWEBPAY_PERIOD_ALTER_API_URL,
+  } = process.env
+  if (!NEWEBPAY_MERCHANT_ID || !NEWEBPAY_HASH_KEY || !NEWEBPAY_HASH_IV) {
+    throw new Error('NewebPay env vars not configured: NEWEBPAY_MERCHANT_ID / NEWEBPAY_HASH_KEY / NEWEBPAY_HASH_IV')
+  }
+  const apiUrl = NEWEBPAY_PERIOD_ALTER_API_URL || 'https://ccore.newebpay.com/MPG/period/AlterStatus'
+  // AlterStatus PostData 規範參數
+  const alterParams = {
+    RespondType: 'JSON',
+    Version: '1.0',
+    MerOrderNo: merOrderNo,
+    PeriodNo: periodNo,
+    AlterType: 'terminate',   // terminate=結束（不可復活）/ suspend=暫停（可 restart）— 取消都用 terminate
+    TimeStamp: Math.floor(Date.now() / 1000),
+  }
+  const formString = buildFormString(alterParams)
+  const encrypted = aesEncrypt(formString, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV)
+  const body = new URLSearchParams({
+    MerchantID_: NEWEBPAY_MERCHANT_ID,
+    PostData_: encrypted,
+  })
+  let response
+  try {
+    response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    })
+  } catch (err) {
+    return { ok: false, status: 'NETWORK_ERROR', message: err.message, raw: null }
+  }
+  let parsed
+  try {
+    parsed = await response.json()
+  } catch {
+    const text = await response.text().catch(() => '')
+    return { ok: false, status: 'INVALID_RESPONSE', message: `Non-JSON response: ${text.slice(0, 200)}`, raw: text }
+  }
+  const ok = parsed?.Status === 'SUCCESS'
+  return {
+    ok,
+    status: parsed?.Status || 'UNKNOWN',
+    message: parsed?.Message || '',
+    raw: parsed,
+  }
+}
+
 // 解 notify payload — 給 /api/newebpay-notify 用
 // 回 { ok, data, error }，data 是 NewebPay 回傳的 JSON 物件（已解密）
 export function parseNotifyPayload({ TradeInfo, TradeSha }) {

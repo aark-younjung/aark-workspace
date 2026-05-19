@@ -1,8 +1,11 @@
 /**
  * POST /api/newebpay-notify
- * 三用途 endpoint（Vercel Hobby 12 functions 上限對策，用 ?action 分發）：
+ * 多用途 endpoint（Vercel Hobby 12 functions 上限對策，用 ?action 分發）：
  *   - 預設（無 action 或 action=notify）：NotifyURL server-to-server — 接收 NewebPay 付款結果
+ *     payload 含 Result.PeriodNo → NPA 月繳通知，分流到 NPA 寫表邏輯
+ *     payload 不含 Result.PeriodNo → MPG 一次性付款，走原邏輯
  *   - ?action=refund：14 天無條件退款 user-initiated 端點，前端 Account 取消按鈕呼叫
+ *   - ?action=cancel-period：NPA 月繳取消委託（AlterStatus terminate），前端 Account 月繳取消按鈕呼叫
  *   - ?action=return：ReturnURL 中介 — NewebPay 付款完成後瀏覽器 POST 回來，我們 302 跳到 SPA GET URL
  *     （Vercel SPA fallback 不處理 POST，直接讓 NewebPay POST 到前端網址會 502；必須走 API 中介）
  *
@@ -38,7 +41,7 @@
 
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
-import { parseNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization, aesEncrypt, aesDecrypt } from './lib/newebpay.js'
+import { parseNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization, requestPeriodTerminate, aesEncrypt, aesDecrypt } from './lib/newebpay.js'
 
 // Vercel/Next 預設 bodyParser 會接受 form-urlencoded 並解到 req.body — 不需要特別 raw body
 // 但要確認 NewebPay 送的 Content-Type 是 application/x-www-form-urlencoded
@@ -61,13 +64,17 @@ export default async function handler(req, res) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
   // 分流：?action=refund 走退款邏輯（user-initiated, JSON body）
+  // ?action=cancel-period 走 NPA 月繳取消委託（user-initiated, JSON body）
   // ?action=return 走 ReturnURL 中介（NewebPay POST → 302 跳 SPA GET URL）
-  // 預設 / action=notify 走付款結果通知（NewebPay server-to-server, form body）
+  // 預設 / action=notify 走付款結果通知（NewebPay server-to-server, form body）— 進一步分流 MPG / NPA
   if (req.query?.action === 'return') {
     return handleReturn({ req, res })
   }
   if (req.query?.action === 'refund') {
     return handleRefund({ req, res, supabase })
+  }
+  if (req.query?.action === 'cancel-period') {
+    return handleCancelPeriod({ req, res, supabase })
   }
 
   const { TradeInfo, TradeSha, Status } = req.body || {}
@@ -114,20 +121,32 @@ export default async function handler(req, res) {
     return res.status(400).send(`Notify verification failed: ${parsed.error}`)
   }
 
-  // NewebPay 解密後的 JSON 結構：
+  // NewebPay 解密後的 JSON 結構（MPG 一次性）：
   // { Status: 'SUCCESS', Message: '...', Result: { MerchantID, Amt, TradeNo, MerchantOrderNo,
   //   PaymentType, RespondType, PayTime, IP, EscrowBank, AuthCode, Card6No, Card4No, ... } }
+  //
+  // NPA 定期定額 notify 結構（含 PeriodNo + AlreadyTimes 等額外欄位）：
+  // { Status: 'SUCCESS', Result: { MerchantID, MerchantOrderNo, PeriodNo, AuthTime, TradeNo,
+  //   AuthCode, Card4No, Card6No, AlreadyTimes, TotalTimes, PeriodAmt, ... } }
+  // NPA notify payload 含 PeriodNo → 分流到 handlePeriodNotify
   const payload = parsed.data
   const result = payload?.Result || {}
-  const merchantOrderNo = result.MerchantOrderNo
+  // NPA 文件用詞不一：有時 MerOrderNo 有時 MerchantOrderNo，兩個都收
+  const merchantOrderNo = result.MerchantOrderNo || result.MerOrderNo
   const tradeNo = result.TradeNo
-  const amount = parseInt(result.Amt || '0', 10)
+  const amount = parseInt(result.Amt || result.PeriodAmt || '0', 10)
   const paymentType = result.PaymentType
   const isSuccess = (payload?.Status === 'SUCCESS') || (Status === 'SUCCESS')
 
   if (!merchantOrderNo) {
     console.error('NewebPay notify missing MerchantOrderNo:', payload)
     return res.status(400).send('Missing MerchantOrderNo')
+  }
+
+  // NPA 定期定額分流（Result.PeriodNo 存在 = NPA notify）
+  // 首期 / 後續每期都會走這條，靠 AlreadyTimes 判斷
+  if (result.PeriodNo) {
+    return handlePeriodNotify({ req, res, supabase, payload, result, merchantOrderNo, isSuccess })
   }
 
   // 2. 從 pending 表查回 user/kind/pack/quota
@@ -442,6 +461,223 @@ async function handleRefund({ req, res, supabase }) {
     success: true,
     refund_method: 'manual_transfer',
     message: `因您是以 ${order.payment_type} 方式付款，無法線上自動退款。我們的客服將於 7 個工作天內以 email 聯繫您索取銀行帳號，並完成手動轉帳。退款金額 NT$${order.amount.toLocaleString()}。`,
+  })
+}
+
+// NPA 月繳 notify 處理 — 首期與後續每期都走這條
+// 首期：result.AlreadyTimes=1，pending 表 kind='pro_monthly' status='pending'，要寫 aivis_newebpay_period + profiles.is_pro=true + 更新 pending paid
+// 後續期：result.AlreadyTimes>1，aivis_newebpay_period 已存在，更新 last_payment_at + already_times
+async function handlePeriodNotify({ req, res, supabase, payload, result, merchantOrderNo, isSuccess }) {
+  const periodNo = result.PeriodNo
+  const alreadyTimes = parseInt(result.AlreadyTimes || '0', 10)
+  const totalTimes = parseInt(result.TotalTimes || '99', 10)
+  const periodAmt = parseInt(result.PeriodAmt || '0', 10)
+  const tradeNo = result.TradeNo
+  const authCode = result.AuthCode
+  const card4No = result.Card4No
+  const card6No = result.Card6No
+  const authTime = result.AuthTime  // NewebPay 格式 YYYYMMDDHHmmss
+  const paymentType = result.PaymentType || 'CREDIT'
+
+  // 1. 從 pending 表查回 user — 不論首期還是後續期，pending 都應該存在（首期 checkout 寫入）
+  //    後續期若 pending 已是 paid 狀態仍能查到 user_id（不刪 pending row）
+  const { data: pending } = await supabase
+    .from('aivis_newebpay_pending')
+    .select('user_id, status, kind')
+    .eq('merchant_order_no', merchantOrderNo)
+    .maybeSingle()
+
+  let userId = pending?.user_id
+  // 後續期可能 pending 表 user_id 查不到（罕見邊角，例如 pending 被誤刪），fallback 從 aivis_newebpay_period 查
+  if (!userId) {
+    const { data: periodRow } = await supabase
+      .from('aivis_newebpay_period')
+      .select('user_id')
+      .eq('period_no', periodNo)
+      .maybeSingle()
+    userId = periodRow?.user_id
+  }
+  if (!userId) {
+    console.error('NPA notify: cannot resolve user_id for order/period:', merchantOrderNo, periodNo)
+    return res.status(400).send('Cannot resolve user for NPA notify')
+  }
+
+  // 2. 失敗 notify（首期信用卡 NT$10 授權失敗、後續期續扣卡片過期等）— 記錄但不升級 Pro
+  if (!isSuccess) {
+    if (alreadyTimes <= 1) {
+      // 首期失敗：pending 標 failed，不開 Pro
+      await supabase
+        .from('aivis_newebpay_pending')
+        .update({ status: 'failed', trade_no: tradeNo, payment_type: paymentType, notify_raw: payload })
+        .eq('merchant_order_no', merchantOrderNo)
+    } else {
+      // 後續期失敗：標記訂閱失敗，但不立即停 Pro（給用戶補繳時間，由 cron 後續處理）
+      await supabase
+        .from('aivis_newebpay_period')
+        .update({ status: 'failed', notify_raw_last: payload })
+        .eq('period_no', periodNo)
+    }
+    console.log(`NPA period charge failed for ${merchantOrderNo} period=${periodNo} alreadyTimes=${alreadyTimes}:`, payload?.Message)
+    return res.status(200).send('OK (period charge failed, marked)')
+  }
+
+  // 3. 成功處理
+  if (alreadyTimes <= 1) {
+    // ─── 首期成功 ───
+    // 建立 aivis_newebpay_period row（upsert by period_no 防 NewebPay retry notify 寫重）
+    const { error: periodErr } = await supabase
+      .from('aivis_newebpay_period')
+      .upsert({
+        user_id: userId,
+        merchant_order_no: merchantOrderNo,
+        period_no: periodNo,
+        period_amount: periodAmt,
+        period_type: process.env.NEWEBPAY_PERIOD_TYPE || 'M',
+        period_point: process.env.NEWEBPAY_PERIOD_POINT || '05',
+        status: 'active',
+        already_times: alreadyTimes,
+        total_times: totalTimes,
+        card4_no: card4No,
+        card6_no: card6No,
+        first_payment_at: new Date().toISOString(),
+        last_payment_at: new Date().toISOString(),
+        notify_raw_first: payload,
+      }, { onConflict: 'period_no', ignoreDuplicates: false })
+    if (periodErr) {
+      console.error('NPA period insert error:', periodErr)
+      return res.status(500).send(`Period insert failed: ${periodErr.message}`)
+    }
+
+    // pending 標 paid
+    await supabase
+      .from('aivis_newebpay_pending')
+      .update({
+        status: 'paid',
+        trade_no: tradeNo,
+        payment_type: paymentType,
+        paid_at: new Date().toISOString(),
+        notify_raw: payload,
+      })
+      .eq('merchant_order_no', merchantOrderNo)
+
+    // profiles.is_pro = true
+    const { error: proErr } = await supabase
+      .from('profiles')
+      .update({
+        is_pro: true,
+        payment_gateway: 'newebpay',
+        subscribed_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+    if (proErr) {
+      console.error('NPA Pro upgrade error:', proErr)
+      return res.status(500).send(`Pro upgrade failed: ${proErr.message}`)
+    }
+    console.log(`User ${userId} upgraded to Pro (NPA monthly, period=${periodNo}, order=${merchantOrderNo})`)
+    return res.status(200).send('OK (NPA first period)')
+  } else {
+    // ─── 後續期續扣成功 ───
+    // 更新 already_times + last_payment_at；is_pro 維持 true 不動（避免覆蓋手動授予/年繳狀態）
+    const { error: updErr } = await supabase
+      .from('aivis_newebpay_period')
+      .update({
+        already_times: alreadyTimes,
+        last_payment_at: new Date().toISOString(),
+        notify_raw_last: payload,
+      })
+      .eq('period_no', periodNo)
+    if (updErr) {
+      console.error('NPA period update error:', updErr)
+      return res.status(500).send(`Period update failed: ${updErr.message}`)
+    }
+    // 保險：續扣成功時若 profiles.is_pro 因某原因被誤設 false，補回 true
+    await supabase
+      .from('profiles')
+      .update({ is_pro: true })
+      .eq('id', userId)
+    console.log(`NPA period recurring charge OK for user ${userId} period=${periodNo} alreadyTimes=${alreadyTimes}`)
+    return res.status(200).send('OK (NPA recurring period)')
+  }
+}
+
+// NPA 月繳取消委託 — 走 ?action=cancel-period 分支
+// 前端 fetch('/api/newebpay-notify?action=cancel-period', { method:'POST', body: JSON.stringify({ userId, periodNo }) })
+// 與 refund 相同安全模式：Authorization Bearer token 驗 user.id 比對 body.userId 防偽造
+async function handleCancelPeriod({ req, res, supabase }) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+  const { userId, periodNo } = req.body || {}
+  if (!userId || !periodNo) {
+    return res.status(400).json({ error: 'userId and periodNo are required' })
+  }
+
+  // 1. 驗 access token 比對 userId
+  const authHeader = req.headers?.authorization || req.headers?.Authorization
+  const accessToken = authHeader?.replace(/^Bearer\s+/i, '')
+  if (!accessToken) return res.status(401).json({ error: 'Missing access token' })
+  const { data: authData, error: authErr } = await supabase.auth.getUser(accessToken)
+  if (authErr || !authData?.user) return res.status(401).json({ error: 'Invalid access token' })
+  if (authData.user.id !== userId) return res.status(403).json({ error: 'userId does not match authenticated user' })
+
+  // 2. 查 aivis_newebpay_period — 必須屬於該 user、status='active'
+  const { data: period, error: periodErr } = await supabase
+    .from('aivis_newebpay_period')
+    .select('user_id, merchant_order_no, period_no, period_amount, status')
+    .eq('period_no', periodNo)
+    .maybeSingle()
+  if (periodErr) {
+    console.error('Period lookup error:', periodErr)
+    return res.status(500).json({ error: 'Period lookup failed' })
+  }
+  if (!period) return res.status(404).json({ error: 'Period subscription not found' })
+  if (period.user_id !== userId) return res.status(403).json({ error: 'Period does not belong to this user' })
+  if (period.status !== 'active') {
+    return res.status(409).json({ error: `Period status is already "${period.status}", cannot cancel.` })
+  }
+
+  // 3. 呼叫 NewebPay AlterStatus terminate
+  let terminateResult
+  try {
+    terminateResult = await requestPeriodTerminate({
+      merOrderNo: period.merchant_order_no,
+      periodNo: period.period_no,
+    })
+  } catch (err) {
+    console.error('NewebPay period terminate API call threw:', err)
+    return res.status(502).json({ error: 'Period terminate API call failed', detail: err.message })
+  }
+  if (!terminateResult.ok) {
+    await supabase
+      .from('aivis_newebpay_period')
+      .update({ status: 'cancel_failed', cancel_note: `${terminateResult.status}: ${terminateResult.message}` })
+      .eq('period_no', periodNo)
+    return res.status(400).json({
+      error: 'NewebPay period terminate failed',
+      detail: `${terminateResult.status}: ${terminateResult.message}`,
+    })
+  }
+
+  // 4. 成功：標 cancelled + 立即降 Free
+  // 簡化策略：取消即停（不撐到當期結束）。理由：NewebPay terminate 立即生效不再扣款，
+  // 用戶心理預期「取消就停」最直覺。若未來要做「撐到當期結束」需另加 paid_through_to 欄位。
+  await supabase
+    .from('aivis_newebpay_period')
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancel_note: `User-initiated terminate via Account UI. NewebPay: ${terminateResult.message || 'SUCCESS'}`,
+    })
+    .eq('period_no', periodNo)
+  await supabase
+    .from('profiles')
+    .update({ is_pro: false })
+    .eq('id', userId)
+
+  return res.status(200).json({
+    success: true,
+    message: '月繳訂閱已成功取消，下期不再扣款。已將帳號降回免費版。',
   })
 }
 

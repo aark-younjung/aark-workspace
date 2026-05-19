@@ -7,6 +7,58 @@
 ---
 
 ### 2026-05-19
+**NPA 月繳定期定額串接完成（待沙盒實測）— Pro 月繳 NT$1,490／月 全端打通:**
+- 🎯 **NewebPay 商家後台已啟用「信用卡定期定額授權服務（NPA）」**：用戶今早確認狀態欄顯示「啟用」，前序 WORKLOG 估的「最晚 2026-05-20」實際 2026-05-19 就到位。NPA 是獨立服務、與商家代號獨立審核，沙盒 + 正式都已開通。憑此啟動 NPA 端到端串接。
+- ✅ **NPA helper [api/lib/newebpay.js](api/lib/newebpay.js)**：(a) 新增 `buildPeriodForm(periodParams)` — 把 params JSON.stringify → URLEncoded → AES → 回 `{ MerchantID_, PostData_, apiUrl }`（注意 field key 帶**底線**，與 MPG `TradeInfo/TradeSha` 不同；前端 dispatch 要看 `mode='npa'` 才認 underscore key）。預設 URL `https://ccore.newebpay.com/MPG/period`，env `NEWEBPAY_PERIOD_API_URL` 可覆蓋。(b) 新增 `requestPeriodTerminate({ merOrderNo, periodNo })` — POST 到 `/MPG/period/AlterStatus` 帶 `AlterType=terminate`，回 `{ ok, status, message, raw }`。env `NEWEBPAY_PERIOD_ALTER_API_URL` 可覆蓋。
+- ✅ **後端建單 [checkout-pro-yearly-newebpay.js](api/checkout-pro-yearly-newebpay.js)**：(a) `PLAN_SPEC` 第三 SKU `monthly: { amount: 1490, mode: 'npa' }`（檔名留 yearly 是歷史包袱、Vercel Hobby 12 functions 卡死無法另開檔）(b) prefix `pm` (pro_monthly) / DB kind `'pro_monthly'`（要 ALTER `aivis_newebpay_pending` CHECK 接受新值）(c) `spec.mode === 'mpg'` 走原 MPG 一次性、`spec.mode === 'npa'` 走 NPA `buildPeriodForm`，回傳 `{ apiUrl, fields: { MerchantID_, PostData_ }, mode: 'npa' }`(d) NPA `periodParams` 用 `MerOrderNo`/`ProdDesc`（NPA 規範）而非 MPG 的 `MerchantOrderNo`/`ItemDesc`，`PeriodStartType=3` = 立即執行 NT$10 授權測試 + 首期立扣，`PeriodTimes=99` = 永久（直到用戶取消）。env `NEWEBPAY_PERIOD_TYPE`/`NEWEBPAY_PERIOD_POINT` 可改沙盒測試節奏（M/05 = 生產；D/2 = 沙盒每 2 天扣加速）。
+- ✅ **後端 notify [newebpay-notify.js](api/newebpay-notify.js)**：(a) 預設 handler 抓 merchantOrderNo 同時讀 `result.MerchantOrderNo || result.MerOrderNo`（NPA notify 用 MerOrderNo、MPG 用 MerchantOrderNo，欄位命名不一致）、amount 讀 `Amt || PeriodAmt`(b) 加 `if (result.PeriodNo) return handlePeriodNotify(...)` 分流，存在 PeriodNo 即視為 NPA 月繳通知(c) `handlePeriodNotify` 依 `result.AlreadyTimes`：`<=1` 為首期 → upsert `aivis_newebpay_period` (period_no UNIQUE) + 標 pending `paid` + `profiles.is_pro=true`；`>1` 為後續期續扣 → update `already_times`+`last_payment_at`+`notify_raw_last`，is_pro 不動避免覆蓋手動授予狀態。(d) 新增 dispatcher `if (req.query?.action === 'cancel-period')` → `handleCancelPeriod`：驗 Supabase JWT user.id 比對 body.userId 防偽造、查 active period、呼 `requestPeriodTerminate()`、寫 `status='cancelled' / cancelled_at=now / cancel_note=<NewebPay message>` + `profiles.is_pro=false`。
+- ✅ **前端 [Pricing.jsx](src/pages/Pricing.jsx)**：(a) `const isYearly = true` → `useState(true)` 解鎖切換 (b) handleUpgrade 加 `priceType === 'monthly'` 分支 (c) 新增「年繳／月繳」分段切換 UI（紫藍漸層 active + 年繳側「省 22%」徽章強化主推）(d) ProCardBody 早鳥顯示條件由 `earlybirdAvailable` → `isYearly && earlybirdAvailable`（toggle 切月繳時早鳥 UI 消失，因早鳥僅限年繳）(e) CTA 路由 `isYearly ? (earlybirdAvailable ? 'earlybird' : 'yearly') : 'monthly'`，desktop + mobile sticky 同步 (f) `pro_success` toast 支援 `monthly` plan 文案「✨ Pro 月繳訂閱成功！」
+- ✅ **前端 [Account.jsx](src/pages/Account.jsx)**：(a) 新增 `latestPeriodSub` state + 平行查 `aivis_newebpay_period status='active'` (b) handleCancel 加優先分支：有 active period → 開月繳取消 modal（非退款 modal，月繳當期已扣不退、走 terminate 路徑）(c) 新增 `handleCancelPeriodConfirm` 呼 `/api/newebpay-notify?action=cancel-period`、成功 set `refundResult.method='period_terminate'` 顯示「月繳委託已取消」綠卡 (d) 新增 `CancelPeriodModal` component — 顯示 Pro 月繳/ NT$1,490／月/ 卡末四碼/ 下次扣款日/ 已扣款期數 + 黃色警示框「本期已扣不退款、期末降回 Free」，CTA「確認取消委託」(e) 取消按鈕副標依 `latestPeriodSub` 切換文案「月繳可隨時取消，當期已扣不退；期末降回免費版」vs「14 天內無條件退款；超過則用至年期到期」 (f) `pro_success` toast 也支援 monthly。
+- 📋 **SQL 需求（用戶側 Supabase Dashboard 跑）**：
+  ```sql
+  -- 1) 放寬 aivis_newebpay_pending.kind CHECK 接受 'pro_monthly'
+  ALTER TABLE aivis_newebpay_pending DROP CONSTRAINT IF EXISTS aivis_newebpay_pending_kind_check;
+  ALTER TABLE aivis_newebpay_pending ADD CONSTRAINT aivis_newebpay_pending_kind_check
+    CHECK (kind IN ('topup_small','topup_large','pro_yearly','pro_monthly'));
+
+  -- 2) 建 aivis_newebpay_period（NPA 委託主表，by period_no unique 防 retry 寫重）
+  CREATE TABLE IF NOT EXISTS aivis_newebpay_period (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    merchant_order_no text NOT NULL,
+    period_no text NOT NULL UNIQUE,           -- NewebPay 回的委託代碼，本表的天然主鍵
+    period_amount integer NOT NULL,            -- 每期扣款金額 NT$
+    period_type text NOT NULL,                 -- M=每月 / D=每日 / W=每週 / Y=每年
+    period_point text NOT NULL,                -- M 時為日期（'05'）/ D 時為間隔天數（'2'）
+    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active','cancelled','suspended','expired')),
+    already_times integer NOT NULL DEFAULT 0,  -- 已扣款期數
+    total_times integer,                       -- 總期數（99=永久）
+    email text,
+    card4_no text,                             -- 信用卡末四碼
+    card6_no text,                             -- 信用卡前六碼（BIN，可選）
+    first_payment_at timestamptz,
+    last_payment_at timestamptz,
+    next_payment_at timestamptz,               -- 預計下次扣款日，目前 notify 未計算（modal 顯示 '—'）
+    cancelled_at timestamptz,
+    cancel_note text,
+    notify_raw_first jsonb,
+    notify_raw_last jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_aivis_newebpay_period_user_status ON aivis_newebpay_period(user_id, status);
+  CREATE INDEX IF NOT EXISTS idx_aivis_newebpay_period_period_no ON aivis_newebpay_period(period_no);
+  -- RLS：用戶可讀自己的 row 看訂閱狀態 / 寫入只給 service_role（notify + cancel-period）
+  ALTER TABLE aivis_newebpay_period ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "user reads own period" ON aivis_newebpay_period FOR SELECT TO authenticated USING (user_id = auth.uid());
+  ```
+- 🔖 **設計取捨：next_payment_at 暫不計算**：notify handler 沒寫 next_payment_at 邏輯，因為要依 `period_type`/`period_point` 動態算（M+05 = 下月 5 日；D+2 = +2 天）且要處理跨月閏年。MVP 先讓 modal 顯示「—」，沙盒實測時 user 看到首扣後 last_payment_at 已有值即可確認流程通。Phase 2 再補計算邏輯（或用 `gen_random_uuid()` 不重要，但 next_payment_at 是 UX 細節值得做）。
+- 🔖 **設計取捨：notify 分流靠 PeriodNo 存在性而非 ?action 參數**：NewebPay NPA 沒有「通知端點分開」的選項，NotifyURL 跟 MPG 共用同一個。所以靠 payload 結構分流 — `Result.PeriodNo` 存在 = NPA、不存在 = MPG。如果未來 NewebPay 改規範把 PeriodNo 也送進 MPG response，此分流會壞，要改看 `Result.PeriodType` 或更安全的 marker。
+- 🔖 **設計取捨：月繳取消 modal 與年繳退款 modal 分開不複用**：兩者商業意義完全不同 — 年繳是「14 天無條件退款」（NT$13,900 退回），月繳是「取消委託」（NT$0 退、期末降 Free）。共用 modal 會讓用戶誤判可退多少錢，做兩個 modal 雖然多寫 100 行但語意乾淨。
+- 📌 **下一步**：(1) 用戶在 Supabase Dashboard 跑上方 SQL — ALTER pending + CREATE period 表 (2) `git add` 七檔（lib/newebpay.js / newebpay-notify.js / checkout-pro-yearly-newebpay.js / Pricing.jsx / Account.jsx / WORKLOG.md / CLAUDE.md 如有改）+ push → Vercel 部署 (3) **沙盒實測**：建議先設 env `NEWEBPAY_PERIOD_TYPE=D NEWEBPAY_PERIOD_POINT=2`（每 2 天扣加速測試）→ 註冊測試帳號 → Pricing toggle 切月繳 → 刷沙盒卡 → 驗 (a) 首期 notify 寫入 `aivis_newebpay_period` + `pending.status=paid` + `profiles.is_pro=true` (b) Account 顯示「目前方案 Pro / 月繳可隨時取消」副標 (c) 等 2 天驗第二期 notify 寫入 `already_times=2 / last_payment_at` 更新 (d) 點取消訂閱 → CancelPeriodModal → 確認取消 → 驗 `period.status='cancelled' / cancelled_at=now / profiles.is_pro=false` (e) 還原 env 為 `M/05` 改回月扣  (4) **生產上線前**：用戶在 NewebPay 商家後台確認 NPA 已從沙盒換到正式環境（同 MPG 換法），切 env vars 包含 `NEWEBPAY_PERIOD_API_URL` 從 `ccore` 改 `core`。
+
+---
+
+### 2026-05-19
 **Phase 1 NewebPay 整合全綠收尾 — 不退款 checkbox UI 驗證通過 + 客服信箱統一:**
 - 🎯 **不退款 checkbox UX 驗證通過**：暫降 `AIVIS_QUOTA_PER_MONTH=1` 推到 production、SQL 灌 aark6465 為 Pro → 進 aivis dashboard 開 TopupModal → 驗 (a) 未勾 checkbox 「立即加購」按鈕灰底寫「請先勾選下方同意」、cursor not-allowed (b) 規則說明區出現橘黃色「⚠️ Top-up 屬於『一經提供即完成之線上服務』（消保法第 19 條第 2 項第 5 款）」段落 + 客服 mailto (c) 勾後按鈕變橙色／青綠色可點。3 點全綠不刷卡。已還原 `AIVIS_QUOTA_PER_MONTH=150` + 改 aark6465 回 Free。
 - ✅ **客服信箱統一為 aark.younjung@gmail.com**：5 個 active 檔 — [AIVisibilityDashboard.jsx:1858](src/pages/AIVisibilityDashboard.jsx#L1858) TopupModal mailto / [Account.jsx](src/pages/Account.jsx) 取消訂閱 + 退款 5 個 alert / [Dashboard.jsx:952](src/pages/Dashboard.jsx#L952) 排行榜退件 alert / [newebpay-notify.js:32](api/newebpay-notify.js#L32) 手動轉帳 admin 通知 comment / [cron-weekly-reports.js:233](api/cron-weekly-reports.js#L233) 週報 footer。**未動**：`hello@aark.com.tw`（Agency 洽談 sales 用，不同範疇）/ `support@aark.io` + `report@aark.io`（Resend outgoing 寄件人，已驗證）/ WORKLOG.md 歷史紀錄 / docs/v3-unpacked mockup。

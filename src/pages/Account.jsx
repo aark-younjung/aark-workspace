@@ -20,13 +20,19 @@ export default function Account() {
   const [refundModalOpen, setRefundModalOpen] = useState(false)
   const [refundResult, setRefundResult] = useState(null)
 
-  // NewebPay 付款後跳回 /account?pro_success={yearly|earlybird} — 顯示升級成功 toast
+  // NewebPay NPA 月繳訂閱 state（pro_monthly）— 與年繳分流：月繳走 terminate 不退款
+  // latestPeriodSub: 最新一筆 active 的 aivis_newebpay_period（period_no 是 NPA 委託代碼）
+  // cancelPeriodModalOpen: 月繳取消確認 modal（當期已扣不退、期末自動降回 Free）
+  const [latestPeriodSub, setLatestPeriodSub] = useState(null)
+  const [cancelPeriodModalOpen, setCancelPeriodModalOpen] = useState(false)
+
+  // NewebPay 付款後跳回 /account?pro_success={yearly|earlybird|monthly} — 顯示升級成功 toast
   // 跟 Pricing.jsx 同模式：抓 query string → 顯示 → 立刻清 URL 防重整再彈 → 6 秒自動消失
   const [proSuccessPlan, setProSuccessPlan] = useState(null)
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const plan = params.get('pro_success')
-    if (plan === 'yearly' || plan === 'earlybird') {
+    if (plan === 'yearly' || plan === 'earlybird' || plan === 'monthly') {
       setProSuccessPlan(plan)
       navigate(location.pathname, { replace: true })
       const t = setTimeout(() => setProSuccessPlan(null), 6000)
@@ -44,9 +50,13 @@ export default function Account() {
 
   // 載入用戶最近一筆 NewebPay Pro 訂單（用於取消按鈕分流）
   // 條件：is_pro=true 且 payment_gateway='newebpay'（手動授予的 Pro 沒有 order，不需要載入）
+  // 同時平行查 aivis_newebpay_period（NPA 月繳）— 兩種訂閱型態並存查詢，handleCancel 依出現順序分流：
+  //   有 active period → 月繳路徑（terminate 不退款）
+  //   無 active period 但有 paid yearly → 年繳路徑（14 天視窗退款）
   useEffect(() => {
     if (!user || !isPro || profile?.payment_gateway !== 'newebpay') {
       setLatestProOrder(null)
+      setLatestPeriodSub(null)
       return
     }
     let cancelled = false
@@ -61,6 +71,15 @@ export default function Account() {
       .limit(1)
       .maybeSingle()
       .then(({ data }) => { if (!cancelled) setLatestProOrder(data) })
+    supabase
+      .from('aivis_newebpay_period')
+      .select('period_no, merchant_order_no, period_amount, period_type, period_point, status, already_times, last_payment_at, next_payment_at, card4_no')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('first_payment_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setLatestPeriodSub(data) })
     return () => { cancelled = true }
   }, [user, isPro, profile?.payment_gateway])
 
@@ -103,18 +122,24 @@ export default function Account() {
     navigate('/')
   }
 
-  // 取消訂閱 — 依用戶付款方式三分支：
+  // 取消訂閱 — 依用戶付款方式四分支：
   // (a) Stripe 訂閱（profile.stripe_subscription_id 存在）：cancel-subscription endpoint 已 archived，顯示客服聯繫提示
-  // (b) NewebPay 14 天內 → 開退款 modal 二次確認（走 /api/newebpay-notify?action=refund）
-  // (c) NewebPay 超過 14 天 → 顯示「年期到期日後自動降回 Free」（年繳已過鑑賞期不退款）
-  // (d) 找不到 order（手動授予 Pro）→ 客服聯繫提示
+  // (b) NPA 月繳（latestPeriodSub 存在）→ 開月繳取消 modal（terminate 委託、當期已扣不退、期末降 Free）
+  // (c) NewebPay 年繳 14 天內 → 開退款 modal 二次確認（走 /api/newebpay-notify?action=refund）
+  // (d) NewebPay 年繳超過 14 天 → 顯示「年期到期日後自動降回 Free」（年繳已過鑑賞期不退款）
+  // (e) 找不到任何訂閱（手動授予 Pro）→ 客服聯繫提示
   const handleCancel = () => {
     // (a) Stripe sub
     if (profile?.stripe_subscription_id) {
       alert('您的訂閱由 Stripe 處理。請寄信至客服 aark.younjung@gmail.com 協助取消。')
       return
     }
-    // (d) 找不到 NewebPay order — 手動授予 Pro 用戶
+    // (b) NPA 月繳優先 — 月繳用戶可能同時有歷史年繳記錄，要先走月繳路徑避免誤判
+    if (latestPeriodSub) {
+      setCancelPeriodModalOpen(true)
+      return
+    }
+    // (e) 沒有年繳 order 也沒有月繳 sub — 手動授予 Pro 用戶
     if (!latestProOrder) {
       alert('找不到對應的付款訂單。如您的 Pro 方案為客服手動授予，請寄信至 aark.younjung@gmail.com 協助處理。')
       return
@@ -122,7 +147,7 @@ export default function Account() {
     // 計算 14 天視窗
     const paidAt = latestProOrder.paid_at ? new Date(latestProOrder.paid_at) : null
     const daysSincePaid = paidAt ? (Date.now() - paidAt.getTime()) / (24 * 3600 * 1000) : 999
-    // (c) 超過 14 天
+    // (d) 超過 14 天
     if (daysSincePaid > 14) {
       const yearlyExpiry = paidAt ? new Date(paidAt.getTime() + 365 * 24 * 3600 * 1000) : null
       const expiryStr = yearlyExpiry?.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }) || ''
@@ -133,8 +158,53 @@ export default function Account() {
       )
       return
     }
-    // (b) NewebPay 14 天內 → 開 modal
+    // (c) NewebPay 年繳 14 天內 → 開退款 modal
     setRefundModalOpen(true)
+  }
+
+  // NPA 月繳取消確認 — 呼叫 cancel-period endpoint，後端會 POST 到 NewebPay AlterStatus terminate
+  // 成功後：aivis_newebpay_period.status='cancelled' + profiles.is_pro=false（當期可繼續用至期末）
+  // 失敗：保留 modal，顯示 alert 提示重試或客服聯繫
+  const handleCancelPeriodConfirm = async () => {
+    setCancelling(true)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData?.session?.access_token
+      if (!accessToken) {
+        alert('登入狀態已過期，請重新登入後再試')
+        setCancelling(false)
+        return
+      }
+      const res = await fetch('/api/newebpay-notify?action=cancel-period', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          periodNo: latestPeriodSub.period_no,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        alert(data.error || data.detail || '取消委託失敗，請聯繫客服 aark.younjung@gmail.com')
+        setCancelling(false)
+        return
+      }
+      // 成功：顯示已取消狀態（沿用 cancelDone state，refundResult.method='period_terminate' 顯示不同文案）
+      setRefundResult({
+        method: 'period_terminate',
+        message: data.message || '月繳訂閱已取消，本期費用已扣款不退；當期使用結束後自動降為免費版。',
+      })
+      setCancelDone(true)
+      setCancelPeriodModalOpen(false)
+      await fetchProfile(user.id)
+    } catch {
+      alert('連線失敗，請稍後再試；若已扣款請聯繫客服 aark.younjung@gmail.com')
+    } finally {
+      setCancelling(false)
+    }
   }
 
   // 退款 modal 確認按鈕 — 真正呼叫退款 API
@@ -256,7 +326,11 @@ export default function Account() {
             <div className="text-2xl leading-none flex-shrink-0" aria-hidden>✓</div>
             <div className="flex-1 min-w-0">
               <div className="font-bold text-base">
-                {proSuccessPlan === 'earlybird' ? '🐣 早鳥首年購買成功！' : '✨ Pro 年繳升級成功！'}
+                {proSuccessPlan === 'earlybird'
+                  ? '🐣 早鳥首年購買成功！'
+                  : proSuccessPlan === 'monthly'
+                    ? '✨ Pro 月繳訂閱成功！'
+                    : '✨ Pro 年繳升級成功！'}
               </div>
               <div className="text-sm mt-1 opacity-90 leading-relaxed">
                 付款已送出，系統入帳處理中。Pro 功能將於數十秒內全部解鎖，可重整頁面確認方案徽章。
@@ -416,7 +490,11 @@ export default function Account() {
                     }}
                   >
                     <p className="font-medium text-sm" style={{ color: '#86efac' }}>
-                      {refundResult?.method === 'manual_transfer' ? '退款已申請（待手動轉帳）' : '退款已完成'}
+                      {refundResult?.method === 'period_terminate'
+                        ? '月繳委託已取消'
+                        : refundResult?.method === 'manual_transfer'
+                          ? '退款已申請（待手動轉帳）'
+                          : '退款已完成'}
                     </p>
                     <p className="text-xs mt-1 leading-relaxed" style={{ color: '#86efacd0' }}>
                       {refundResult?.message || '訂閱已取消，將於下次重整後生效。'}
@@ -426,7 +504,11 @@ export default function Account() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium" style={{ color: T.text }}>取消訂閱</p>
-                      <p className="text-xs mt-0.5" style={{ color: T.textLow }}>14 天內無條件退款；超過則用至年期到期</p>
+                      <p className="text-xs mt-0.5" style={{ color: T.textLow }}>
+                        {latestPeriodSub
+                          ? '月繳可隨時取消，當期已扣不退；期末降回免費版'
+                          : '14 天內無條件退款；超過則用至年期到期'}
+                      </p>
                     </div>
                     <button
                       onClick={handleCancel}
@@ -487,6 +569,17 @@ export default function Account() {
           cancelling={cancelling}
           onClose={() => setRefundModalOpen(false)}
           onConfirm={handleRefundConfirm}
+        />
+      )}
+
+      {/* 月繳取消 modal — NPA terminate 委託二次確認 */}
+      {/* 與退款 modal 區隔：(1) 文案強調「當期已扣不退」(2) 沒有 14 天倒數 (3) 退款金額是 NT$0（不退款） */}
+      {cancelPeriodModalOpen && latestPeriodSub && (
+        <CancelPeriodModal
+          sub={latestPeriodSub}
+          cancelling={cancelling}
+          onClose={() => setCancelPeriodModalOpen(false)}
+          onConfirm={handleCancelPeriodConfirm}
         />
       )}
     </PageBg>
@@ -602,6 +695,111 @@ function RefundModal({ order, cancelling, onClose, onConfirm }) {
             }}
           >
             {cancelling ? '處理中...' : `確認退款 ${amountStr}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// 月繳取消委託 modal — 與 RefundModal 同骨架但語意不同：
+// (1) 沒有 14 天視窗概念（NPA 是訂閱、不是一次性付款，每月扣一次）
+// (2) 當期已扣不退款 — 用戶當期權益保留至下次扣款日，之後降回 Free
+// (3) 確認按鈕文案改成「確認取消委託」而非「確認退款」，金額顯示 NT$0
+function CancelPeriodModal({ sub, cancelling, onClose, onConfirm }) {
+  // 顯示卡片末四碼 + 下次扣款日，讓用戶確認自己是要取消「這張卡的這筆委託」
+  const card4 = sub.card4_no ? `**** ${sub.card4_no}` : '—'
+  const periodAmtStr = `NT$${(sub.period_amount || 0).toLocaleString()}／月`
+  const nextDate = sub.next_payment_at
+    ? new Date(sub.next_payment_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '—'
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="max-w-md w-full rounded-2xl shadow-2xl"
+        style={{
+          background: T.cardBg,
+          border: `1px solid ${T.fail}40`,
+          padding: 28,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-5">
+          <h3 className="text-xl font-bold mb-2" style={{ color: T.text }}>
+            取消月繳訂閱
+          </h3>
+          <p className="text-sm leading-relaxed" style={{ color: T.textMid }}>
+            您即將取消 NewebPay 信用卡定期定額委託扣款，請確認以下資訊：
+          </p>
+        </div>
+
+        <div
+          className="mb-5 rounded-xl p-4 space-y-2 text-sm"
+          style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}` }}
+        >
+          <div className="flex justify-between">
+            <span style={{ color: T.textLow }}>方案</span>
+            <span className="font-medium" style={{ color: T.text }}>Pro 月繳</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: T.textLow }}>扣款金額</span>
+            <span className="font-medium" style={{ color: T.text }}>{periodAmtStr}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: T.textLow }}>扣款信用卡</span>
+            <span className="font-medium" style={{ color: T.text }}>{card4}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: T.textLow }}>下次扣款</span>
+            <span className="font-medium" style={{ color: T.text }}>{nextDate}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: T.textLow }}>已扣款期數</span>
+            <span className="font-medium" style={{ color: T.text }}>{sub.already_times || 0} 期</span>
+          </div>
+        </div>
+
+        <div
+          className="mb-5 p-3 rounded-lg text-xs leading-relaxed"
+          style={{ background: T.warn + '15', border: `1px solid ${T.warn}40`, color: '#fde68a' }}
+        >
+          <strong>⚠️ 取消後規則</strong>：NewebPay 委託立即終止、下期不再扣款；本期已扣款費用<strong>不退款</strong>，
+          帳號將同步降回免費版（Pro 功能停用）。如需繼續訂閱請重新建立委託。
+        </div>
+
+        <p className="mb-5 text-xs leading-relaxed" style={{ color: T.textLow }}>
+          ⚠️ 確認取消後 Pro 功能會立即停用，已分析的網站資料保留，但無法再使用 PDF 匯出、aivis 監測、修復碼產生器等 Pro 功能。
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={cancelling}
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 hover:opacity-80"
+            style={{
+              color: T.text,
+              background: 'rgba(255,255,255,0.08)',
+              border: `1px solid ${T.cardBorder}`,
+            }}
+          >
+            繼續訂閱
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={cancelling}
+            className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 hover:opacity-80"
+            style={{
+              color: '#ffffff',
+              background: T.fail,
+              border: `1px solid ${T.fail}`,
+            }}
+          >
+            {cancelling ? '處理中...' : '確認取消委託'}
           </button>
         </div>
       </div>
