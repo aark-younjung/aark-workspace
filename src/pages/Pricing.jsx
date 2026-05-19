@@ -1065,7 +1065,7 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
               style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
             >
               年繳 <span className="font-semibold" style={{ color: T.warn }}>NT${earlybirdYearly.toLocaleString()}</span>
-              {' '}<span style={{ textDecoration: 'line-through', opacity: 0.7 }}>原價 NT${proYearly.toLocaleString()}</span>
+              {' '}<span style={{ textDecoration: 'line-through', opacity: 0.7, color: isDark ? T.text : '#1e293b' }}>原價 NT${proYearly.toLocaleString()}</span>
             </p>
             <p
               className="text-xs mt-1"
