@@ -7,6 +7,12 @@
 ---
 
 ### 2026-05-19
+**Top-up endpoint 補 isPro/isTrial 守衛 — 防 Free 用戶繞 UI 直購:**
+- ⚠️ **產品邏輯漏洞修補**：用戶提醒 Top-up 規則應該是「Pro 用戶 quota 超量後才開放購買」，但 [checkout-topup-newebpay.js](api/aivis/checkout-topup-newebpay.js) 原本只擋 userId+email 必填，**沒檢查 is_pro**。Free 用戶直接 curl POST 可成功建單刷卡，造成「沒訂 Pro 卻擁有 Top-up credits」的詭異狀態（aivis dashboard 又沒 isPro 守衛，credits 還能正常消耗）。前端 UI 端因 UsageBanner 只在 atWarn=true 才出現確實有自然屏障，但這只是 UX 默契、不是 enforcement。
+- ✅ **修補**：[checkout-topup-newebpay.js:55](api/aivis/checkout-topup-newebpay.js#L55) 在建單前查 `profiles.is_pro` 和 `profiles.is_trial`，兩個都 false 直接回 403「加購次數包僅限 Pro 訂閱用戶或試用期間用戶購買」。trial 用戶也放行因為他們有 100 次試用 quota、超量也合理買加購。
+- 🔖 **設計取捨：用 profile lookup 而非 access token 驗證**：本來想學 [newebpay-notify.js handleRefund](api/newebpay-notify.js#L248-L260) 用 `supabase.auth.getUser(accessToken)` 比對 body.userId 防偽造，但 Top-up 結帳 endpoint 從 TopupModal 直接 fetch、前端未必傳 Authorization header（現況沒傳），改 token 驗證會破壞 UI 串接。先用 service role 直查 profiles 擋商業邏輯漏洞，token 驗證等 TopupModal 端一起改（用戶用 `mark6465` 偽造 `aark6465` 的 userId 來刷 Top-up 給對方這種 abuse 場景不是 P0）。
+- 📌 **測試方式**：(1) `git add api/aivis/checkout-topup-newebpay.js` + push → Vercel 部署 (2) is_pro=false 狀態下 curl POST 應回 403 (3) 跑 `UPDATE profiles SET is_pro=true, payment_gateway=NULL WHERE id='1f50e799-...'` 把 aark6465 灌成手動 Pro (4) aivis dashboard 改 `AIVIS_QUOTA_PER_MONTH = 1` push → 觸發 UsageBanner → TopupModal → 點小包 NT$490 → 真卡刷 → 驗 notify decrypt + `aivis_topup_credits` 加 300 + UsageBanner 顯示「+300 Top-up」(5) 大包 NT$990 重複 (6) 測完還原 quota=150 + 把 aark6465 改回 Free。
+
 **早鳥 end-to-end smoke test 通過 + Account 退款 UX 假失敗修補:**
 - 🎯 **早鳥 NT$11,880 真卡刷卡通過**：aark6465 帳號刷 `pebmpc693co6xl5`、`paid_at=2026-05-19 05:09:50`、`pack='earlybird'`、notify `decrypt_ok=true` / `SUCCESS` / `payment_type=CREDIT`、`profiles.is_pro=true` + `payment_gateway=newebpay` + `subscribed_at=2026-05-19 05:09:50`。Pricing 卡 + Account 卡顯示「✓ 目前方案」徽章。**首筆早鳥 Pro 訂單完整跑通**。
 - 🎯 **早鳥計數器邏輯驗證**：`SELECT COUNT(*) FROM aivis_newebpay_pending WHERE pack='earlybird' AND status='paid' AND refund_status != 'completed'` 回 1（pebmpc693co6xl5 算入；舊測試單 pebmp5c4p5euh07 因 refund_status='completed' 自動排除；pending 單 pebmpc5yypinvdb 因 status≠paid 排除）。**寫入端**（[checkout-pro-yearly-newebpay.js:94](api/checkout-pro-yearly-newebpay.js#L94) `pack: plan`）+ **讀取端**（[public-stats.js:54](api/public-stats.js#L54) `.eq('pack','earlybird').neq('refund_status','completed')`）+ **退款回滾**三段邏輯閉環，端到端通過。

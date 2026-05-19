@@ -53,6 +53,22 @@ export default async function handler(req, res) {
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+  // 守衛：Top-up 是 Pro / 試用用戶 quota 超量後的續命包，Free 用戶不應能買
+  // 防止用戶（含 curl/Postman 繞 UI）在 is_pro=false 狀態買到 Top-up credits 造成商業邏輯不一致
+  const { data: profile, error: profileErr } = await supabase
+    .from('profiles')
+    .select('is_pro, is_trial')
+    .eq('id', userId)
+    .maybeSingle()
+  if (profileErr) {
+    console.error('Profile lookup failed:', profileErr)
+    return res.status(500).json({ error: 'Profile lookup failed' })
+  }
+  if (!profile?.is_pro && !profile?.is_trial) {
+    return res.status(403).json({ error: '加購次數包僅限 Pro 訂閱用戶或試用期間用戶購買，請先升級 Pro' })
+  }
+
   const merchantOrderNo = generateOrderNo(`tu${pack === 'small' ? 's' : 'l'}`)
 
   // 1. 先把 pending 寫進去（如果 NewebPay form-submit 後沒回 notify，這筆會留著當 stale order 追蹤）
