@@ -332,6 +332,27 @@ export async function requestPeriodTerminate({ merOrderNo, periodNo }) {
   }
 }
 
+// 解 NPA notify payload — 給 /api/newebpay-notify 用（信用卡定期定額專用）
+// NPA notify 格式：multipart/form-data，body 只有 Status + Message + Period（沒有 TradeInfo/TradeSha）
+// Period = AES 加密的 JSON 字串，**沒有 hash 校驗欄位**（NewebPay NPA 規範如此，僅靠 TLS + IP 白名單防偽）
+// 回 { ok, data, error }，data 是 NewebPay 回傳的 JSON 物件（已解密）
+export function parsePeriodNotifyPayload({ Period }) {
+  const { NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV } = process.env
+  if (!NEWEBPAY_HASH_KEY || !NEWEBPAY_HASH_IV) {
+    return { ok: false, error: 'NewebPay env vars not configured' }
+  }
+  if (!Period) {
+    return { ok: false, error: 'Period field is empty' }
+  }
+  try {
+    const decrypted = aesDecrypt(Period, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV)
+    const data = JSON.parse(decrypted)
+    return { ok: true, data }
+  } catch (err) {
+    return { ok: false, error: `Failed to decrypt/parse Period: ${err.message}` }
+  }
+}
+
 // 解 notify payload — 給 /api/newebpay-notify 用
 // 回 { ok, data, error }，data 是 NewebPay 回傳的 JSON 物件（已解密）
 export function parseNotifyPayload({ TradeInfo, TradeSha }) {

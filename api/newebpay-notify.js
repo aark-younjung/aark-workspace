@@ -41,7 +41,7 @@
 
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
-import { parseNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization, requestPeriodTerminate, aesEncrypt, aesDecrypt } from './lib/newebpay.js'
+import { parseNotifyPayload, parsePeriodNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization, requestPeriodTerminate, aesEncrypt, aesDecrypt } from './lib/newebpay.js'
 
 // 關閉 Vercel 預設 bodyParser — NewebPay NPA NotifyURL 用 multipart/form-data，預設 parser 不認識會留 req.body 空
 // 改成自己手動讀 stream，依 content-type 分支 parse 3 種：
@@ -107,20 +107,20 @@ export default async function handler(req, res) {
     return handleCancelPeriod({ req, res, supabase })
   }
 
-  const { TradeInfo, TradeSha, Status } = req.body || {}
+  const { TradeInfo, TradeSha, Period, Status } = req.body || {}
 
   // 持久化 notify log — 在任何 return / decrypt 前先寫進 Supabase
-  // Vercel Hobby 1 小時 log retention 過期後仍能查到原始 TradeInfo / decrypt error
+  // Vercel Hobby 1 小時 log retention 過期後仍能查到原始 TradeInfo/Period / decrypt error
   // 非阻塞：log 寫失敗不影響 notify 處理（catch 後繼續走）
   const logNotify = async (parsedResult) => {
     try {
       await supabase.from('aivis_newebpay_notify_log').insert({
-        trade_info: TradeInfo || null,
-        trade_info_length: TradeInfo ? TradeInfo.length : 0,
-        trade_sha: TradeSha || null,
+        trade_info: TradeInfo || Period || null,                              // NPA 寫入 Period 同欄位（避免加新 column）
+        trade_info_length: (TradeInfo || Period) ? (TradeInfo || Period).length : 0,
+        trade_sha: TradeSha || null,                                          // NPA 無 hash，固定為 null
         status_query: Status || null,
         status_decrypted: parsedResult?.data?.Status || null,
-        merchant_order_no: parsedResult?.data?.Result?.MerchantOrderNo || null,
+        merchant_order_no: parsedResult?.data?.Result?.MerchantOrderNo || parsedResult?.data?.Result?.MerOrderNo || null,
         decrypt_ok: !!parsedResult?.ok,
         decrypt_error: parsedResult?.error || null,
         payload: parsedResult?.ok ? parsedResult.data : null,
@@ -137,14 +137,20 @@ export default async function handler(req, res) {
     }
   }
 
-  if (!TradeInfo || !TradeSha) {
-    console.error('NewebPay notify missing TradeInfo/TradeSha:', req.body)
+  // 1. 雙路徑解密
+  //   MPG (一次性付款) — body 含 TradeInfo + TradeSha → parseNotifyPayload（驗 SHA + 解 AES）
+  //   NPA (信用卡定期定額) — body 含 Period（單一加密欄位，無 hash 校驗）→ parsePeriodNotifyPayload
+  // NewebPay NPA notify 規格只送 Status + Message + Period — 跟 MPG 完全不同
+  let parsed
+  if (Period) {
+    parsed = parsePeriodNotifyPayload({ Period })
+  } else if (TradeInfo && TradeSha) {
+    parsed = parseNotifyPayload({ TradeInfo, TradeSha })
+  } else {
+    console.error('NewebPay notify missing both TradeInfo/TradeSha and Period:', req.body)
     await logNotify(null)
-    return res.status(400).send('Missing TradeInfo/TradeSha')
+    return res.status(400).send('Missing TradeInfo/TradeSha or Period')
   }
-
-  // 1. 驗 hash + 解密
-  const parsed = parseNotifyPayload({ TradeInfo, TradeSha })
   await logNotify(parsed)
   if (!parsed.ok) {
     console.error('NewebPay notify decrypt/verify failed:', parsed.error)
