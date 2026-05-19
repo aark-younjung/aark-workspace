@@ -6,6 +6,41 @@
 
 ---
 
+### 2026-05-19（夜間）
+**NPA 月繳沙盒實測全綠 — 端到端打通 + 五個 NPA 文件沒講清楚的坑:**
+
+沙盒帳號 `aark6465@gmail.com` (MS359099640) 實測 NPA 月繳訂閱 e2e 流程：checkout → 沙盒卡 `4000-2211-1111-1111` → 跳回 `/account` → toast「✨ Pro 月繳訂閱成功！」 + 按鈕即時切「目前方案」。`aivis_newebpay_period` row `period_no=P260519192022nDE2SN status=active`、`profiles.is_pro=true`、`notify_log.decrypt_ok=true`。除錯過程踩到五個 NewebPay 官方文件不直白的坑，逐一修補：
+
+- 🐛 **坑 1：NPA 服務開通是商家後台「啟用」開關，不是審核通過就自動啟用**：商家審核通過後 NPA 在後台「服務管理 → 信用卡定期定額授權服務」預設**未啟用**，要手動切到「啟用」狀態。未啟用直接刷卡會回 PER10001「商店資料取得失敗」。沙盒 + 正式各自獨立啟用狀態。**已加進 [docs/newebpay-onboarding.md](docs/newebpay-onboarding.md) 上線 checklist**。
+
+- 🐛 **坑 2：NPA 沙盒「信用卡定期定額管理 → 設定 API 應用 URL」要單獨填一次**：MPG 後台填的 NotifyURL/ReturnURL 跟 NPA 後台是**獨立**設定，NPA 沒填會白屏直接退回 `/pricing`。沙盒 + 正式各自要填一次。固定值：
+  - Notify URL: `https://aark-workspace.vercel.app/api/newebpay-notify`
+  - Return URL: `https://aark-workspace.vercel.app/account`
+
+- 🐛 **坑 3：`LangType` 大小寫敏感**：傳 `'zh-tw'` 全小寫直接被 NewebPay 退 PER10012「LangType 參數錯誤」。文件範例寫 `'zh-Tw'`（T 大寫）但沒明說大小寫敏感。NPA 對此格外挑剔，MPG 有時容許全小寫。**修法：[checkout-pro-yearly-newebpay.js:178](api/checkout-pro-yearly-newebpay.js#L178) 固定送 `'zh-Tw'`**（commit b16a1de）。
+
+- 🐛 **坑 4 — 最致命：NPA notify body 用 `Period` 單欄位，不是 MPG 的 `TradeInfo` + `TradeSha`**：原 `/api/newebpay-notify` handler 第一行就是 `const { TradeInfo, TradeSha, Status } = req.body || {}`，NPA 進來後直接 line 140 早 return 400「Missing TradeInfo/TradeSha」。實際 NPA notify 規格：
+  - body: `Status` + `Message` + `Period`（AES 加密 JSON blob，**沒有 hash 校驗欄位**，靠 TLS + IP 白名單防偽）
+  - Period 解密後 JSON 結構與 MPG TradeInfo 解密後相同（`{ Status, Message, Result: {...} }`）
+  - **修法：**[api/lib/newebpay.js](api/lib/newebpay.js) 加 `parsePeriodNotifyPayload({ Period })` helper（純 AES decrypt 無 SHA 校驗），[newebpay-notify.js](api/newebpay-notify.js) handler 改雙路徑：先試 `Period` (NPA) → 沒有就試 `TradeInfo+TradeSha` (MPG)。**handleReturn 也要同步修**，否則 toast 不跳（commit ec36126 + 29b4209）。
+
+- 🐛 **坑 5：NPA notify 用 `multipart/form-data` Content-Type，Vercel 預設 bodyParser 不認得**：MPG notify 用 `application/x-www-form-urlencoded` Vercel 直接 parse OK，NPA 改 `multipart/form-data; boundary=...`（user-agent 都是 `pay2go` 看不出差別）Vercel 預設 bodyParser 留 `req.body=undefined`。**修法：**[newebpay-notify.js](api/newebpay-notify.js) `export const config = { api: { bodyParser: false } }` 關掉預設 parser，手動讀 stream + 依 content-type 三分支 parse（JSON/urlencoded/multipart），multipart parser 自己寫 ~20 行（NewebPay 不送檔案、純文字欄位夠用）（commit b62aa67）。
+
+- 🐛 **坑 6：付款成功 toast 跳出但 Pro 卡按鈕沒切「目前方案」**：notify 已把 `profiles.is_pro` 寫成 true 沒問題，但前端 `useAuth()` 的 `isPro` 是登入時 cache 在 React state、後端改 DB 前端不會自動感知，要主動 refetch。用戶要手動 reload 才看到狀態切換。**修法：**[Account.jsx](src/pages/Account.jsx) + [Pricing.jsx](src/pages/Pricing.jsx) 兩支 `pro_success` effect 在 setState + clear URL 之後，立刻呼叫 `fetchProfile(user.id)` 同步刷 isPro（commit 135f0d8）。
+
+**過程中加的診斷基建（保留供日後上線後查 issue 用）：**
+- `aivis_newebpay_notify_log` 表（commit 7120781 前已建）— 持久化 raw_body + decrypt_ok + decrypt_error，補 Vercel Hobby 1 小時 log retention 不夠的缺。每次 notify 都寫一筆，問題定位看 SQL 比看 Vercel logs 還快。
+- `/api/newebpay-notify?action=debug-keys` GET 端點 — 回 HASH_KEY/HASH_IV 的 SHA256 指紋（前 8 碼）+ 長度 + 本地 encrypt→decrypt round-trip 自測，不需 POST 不需刷卡。驗 Vercel env 跟 NewebPay 後台金鑰是否一致用（沙盒/正式切換時必跑）。
+
+**清理 TODO（上線前要做）：**
+- [ ] 刪除 [newebpay-notify.js](api/newebpay-notify.js) `handleReturn` 內的 `console.log('[handleReturn] NewebPay POST body:', ...)` 兩行 debug log（fc862f9 加的，現在解決就移除省 Vercel log quota）
+- [ ] 沙盒驗證收尾後刪掉 Vercel env `NEWEBPAY_PERIOD_TYPE=D` + `NEWEBPAY_PERIOD_POINT=2` 兩個沙盒加速器（讓首期完就立刻第二期扣，方便看 alreadyTimes>1 行為）— 正式上線要恢復預設 M/05
+- [ ] 把 Vercel env 從沙盒 `MS359099640` + sandbox HashKey/IV 切回正式 `MS3830621445` + production HashKey/IV（也要把 `NEWEBPAY_API_URL` / `NEWEBPAY_PERIOD_API_URL` / `NEWEBPAY_REFUND_API_URL` / `NEWEBPAY_CANCEL_API_URL` / `NEWEBPAY_PERIOD_ALTER_API_URL` 從 ccore.newebpay.com 切到 core.newebpay.com）
+
+**Commits this session:** fc862f9 / b16a1de / b62aa67 / ec36126 / 29b4209 / 135f0d8
+
+---
+
 ### 2026-05-19
 **NPA 月繳定期定額串接完成（待沙盒實測）— Pro 月繳 NT$1,490／月 全端打通:**
 - 🎯 **NewebPay 商家後台已啟用「信用卡定期定額授權服務（NPA）」**：用戶今早確認狀態欄顯示「啟用」，前序 WORKLOG 估的「最晚 2026-05-20」實際 2026-05-19 就到位。NPA 是獨立服務、與商家代號獨立審核，沙盒 + 正式都已開通。憑此啟動 NPA 端到端串接。

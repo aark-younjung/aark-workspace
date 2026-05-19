@@ -741,12 +741,6 @@ async function handleReturn({ req, res }) {
     paymentSuccess = parsed.ok && parsed.data?.Status === 'SUCCESS'
   }
 
-  // 診斷 log（2026-05-19 NPA 沙盒測試卡關時加）— 把 NewebPay POST 回來的完整 body 印到 Vercel log
-  // NPA 失敗時 NewebPay 會在 body 帶 Status / Message / Result 等錯誤資訊，但平常我們只用 Status 判斷
-  // 故意 stringify 完整 body 以利偵錯，問題定位後可移除
-  console.log('[handleReturn] NewebPay POST body:', JSON.stringify(req.body || {}, null, 2))
-  console.log('[handleReturn] query:', JSON.stringify(req.query || {}, null, 2))
-
   if (!destRaw || typeof destRaw !== 'string') {
     return res.status(400).send('Missing dest query param')
   }
