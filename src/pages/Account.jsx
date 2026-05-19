@@ -191,7 +191,12 @@ export default function Account() {
       })
       const data = await res.json()
       if (!res.ok || !data.success) {
-        alert(data.error || data.detail || '取消委託失敗，請聯繫客服 aark.younjung@gmail.com')
+        // 把 error + detail 都串出來 — detail 通常包含 NewebPay 真正的錯誤碼（PER1xxxx 系列）
+        // 沒 detail 才 fallback 客服訊息，避免用戶看到「terminate failed」這種無資訊的英文
+        const msg = data.detail
+          ? `${data.error || '取消委託失敗'}\n\n錯誤詳情：${data.detail}\n\n如持續失敗請聯繫 aark.younjung@gmail.com`
+          : (data.error || '取消委託失敗，請聯繫客服 aark.younjung@gmail.com')
+        alert(msg)
         setCancelling(false)
         return
       }
