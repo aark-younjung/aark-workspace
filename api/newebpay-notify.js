@@ -731,7 +731,15 @@ async function handleReturn({ req, res }) {
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://aark-workspace.vercel.app'
   const destRaw = req.query?.dest
   const flagRaw = req.query?.flag
-  const paymentSuccess = (req.body?.Status === 'SUCCESS')
+  // 雙路徑判斷成功：
+  //   MPG (一次性) — return body 直接帶外層 Status='SUCCESS'
+  //   NPA (定期定額) — return body 只帶 Period 加密 blob（沒有外層 Status），要解 Period 取 inner Status
+  // 兩者都不成立 → paymentSuccess=false，不附 flag，前端不會誤跳成功 toast
+  let paymentSuccess = (req.body?.Status === 'SUCCESS')
+  if (!paymentSuccess && req.body?.Period) {
+    const parsed = parsePeriodNotifyPayload({ Period: req.body.Period })
+    paymentSuccess = parsed.ok && parsed.data?.Status === 'SUCCESS'
+  }
 
   // 診斷 log（2026-05-19 NPA 沙盒測試卡關時加）— 把 NewebPay POST 回來的完整 body 印到 Vercel log
   // NPA 失敗時 NewebPay 會在 body 帶 Status / Message / Result 等錯誤資訊，但平常我們只用 Status 判斷
