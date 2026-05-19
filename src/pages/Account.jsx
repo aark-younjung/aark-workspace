@@ -172,7 +172,28 @@ export default function Account() {
       // 退款成功後刷 profile，避免本地 isPro 殘留 true 造成 UI 顯示 Pro
       await fetchProfile(user.id)
     } catch {
-      alert('連線失敗，請稍後再試')
+      // fetch timeout 但伺服器可能已成功 — Vercel Hobby 10s 上限，NewebPay Close/CancelTrans 常超過
+      // 等 2 秒後重查訂單狀態，若 refund_status=completed 就視為成功，避免用戶誤以為失敗而重複點按
+      await new Promise(r => setTimeout(r, 2000))
+      const { data: confirmedOrder } = await supabase
+        .from('aivis_newebpay_pending')
+        .select('refund_status, refund_method, refund_amount')
+        .eq('merchant_order_no', latestProOrder.merchant_order_no)
+        .maybeSingle()
+      if (confirmedOrder?.refund_status === 'completed') {
+        const amt = confirmedOrder.refund_amount ? `NT$${Number(confirmedOrder.refund_amount).toLocaleString()}` : ''
+        setRefundResult({
+          method: confirmedOrder.refund_method,
+          message: confirmedOrder.refund_method === 'api_credit'
+            ? `信用卡退款已成功送出，預計 7-14 個工作天內退回原卡。退款金額 ${amt}。`
+            : `退款已申請，將以手動轉帳處理。退款金額 ${amt}。`,
+        })
+        setCancelDone(true)
+        setRefundModalOpen(false)
+        await fetchProfile(user.id)
+      } else {
+        alert('系統處理時間較長，請重新整理頁面確認退款狀態；若 1 分鐘後仍未更新，請聯繫客服 mark6465@gmail.com')
+      }
     } finally {
       setCancelling(false)
     }

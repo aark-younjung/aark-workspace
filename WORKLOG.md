@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-05-19
+**早鳥 end-to-end smoke test 通過 + Account 退款 UX 假失敗修補:**
+- 🎯 **早鳥 NT$11,880 真卡刷卡通過**：aark6465 帳號刷 `pebmpc693co6xl5`、`paid_at=2026-05-19 05:09:50`、`pack='earlybird'`、notify `decrypt_ok=true` / `SUCCESS` / `payment_type=CREDIT`、`profiles.is_pro=true` + `payment_gateway=newebpay` + `subscribed_at=2026-05-19 05:09:50`。Pricing 卡 + Account 卡顯示「✓ 目前方案」徽章。**首筆早鳥 Pro 訂單完整跑通**。
+- 🎯 **早鳥計數器邏輯驗證**：`SELECT COUNT(*) FROM aivis_newebpay_pending WHERE pack='earlybird' AND status='paid' AND refund_status != 'completed'` 回 1（pebmpc693co6xl5 算入；舊測試單 pebmp5c4p5euh07 因 refund_status='completed' 自動排除；pending 單 pebmpc5yypinvdb 因 status≠paid 排除）。**寫入端**（[checkout-pro-yearly-newebpay.js:94](api/checkout-pro-yearly-newebpay.js#L94) `pack: plan`）+ **讀取端**（[public-stats.js:54](api/public-stats.js#L54) `.eq('pack','earlybird').neq('refund_status','completed')`）+ **退款回滾**三段邏輯閉環，端到端通過。
+- 🎯 **早鳥退款 server side 完整通過**：付款後 14 分鐘內按取消訂閱 → NewebPay Close API 回 TRA10035（未請款）→ 自動 fallback 打 CancelTrans → 「放棄授權成功」→ `refund_status='completed'` + `refund_method='api_credit'` + `refund_amount=11880` + `refunded_at=2026-05-19 05:23:07` + `profiles.is_pro=false`。WORKLOG 標記「最關鍵未測路徑」實際上前序就過了（pebmp5c4p5euh07），這次再次驗證 CancelTrans fallback 100% 可用。
+- ⚠️ **UX 假失敗 bug 修補 — [Account.jsx:174](src/pages/Account.jsx#L174) catch 加 retry-on-timeout**：原本 `fetch('/api/newebpay-notify?action=refund')` 在 Vercel Hobby 10s timeout 後直接 `alert('連線失敗，請稍後再試')`，但伺服器側其實已成功（NewebPay Close/Cancel API 通常跑 10-15s）。修法：catch 內等 2s 後從 Supabase 直查 `aivis_newebpay_pending.refund_status`，若為 `completed` 就走 success path（`setRefundResult` + `fetchProfile`，文案標註「系統處理時間較長」），否則才彈 alert 並引導用戶聯繫客服。避免用戶誤以為失敗重複點按或致電客服，也避免 is_pro 殘留 true 造成 UI 顯示矛盾。
+- 🔖 **memory 記錄修正：測試帳號 aark6465 ≠ memory userEmail mark6465**：早鳥 SQL 驗證時我曾誤用 memory 裡的 mark6465 查 profiles 出現 is_pro=false 誤判為 P0 bug。實際付款帳號是 aark6465@gmail.com，memory userEmail 是用戶個人信箱。已新增 [project_test_account.md](C:/Users/ROG%20STRIX/.claude/projects/c--Users-ROG-STRIX-Desktop-Vibe-Coding-AI---/memory/project_test_account.md) 提醒之後遇到 aivis 沙盒實測一律先確認帳號。
+- 🔖 **CDN cache 觀察**：用戶反映「付款前計數器 1、付款後計數器 1」覺得沒加上去，實際是 [public-stats.js:64](api/public-stats.js#L64) 設 `s-maxage=300`（5 分 CDN cache）+ 10 分 SWR — 用戶看到的 1 是付款前的 CDN 殘留值（前一輪退款後 cache 尚未失效時的舊讀數），DB 真值經過 0→1 是對的。**不改 cache 設定**（5 分鐘對行銷頁進度條夠精準），但記下這個用戶觀察陷阱，下次 demo 時若要即時驗計數器要清 cache 或加 `?nocache=1`。
+- 📌 **下一步**：(1) `git add Account.jsx + WORKLOG.md` commit + push 觸發 Vercel 部署 (2) 等 1-2 分鐘部署完到 production 再次刷早鳥 → 立刻退款 → 觀察新版 catch path 是否正常顯示「退款已完成」success 卡（不再彈 alert）(3) 進入 Top-up 大/小包 smoke test（小包 NT$490 / 大包 NT$990，aivis quota 已從 1 恢復回 150）(4) 確認剩餘 11 個 Vercel functions 上限沒爆。
+
+---
+
 ### 2026-05-18
 **Pricing 早鳥/Pro 雙卡整合 — 一張卡同時呈現原價 NT$13,900 + 早鳥 NT$11,880:**
 - 💡 **背景**：原本 Pricing 頁早鳥（NT$11,880/年 = NT$990/月）與 Pro 年繳（NT$13,900）是**兩張獨立卡片＋兩顆 CTA**（[Pricing.jsx](src/pages/Pricing.jsx) Pro 卡 + line 802-857 的「早鳥方案」獨立 block）。用戶反映**看不懂該按哪顆**，要把兩者整合在一張卡上、用劃線價對比呈現「平常價 NT$13,900／早鳥 NT$11,880」差距，讓決策一目瞭然。前序 Phase B smoke tests（Top-up 小/大包刷卡、Pro 年繳退款）皆已完成，下一輪要測早鳥按鈕，整合後才測。
