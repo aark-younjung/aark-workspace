@@ -175,7 +175,7 @@ export default async function handler(req, res) {
     RespondType: 'JSON',
     TimeStamp: Math.floor(Date.now() / 1000),
     Version: '1.5',                                                  // NPA 規範版本（與 MPG 2.0 不同）
-    LangType: 'zh-tw',
+    LangType: 'zh-Tw',                                               // NPA 對大小寫挑剔：只接受 'zh-Tw' 或 'en'，全小寫會回 PER10012
     MerOrderNo: merchantOrderNo,                                     // NPA 用 MerOrderNo（MPG 用 MerchantOrderNo）
     ProdDesc: spec.label,                                            // NPA 用 ProdDesc（MPG 用 ItemDesc）
     PeriodAmt: spec.amount,
