@@ -316,18 +316,29 @@ export async function requestPeriodTerminate({ merOrderNo, periodNo }) {
   } catch (err) {
     return { ok: false, status: 'NETWORK_ERROR', message: err.message, raw: null }
   }
+  // 先抓原始 text — NewebPay AlterStatus 偶有回非 JSON / 不同 envelope（沙盒實測 cancel_note=UNKNOWN: 線索）
+  // 兩階段 parse：先 text、再嘗試 JSON，失敗時把 raw text 帶回診斷
+  const rawText = await response.text().catch(() => '')
   let parsed
   try {
-    parsed = await response.json()
+    parsed = JSON.parse(rawText)
   } catch {
-    const text = await response.text().catch(() => '')
-    return { ok: false, status: 'INVALID_RESPONSE', message: `Non-JSON response: ${text.slice(0, 200)}`, raw: text }
+    console.error('NPA AlterStatus non-JSON response:', rawText.slice(0, 500))
+    return { ok: false, status: 'INVALID_RESPONSE', message: `Non-JSON response: ${rawText.slice(0, 200)}`, raw: rawText }
   }
-  const ok = parsed?.Status === 'SUCCESS'
+  // 沙盒實測 NewebPay AlterStatus 回的 envelope 不一定有外層 Status — 也可能整包包在 Result 內或欄位用小寫
+  // 失敗時把整個 parsed JSON dump 進 message 方便 SQL cancel_note 看到全貌
+  const ok = parsed?.Status === 'SUCCESS' || parsed?.status === 'SUCCESS'
+  const statusVal = parsed?.Status || parsed?.status || 'UNKNOWN'
+  const messageVal = parsed?.Message || parsed?.message ||
+    (ok ? '' : `raw: ${JSON.stringify(parsed).slice(0, 300)}`)
+  if (!ok) {
+    console.error('NPA AlterStatus failure response:', JSON.stringify(parsed))
+  }
   return {
     ok,
-    status: parsed?.Status || 'UNKNOWN',
-    message: parsed?.Message || '',
+    status: statusVal,
+    message: messageVal,
     raw: parsed,
   }
 }
