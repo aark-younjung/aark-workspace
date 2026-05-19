@@ -7,6 +7,18 @@
 ---
 
 ### 2026-05-19
+**Top-up「不退款」事先同意條款 — 消保法 § 19-II-5 合規 + aivis_topup_consents 法律證據表:**
+- ⚖️ **合規動機**：用戶提醒「既然規則是大小包都不退費，那這件事應該在下單前明確寫上去」。Phase 1 上線前必補的法律強制：**消保法第 19 條第 2 項第 5 款**規定，「一經提供即完成之線上服務」不適用 7 天無條件解除權，但**前提是消費者事先同意**。原本 TopupModal 只有一行「一次性購買、不過期、用完為止、不綁訂閱」隱晦帶過，沒有「不退款」明文 + 沒有用戶主動勾選 = 不符合「事先同意」要件，事後客訴會被裁罰。
+- ✅ **前端 [AIVisibilityDashboard.jsx TopupModal](src/pages/AIVisibilityDashboard.jsx#L1644)**：(a) 新增 `TOPUP_CONSENT_V1` 模組級常數定義同意書文案 v1（後端同步定義 `TOPUP_DISCLAIMER_V1` 比對一致）(b) 規則說明區改寫：把舊三行底下加入「⚠️ Top-up 屬於『一經提供即完成之線上服務』（消保法第 19 條第 2 項第 5 款），付款完成、credits 入帳後不適用 7 天無條件解除權、亦不退款」橘黃色強調 + 客服 mailto 鏈接 (c) 規則說明下方新增勾選框（淡綠 hover、勾選後變更背景）：「我已閱讀並同意：Top-up 加購屬於『一經提供即完成之線上服務』（消保法第 19 條第 2 項第 5 款），credits 入帳後**不適用 7 天無條件解除權、亦不退款**」(d) `[agreed, setAgreed]` state 控制 checkbox + 「立即加購」按鈕 `disabled={!!buying || !agreed}`，未勾按鈕灰底寫「請先勾選下方同意」+ cursor `not-allowed` (e) `handleBuy()` 多送 `agreed: true / consentVersion: 'v1' / consentText: TOPUP_CONSENT_V1` 三個欄位給後端。
+- ✅ **後端 [checkout-topup-newebpay.js](api/aivis/checkout-topup-newebpay.js)**：(a) module-level 定義 `TOPUP_DISCLAIMER_V1` 同字串，新增 body destructure `agreed / consentVersion / consentText` (b) **雙層守衛**：(i) `agreed !== true` 回 400「請先勾選同意」(ii) `consentVersion !== 'v1' || consentText !== TOPUP_DISCLAIMER_V1` 回 400「同意書版本不符，請重新整理頁面後再試」防有人改前端送假同意書 (c) 在 pending insert **前**先抓 `req.headers['x-forwarded-for']` 第一個 hop 當 ip_address + `req.headers['user-agent']`，寫入 `aivis_topup_consents`：`{user_id, email, pack, amount, merchant_order_no, consent_version, consent_text, ip_address, user_agent}` (d) consent insert 失敗即 500 終止、不寫 pending — 避免 stale pending 找不到對應 consent。
+- 📋 **SQL 需求（用戶側執行）**：要在 Supabase SQL Editor 跑 `CREATE TABLE aivis_topup_consents`，欄位 `id uuid pk / user_id uuid fk profiles / email text / pack text / amount int / merchant_order_no text / consent_version text / consent_text text / ip_address text / user_agent text / created_at timestamptz default now()` + index on `(user_id, created_at desc)` + RLS `service_role only`（用戶不需要讀自己的同意紀錄，純法律證據用）。
+- 🔖 **設計取捨：consent_text 整段存而非只存 version**：本來想只存 `consent_version='v1'` 再對照後端 hardcode 的文案，但這樣未來改文案到 v2 後事後查 v1 紀錄會出問題（code 已 deploy 蓋掉 v1 字串、git log 找得到但對非工程不友善）。直接把當下顯示給用戶看的原文整段寫進去，事後不管 code 怎麼改、客訴稽核拿出來看一目瞭然。
+- 🔖 **設計取捨：守衛擺前端 + 後端雙層**：前端 checkbox + disabled button 是 UX 引導，但 curl/Postman 仍可繞 UI 戳 API；後端 verify `consentText === TOPUP_DISCLAIMER_V1` 字串相等，篡改前端文案後送過來會被拒。雙層才完整。
+- 📌 **下一步**：(1) 用戶在 Supabase Dashboard 跑 CREATE TABLE SQL (2) `git add` 三檔 commit + push 觸發 Vercel 部署 (3) production smoke test：未勾 checkbox 按鈕應 disabled、勾後變橙色可點、刷一筆 Top-up 小包驗 `aivis_topup_consents` 有新增 row 含 ip_address + user_agent + consent_text 完整 (4) 文案如要改 (e.g. 增加客服回覆時程承諾) 同步 bump 到 v2、前後端常數一起改。
+
+---
+
+### 2026-05-19
 **Top-up 小包 NT$490 smoke test 通過 + 還原 quota=150 + aark6465 回 Free:**
 - 🎯 **小包 NT$490 端到端驗證通過**：UPDATE profiles 把 aark6465 灌成手動 Pro（is_pro=true, payment_gateway=NULL）→ 暫降 `AIVIS_QUOTA_PER_MONTH=1` 觸發 UsageBanner soft limit → 點「加購次數包」開 TopupModal → 點小包「立即加購」→ NewebPay 結帳頁 → 真卡刷 NT$490 → 跳回 dashboard。三表全綠：`aivis_newebpay_pending` 寫入 `kind='topup_small'` `status='paid'` `amount=490` / `aivis_newebpay_notify_log` `decrypt_ok=true` `status_decrypted=SUCCESS` `status_query=SUCCESS` / `aivis_topup_credits` 新增一筆 `pack_size='small'` `quota_total=300` `quota_remaining=300` `source_payment_id='nwp_2605191426173466'`。order_no `tusmpc90y77cvfr`（`tus` = topup small 前綴）。
 - 🎯 **大包 NT$990 之前已通過**：`aivis_topup_credits` 查到先前測試紀錄 3 筆 large（2026-05-14 兩筆 + 2026-05-18 一筆），都 `quota_total=800 quota_remaining=800`。Phase 1 Top-up 雙 SKU 端到端驗證全收齊，不需重測大包。

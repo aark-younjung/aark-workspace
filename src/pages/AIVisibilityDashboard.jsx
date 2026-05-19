@@ -1646,10 +1646,15 @@ function UsageBanner({ used, quota, remaining, atSoftLimit, atHardCap, hardCap, 
 // kind === 'soft'：兩張 Top-up 卡（小/大），按鈕 POST /api/aivis/checkout-topup → 跳 Stripe Checkout
 // kind === 'hard'：硬上限說明 + Agency 預告（無 Top-up 可救，走 Agency 預登記 mailto）
 // =====================================================
+// Top-up 同意書文案 v1 — 與 api/aivis/checkout-topup-newebpay.js TOPUP_DISCLAIMER_V1 必須完全一致
+// 因為要把同字串寫進 aivis_topup_consents.consent_text 當法律證據（事後不能說「我沒看到這段」）
+const TOPUP_CONSENT_V1 = '本人已閱讀並同意：Top-up 加購屬於「一經提供即完成之線上服務」（消保法第 19 條第 2 項第 5 款），credits 入帳後不適用 7 天無條件解除權、亦不退款。'
+
 function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
   const isHard = kind === 'hard'
   const [buying, setBuying] = useState(null)  // 'small' | 'large' | null（防連點 + loading state）
   const [buyError, setBuyError] = useState(null)
+  const [agreed, setAgreed] = useState(false)  // 不退款同意 checkbox — 未勾不能下單（消保法 § 19-II-5「事先同意」要件）
 
   // 點 Top-up 卡的「立即加購」→ 打 /api/aivis/checkout-topup-newebpay → 拿到 NewebPay form 欄位
   // → 動態建 <form> 自動 submit 跳轉至 NewebPay 付款頁
@@ -1657,6 +1662,10 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
   async function handleBuy(packId) {
     if (!user?.id || !user?.email) {
       setBuyError('請先登入後再加購')
+      return
+    }
+    if (!agreed) {
+      setBuyError('請先勾選同意「不退款」條款後再加購')
       return
     }
     setBuying(packId)
@@ -1670,6 +1679,9 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
           email: user.email,
           pack: packId,
           returnUrl: window.location.href,
+          agreed: true,                       // 法律證據：用戶在前端勾了 checkbox
+          consentVersion: 'v1',               // 文案版本，未來改文案要 bump 到 v2
+          consentText: TOPUP_CONSENT_V1,      // 把當下顯示給用戶看的字串原文也送回後端存
         }),
       })
       const data = await r.json()
@@ -1807,34 +1819,68 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
                     </div>
                     <button
                       onClick={() => handleBuy(pack.id)}
-                      disabled={!!buying}
+                      disabled={!!buying || !agreed}
                       style={{
                         width: '100%', padding: '10px 14px', borderRadius: 8,
-                        border: 'none', cursor: buying ? 'wait' : 'pointer',
-                        background: idx === 1
-                          ? `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`
-                          : `${AIVIS_TEAL}22`,
-                        color: idx === 1 ? '#fff' : AIVIS_TEAL,
+                        border: 'none',
+                        cursor: buying ? 'wait' : (!agreed ? 'not-allowed' : 'pointer'),
+                        background: !agreed
+                          ? 'rgba(255,255,255,0.08)'
+                          : (idx === 1
+                            ? `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`
+                            : `${AIVIS_TEAL}22`),
+                        color: !agreed ? T.textMid : (idx === 1 ? '#fff' : AIVIS_TEAL),
                         fontWeight: 700, fontSize: 13,
-                        boxShadow: idx === 1 ? `0 6px 18px ${AIVIS_TEAL}44` : 'none',
+                        boxShadow: (idx === 1 && agreed) ? `0 6px 18px ${AIVIS_TEAL}44` : 'none',
+                        opacity: !agreed ? 0.6 : 1,
                       }}>
-                      {isBuying ? '⏳ 跳轉中…' : '立即加購'}
+                      {isBuying ? '⏳ 跳轉中…' : (!agreed ? '請先勾選下方同意' : '立即加購')}
                     </button>
                   </div>
                 )
               })}
             </div>
 
+            {/* 規則說明 — 購買前法律強制揭露（消保法 § 19-II-5 不退款條款）*/}
             <div style={{
               padding: 14, borderRadius: T.rM,
               background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              marginBottom: 14, fontSize: 12, color: T.textMid, lineHeight: 1.6,
+              marginBottom: 10, fontSize: 12, color: T.textMid, lineHeight: 1.7,
             }}>
-              <div style={{ fontWeight: 700, color: T.text, marginBottom: 6 }}>規則說明</div>
+              <div style={{ fontWeight: 700, color: T.text, marginBottom: 6 }}>規則說明 — 購買前請詳閱</div>
               · 一次性購買、不過期、用完為止、不綁訂閱<br />
               · 月內含 {quota} 次先扣 → 用完才扣 Top-up credits<br />
-              · 每月查詢硬上限 {hardCap.toLocaleString()} 次（內含 + Top-up 合計）
+              · 每月查詢硬上限 {hardCap.toLocaleString()} 次（內含 + Top-up 合計）<br />
+              <span style={{ color: '#fbbf24', fontWeight: 600 }}>
+                · ⚠️ Top-up 屬於「一經提供即完成之線上服務」（消保法第 19 條第 2 項第 5 款），
+                  付款完成、credits 入帳後不適用 7 天無條件解除權、亦不退款。
+              </span><br />
+              · 如遇盜刷或交易爭議請聯繫客服 <a href="mailto:mark6465@gmail.com" style={{ color: AIVIS_TEAL, textDecoration: 'underline' }}>mark6465@gmail.com</a> 個案處理。
             </div>
+
+            {/* 同意 checkbox — 未勾不能按「立即加購」（按鈕已用 disabled={!agreed} 鎖住）*/}
+            <label style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              padding: '12px 14px', borderRadius: T.rM,
+              background: agreed ? `${AIVIS_TEAL}14` : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${agreed ? AIVIS_TEAL + '55' : 'rgba(255,255,255,0.12)'}`,
+              marginBottom: 14, cursor: 'pointer', userSelect: 'none',
+              transition: 'all 0.2s ease',
+            }}>
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={e => setAgreed(e.target.checked)}
+                style={{
+                  width: 18, height: 18, marginTop: 1, flexShrink: 0,
+                  accentColor: AIVIS_TEAL, cursor: 'pointer',
+                }}
+              />
+              <span style={{ fontSize: 12, color: T.text, lineHeight: 1.6 }}>
+                我已閱讀並同意：Top-up 加購屬於「一經提供即完成之線上服務」（消保法第 19 條第 2 項第 5 款），
+                credits 入帳後 <strong style={{ color: '#fbbf24' }}>不適用 7 天無條件解除權、亦不退款</strong>。
+              </span>
+            </label>
 
             {buyError && (
               <div style={{

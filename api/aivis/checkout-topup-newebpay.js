@@ -33,6 +33,10 @@ const PACK_SPEC = {
   large: { amount: 990, quota: 800, label: 'aivis Top-up 大包 加購 800 次' },
 }
 
+// 同意書文案 v1 — 與前端 AIVisibilityDashboard.jsx TOPUP_CONSENT_V1 必須完全一致
+// 後端要 verify 用戶送的 consentText 等於這串，避免有人改前端送假同意書
+const TOPUP_DISCLAIMER_V1 = '本人已閱讀並同意：Top-up 加購屬於「一經提供即完成之線上服務」（消保法第 19 條第 2 項第 5 款），credits 入帳後不適用 7 天無條件解除權、亦不退款。'
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -40,10 +44,19 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { userId, email, pack, returnUrl } = req.body || {}
+  const { userId, email, pack, returnUrl, agreed, consentVersion, consentText } = req.body || {}
   if (!userId || !email) return res.status(400).json({ error: 'userId and email are required' })
   const spec = PACK_SPEC[pack]
   if (!spec) return res.status(400).json({ error: `Invalid pack: ${pack}. Must be 'small' or 'large'.` })
+
+  // 法律強制揭露守衛：消保法 § 19-II-5「事先同意」要件 — 必須 agreed=true 且 consentText 與當前版本完全相符
+  // 防止 curl/Postman 繞 UI 直接戳 API 跳過同意書（不然事後客訴會說「我沒看到任何不退款警告」）
+  if (agreed !== true) {
+    return res.status(400).json({ error: '請先勾選同意「不退款」條款後再加購' })
+  }
+  if (consentVersion !== 'v1' || consentText !== TOPUP_DISCLAIMER_V1) {
+    return res.status(400).json({ error: '同意書版本不符，請重新整理頁面後再試' })
+  }
 
   const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -71,7 +84,33 @@ export default async function handler(req, res) {
 
   const merchantOrderNo = generateOrderNo(`tu${pack === 'small' ? 's' : 'l'}`)
 
-  // 1. 先把 pending 寫進去（如果 NewebPay form-submit 後沒回 notify，這筆會留著當 stale order 追蹤）
+  // 法律證據捕捉：抓 IP（信任 Vercel x-forwarded-for 第一個 hop）+ User-Agent
+  // 萬一日後客訴上消保官，這兩個欄位 + consent_text 是完整證明用戶當下確實看到並勾選了同意書
+  const xff = req.headers['x-forwarded-for'] || ''
+  const ipAddress = (typeof xff === 'string' ? xff.split(',')[0] : '').trim() || req.socket?.remoteAddress || null
+  const userAgent = req.headers['user-agent'] || null
+
+  // 1. 先寫同意書紀錄（消保法 § 19-II-5 法律證據）
+  // 這個必須先過、再寫 pending — 不然 stale pending 沒有對應 consent 會搞亂事後稽核
+  const { error: consentErr } = await supabase
+    .from('aivis_topup_consents')
+    .insert({
+      user_id: userId,
+      email,
+      pack,
+      amount: spec.amount,
+      merchant_order_no: merchantOrderNo,
+      consent_version: consentVersion,
+      consent_text: consentText,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    })
+  if (consentErr) {
+    console.error('Failed to insert consent record:', consentErr)
+    return res.status(500).json({ error: `Consent record insert failed: ${consentErr.message}` })
+  }
+
+  // 2. 再把 pending 寫進去（如果 NewebPay form-submit 後沒回 notify，這筆會留著當 stale order 追蹤）
   const { error: pendingErr } = await supabase
     .from('aivis_newebpay_pending')
     .insert({
