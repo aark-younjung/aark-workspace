@@ -7,6 +7,17 @@
 ---
 
 ### 2026-05-19
+**Top-up 小包 NT$490 smoke test 通過 + 還原 quota=150 + aark6465 回 Free:**
+- 🎯 **小包 NT$490 端到端驗證通過**：UPDATE profiles 把 aark6465 灌成手動 Pro（is_pro=true, payment_gateway=NULL）→ 暫降 `AIVIS_QUOTA_PER_MONTH=1` 觸發 UsageBanner soft limit → 點「加購次數包」開 TopupModal → 點小包「立即加購」→ NewebPay 結帳頁 → 真卡刷 NT$490 → 跳回 dashboard。三表全綠：`aivis_newebpay_pending` 寫入 `kind='topup_small'` `status='paid'` `amount=490` / `aivis_newebpay_notify_log` `decrypt_ok=true` `status_decrypted=SUCCESS` `status_query=SUCCESS` / `aivis_topup_credits` 新增一筆 `pack_size='small'` `quota_total=300` `quota_remaining=300` `source_payment_id='nwp_2605191426173466'`。order_no `tusmpc90y77cvfr`（`tus` = topup small 前綴）。
+- 🎯 **大包 NT$990 之前已通過**：`aivis_topup_credits` 查到先前測試紀錄 3 筆 large（2026-05-14 兩筆 + 2026-05-18 一筆），都 `quota_total=800 quota_remaining=800`。Phase 1 Top-up 雙 SKU 端到端驗證全收齊，不需重測大包。
+- ✅ **還原 [AIVisibilityDashboard.jsx:61](src/pages/AIVisibilityDashboard.jsx#L61) `AIVIS_QUOTA_PER_MONTH = 150`**：smoke test 期間暫降為 1 觸發 modal，測完還原回正式商業邏輯（Pro 每月內含 150 次）。
+- ✅ **還原 aark6465 至 Free 狀態**：`UPDATE profiles SET is_pro=false, subscribed_at=NULL WHERE id='1f50e799-...';` 把手動授予的 Pro 收回，回到真實商業狀態（早鳥訂單 pebmpc693co6xl5 已退款，aark6465 該是 Free）。
+- ⚠️ **Top-up 消耗計數錯位（待追，不擋 Phase 1 上線）**：UsageBanner 顯示「Top-up 59 次已用」但 `aivis_topup_credits` 每筆 `quota_remaining` 都還是滿值（300/800 沒減）。可能 [api/aivis/fetch.js](api/aivis/fetch.js) 的 quota deduction 只更新 used counter 沒同步減 credits 表的 quota_remaining，或 Banner 的「Top-up 59」是另一個計算口徑（總用量 - quota = 60-1 = 59，不一定真的消耗了 59 次 Top-up credits）。Phase 1 不擋上線（用戶看到 banner 數字大致正確），但要排進 Phase 2 修正：要不要在 Pro 訂閱頁顯示 Top-up 餘額需要正確的消耗計數。
+- 📌 **下一步（Phase 1 NewebPay 收尾）**：(1) commit + push 還原 quota=150（這次改動）(2) 跑 SQL 還原 aark6465 為 Free (3) 驗 production：以 aark6465 進 aivis dashboard 應顯示「本月已用 60/150 次（40%）」、UsageBanner 不出現、加購入口隱藏 (4) **Phase 1 NewebPay 整合 100% 完成** — 早鳥 Pro 年繳 / Pro 年繳一般 / Top-up 大包 / Top-up 小包 / 14 天退款 五個 SKU+ 路徑全綠 (5) **Phase 1 商家正式審核通過後再切 live 環境**（目前還是沙盒 env vars）。
+
+---
+
+### 2026-05-19
 **Top-up endpoint 補 isPro/isTrial 守衛 — 防 Free 用戶繞 UI 直購:**
 - ⚠️ **產品邏輯漏洞修補**：用戶提醒 Top-up 規則應該是「Pro 用戶 quota 超量後才開放購買」，但 [checkout-topup-newebpay.js](api/aivis/checkout-topup-newebpay.js) 原本只擋 userId+email 必填，**沒檢查 is_pro**。Free 用戶直接 curl POST 可成功建單刷卡，造成「沒訂 Pro 卻擁有 Top-up credits」的詭異狀態（aivis dashboard 又沒 isPro 守衛，credits 還能正常消耗）。前端 UI 端因 UsageBanner 只在 atWarn=true 才出現確實有自然屏障，但這只是 UX 默契、不是 enforcement。
 - ✅ **修補**：[checkout-topup-newebpay.js:55](api/aivis/checkout-topup-newebpay.js#L55) 在建單前查 `profiles.is_pro` 和 `profiles.is_trial`，兩個都 false 直接回 403「加購次數包僅限 Pro 訂閱用戶或試用期間用戶購買」。trial 用戶也放行因為他們有 100 次試用 quota、超量也合理買加購。

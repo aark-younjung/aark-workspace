@@ -58,7 +58,7 @@ const SCAN_RUNS = 3 // 每條 prompt 跑幾次取平均
 // - AIVIS_QUOTA_PER_MONTH：Pro 訂閱每月內含 150 次（每月 1 號歸零）
 // - AIVIS_HARD_CAP：內含 + Top-up 合計每月硬上限 1,000 次（避免毛利血崩）
 // - AIVIS_WARN_RATIO：用量達 80%（120 次）時提示加購，避免用滿才驚慌
-const AIVIS_QUOTA_PER_MONTH = 1 // [SMOKE TEST] 暫降為 1 觸發 TopupModal 驗大小包付款流程；測完改回 150
+const AIVIS_QUOTA_PER_MONTH = 150
 const AIVIS_HARD_CAP = 1000
 const AIVIS_WARN_RATIO = 0.8
 
