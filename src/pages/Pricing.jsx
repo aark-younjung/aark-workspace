@@ -915,7 +915,7 @@ export default function Pricing() {
                   : `立即升級 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`}
           </button>
           <p className="text-xs text-center mt-1" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
-            🔒 不收信用卡 · ↩ 隨時取消
+            ↩ 隨時取消
           </p>
         </div>
       )}
@@ -1267,9 +1267,8 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
                   ? '搶早鳥首年 NT$990／月'
                   : `立即升級 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`}
           </button>
-          {/* A7+C8: 信任三件組 + 退款情緒承諾 */}
+          {/* A7+C8: 信任兩件組 + 退款情緒承諾（原「🔒 不收信用卡」已下線 — NewebPay 上線後我們有收信用卡） */}
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
-            <span className="inline-flex items-center gap-1">🔒 不收信用卡</span>
             <span className="inline-flex items-center gap-1">⚡ 60 秒開通</span>
             <span className="inline-flex items-center gap-1">↩ 隨時取消</span>
           </div>
