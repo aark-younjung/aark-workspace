@@ -7,6 +7,16 @@
 ---
 
 ### 2026-05-20
+**修：路由轉場閃現紅黑舊版背景 — GlobalDarkBg 漸層改青綠對齊各頁:**
+- 🐛 **症狀**：路由切換的瞬間（舊頁卸載 → 新頁青綠 gradient 還沒渲染上）會看到一閃紅黑色，視覺上像「舊版背景跑出來」。
+- 🔍 **根因**：[src/App.jsx](src/App.jsx) `GlobalDarkBg` 元件（`fixed inset-0 -z-20`，鋪在所有頁面最底層）仍寫死紅黑漸層 `#a21540 → #000`。各頁（HomeDark / AEOAudit / Account / Compare / AIVisibility / AIVisibilityDashboard）已改畫青綠 `#18c590` 蓋在上面，但路由轉場那一幀沒有頁面背景蓋著，紅黑底就漏出來。
+- ✅ **修法**：[src/App.jsx L45](src/App.jsx#L45) `GlobalDarkBg` 漸層由 `linear-gradient(135deg, #a21540 ...)` 改 `linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)`，跟各頁一致。轉場那一幀也是青綠，視覺上看不出切換。
+- ✅ **同步 [CLAUDE.md](CLAUDE.md)**：「暗色版背景漸層」區塊把青綠版升為「目前使用」、紅黑版降為「歷史備存（已下線）」。
+- 🔖 **設計取捨：保留 GlobalDarkBg 元件 vs 移除**：本來可以乾脆刪掉 `GlobalDarkBg`，每頁都自畫背景；但這樣會讓萬一某頁忘記畫背景時看到瀏覽器預設白色（更醜）。保留 + 改色當 fallback 安全網更穩。
+
+---
+
+### 2026-05-20
 **🟢 上線阻擋全數解除 — 正式環境 + 金流 + SQL 7/7 全綠:**
 - 🎯 **正式環境 + 金流端到端測試已通過**：env 已從沙盒切回正式（`MS3830621445` + `core.newebpay.com` 系列 endpoint），NPA 月繳 / Pro 年繳 / 早鳥 / Top-up 大小包 / 14 天退款 / NPA 取消委託（坑 7 修完）等 path 都已實測完成。
 - ✅ **NPA 取消委託 SQL 驗證通過（坑 7 修補生效）**：用戶側截圖確認 `aivis_newebpay_period` row `period_no=P260520171337hqATJx status='cancelled' cancelled_at=2026-05-20 09:17:53.584+00`、`profiles.is_pro=false`（aark6465@gmail.com）。`449fdf0` commit 的 AES 解密修補生效，整條取消委託路徑全綠（按取消 → AlterStatus terminate → 解密 response → DB 寫 cancelled + is_pro=false）。
