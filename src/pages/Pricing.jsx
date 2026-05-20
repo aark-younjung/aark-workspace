@@ -474,7 +474,7 @@ export default function Pricing() {
             <span className="font-semibold" style={{ color: '#10b981' }}> ChatGPT</span>、
             <span className="font-semibold" style={{ color: '#3b82f6' }}>Perplexity</span>、
             <span className="font-semibold" style={{ color: '#f59e0b' }}>Gemini</span>「該找哪一家」時，
-            你的品牌名是否會被說出口？
+            你的品牌名是否會被推薦？
             <br />
             <span className="text-base" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
               AI 雷達用 1/10 顧問費用，24 小時自動監測你在 AI 答案中的曝光度
