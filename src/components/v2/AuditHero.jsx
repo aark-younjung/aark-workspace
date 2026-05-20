@@ -3,13 +3,17 @@
 //   - ScoreHero：兩個 chip + 一行白話定位 + 大圓圈分數 + 7 日趨勢迷你圖 + 已通過/需修復兩格
 //   - HeroSkeleton：載入中骨架
 // 從 SEOAudit 抽出，供 AEO/GEO/EEAT/Content 四頁共用
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import { T } from '../../styles/v2-tokens'
 
 // =====================================================
 // AuditTopBar — 頂部麵包屑列：返回 Dashboard + 重新檢測 + 匯出 PDF
+//   - 匯出 PDF 為 Pro 功能；免費版顯示鎖頭按鈕，點擊跳轉 /pricing
 // =====================================================
 export function AuditTopBar({ websiteId, face, websiteUrl, onReanalyze, analyzing, accent, accent2 }) {
+  const { isPro } = useAuth()
+  const navigate = useNavigate()
   return (
     <div style={{
       marginBottom: 16, display: 'flex', alignItems: 'center',
@@ -53,15 +57,27 @@ export function AuditTopBar({ websiteId, face, websiteUrl, onReanalyze, analyzin
           }}>↻</span>
           {analyzing ? '檢測中…' : '重新檢測'}
         </button>
-        <button onClick={() => window.print()} style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: `linear-gradient(135deg, ${accent}, ${accent2 || accent})`,
-          border: 'none', color: '#fff', fontSize: 13, fontWeight: 700,
-          padding: '10px 18px', borderRadius: 12, cursor: 'pointer',
-          fontFamily: T.font, boxShadow: `0 4px 14px ${accent}55`,
-        }}>
-          <span>📄</span>匯出 PDF
-        </button>
+        {isPro ? (
+          <button onClick={() => window.print()} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: `linear-gradient(135deg, ${accent}, ${accent2 || accent})`,
+            border: 'none', color: '#fff', fontSize: 13, fontWeight: 700,
+            padding: '10px 18px', borderRadius: 12, cursor: 'pointer',
+            fontFamily: T.font, boxShadow: `0 4px 14px ${accent}55`,
+          }}>
+            <span>📄</span>匯出 PDF
+          </button>
+        ) : (
+          <button onClick={() => navigate('/pricing')} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: 'rgba(255,255,255,.05)', border: '1px solid rgba(251,146,60,.3)',
+            color: '#fdba74', fontSize: 13, fontWeight: 600,
+            padding: '10px 18px', borderRadius: 12, cursor: 'pointer',
+            fontFamily: T.font,
+          }} title="升級 Pro 解鎖匯出 PDF">
+            <span>🔒</span>匯出 PDF (Pro)
+          </button>
+        )}
       </div>
     </div>
   )
