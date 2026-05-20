@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext'
  */
 export default function AIVisibility() {
   const navigate = useNavigate()
-  const { user, loading: authLoading } = useAuth()
+  const { user, isPro, isTrial, loading: authLoading } = useAuth()
   const [brands, setBrands] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -18,14 +18,22 @@ export default function AIVisibility() {
 
   const [form, setForm] = useState({ name: '', domain: '', industry: '', description: '' })
 
+  // 是否有 aivis 使用權限（Pro 訂閱用戶 或 7 天試用期內）
+  const hasAccess = isPro || isTrial
+
   useEffect(() => {
     if (authLoading) return
     if (!user) {
       navigate('/login', { state: { from: '/ai-visibility' } })
       return
     }
+    // 沒有 aivis 權限就不必拉品牌列表（也避免 free 用戶看到自己之前測試遺留的品牌）
+    if (!hasAccess) {
+      setLoading(false)
+      return
+    }
     fetchBrands()
-  }, [user, authLoading])
+  }, [user, authLoading, hasAccess])
 
   const fetchBrands = async () => {
     setLoading(true)
@@ -46,6 +54,11 @@ export default function AIVisibility() {
   const handleCreate = async (e) => {
     e.preventDefault()
     if (!form.name.trim() || submitting) return
+    // 雙重保險：UI 已隱藏新增按鈕，這裡再守一次，防止透過 React DevTools 重設 state 繞過 paywall
+    if (!hasAccess) {
+      alert('新增品牌與 AI 曝光監測為 Pro 功能，請先升級或啟用 7 天免費試用')
+      return
+    }
     setSubmitting(true)
     try {
       const { data, error } = await supabase
@@ -116,6 +129,37 @@ export default function AIVisibility() {
           </p>
         </div>
 
+        {/* Paywall：非 Pro 且非試用 → 顯示升級導流卡片，取代下方品牌管理區 */}
+        {!hasAccess ? (
+          <div className="py-12 px-8 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 backdrop-blur-sm border border-emerald-400/20 rounded-2xl">
+            <div className="max-w-xl mx-auto text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 mb-5 bg-gradient-to-br from-emerald-500/30 to-teal-500/20 border border-emerald-400/30 rounded-2xl">
+                <svg className="w-8 h-8 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-3">AI 曝光監測為 Pro 功能</h2>
+              <p className="text-white/70 text-sm leading-relaxed mb-6">
+                追蹤品牌在 ChatGPT、Claude、Perplexity、Gemini 的曝光表現需要持續呼叫多家 AI 平台，
+                屬於 Pro 訂閱方案內含（每月 150 次掃描）。
+                <br />
+                你也可以啟用 <strong className="text-emerald-300">7 天免費試用</strong>體驗完整功能。
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-emerald-500/20"
+                >
+                  查看方案 / 啟用試用
+                </button>
+                <Link to="/" className="text-white/60 hover:text-white text-sm">
+                  返回首頁
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
         {/* 操作列：新增按鈕 */}
         <div className="flex items-center justify-between mb-6">
           <div className="text-sm text-white/60">
@@ -269,6 +313,8 @@ export default function AIVisibility() {
               </div>
             ))}
           </div>
+        )}
+          </>
         )}
       </main>
     </div>

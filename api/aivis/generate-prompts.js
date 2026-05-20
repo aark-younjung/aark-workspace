@@ -9,12 +9,16 @@
  *                     true（預設）→ 將舊 auto prompts 設為 is_active=false 再新增
  *                     false        → 直接追加，不動舊的（小心撞 10 條上限）
  *
+ * Headers:
+ *   Authorization: Bearer <supabase_access_token>  (必填)
+ *
  * Env:
  *   ANTHROPIC_API_KEY
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  *
- * 注意：Phase 2 暫無認證，Phase 2c 串前端時補上。
+ * 守衛：必須 Bearer token + 用戶為品牌擁有者 + is_pro 或 is_trial。
+ *      防止無認證情況下，知道 brand_id 就能戳 Claude API 燒平台成本。
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -51,6 +55,17 @@ export default async function handler(req, res) {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
+  // 守衛 1：必須帶 Supabase Bearer token，否則任何知道 brand_id 的人都能戳 Claude API 燒成本
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token) {
+    return res.status(401).json({ error: 'Missing Authorization Bearer token' })
+  }
+  const { data: { user: authUser }, error: authErr } = await supabase.auth.getUser(token)
+  if (authErr || !authUser) {
+    return res.status(401).json({ error: 'Invalid or expired token', detail: authErr?.message })
+  }
+
   try {
     // 取品牌資料
     const { data: brand, error: brandErr } = await supabase
@@ -61,6 +76,24 @@ export default async function handler(req, res) {
 
     if (brandErr || !brand) {
       return res.status(404).json({ error: 'Brand not found', detail: brandErr?.message })
+    }
+
+    // 守衛 2：用戶必須是品牌擁有者（防 A 用戶用自己的 token 幫 B 用戶的品牌刷 prompts）
+    if (brand.user_id !== authUser.id) {
+      return res.status(403).json({ error: 'You do not own this brand' })
+    }
+
+    // 守衛 3：品牌擁有者必須是 Pro 或試用期內（aivis 是 Pro 專屬功能）
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('is_pro, is_trial')
+      .eq('id', authUser.id)
+      .maybeSingle()
+    if (profileErr) {
+      return res.status(500).json({ error: 'Failed to fetch profile', detail: profileErr.message })
+    }
+    if (!profile?.is_pro && !profile?.is_trial) {
+      return res.status(403).json({ error: 'AI 曝光監測為 Pro 功能，請先升級或啟用 7 天免費試用' })
     }
 
     // 組 meta prompt 請 Claude 生成

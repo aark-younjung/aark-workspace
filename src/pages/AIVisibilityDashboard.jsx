@@ -400,7 +400,13 @@ export default function AIVisibilityDashboard() {
   async function regeneratePrompts() {
     setToast({ kind: 'ai', msg: '✨ Claude 正在分析品牌、重新產生 5 條 prompt…' })
     try {
-      const r = await fetch(`/api/aivis/generate-prompts?brand_id=${id}`, { method: 'POST' })
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) throw new Error('請先登入')
+      const r = await fetch(`/api/aivis/generate-prompts?brand_id=${id}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
       const json = await r.json()
       if (!r.ok || !json.success) throw new Error(json.error || json.detail || '產生失敗')
       setToast({ kind: 'success', msg: `✅ 已重新產生 ${json.generated_count} 條 prompt` })

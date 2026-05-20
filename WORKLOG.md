@@ -7,6 +7,23 @@
 ---
 
 ### 2026-05-20
+**修：免費版可繞過 Pro 守衛使用 aivis（AI 曝光監測）— 三層全補:**
+- 🐛 **症狀**：免費用戶（`is_pro=false` 且非試用）能進 `/ai-visibility` 建立品牌、跑掃描、按「重新產生 prompts」呼叫 Claude API，等於整套 Pro 專屬 aivis 模組對免費版完全敞開，平台直接燒成本。
+- 🔍 **根因（三層全失守）**：
+  - **前端 [src/pages/AIVisibility.jsx](src/pages/AIVisibility.jsx)**：完全沒檢查 `isPro / isTrial`，任何登入者都能用整個品牌管理 UI。
+  - **後端 [api/aivis/fetch.js](api/aivis/fetch.js)**：profile select 只拿 `is_trial` 沒拿 `is_pro`；當 `is_trial=false` 時 fall through 到「150 次/月」配額路徑，免費用戶照樣可以掃。
+  - **後端 [api/aivis/generate-prompts.js](api/aivis/generate-prompts.js)**：完全沒做認證（檔頭 comment 寫「Phase 2c 串前端時補上」結果忘了補），任何知道 `brand_id` 的人 POST 上來就能戳 Claude API 燒平台成本。
+- ✅ **修法（三層守衛）**：
+  - **Layer 1 [AIVisibility.jsx](src/pages/AIVisibility.jsx)**：`useAuth()` 取 `isPro / isTrial` → `hasAccess = isPro || isTrial`；`!hasAccess` 時 render 升級 CTA 卡（「AI 曝光監測為 Pro 功能 → 查看方案 / 啟用 7 天試用 / 返回首頁」），整個品牌管理 UI 隱藏；`handleCreate` 加 double-guard alert 防 console 戳。
+  - **Layer 2 [api/aivis/fetch.js](api/aivis/fetch.js)**：profile select 加上 `is_pro`；新增 403 守衛 `if (!profile?.is_pro && !isTrial) return 403`。
+  - **Layer 3 [api/aivis/generate-prompts.js](api/aivis/generate-prompts.js)**：三道守衛 — (1) 必須帶 `Authorization: Bearer <supabase access token>`，否則 401；(2) `brand.user_id !== authUser.id` → 403（防 A 用 B 的 brand_id）；(3) `!is_pro && !is_trial` → 403。
+  - **Layer 3 前端配套 [AIVisibilityDashboard.jsx L400](src/pages/AIVisibilityDashboard.jsx#L400)**：`regeneratePrompts()` 改先取 `supabase.auth.getSession()` 拿 access_token，fetch 帶上 `Authorization: Bearer ${token}` header，否則自己的合法用戶也會被新後端守衛擋掉。
+- 🔖 **設計取捨**：選擇升級 CTA 卡而非直接 redirect /pricing — 讓用戶清楚知道「這是 Pro 功能、不是頁面壞了」，且能直接點啟用試用，轉換漏斗較順。
+- ⚠️ **檔頭 TODO 漏掉的教訓**：comment 寫「Phase 2c 串前端時補上」這種 deferred guard 非常容易忘，下次要嘛當下就寫、要嘛留檔頭 + TODO list 雙處標記。
+
+---
+
+### 2026-05-20
 **修：路由轉場閃現紅黑舊版背景 — GlobalDarkBg 漸層改青綠對齊各頁:**
 - 🐛 **症狀**：路由切換的瞬間（舊頁卸載 → 新頁青綠 gradient 還沒渲染上）會看到一閃紅黑色，視覺上像「舊版背景跑出來」。
 - 🔍 **根因**：[src/App.jsx](src/App.jsx) `GlobalDarkBg` 元件（`fixed inset-0 -z-20`，鋪在所有頁面最底層）仍寫死紅黑漸層 `#a21540 → #000`。各頁（HomeDark / AEOAudit / Account / Compare / AIVisibility / AIVisibilityDashboard）已改畫青綠 `#18c590` 蓋在上面，但路由轉場那一幀沒有頁面背景蓋著，紅黑底就漏出來。

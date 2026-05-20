@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     // 試用期計算起始也不一樣：付費 Pro 用 calendar month，試用用 trial_started_at
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .select('is_trial, trial_started_at')
+      .select('is_pro, is_trial, trial_started_at')
       .eq('id', prompt.user_id)
       .maybeSingle()
 
@@ -89,7 +89,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to fetch profile', detail: profileErr.message })
     }
 
+    // 守衛：aivis 是 Pro 專屬功能；非 Pro 且非試用 → 403 拒絕
+    // 防免費用戶（含 curl/Postman 繞 UI）直接戳 API 刷 AI 額度，造成商業模式失效 + 燒 Claude API 成本
     const isTrial = !!profile?.is_trial && !!profile?.trial_started_at
+    if (!profile?.is_pro && !isTrial) {
+      return res.status(403).json({ error: 'AI 曝光監測為 Pro 功能，請先升級或啟用 7 天免費試用' })
+    }
+
     const quotaLimit = isTrial ? AIVIS_QUOTA_PER_TRIAL : AIVIS_QUOTA_PER_MONTH
     // 試用期硬上限 = quota（不開放 Top-up），付費 Pro 硬上限 = 1000
     const hardCap = isTrial ? AIVIS_QUOTA_PER_TRIAL : AIVIS_HARD_CAP
