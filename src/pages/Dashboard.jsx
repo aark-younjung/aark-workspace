@@ -246,12 +246,47 @@ export default function Dashboard() {
   }
   
 
-  const loadContentScore = async (url) => {
-    if (!url) return
+  // 第 5 張卡（內容品質）的分數：DB 為單一資料來源
+  //   1. 先讀 content_audits 最新一筆 cached score（跟 SEO/AEO/GEO/EEAT 一致）
+  //   2. 沒 cached → 跑 analyzeContent + insert 一筆 → setContentScore
+  // 這樣 Dashboard 卡分數 跟 /content-audit/:id 詳情頁顯示分數會一致（單一資料來源），
+  // 不會因為「Dashboard 每次重跑、詳情頁讀 cached」造成兩邊兜不上。
+  const loadContentScore = async (websiteId, url) => {
+    if (!websiteId || !url) return
     setContentLoading(true)
     try {
+      const { data: cached } = await supabase
+        .from('content_audits')
+        .select('score')
+        .eq('website_id', websiteId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (cached?.score != null) {
+        setContentScore(cached.score)
+        return
+      }
       const result = await analyzeContent(url)
-      setContentScore(result.score ?? null)
+      if (result?.score != null) {
+        await supabase.from('content_audits').insert([{
+          website_id: websiteId,
+          score: result.score,
+          heading: result.heading,
+          word_count: result.wordCount,
+          meta: result.meta,
+          aeo: result.aeo,
+          author: result.author,
+          images: result.images,
+          links: result.links,
+          outbound: result.outbound,
+          multimedia: result.multimedia,
+          readability: result.readability,
+          reading_minutes: result.readingMinutes,
+        }])
+        setContentScore(result.score)
+      } else {
+        setContentScore(null)
+      }
     } catch {
       setContentScore(null)
     } finally {
@@ -270,7 +305,7 @@ export default function Dashboard() {
 
       if (websiteData) {
         setWebsite(websiteData)
-        loadContentScore(websiteData.url)
+        loadContentScore(id, websiteData.url)
 
         // 獲取 SEO 審計
         const { data: seoData } = await supabase
@@ -517,7 +552,7 @@ export default function Dashboard() {
       ])
 
       fetchData()
-      loadContentScore(website.url)
+      loadContentScore(id, website.url)
     } catch (error) {
       console.error('Error reanalyzing:', error)
       alert('檢測失敗，請稍後再試')
@@ -1000,13 +1035,13 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* 總分數卡片 — 5 張並排（4 大面向 + 內容品質）GlassCard 各自吃對應色，整張卡可點進詳細報告頁 */}
         <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4 sm:gap-6 mb-8">
           {scoreData.map((item) => {
-            // name → 詳情頁路由：4 大面向走 /:face-audit/:id，內容品質走 ad-hoc 的 /content-audit
+            // name → 詳情頁路由：5 個面向統一走 /:face-audit/:id（DB-backed cached + 趨勢）
             const routeMap = {
               'SEO': `/seo-audit/${id}`,
               'AEO': `/aeo-audit/${id}`,
               'GEO': `/geo-audit/${id}`,
               'E-E-A-T': `/eeat-audit/${id}`,
-              '內容品質': '/content-audit',
+              '內容品質': `/content-audit/${id}`,
             }
             return (
               <Link key={item.name} to={routeMap[item.name]} className="block">

@@ -7,6 +7,28 @@
 ---
 
 ### 2026-05-20
+**修：內容品質詳情頁完整對齊 — 第 5 張卡終於跟前 4 張一致:**
+- 🐛 **症狀**：Dashboard 5 張分數卡（SEO / AEO / GEO / E-E-A-T / 內容品質）— 前 4 張點下去進 `/<face>-audit/:id` 從 DB 讀 cached、有趨勢圖、有「重新檢測」按鈕；第 5 張內容品質點下去跳 `/content-audit` 空白頁要使用者重打 URL — 體驗破口。
+- 🔍 **根因**：`/content-audit/:id` 從來沒存在過。`5c68495` (2026-05-10) commit 註解 + WORKLOG 2026-05-10 都明寫當時是主動 defer（「ContentAudit 內部 state 邏輯改動較大，本次先讓使用者自行輸入網址」），不是被拿掉。Dashboard 的 `routeMap['內容品質']` 也只能硬塞 `/content-audit`。
+- ✅ **修法（5 個檔案 + 1 個 SQL）**：
+  - **[content_audits.sql](content_audits.sql)（新檔，一次性）**：建 `content_audits` 表 + 12 個 jsonb/數值欄位（對應 `analyzeContent()` 回傳結構）+ `(website_id, created_at DESC)` index + RLS 兩條 policy（SELECT/INSERT，透過 websites.user_id join）。仿 seo_audits / aeo_audits 形狀。
+  - **[src/App.jsx L102](src/App.jsx#L102)**：新增 `<Route path="/content-audit/:id" element={<ContentAudit />} />`。原 `/content-audit`（無 id）保留為任意 URL 分析模式。兩條都指向同一個 component，由 `useParams().id` 決定模式。
+  - **[src/pages/ContentAudit.jsx](src/pages/ContentAudit.jsx)（單檔雙模式重構）**：頂層 component 變成只負責分歧 — `id ? <DetailMode/> : <AdHocMode/>`。`DetailMode` 仿 SEOAudit：`useEffect([id])` 拉 websites + content_audits（最新 + 最近 7 筆），DB 空就 lazy first-run analyzeContent + insert；有 cached 直接拿；「重新檢測」按鈕跑 analyze + insert + refetch。UI 用 `AuditTopBar + ScoreHero（帶 recentAudits 趨勢迷你圖）+ ContentSignature + IssueBoard + HeroSkeleton/IssueBoardSkeleton`，跟其他 4 面向長一樣。`AdHocMode` 保留原本任意 URL 輸入流程，不寫 DB。CHECKS 陣列 + `dbRowToResult()` 轉換器共用，確保兩邊 result shape 一致。
+  - **[src/pages/Dashboard.jsx L1009](src/pages/Dashboard.jsx#L1009)**：routeMap `'內容品質': '/content-audit'` → `` `/content-audit/${id}` ``，註解同步改「5 個面向統一走 /:face-audit/:id」。
+  - **[src/pages/Dashboard.jsx L249 loadContentScore](src/pages/Dashboard.jsx#L249)**：改為 DB 為單一來源 — 先 `content_audits.select` cached score，有就用，沒有才跑 `analyzeContent` + insert。簽名從 `(url)` 改 `(websiteId, url)`，兩處呼叫處（fetchData L273、handleReanalyze L520）同步改傳兩參。
+  - **footer link L2011 `/content-audit`** 保留不動：頁尾「內容品質」連結維持任意 URL 分析入口（分析競品文、客戶文有獨立價值）。
+- 🔖 **設計取捨**：
+  - **DB 為單一資料來源 vs sessionStorage**：選 DB。`content_audits` 表既然要建（給詳情頁趨勢用），Dashboard 卡直接讀同一張表就能避免「Dashboard 每次重跑分析、詳情頁讀 cached」造成兩邊分數兜不上的尷尬。sessionStorage 跨分頁不共享、跨重新登入會掉，不適合做單一資料來源。
+  - **單檔雙模式 vs 拆 ContentAuditDetail.jsx**：選不拆。兩個模式共用 80%+ UI（同一個 CHECKS 陣列、ScoreHero/IssueBoard/ContentSignature 三個共用元件、result shape 透過 `dbRowToResult()` 對齊），拆檔反而 duplication 更多。差異只在上方「URL 輸入框 vs AuditTopBar」一塊，用 ternary 分歧即可。
+  - **不寫 ad-hoc 模式進 DB**：沒 `:id` 就是沒網站歸屬，寫進去就是 orphan row。保持 ad-hoc 純粹做即時分析。
+  - **graceful 處理找不到網站**：`/content-audit/<不存在的 id>` → 顯示「🔍 找不到這個網站」+ 返回首頁 button，而非白屏或無限 loading。仿 SEOAudit 但實際 SEOAudit 沒這層、補成自家標配。
+- 🧪 **驗證**：
+  - SQL：Supabase SQL Editor 跑 content_audits.sql → 跑驗證 SELECT 確認 14 個欄位 + 2 條 RLS policy → 兩帳號跨權限驗 RLS → 刪檔
+  - E2E：(1) 點 Dashboard 第 5 卡跳 `/content-audit/<websiteId>`（2）首次進詳情頁 fetch-url + insert 一次（3）第二次進只 supabase select、不重跑（4）按重新檢測新增第 2 筆 row、趨勢點變 2 個（5）直訪 `/content-audit` 無 id 維持任意 URL 模式、不寫 DB（6）Dashboard 卡分數跟詳情頁顯示一致
+
+---
+
+### 2026-05-20
 **修：免費版可繞過 Pro 守衛使用 aivis（AI 曝光監測）— 三層全補:**
 - 🐛 **症狀**：免費用戶（`is_pro=false` 且非試用）能進 `/ai-visibility` 建立品牌、跑掃描、按「重新產生 prompts」呼叫 Claude API，等於整套 Pro 專屬 aivis 模組對免費版完全敞開，平台直接燒成本。
 - 🔍 **根因（三層全失守）**：

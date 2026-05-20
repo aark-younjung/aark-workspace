@@ -98,6 +98,8 @@ function AppInner() {
         <Route path="/account" element={<Account />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/content-audit" element={<ContentAudit />} />
+        {/* 從 Dashboard 第 5 張卡點進來的 DB-backed 模式（綁定 website_id，吃 cached + 趨勢） */}
+        <Route path="/content-audit/:id" element={<ContentAudit />} />
         <Route path="/ga4-report/:id" element={<GA4Report />} />
         <Route path="/gsc-report/:id" element={<GSCReport />} />
         <Route path="/admin" element={<AdminDashboard />} />

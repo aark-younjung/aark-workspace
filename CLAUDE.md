@@ -96,6 +96,7 @@ aark-workspace/
 | `aeo_audits` | AEO 分析結果（注意：Answer Engine Optimization 靜態檢測，與 aivis_ 模組是不同概念） |
 | `geo_audits` | GEO 分析結果 |
 | `eeat_audits` | E-E-A-T 分析結果 |
+| `content_audits` | 內容品質分析結果（15 項檢測，含 heading/word_count/meta/aeo/author/images/links/outbound/multimedia/readability JSONB；2026-05-20 新增，給 `/content-audit/:id` 詳情頁吃 cached + 趨勢迷你圖）|
 | `aivis_brands` | AI 曝光監測模組 — 使用者追蹤的品牌清單（Phase 1，2026-04-23 新增）|
 
 **Pro 方案判斷：** `profiles.is_pro = true`（目前由 Stripe webhook 寫入，也可在 Supabase 手動切換）
@@ -118,7 +119,8 @@ aark-workspace/
 | `/compare` | Compare | 競品比較 |
 | `/pricing` | Pricing | 定價 |
 | `/faq` | FAQ | 常見問題 |
-| `/content-audit` | ContentAudit | 文章內容分析（15 項檢測，Pro 解鎖修復建議）|
+| `/content-audit` | ContentAudit | 文章內容分析（任意 URL 模式，15 項檢測，Pro 解鎖修復建議）|
+| `/content-audit/:id` | ContentAudit | 內容品質詳情頁（DB-backed 模式，綁定 website_id，吃 cached + 趨勢迷你圖；2026-05-20 新增）|
 | `/ga4-report/:id` | GA4Report | GA4 詳細報告（趨勢/流量來源/熱門頁面/建議引擎）|
 | `/gsc-report/:id` | GSCReport | GSC 詳細報告（趨勢/關鍵字分析/機會/建議引擎）|
 | `/login` | Login | 登入 |

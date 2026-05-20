@@ -1,12 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { analyzeContent } from '../services/contentAnalyzer'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
-import { IssueBoard, ScoreHero, ContentSignature } from '../components/v2'
+import {
+  AuditTopBar, ScoreHero, HeroSkeleton,
+  IssueBoard, IssueBoardSkeleton, ContentSignature,
+} from '../components/v2'
 
 const CONTENT_ACCENT = '#ec4899' // 內容品質粉紅（與 Dashboard 第五分數一致）
+const CONTENT_ACCENT2 = '#f472b6'
 
 const CHECKS = [
   {
@@ -131,7 +137,252 @@ const CHECKS = [
   },
 ]
 
+// DB row → analyzeContent() return shape（給 ScoreHero / IssueBoard / ContentSignature 共用）
+// 欄位對應 content_audits.sql + analyzeContent() output
+function dbRowToResult(row, websiteUrl) {
+  if (!row) return null
+  return {
+    url: websiteUrl,
+    score: row.score,
+    heading: row.heading,
+    wordCount: row.word_count,
+    meta: row.meta,
+    aeo: row.aeo,
+    author: row.author,
+    images: row.images,
+    links: row.links,
+    outbound: row.outbound,
+    multimedia: row.multimedia,
+    readability: row.readability,
+    readingMinutes: row.reading_minutes,
+  }
+}
+
 export default function ContentAudit() {
+  const { id } = useParams()
+  // 兩種模式由 URL 是否帶 :id 決定
+  //   - 模式 A（ad-hoc）：無 :id，使用者輸入任意 URL 分析，不寫 DB
+  //   - 模式 B（DB-backed）：有 :id，綁定 websites 表的網站，吃 cached + 趨勢、寫 DB
+  return id ? <DetailMode websiteId={id} /> : <AdHocMode />
+}
+
+// =====================================================
+// 模式 B — DB-backed 詳情頁（從 Dashboard 第 5 張卡點進來）
+//   仿 SEOAudit / AEOAudit / GEOAudit / EEATAudit 的 UX：
+//   - AuditTopBar（返回 Dashboard + 重新檢測）
+//   - ScoreHero 帶 recentAudits 顯示 7 日趨勢迷你圖
+//   - 首次進來自動跑 analyzeContent + insert（lazy first-run）
+// =====================================================
+function DetailMode({ websiteId }) {
+  const { isPro } = useAuth()
+  const [website, setWebsite] = useState(null)
+  const [result, setResult] = useState(null)
+  const [recentAudits, setRecentAudits] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [notFound, setNotFound] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => { loadFromDb() }, [websiteId])
+
+  async function loadFromDb() {
+    setLoading(true)
+    setError('')
+    setNotFound(false)
+    try {
+      // 1. 拉網站本體（取 url 用於分析 + 顯示）
+      const { data: websiteData, error: wErr } = await supabase
+        .from('websites').select('*').eq('id', websiteId).single()
+      if (wErr || !websiteData) {
+        setNotFound(true)
+        return
+      }
+      setWebsite(websiteData)
+
+      // 2. 拉最新一筆 + 最近 7 筆（給 ScoreHero 趨勢迷你圖）
+      const { data: rows } = await supabase
+        .from('content_audits')
+        .select('*')
+        .eq('website_id', websiteId)
+        .order('created_at', { ascending: false })
+        .limit(7)
+      const list = rows || []
+      setRecentAudits(list.map(r => ({ score: r.score, created_at: r.created_at })))
+
+      if (list.length > 0) {
+        // 已有 cached → 直接用，不重跑
+        setResult(dbRowToResult(list[0], websiteData.url))
+      } else {
+        // 首次進來、DB 空 → lazy first-run（跟 SEO/AEO/GEO/EEAT 詳情頁一致 UX）
+        await runAndInsert(websiteData)
+      }
+    } catch (err) {
+      console.error('Error loading content audit:', err)
+      setError(err.message || '載入失敗')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function runAndInsert(websiteData) {
+    const target = websiteData || website
+    if (!target?.url) return
+    const data = await analyzeContent(target.url)
+    if (!data?.score && data?.score !== 0) {
+      throw new Error('分析未回傳分數')
+    }
+    await supabase.from('content_audits').insert([{
+      website_id: websiteId,
+      score: data.score,
+      heading: data.heading,
+      word_count: data.wordCount,
+      meta: data.meta,
+      aeo: data.aeo,
+      author: data.author,
+      images: data.images,
+      links: data.links,
+      outbound: data.outbound,
+      multimedia: data.multimedia,
+      readability: data.readability,
+      reading_minutes: data.readingMinutes,
+    }])
+    setResult(data)
+    // refetch recent 趨勢（包含剛 insert 的這筆）
+    const { data: rows } = await supabase
+      .from('content_audits')
+      .select('score, created_at')
+      .eq('website_id', websiteId)
+      .order('created_at', { ascending: false })
+      .limit(7)
+    setRecentAudits(rows || [])
+  }
+
+  async function handleReanalyze() {
+    if (!website?.url || analyzing) return
+    setAnalyzing(true)
+    setError('')
+    try {
+      await runAndInsert(website)
+    } catch (err) {
+      console.error('Error reanalyzing:', err)
+      setError(err.message || '檢測失敗，請稍後再試')
+      alert('檢測失敗，請稍後再試')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  if (notFound) {
+    return (
+      <PageBg>
+        <SiteHeader />
+        <main style={{ maxWidth: 720, margin: '0 auto', padding: '80px 24px', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 8 }}>找不到這個網站</h1>
+          <p style={{ color: T.textMid, marginBottom: 24 }}>網站可能已刪除，或你沒有存取權限。</p>
+          <Link to="/" style={{
+            display: 'inline-block', padding: '12px 24px',
+            background: CONTENT_ACCENT, color: '#fff',
+            borderRadius: 12, textDecoration: 'none', fontWeight: 700,
+          }}>返回首頁</Link>
+        </main>
+        <Footer dark />
+      </PageBg>
+    )
+  }
+
+  const passedCount = result ? CHECKS.filter(c => c.get(result)).length : 0
+  const checks = result ? CHECKS.map(c => ({
+    id: c.id,
+    name: c.label,
+    icon: c.icon,
+    priority: c.priority,
+    passed: c.get(result),
+    detail: c.detail(result),
+    recommendation: c.fix,
+  })) : []
+
+  return (
+    <PageBg>
+      <SiteHeader />
+      <div className="relative z-10">
+        <main style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 24px 64px', fontFamily: T.font }}>
+
+          <AuditTopBar
+            websiteId={websiteId}
+            face="內容品質"
+            websiteUrl={website?.url}
+            onReanalyze={handleReanalyze}
+            analyzing={analyzing}
+            accent={CONTENT_ACCENT}
+            accent2={CONTENT_ACCENT2}
+          />
+
+          <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
+            {loading ? (
+              <>
+                <HeroSkeleton />
+                <HeroSkeleton />
+              </>
+            ) : (
+              <>
+                <ScoreHero
+                  face="內容品質"
+                  subChip="文章分析"
+                  tagline={website?.url}
+                  score={result?.score ?? 0}
+                  passedCount={passedCount}
+                  failedCount={CHECKS.length - passedCount}
+                  total={CHECKS.length}
+                  recentAudits={recentAudits}
+                  accent={CONTENT_ACCENT}
+                />
+                <div style={{
+                  background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
+                  borderRadius: T.rL, padding: 24,
+                }}>
+                  {result ? <ContentSignature result={result} /> : null}
+                </div>
+              </>
+            )}
+          </div>
+
+          {error && (
+            <div style={{
+              marginBottom: 24, padding: 16,
+              background: 'rgba(239,68,68,.12)', border: '1px solid rgba(239,68,68,.4)',
+              borderRadius: 12, color: '#fca5a5', fontSize: 14,
+            }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{ marginBottom: 14 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 4 }}>詳細檢測項目</h2>
+            <div style={{ fontSize: 12, color: T.textLow }}>
+              依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟
+            </div>
+          </div>
+          <div style={{ marginBottom: 32 }}>
+            {loading ? (
+              <IssueBoardSkeleton />
+            ) : (
+              <IssueBoard checks={checks} isPro={isPro} accent={CONTENT_ACCENT} accentGlow={`${CONTENT_ACCENT}28`} />
+            )}
+          </div>
+        </main>
+      </div>
+      <Footer dark />
+    </PageBg>
+  )
+}
+
+// =====================================================
+// 模式 A — ad-hoc 任意 URL 分析（原本的 /content-audit）
+//   保留任意文章分析能力：競品文、客戶文、外部文章
+//   不寫 DB（沒 :id 就沒網站歸屬，寫進去是 orphan row）
+// =====================================================
+function AdHocMode() {
   const { isPro } = useAuth()
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
@@ -158,7 +409,6 @@ export default function ContentAudit() {
   }
 
   const passedCount = result ? CHECKS.filter(c => c.get(result)).length : 0
-
   const checks = result ? CHECKS.map(c => ({
     id: c.id,
     name: c.label,
@@ -221,7 +471,6 @@ export default function ContentAudit() {
         {/* 分析結果 */}
         {result && (
           <>
-            {/* 總分卡 — 左 5：右 7 兩欄（ScoreHero + 內容品質拆解） */}
             <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
               <ScoreHero
                 face="內容品質"
@@ -242,7 +491,6 @@ export default function ContentAudit() {
               </div>
             </div>
 
-            {/* 詳細檢測項目 — 4 欄看板 */}
             <div style={{ marginBottom: 14 }}>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 4 }}>詳細檢測項目</h2>
               <div style={{ fontSize: 12, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
@@ -251,7 +499,6 @@ export default function ContentAudit() {
               <IssueBoard checks={checks} isPro={isPro} accent={CONTENT_ACCENT} accentGlow={`${CONTENT_ACCENT}28`} />
             </div>
 
-            {/* 重新分析 */}
             <div className="text-center">
               <button
                 onClick={() => { setResult(null); setUrl('') }}
