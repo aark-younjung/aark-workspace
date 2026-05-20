@@ -90,8 +90,8 @@ function buildEmailHTML({ website, scores, checks, dashboardUrl }) {
 
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#1e293b 0%,#4c1d95 100%);padding:32px 40px;">
-          <div style="font-size:20px;font-weight:bold;color:white;letter-spacing:0.5px;">優勢方舟 AI 能見度報告</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">AARK — AI Visibility Audit Report</div>
+          <div style="font-size:20px;font-weight:bold;color:white;letter-spacing:0.5px;">AI 雷達 — AI 能見度報告</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">AI Radar — AI Visibility Audit Report</div>
           <div style="margin-top:16px;font-size:14px;color:rgba(255,255,255,0.9);background:rgba(255,255,255,0.1);padding:8px 14px;border-radius:8px;display:inline-block;">
             ${website?.url || ''}
           </div>
@@ -154,7 +154,7 @@ function buildEmailHTML({ website, scores, checks, dashboardUrl }) {
         <!-- Footer -->
         <tr><td style="padding:20px 40px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
           <p style="font-size:11px;color:#94a3b8;margin:0;">
-            本報告由 優勢方舟 (AARK) 自動生成 · ${date}<br>
+            本報告由 AI 雷達（優勢方舟數位行銷營運）自動生成 · ${date}<br>
             如需取消訂閱，請回到儀表板的「Email 通知」設定
           </p>
         </td></tr>
@@ -203,7 +203,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'AARK 優勢方舟 <report@aark.io>',
+        from: 'AI 雷達 <report@aark.io>',
         to: [email],
         subject,
         html,
@@ -243,7 +243,7 @@ function buildCustomEmailHTML({ subject, body, recipientName }) {
 
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#1e293b 0%,#4c1d95 100%);padding:28px 40px;">
-          <div style="font-size:18px;font-weight:bold;color:white;letter-spacing:0.5px;">優勢方舟 AARK</div>
+          <div style="font-size:18px;font-weight:bold;color:white;letter-spacing:0.5px;">AI 雷達</div>
           <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">AI 能見度儀表板 · 客戶服務</div>
         </td></tr>
 
@@ -263,14 +263,14 @@ function buildCustomEmailHTML({ subject, body, recipientName }) {
         <tr><td style="padding:0 40px 24px;">
           <div style="font-size:13px;color:#475569;line-height:1.7;">
             如有任何問題，歡迎直接回信給我們。<br>
-            — 優勢方舟客服團隊
+            — AI 雷達客服團隊（優勢方舟數位行銷）
           </div>
         </td></tr>
 
         <!-- Footer -->
         <tr><td style="padding:18px 40px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
           <p style="font-size:11px;color:#94a3b8;margin:0;">
-            優勢方舟 (AARK) · ${date}<br>
+            AI 雷達（優勢方舟數位行銷營運） · ${date}<br>
             本信件由客服人員手動寄送，與系統自動通知不同
           </p>
         </td></tr>
@@ -346,7 +346,7 @@ async function handleAdminCustomEmail({ req, res, RESEND_API_KEY }) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'AARK 優勢方舟客服 <support@aark.io>',
+        from: 'AI 雷達客服 <support@aark.io>',
         to: [recipient.email],
         subject,
         html,

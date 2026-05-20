@@ -4,16 +4,16 @@ export default function Terms() {
   return (
     <LegalPageLayout
       title="服務條款"
-      subtitle="使用「AI能見度（AIVIS）」服務前，請您詳閱以下條款。完成註冊或付款即視為您已閱讀、瞭解並同意所有條款內容。"
+      subtitle="使用「AI 雷達」服務前，請您詳閱以下條款。完成註冊或付款即視為您已閱讀、瞭解並同意所有條款內容。"
       lastUpdated="2026-05-12"
     >
       <h2>一、服務提供者</h2>
       <p>
-        本網站「AI能見度（AIVIS）」（網址：<a href="https://aark-workspace.vercel.app">https://aark-workspace.vercel.app</a>，
+        本網站「AI 雷達」（網址：<a href="https://aark-workspace.vercel.app">https://aark-workspace.vercel.app</a>，
         以下簡稱「本服務」或「本網站」）由<strong>優勢方舟數位行銷</strong>（以下簡稱「本公司」）營運與提供，相關營業資訊如下：
       </p>
       <ul>
-        <li>商店名稱：AI能見度（AIVIS）</li>
+        <li>商店名稱：AI 雷達</li>
         <li>營運單位：優勢方舟數位行銷</li>
         <li>負責人：陳泓翔</li>
         <li>營業地址：701 台南市東區怡東路 86 巷 10 號</li>

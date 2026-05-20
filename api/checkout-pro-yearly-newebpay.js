@@ -38,17 +38,17 @@ import { buildPaymentForm, buildPeriodForm, generateOrderNo } from './lib/newebp
 const PLAN_SPEC = {
   yearly: {
     amount: 13900,
-    label: 'AI能見度 Pro 年繳方案 NT$13,900（含 14 天無條件退款）',
+    label: 'AI 雷達 Pro 年繳方案 NT$13,900（含 14 天無條件退款）',
     mode: 'mpg',
   },
   earlybird: {
     amount: 11880,
-    label: 'AI能見度 Pro 早鳥首年 NT$11,880（限前 100 名，次年恢復 NT$13,900）',
+    label: 'AI 雷達 Pro 早鳥首年 NT$11,880（限前 100 名，次年恢復 NT$13,900）',
     mode: 'mpg',
   },
   monthly: {
     amount: 1490,
-    label: 'AI能見度 Pro 月繳方案 NT$1,490／月（NPA 定期定額，可隨時取消）',
+    label: 'AI 雷達 Pro 月繳方案 NT$1,490／月（NPA 定期定額，可隨時取消）',
     mode: 'npa',
   },
 }

@@ -26,7 +26,7 @@ export default function Footer({ dark = false }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <span className={`font-bold ${t.brand}`}>AI能見度（AIVIS）</span>
+              <span className={`font-bold ${t.brand}`}>AI 雷達</span>
             </div>
             <p className={`text-sm ${t.body} leading-relaxed`}>
               幫助品牌掌握 AI 搜尋時代的能見度，<br />讓 ChatGPT、Claude、Gemini、Perplexity 看見你。
@@ -91,7 +91,7 @@ export default function Footer({ dark = false }) {
         {/* 底部版權 */}
         <div className={`border-t ${t.divider} pt-6 flex flex-col sm:flex-row items-center justify-between gap-2`}>
           <p className={`text-xs ${t.sub}`}>© {new Date().getFullYear()} 優勢方舟數位行銷. All rights reserved.</p>
-          <p className={`text-xs ${t.sub}`}>Powered by AI 能見度檢測平台</p>
+          <p className={`text-xs ${t.sub}`}>AI 雷達 — 由優勢方舟數位行銷營運</p>
         </div>
       </div>
     </footer>

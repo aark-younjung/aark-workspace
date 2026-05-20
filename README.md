@@ -1,9 +1,10 @@
-# AARK AI 能見度儀表板
+# AI 雷達（AI 能見度儀表板）
 
 > 檢測網站在 AI 搜尋引擎（ChatGPT、Perplexity、Google AI、Claude）的「被看見程度」— 五大面向分析（SEO / AEO / GEO / E-E-A-T / 內容品質）+ AI 曝光監測（aivis）+ 平台別修復指南
 
+**產品名稱**: AI 雷達
+**營運公司**: 優勢方舟數位行銷
 **線上網址**: https://aark-workspace.vercel.app
-**公司**: 優勢方舟數位行銷
 **GitHub**: https://github.com/aark-younjung/aark-workspace
 
 ---

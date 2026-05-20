@@ -1,4 +1,4 @@
-# CLAUDE.md — 優勢方舟 AI 能見度儀表板
+# CLAUDE.md — AI 雷達（AI 能見度儀表板）
 
 開發者 AI 助理指引文件。每次開始新對話時請先閱讀此文件。
 
@@ -6,12 +6,17 @@
 
 ## 產品定位
 
-**產品名稱：** AI 能見度儀表板  
-**公司名稱：** 優勢方舟數位行銷  
-**線上網址：** https://aark-workspace.vercel.app/  
-**GitHub：** https://github.com/aark-younjung/aark-workspace  
+**產品名稱：** AI 雷達（AI 能見度儀表板）
+**營運公司：** 優勢方舟數位行銷（法定收款方，金流商家戶名稱）
+**線上網址：** https://aark-workspace.vercel.app/
+**GitHub：** https://github.com/aark-younjung/aark-workspace
 
 幫助品牌主與行銷人員檢測網站在 AI 搜尋引擎（ChatGPT、Perplexity、Google AI）中的「被看見程度」，提供 SEO、AEO、GEO、E-E-A-T 四大面向分析與具體修復建議。
+
+**品牌使用原則（2026-05-20 rename 後）：**
+- **產品名「AI 雷達」**：用於 logo、Footer、Email header / from、PDF 報告 header、index.html title / OG / Twitter、NewebPay ItemDesc / ProdDesc、法律文件「商店名稱」欄
+- **公司名「優勢方舟數位行銷」**：用於法律文件「營運公司／服務提供者」欄、Email 簽名 / Footer 副標「由優勢方舟數位行銷營運」、發票抬頭、商業登記
+- **業界術語「AI 能見度」（不是品牌名）**：FAQ、Hero h1「掌握 AI 能見度」、報告描述「AI 能見度報告」、Dashboard tooltip 等概念說明可保留
 
 ---
 

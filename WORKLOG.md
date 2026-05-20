@@ -1,8 +1,29 @@
-# 工作日誌 — AI 能見度儀表板
+# 工作日誌 — AI 雷達（AI 能見度儀表板）
 
 從 CLAUDE.md 拆出（2026-05-18）。原本內嵌在 CLAUDE.md 會被 Claude Code 自動載入，膨脹到 270KB 後撐爆 context。
 
 排序：最新在頂、舊的在下。新紀錄請 append 到本檔頂端（保持降冪），不要再寫回 CLAUDE.md。
+
+---
+
+### 2026-05-20
+**改：全站 rename「AI能見度（AIVIS）」→「AI 雷達」（方案 1 — 產品品牌＝子品牌，公司＝法定母品牌不變）:**
+- 🐛 **症狀**：產品名「AI 能見度（AIVIS）」太通用 / 沒記憶點；公司名「優勢方舟數位行銷」太長當 logo 擠；Footer / topbar / Email / PDF / OG / 法律文件「商店名稱」欄到處都是舊名，廣告與口頭品牌都沒地方落腳。
+- 🔍 **決策過程**：產品定位顧問模式列了 7 個替代提案（AI 雷達 / AI 燈塔 / AI 搜得到 / 被 AI 看見 / AIVis / AISpot / AARK AI），3 派風格（意象 / 口語 / 雙語）；用戶選 AI 雷達 — 跟首頁雷達掃描動畫天然呼應、3 字短促好記、口語與專業都通。命名策略走「方案 1」：產品品牌 AI 雷達 = 子品牌（行銷展示用），公司名 優勢方舟數位行銷 = 母品牌（法律/金流/發票用），避免商業登記與藍新審核重來。
+- ✅ **修法（涵蓋面 user-facing 與 SEO/金流，內部變數 / aivis_ table / aark.io email domain 不動）**：
+  - **[index.html](index.html)**：title / description / keywords / og:site_name / og:title / og:image:alt / twitter:title 主品牌名換成「AI 雷達」，但 description 結尾加「由優勢方舟數位行銷營運」做雙品牌串連；keywords 兩個品牌字都塞。
+  - **[src/components/Footer.jsx](src/components/Footer.jsx)**：logo 文字 `AI能見度（AIVIS）` → `AI 雷達`；版權列底部 `Powered by AI 能見度檢測平台` → `AI 雷達 — 由優勢方舟數位行銷營運`。
+  - **[src/pages/legal/Terms.jsx / Privacy.jsx / ConsumerRights.jsx](src/pages/legal/)**：subtitle + 「商店名稱」欄位 `AI能見度（AIVIS）` 全部 replace_all → `AI 雷達`。法律主體仍是「優勢方舟數位行銷」（一、服務提供者 條目沒動）。
+  - **[src/services/pdfExport.js](src/services/pdfExport.js)**：PDF header `優勢方舟 AI 能見度報告` → `AI 雷達 — AI 能見度報告`；副標 `AARK — AI Visibility Audit Report` → `AI Radar — AI Visibility Audit Report`；footer 標識補「優勢方舟數位行銷營運」字樣。
+  - **[api/cron-weekly-reports.js](api/cron-weekly-reports.js) + [api/send-report-email.js](api/send-report-email.js)**：Email header / from / footer / signature 全部換成 AI 雷達 主品牌 +「優勢方舟數位行銷營運」副標。Resend `from:` 欄位 4 處改 `'AI 雷達 <report@aark.io>'`（email domain aark.io 不變、只改顯示名）。
+  - **[api/checkout-pro-yearly-newebpay.js](api/checkout-pro-yearly-newebpay.js)**：3 個 ItemDesc label `AI能見度 Pro` → `AI 雷達 Pro`（年繳 / 早鳥 / 月繳）— 結帳頁與信用卡帳單 ItemDesc 顯示產品品牌；但「商家戶名稱」NewebPay 後台仍是「優勢方舟數位行銷」（不需改、藍新審核不用重來）。aivis Top-up 的 PACK_SPEC label 不動（aivis 是內部模組名）。
+  - **[CLAUDE.md](CLAUDE.md)**：產品定位區塊更新 + 新增「品牌使用原則」段落，明列三層用法（產品名 AI 雷達 vs 公司名 優勢方舟 vs 業界術語 AI 能見度）。
+- 🔖 **設計取捨**：
+  - **「業界術語 AI 能見度」保留 vs 全改 AI 雷達**：保留。FAQ「什麼是 AI 能見度？」/ Hero h1「掌握 AI 能見度」/ Dashboard tooltip「五大 AI 能見度面向」這些是行業概念詞、SEO 高搜尋量關鍵字，跟 Google「Search」之於「Google」一樣是描述名詞，硬改成「AI 雷達」反而 SEO 自殺 + 用戶聽不懂。
+  - **藍新商家戶名稱不動**：法定收款方仍是「優勢方舟數位行銷」（MS3830621445 不變），只改 ItemDesc 與 ProdDesc 兩個產品描述欄位。用戶刷卡帳單會看到「優勢方舟數位行銷」+「AI 雷達 Pro」雙顯示，讓品牌＝賣方的認知串起來、降低退款爭議。
+  - **email domain `aark.io` 不換**：domain 已綁定 Resend / SPF / DKIM，換 domain 要重新驗證，得不償失。只改 `from:` 顯示名為「AI 雷達」即可。
+  - **aark-workspace.vercel.app subdomain 不換**：等正式自有 domain `a-ark.com.tw` 上線後再考慮，現在 Vercel preview / 內部測試都靠這個 URL。
+- 🧪 **驗證**：build pass / OG preview 用 metatags.io 確認 og:title 已顯示「AI 雷達」/ 走一次年繳結帳流程確認 ItemDesc 已換 / 寄一封週報 Email 確認 from 顯示「AI 雷達」/ 詳情頁匯出 PDF 確認 header 是「AI 雷達 — AI 能見度報告」。
 
 ---
 

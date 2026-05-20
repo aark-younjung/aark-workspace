@@ -120,8 +120,8 @@ function buildEmailHTML({ website, seoAudit, aeoAudit, geoAudit, eeatAudit, dash
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
         <tr><td style="background:linear-gradient(135deg,#1e293b 0%,#4c1d95 100%);padding:32px 40px;">
-          <div style="font-size:20px;font-weight:bold;color:white;">優勢方舟 週報</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">AARK Weekly AI Visibility Report</div>
+          <div style="font-size:20px;font-weight:bold;color:white;">AI 雷達 週報</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">AI Radar Weekly AI Visibility Report</div>
           <div style="margin-top:16px;font-size:14px;color:rgba(255,255,255,0.9);background:rgba(255,255,255,0.1);padding:8px 14px;border-radius:8px;display:inline-block;">${website?.url || ''}</div>
           <div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.5);">報告日期：${date}</div>
         </td></tr>
@@ -153,7 +153,7 @@ function buildEmailHTML({ website, seoAudit, aeoAudit, geoAudit, eeatAudit, dash
         </td></tr>
         ${dashboardUrl ? `<tr><td style="padding:0 40px 32px;text-align:center;"><a href="${dashboardUrl}" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;font-weight:600;font-size:14px;border-radius:10px;text-decoration:none;">查看完整報告 →</a></td></tr>` : ''}
         <tr><td style="padding:20px 40px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-          <p style="font-size:11px;color:#94a3b8;margin:0;">本週報由 優勢方舟 (AARK) 自動生成 · ${date}<br>如需取消訂閱，請回到儀表板的「Email 通知」設定</p>
+          <p style="font-size:11px;color:#94a3b8;margin:0;">本週報由 AI 雷達（優勢方舟數位行銷營運）自動生成 · ${date}<br>如需取消訂閱，請回到儀表板的「Email 通知」設定</p>
         </td></tr>
       </table>
     </td></tr>
@@ -217,7 +217,7 @@ function buildTrialEmailHTML({ kind, name, trialEndsAt, daysLeft, dashboardUrl, 
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
         <tr><td style="background:linear-gradient(135deg,#1e293b 0%,${c.gradient} 100%);padding:32px 40px;text-align:center;">
           <div style="font-size:22px;font-weight:bold;color:white;">${c.headerTitle}</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-top:6px;">優勢方舟 AI 能見度</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-top:6px;">AI 雷達 — AI 能見度</div>
         </td></tr>
         <tr><td style="padding:32px 40px 16px;text-align:center;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
           <div style="font-size:34px;font-weight:bold;color:${c.gradient};line-height:1.2;">${c.heroLine}</div>
@@ -230,7 +230,7 @@ function buildTrialEmailHTML({ kind, name, trialEndsAt, daysLeft, dashboardUrl, 
           <a href="${c.cta2.url}" style="display:inline-block;padding:10px 24px;color:#64748b;font-size:13px;text-decoration:none;border:1px solid #e2e8f0;border-radius:8px;margin-top:4px;">${c.cta2.label}</a>
         </td></tr>
         <tr><td style="padding:20px 40px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-          <p style="font-size:11px;color:#94a3b8;margin:0;">優勢方舟 (AARK) · AI 能見度儀表板<br>如有任何問題，歡迎回信至 aark.younjung@gmail.com</p>
+          <p style="font-size:11px;color:#94a3b8;margin:0;">AI 雷達（優勢方舟數位行銷營運） · AI 能見度儀表板<br>如有任何問題，歡迎回信至 aark.younjung@gmail.com</p>
         </td></tr>
       </table>
     </td></tr>
@@ -278,7 +278,7 @@ async function processTrials({ supabase, RESEND_API_KEY, SITE_URL }) {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'AARK 優勢方舟 <report@aark.io>',
+          from: 'AI 雷達 <report@aark.io>',
           to: [row.email],
           subject: '您的 Pro 試用已結束 — 隨時可升級延續',
           html,
@@ -349,7 +349,7 @@ async function processTrials({ supabase, RESEND_API_KEY, SITE_URL }) {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'AARK 優勢方舟 <report@aark.io>',
+          from: 'AI 雷達 <report@aark.io>',
           to: [row.email],
           subject,
           html,
@@ -430,7 +430,7 @@ async function processWeeklyReports({ supabase, RESEND_API_KEY, SITE_URL }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'AARK 優勢方舟 <report@aark.io>',
+          from: 'AI 雷達 <report@aark.io>',
           to: [sub.email],
           subject,
           html,

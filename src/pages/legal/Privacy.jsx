@@ -4,12 +4,12 @@ export default function Privacy() {
   return (
     <LegalPageLayout
       title="隱私權政策"
-      subtitle="我們重視您的個人資料安全。本政策說明「AI能見度（AIVIS）」蒐集、處理、利用您個人資料之方式，依《個人資料保護法》制定。"
+      subtitle="我們重視您的個人資料安全。本政策說明「AI 雷達」蒐集、處理、利用您個人資料之方式，依《個人資料保護法》制定。"
       lastUpdated="2026-05-12"
     >
       <h2>一、政策適用範圍</h2>
       <p>
-        本隱私權政策適用於您透過「AI能見度（AIVIS）」網站
+        本隱私權政策適用於您透過「AI 雷達」網站
         （網址：<a href="https://aark-workspace.vercel.app">https://aark-workspace.vercel.app</a>，以下簡稱「本服務」）
         所提供之全部服務。本服務由<strong>優勢方舟數位行銷</strong>（以下簡稱「本公司」）營運。
       </p>

@@ -4,13 +4,13 @@ export default function ConsumerRights() {
   return (
     <LegalPageLayout
       title="消費者權益保障"
-      subtitle="本頁說明「AI能見度（AIVIS）」付款、退款、解約等消費者權益相關規範，依《消費者保護法》及相關法令制定。"
+      subtitle="本頁說明「AI 雷達」付款、退款、解約等消費者權益相關規範，依《消費者保護法》及相關法令制定。"
       lastUpdated="2026-05-12"
     >
       <h2>一、服務商基本資訊</h2>
       <div className="highlight-box">
         <ul style={{ marginBottom: 0 }}>
-          <li>商店名稱：AI能見度（AIVIS）</li>
+          <li>商店名稱：AI 雷達</li>
           <li>營運單位：優勢方舟數位行銷</li>
           <li>負責人：陳泓翔</li>
           <li>營業地址：701 台南市東區怡東路 86 巷 10 號</li>

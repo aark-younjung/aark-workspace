@@ -88,8 +88,8 @@ function buildReportHTML({ website, seoAudit, aeoAudit, geoAudit, eeatAudit }) {
 
       <!-- Header -->
       <div style="background:linear-gradient(135deg,#1e293b 0%,#4c1d95 100%);padding:40px 48px;color:white;">
-        <div style="font-size:22px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;">優勢方舟 AI 能見度報告</div>
-        <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">AARK — AI Visibility Audit Report</div>
+        <div style="font-size:22px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;">AI 雷達 — AI 能見度報告</div>
+        <div style="font-size:14px;opacity:0.7;margin-bottom:16px;">AI Radar — AI Visibility Audit Report</div>
         <div style="font-size:16px;font-weight:500;background:rgba(255,255,255,0.1);padding:8px 16px;border-radius:8px;display:inline-block;">
           ${website?.url || ''}
         </div>
@@ -174,7 +174,7 @@ function buildReportHTML({ website, seoAudit, aeoAudit, geoAudit, eeatAudit }) {
 
         <!-- Footer -->
         <div style="margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center;color:#94a3b8;font-size:11px;">
-          本報告由 優勢方舟 (AARK) AI 能見度檢測平台自動生成 · ${date}<br/>
+          本報告由 AI 雷達（優勢方舟數位行銷營運）AI 能見度檢測平台自動生成 · ${date}<br/>
           報告僅供參考，實際搜尋排名受多重因素影響
         </div>
       </div>
