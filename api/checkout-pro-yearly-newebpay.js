@@ -95,6 +95,27 @@ export default async function handler(req, res) {
     }
   }
 
+  // NPA 月繳防重複訂閱守門：已有 active period → 直接拒絕，避免前端 isPro 緩存過期時誤觸第二筆
+  // 前端 isPro guard 有 race condition（fetchProfile 非同步），後端是最後防線
+  if (plan === 'monthly') {
+    const { data: existingPeriod, error: periodCheckErr } = await supabase
+      .from('aivis_newebpay_period')
+      .select('period_no', { count: 'exact', head: false })
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle()
+    if (periodCheckErr) {
+      console.error('Failed to check existing period:', periodCheckErr)
+      return res.status(500).json({ error: `Period check failed: ${periodCheckErr.message}` })
+    }
+    if (existingPeriod) {
+      return res.status(409).json({
+        error: 'already_subscribed',
+        message: '您已有進行中的月繳訂閱，無需重複訂閱。如需管理訂閱請前往帳號設定。',
+      })
+    }
+  }
+
   // 訂單編號 prefix：py = pro_yearly / peb = pro_earlybird / pm = pro_monthly
   // monthly DB kind 用 'pro_monthly'（需 ALTER pending CHECK constraint 才能接受）
   const prefix = plan === 'earlybird' ? 'peb' : (plan === 'monthly' ? 'pm' : 'py')

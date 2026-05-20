@@ -195,6 +195,14 @@ export default function Pricing() {
       .catch(() => { /* 失敗就維持 null → 顯示 — */ })
     return () => { cancelled = true }
   }, [])
+
+  // Pricing mount 時主動 refetch profile — 避免用戶將刺小金流跛回後導航到 /pricing，
+  // isPro 從 AuthContext cache 讀到舊値（false）導致按鈕狀態錯誤。
+  // 只在 user 存在時執行一次，不會再觸發（進入頁面後 user.id 不會變）。
+  useEffect(() => {
+    if (user) fetchProfile(user.id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
   const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—')
   // 早鳥已售名額：API 回 null 則 fallback 0（避免進度條跑掉），用於三處 UI（top bar 剩餘 / 進度條 / 文案）
   const earlybirdSlotsTaken = stats.earlybird_taken ?? 0
@@ -254,7 +262,7 @@ export default function Pricing() {
 
   const handleUpgrade = async (priceType = 'yearly') => {
     if (!user) { navigate('/register'); return }
-    if (isPro) { navigate('/'); return }
+    if (isPro) { navigate('/account'); return }  // 已是 Pro 就引導到帳號頁管理
     // earlybird/yearly = MPG 一次性；monthly = NPA 定期定額（後端走 /MPG/period）
     const plan = priceType === 'earlybird' ? 'earlybird' : (priceType === 'monthly' ? 'monthly' : 'yearly')
     setUpgrading(true)
@@ -270,6 +278,12 @@ export default function Pricing() {
         }),
       })
       const data = await res.json()
+      if (res.status === 409 || data.error === 'already_subscribed') {
+        // 後端守門捕到重複訂閱— 主動 refetch profile 再導向帳號頁
+        if (user) await fetchProfile(user.id)
+        navigate('/account')
+        return
+      }
       if (!res.ok || !data.apiUrl || !data.fields) {
         alert(data.error || '建立付款頁面失敗，請稍後再試')
         setUpgrading(false)
