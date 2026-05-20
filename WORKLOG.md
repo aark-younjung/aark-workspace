@@ -6,6 +6,40 @@
 
 ---
 
+### 2026-05-21
+**改：rename 收尾 + 定價頁文案微調 + 製作 30 秒 1:1 行銷動畫:**
+
+- 🐛 **症狀（rename 收尾）**：昨日全站 rename 漏抓共用 `SiteHeader.jsx` 與 5 個獨立頁面（HomeDark / Login / Register / FAQ / Pricing）的左上角 logo `<span>優勢方舟數位行銷</span>`；Pricing.jsx 內文「優勢方舟用 1/10 顧問費⋯」「優勢方舟回答：」「Ahrefs/SEMrush vs 優勢方舟」等 4 處屬於**產品能力描述**也漏改。
+- ✅ **修法**：[commit f8f156b](https://github.com/aark-younjung/aark-workspace/commit/f8f156b)
+  - `SiteHeader.jsx`（共用 header）+ `HomeDark.jsx` / `Login.jsx` / `Register.jsx` / `FAQ.jsx` / `Pricing.jsx` 各自的左上角 logo → `AI 雷達`
+  - `Pricing.jsx:135 / 480 / 571 / 594 / 821 / 843` 行銷文案產品名稱改 `AI 雷達`
+  - `AdminUsers.jsx:1081` 客服寄件人提示 → `AI 雷達客服 <support@aark.io>`
+  - `README.md` 標題 → `# AI 雷達（AI 能見度儀表板）`
+- 🔖 **設計取捨**：
+  - **`Pricing.jsx:810` AI 答案示範 demo 中的「優勢方舟數位行銷」保留**：那段是示範 AI 回答中**被追蹤的品牌名**例子，不是產品名 — 反而拿自家公司當示範 brand 增加可信度。
+  - **`AIVisibility.jsx:191` placeholder「例：優勢方舟數位行銷」保留**：那是用戶輸入欄的範例，意義跟產品品牌無關。
+
+- 🐛 **症狀（定價頁 hero 重複與過時）**：[Pricing.jsx](src/pages/Pricing.jsx) hero 區塊有「✨ 年繳省 22%・等於免費多用 X 個月」綠膠囊 + 旁邊還補一句「月繳方案即將開放」。但下方年/月切換按鈕的「年繳」徽章已經顯示「省 22%」、Pro 卡副標也已寫「等於免費多用 X 個月」— **資訊三重重複**。月繳更已於 2026-05-19 NPA 沙盒實測通過、2026-05-20 切正式環境，「即將開放」是過時文案。
+- ✅ **修法**：[commit c43307c](https://github.com/aark-younjung/aark-workspace/commit/c43307c) 整段 hero 重複資訊區塊（line 484–498）刪除，保留註解說明歷史脈絡給未來看 commit 的人。
+
+- 🐛 **症狀（hero 標語精準度）**：「你的品牌名是否會被**說出口**？」— 「說出口」描述偏 narrative 但不夠精準，AI 答案的實際行為是「被推薦給提問者」，且「推薦」是 SEO/AEO 高搜尋量關鍵字。
+- ✅ **修法**：[commit 863bc5d](https://github.com/aark-younjung/aark-workspace/commit/863bc5d) `Pricing.jsx:477` 「說出口」→「推薦」，更貼近 LLM 引用行為的本質。
+
+- 🎬 **製作 30 秒 1:1 HTML 行銷動畫 [demo-animation/ai-radar-30s-1x1.html](demo-animation/ai-radar-30s-1x1.html)**：未推 git（本機 demo，跟既有 `let-ai-see-you.html` 並列備存）。9 個 scene、純 CSS keyframes、JS timer 同步字幕。經 5 輪用戶 review 反覆迭代：
+  - **第 1 輪**：基本 scene 鋪好 → 用戶要求「網站風格 + 英文放大 + 加字幕」
+  - **第 2 輪**：套 HomeDark 漸層 / grain / glass card、`.en` class 統一英數放大 132% + Inter 字型、底部 13% 字幕條 → 用戶要求「文字置中 + 右下角加漸層 + 字幕 3x + 移到 1/3 處」
+  - **第 3 輪**：背景疊第二層 `radial-gradient at 85% 88%` 右下對角光、所有 scene `text-align:center`、字幕 21→64px（3x）、位置從 bottom:0 改 top:60% → 用戶要求「數字 / 英文 / 內容品質統一黃色」
+  - **第 4 輪**：`.en` 與 `.num` 加 `color:#fbbf24` + 黃光暈、移除 5 大面向卡的多色配置改全黃 → 用戶反映「AI 字模糊」+「右下漸層不夠明顯」
+  - **第 5 輪**：診斷出 brand-reveal / logo-fin 的 `background-clip:text` 把子層 `.en` 的 color 強制透明化，剩下的 `text-shadow` 看起來像鬼影；改成「中文白 + .en 實心金黃」雙色策略。右下漸層 circle→ellipse、`.42 → .65` 透明度、外圈 55%→70% 覆蓋面積約 1.5x。字幕 SEO/AEO/GEO/E-E-A-T 後面的「內容品質」也補上 `.yellow` class。
+- 📁 **檔案位置**：本機 `demo-animation/ai-radar-30s-1x1.html`，未 commit 也未部署上 Vercel — 屬於行銷素材本機 demo（沿用 2026-04-22 `let-ai-see-you.html` 同樣的命名與用途）。要剪 MP4 / GIF 走 puppeteer 截影 + ffmpeg 壓縮路徑，方法同 [let-ai-see-you-60fps.mp4](demo-animation/) 的產出流程。
+
+- 🔖 **未完成 / pending**：
+  - 30 秒影片 MP4 / GIF 匯出（用 puppeteer screencast）— 待用戶確認動畫定稿
+  - 9:16 直式版（IG Reels / TikTok 用）— 待匯出後再生對應 viewport
+  - 後續若品牌風格定錨後，可考慮把這個 1:1 動畫嵌進 `/pricing` 頁 hero 區替代靜態圖
+
+---
+
 ### 2026-05-20
 **改：全站 rename「AI能見度（AIVIS）」→「AI 雷達」（方案 1 — 產品品牌＝子品牌，公司＝法定母品牌不變）:**
 - 🐛 **症狀**：產品名「AI 能見度（AIVIS）」太通用 / 沒記憶點；公司名「優勢方舟數位行銷」太長當 logo 擠；Footer / topbar / Email / PDF / OG / 法律文件「商店名稱」欄到處都是舊名，廣告與口頭品牌都沒地方落腳。
