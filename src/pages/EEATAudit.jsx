@@ -80,13 +80,12 @@ const EEAT_CHECKS = [
 
 export default function EEATAudit() {
   const { id } = useParams()
-  const { isPro, user } = useAuth()
+  const { isPro } = useAuth()
   const [website, setWebsite] = useState(null)
   const [eeatAudit, setEeatAudit] = useState(null)
   const [recentAudits, setRecentAudits] = useState([])
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
-  const [upgrading, setUpgrading] = useState(false)
 
   useEffect(() => { fetchData() }, [id])
 
@@ -144,34 +143,8 @@ export default function EEATAudit() {
     }
   }
 
-  const handleUpgrade = async () => {
-    if (!user) {
-      alert('請先登入再升級 Pro 方案')
-      return
-    }
-    setUpgrading(true)
-    try {
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          email: user.email,
-          returnUrl: window.location.href,
-        }),
-      })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        alert(data.error || '建立付款頁面失敗，請稍後再試')
-      }
-    } catch {
-      alert('連線失敗，請稍後再試')
-    } finally {
-      setUpgrading(false)
-    }
-  }
+  // 升級 CTA 統一以 <Link to="/pricing"> 導向定價頁讓用戶選方案
+  // （舊版直跳 Stripe checkout 是 Phase 2，目前主力是 NewebPay）
 
   // 把 EEAT_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
   const checks = EEAT_CHECKS.map(c => ({
@@ -335,18 +308,17 @@ export default function EEATAudit() {
                       <div className="text-4xl mb-3">🔒</div>
                       <h4 className="text-lg font-bold mb-2" style={{ color: T.text }}>升級 Pro 解鎖完整建議</h4>
                       <p className="text-sm mb-5" style={{ color: T.textMid }}>包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
-                      <button
-                        onClick={handleUpgrade}
-                        disabled={upgrading}
-                        className="w-full px-6 py-3 text-white font-semibold rounded-xl transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                      <Link
+                        to="/pricing"
+                        className="block w-full px-6 py-3 text-white font-semibold rounded-xl transition-all shadow-lg text-center"
                         style={{
                           background: `linear-gradient(135deg, ${T.eeat}, ${T.orange})`,
                           boxShadow: `0 8px 24px ${T.eeat}40`,
                         }}
                       >
-                        {upgrading ? '跳轉中...' : '升級 Pro 方案 →'}
-                      </button>
-                      <p className="text-xs mt-3" style={{ color: T.textLow }}>NT$1,490 / 月 · 隨時取消</p>
+                        查看方案 →
+                      </Link>
+                      <p className="text-xs mt-3" style={{ color: T.textLow }}>月繳 NT$1,490 · 年繳 NT$13,900（省 22%）</p>
                     </div>
                   </div>
                 </div>
