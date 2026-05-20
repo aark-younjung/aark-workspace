@@ -481,21 +481,8 @@ export default function Pricing() {
             </span>
           </p>
 
-          {/* Phase 1 上線只開放年繳，月繳定期定額待 NPA 串接後再開放；以年繳省錢膠囊取代月/年切換 */}
-          <div className="flex items-center justify-center gap-3 mt-8 flex-wrap">
-            <span
-              className="px-4 py-2 text-sm font-semibold rounded-full"
-              style={{ background: T.pass + '26', color: T.pass, border: `1px solid ${T.pass}55` }}
-            >
-              ✨ 年繳省 {savedPercent}%・等於免費多用 {savedMonths} 個月
-            </span>
-            <span
-              className="text-xs"
-              style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
-            >
-              月繳方案即將開放
-            </span>
-          </div>
+          {/* 早期版本在這裡放「✨ 年繳省 22% 膠囊 + 月繳即將開放」hint，
+              現在月繳 NPA 已上線、年繳/月繳切換按鈕的「省 22%」徽章已涵蓋同樣資訊，移除避免重複 */}
         </div>
 
         {/* A5: 社會證明區 — 具體奇數提高可信度 */}
