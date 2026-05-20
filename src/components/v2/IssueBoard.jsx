@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { T } from '../../styles/v2-tokens'
 import { FIX_GUIDES, PLATFORMS } from '../../data/fixGuides'
@@ -9,10 +10,28 @@ const KEYFRAMES = `
 @media (max-width: 600px) { .v2-issue-board { grid-template-columns: 1fr; } }
 .v2-issue-fix-panel { animation: v2FadeUp .25s ease-out; }
 @keyframes v2FadeUp { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@media print {
+  .v2-issue-board { grid-template-columns: 1fr !important; }
+  .v2-issue-fix-panel { animation: none !important; page-break-inside: avoid; }
+  .v2-issue-board > div { page-break-inside: auto; }
+  .v2-issue-board > div > div { page-break-inside: avoid; break-inside: avoid; }
+}
 `
 
 export default function IssueBoard({ checks, isPro, accent = T.seo, accentGlow }) {
   const [expanded, setExpanded] = useState(null)
+  // 列印 / 匯出 PDF 時自動展開所有可展開卡片，避免 PDF 沒有修復建議內容
+  const [printMode, setPrintMode] = useState(false)
+  useEffect(() => {
+    const onBefore = () => flushSync(() => setPrintMode(true))
+    const onAfter = () => setPrintMode(false)
+    window.addEventListener('beforeprint', onBefore)
+    window.addEventListener('afterprint', onAfter)
+    return () => {
+      window.removeEventListener('beforeprint', onBefore)
+      window.removeEventListener('afterprint', onAfter)
+    }
+  }, [])
   const lanes = [
     { id: 'P1', title: '立即修復', sub: '1–2 週內',  c: T.fail,  glow: 'rgba(239,68,68,.16)' },
     { id: 'P2', title: '本月內',   sub: '1–3 個月', c: T.warn,  glow: 'rgba(245,158,11,.14)' },
@@ -32,14 +51,15 @@ export default function IssueBoard({ checks, isPro, accent = T.seo, accentGlow }
             lane={lane}
             expandedId={expanded}
             onToggle={(id) => setExpanded(expanded === id ? null : id)}
-            isPro={isPro} />
+            isPro={isPro}
+            printMode={printMode} />
         ))}
       </div>
     </>
   )
 }
 
-function IssueLane({ lane, expandedId, onToggle, isPro }) {
+function IssueLane({ lane, expandedId, onToggle, isPro, printMode }) {
   return (
     <div style={{
       background: 'rgba(1,8,14,.55)',
@@ -75,7 +95,7 @@ function IssueLane({ lane, expandedId, onToggle, isPro }) {
           <IssueCard key={check.id}
             check={check}
             lane={lane}
-            isOpen={expandedId === check.id}
+            isOpen={printMode || expandedId === check.id}
             onToggle={() => onToggle(check.id)}
             isPro={isPro} />
         ))
