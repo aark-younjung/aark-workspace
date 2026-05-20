@@ -18,8 +18,8 @@ export default function SiteHeader() {
               </svg>
             </div>
             <span className="text-base sm:text-xl font-bold text-white leading-tight">
-              <span className="sm:hidden">優勢方舟</span>
-              <span className="hidden sm:inline">優勢方舟數位行銷</span>
+              <span className="sm:hidden">AI 雷達</span>
+              <span className="hidden sm:inline">AI 雷達</span>
             </span>
           </Link>
 

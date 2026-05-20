@@ -120,7 +120,7 @@ export default function Login() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold" style={{ color: T.text }}>優勢方舟數位行銷</span>
+            <span className="text-2xl font-bold" style={{ color: T.text }}>AI 雷達</span>
           </Link>
           <h1 className="text-3xl font-bold mb-2" style={{ color: T.text, letterSpacing: '-0.02em' }}>歡迎回來</h1>
           <p style={{ color: T.textMid }}>登入以查看您的 AI 能見度報告</p>

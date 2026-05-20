@@ -132,7 +132,7 @@ const FAQ_ITEMS = [
     tag: '競品焦慮',
     tagColor: '#f59e0b',
     q: '跟 Ahrefs / SEMrush 比，差別在哪裡？',
-    a: 'Ahrefs 與 SEMrush 是 Google 時代的工具，回答的是「你在搜尋結果排第幾名」；優勢方舟回答的是「ChatGPT、Perplexity、Claude 推薦的是你還是對手」。我們直接呼叫 AI API 用真實使用者問法測試你的品牌曝光，並提供修復碼可直接複製、平台別指南（WordPress / Shopify / Wix / HTML），月費 NT$1,490 大約是 Ahrefs Lite 方案的 1/3，且原生繁中介面。',
+    a: 'Ahrefs 與 SEMrush 是 Google 時代的工具，回答的是「你在搜尋結果排第幾名」；AI 雷達回答的是「ChatGPT、Perplexity、Claude 推薦的是你還是對手」。我們直接呼叫 AI API 用真實使用者問法測試你的品牌曝光，並提供修復碼可直接複製、平台別指南（WordPress / Shopify / Wix / HTML），月費 NT$1,490 大約是 Ahrefs Lite 方案的 1/3，且原生繁中介面。',
   },
   {
     tag: '認知焦慮',
@@ -430,7 +430,7 @@ export default function Pricing() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>優勢方舟數位行銷</span>
+            <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>AI 雷達</span>
           </Link>
           <nav className="flex items-center gap-6">
             <Link to="/showcase" className={`text-sm transition-colors ${
@@ -477,7 +477,7 @@ export default function Pricing() {
             你的品牌名是否會被說出口？
             <br />
             <span className="text-base" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
-              優勢方舟用 1/10 顧問費用，24 小時自動監測你在 AI 答案中的曝光度
+              AI 雷達用 1/10 顧問費用，24 小時自動監測你在 AI 答案中的曝光度
             </span>
           </p>
 
@@ -568,7 +568,7 @@ export default function Pricing() {
               SEO 顧問每月 NT$15,000–50,000
             </div>
             <p className="text-sm leading-relaxed" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
-              傳統 SEO 顧問月費上看 NT$50,000，且只看 Google。優勢方舟用
+              傳統 SEO 顧問月費上看 NT$50,000，且只看 Google。AI 雷達用
               <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}> NT$1,490／月（1/10 價）</span>
               ，同時監測 SEO + AEO + GEO + AI 引用率。
             </p>
@@ -591,7 +591,7 @@ export default function Pricing() {
                 <br />「你的網站排第幾名」
               </li>
               <li>
-                <span className="text-xs" style={{ color: '#86efac' }}>優勢方舟回答：</span>
+                <span className="text-xs" style={{ color: '#86efac' }}>AI 雷達回答：</span>
                 <br /><span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>「AI 推薦的是你，還是你的對手」</span>
               </li>
             </ul>
@@ -818,7 +818,7 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* C2: 競品比較簡表 — Ahrefs/SEMrush vs 優勢方舟 */}
+        {/* C2: 競品比較簡表 — Ahrefs/SEMrush vs AI 雷達 */}
         <div
           className="mb-12 p-6 md:p-8 rounded-2xl border"
           style={isDark
@@ -840,7 +840,7 @@ export default function Pricing() {
                 <tr style={{ borderBottom: `1px solid ${isDark ? T.cardBorder : 'rgba(0,0,0,0.08)'}` }}>
                   <th className="text-left py-3 px-3 font-semibold" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>比較項目</th>
                   <th className="text-center py-3 px-3 font-semibold" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>Ahrefs / SEMrush</th>
-                  <th className="text-center py-3 px-3 font-semibold" style={{ color: T.orange }}>優勢方舟</th>
+                  <th className="text-center py-3 px-3 font-semibold" style={{ color: T.orange }}>AI 雷達</th>
                 </tr>
               </thead>
               <tbody>

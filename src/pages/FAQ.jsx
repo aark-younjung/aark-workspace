@@ -234,7 +234,7 @@ export default function FAQ() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>優勢方舟數位行銷</span>
+            <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>AI 雷達</span>
           </Link>
           <nav className="flex items-center gap-4">
             <Link to="/" className={`hidden sm:block text-sm transition-colors ${

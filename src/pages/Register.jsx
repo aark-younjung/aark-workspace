@@ -139,7 +139,7 @@ export default function Register() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold" style={{ color: T.text }}>優勢方舟數位行銷</span>
+            <span className="text-2xl font-bold" style={{ color: T.text }}>AI 雷達</span>
           </Link>
           <h1 className="text-3xl font-bold mb-2" style={{ color: T.text, letterSpacing: '-0.02em' }}>建立帳號</h1>
           <p style={{ color: T.textMid }}>加入即獲得 3 個網站免費分析額度，不需信用卡</p>
