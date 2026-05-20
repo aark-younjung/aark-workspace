@@ -390,23 +390,26 @@ export default function HomeDark() {
       let cleanUrl = url.trim()
       if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) cleanUrl = 'https://' + cleanUrl
 
-      // 以「URL + user_id」為唯一鍵：同一網址不同用戶各有自己的紀錄，避免資料污染與後台漏抓
-      const { data: existing } = await supabase
-        .from('websites')
-        .select('id')
-        .eq('url', cleanUrl)
+      // 重複 URL 允許多筆：每次掃描都建獨立 website row，獨立 trend、獨立 dashboard
+      //   - 場景：使用者改完一輪想再掃同 URL 比對前後（之前 dedup 會把新資料堆到舊 row 上）
+      //   - WEBSITE_LIMIT 計算「所有 row 數」（含重複 URL），避免無限掃同 URL 繞過上限
+      //   - 想看歷史趨勢→在 dashboard 自帶的趨勢迷你圖；想看獨立掃描快照→各自的 dashboard
+      const { count: currentCount } = await supabase
+        .from('websites').select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .maybeSingle()
-
-      let websiteId
-      if (existing) {
-        websiteId = existing.id
-      } else {
-        const { data: newSite, error: siteError } = await supabase
-          .from('websites').insert([{ url: cleanUrl, name: new URL(cleanUrl).hostname, user_id: user.id }]).select().single()
-        if (siteError) throw siteError
-        websiteId = newSite.id
+      if (currentCount != null && currentCount >= WEBSITE_LIMIT) {
+        setLoading(false)
+        setStatus('')
+        alert(`已達${isPro ? 'Pro' : '免費'}方案上限（${WEBSITE_LIMIT} 個網站）${!isPro ? '\n升級 Pro 可追蹤 15 個網站' : ''}`)
+        return
       }
+
+      const { data: newSite, error: siteError } = await supabase
+        .from('websites')
+        .insert([{ url: cleanUrl, name: new URL(cleanUrl).hostname, user_id: user.id }])
+        .select().single()
+      if (siteError) throw siteError
+      const websiteId = newSite.id
 
       setStatus('正在分析網站...')
       const html = await fetchPageContent(cleanUrl)
