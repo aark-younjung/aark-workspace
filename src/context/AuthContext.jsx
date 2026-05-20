@@ -147,7 +147,7 @@ export function AuthProvider({ children }) {
       user, profile, loading,
       isPro, isAdmin, userName,
       isTrial, trialEndsAt, trialDaysRemaining, hasTrialedBefore,
-      signIn, signUp, signOut, signInWithGoogle, refreshProfile, startTrial,
+      signIn, signUp, signOut, signInWithGoogle, refreshProfile, startTrial, fetchProfile,
     }}>
       {!loading && children}
     </AuthContext.Provider>
