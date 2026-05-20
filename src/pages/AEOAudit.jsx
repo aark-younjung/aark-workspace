@@ -268,15 +268,20 @@ export default function AEOAudit() {
   )
 }
 
-// 共用的暗色背景 wrapper（與首頁 HomeDark 同款：黑底 + 上方青綠漸層光暈 + 雜訊）
-// 註：頁面高度通常不及首頁，下方漸層會壓到上半部反而互蓋，故捨棄只保留上方
+// 共用的暗色背景 wrapper（與首頁 HomeDark 同款：黑底 + 左上 155deg + 右下 335deg 雙漸層 + 雜訊）
 function PageBg({ children }) {
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: '#000' }}>
-      {/* 上方青綠漸層光暈 — 從左上往中央漸隱至純黑（與首頁同款 155deg） */}
+      {/* 上方青綠漸層光暈 — 從頁首左上往中央漸隱至純黑 */}
       <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
         height: '3000px',
         background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
+      }} />
+      {/* 下方青綠漸層光暈 — 從頁尾右下往左上擴散（335deg = 155deg 雙軸鏡像） */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '4500px',
+        background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
         mixBlendMode: 'lighten',
       }} />
       {/* 顆粒感疊層 */}
