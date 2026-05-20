@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* 列印 / 匯出 PDF：強制 A4 直式（audit 頁面的「匯出 PDF」按鈕走 window.print()）*/
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
 :root {
   --primary: #3b82f6;
   --primary-dark: #2563eb;
