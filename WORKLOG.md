@@ -6,6 +6,25 @@
 
 ---
 
+### 2026-05-20
+**🟢 上線阻擋全數解除 — 正式環境 + 金流 + SQL 7/7 全綠:**
+- 🎯 **正式環境 + 金流端到端測試已通過**：env 已從沙盒切回正式（`MS3830621445` + `core.newebpay.com` 系列 endpoint），NPA 月繳 / Pro 年繳 / 早鳥 / Top-up 大小包 / 14 天退款 / NPA 取消委託（坑 7 修完）等 path 都已實測完成。
+- ✅ **NPA 取消委託 SQL 驗證通過（坑 7 修補生效）**：用戶側截圖確認 `aivis_newebpay_period` row `period_no=P260520171337hqATJx status='cancelled' cancelled_at=2026-05-20 09:17:53.584+00`、`profiles.is_pro=false`（aark6465@gmail.com）。`449fdf0` commit 的 AES 解密修補生效，整條取消委託路徑全綠（按取消 → AlterStatus terminate → 解密 response → DB 寫 cancelled + is_pro=false）。
+  - 📋 仍可進一步驗：(a) `cancel_note` 欄位是否拿到 NewebPay 真實成功訊息（非 `UNKNOWN:` / `DECRYPT_FAILED:`） (b) NewebPay 後台「信用卡定期定額管理 → 委託管理」該筆顯示「已終止」
+- ✅ **SQL schema 驗證 7/7 通過**（用戶側 Supabase SQL Editor 跑純 SELECT 比對 information_schema + pg_constraint + pg_policies）：
+  - ✅ `profiles.trial_started_at / trial_ends_at` 兩欄位齊全（trial-system 對應）— 程式碼不用 `trial_status` 欄位（grep 0 matches），原驗證 query 多查了不存在也不需要的欄位
+  - ✅ `profiles.trial_reminders_sent TEXT[] DEFAULT '{}'`（trial-reminders 對應）
+  - ✅ `aivis_newebpay_pending` 5 個退款欄位齊全：`refund_status / refund_amount / refund_method / refund_note / refunded_at`（newebpay-refunds 對應）
+  - ✅ `profiles.is_admin` 欄位存在（admin-cs-tools 對應）— 程式碼不用 `admin_actions / admin_audit_log` 表（grep 0 matches），客服工具設計上沒做操作軌跡日誌、WORKLOG 規劃但未實作
+  - ✅ `aivis_newebpay_pending_kind_check CHECK ((kind = ANY (ARRAY['topup_small', 'topup_large', 'pro_yearly', 'pro_monthly'])))` 含 `pro_monthly`
+  - ✅ `aivis_newebpay_period` 表存在 + RLS policy `user reads own period`（SELECT）
+  - ✅ `aivis_topup_consents` 表存在 + 主要欄位齊全（id / user_id / user_email / pack / amount / merchant_order_no / consent_version / consent_text / consented_at...）
+- 🧹 **Supabase SQL Editor saved queries 已清理**：原 22 筆 PRIVATE saved snippets 整理 — 一次性 DDL（建表）+ 一次性 UPDATE（測試/手動授予 Pro）+ 重複的 notify_log 診斷 query → 全數刪除，依「跑完即刪」原則（[memory/feedback_no_sql_archive.md](../../.claude/projects/c--Users-ROG-STRIX-Desktop-Vibe-Coding-AI---/memory/feedback_no_sql_archive.md)）。剩通用工具 query（RLS 健康檢查 / schema 總覽 / 客服查用戶 / 營收監控 / 未付款訂單追蹤）。
+- 🎯 **上線阻擋全數解除** — 接下來純等營運準備：(a) NewebPay 商家正式審核完成（目前 env 已切正式但若後台仍顯示「審核中」需確認）(b) 公告文案 / 早鳥計數 banner / 客服通道（aark.younjung@gmail.com）對外可達。
+- 📌 **下一步**：拍板上線日 → 開放對外註冊 + 金流。建議軟啟動（少量行銷推廣）觀察首批用戶 e2e 是否照沙盒實測一樣全綠，發現 edge case 再 hotfix。
+
+---
+
 ### 2026-05-19（深夜）
 **NPA 取消委託 AlterStatus 回應自身加密 — 第 6 個坑（修完月繳取消 e2e 打通）:**
 

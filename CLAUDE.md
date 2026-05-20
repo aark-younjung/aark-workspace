@@ -230,11 +230,24 @@ linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #0000
 **⚠️ 上線前需確認（依執行順序）：**
 - ~~A5 假 KPI（127 / 3,847 / 43 / 4.7）改 dynamic query~~ — ✅ 2026-05-11 完成，改吃 `/api/public-stats` 後端 service role 聚合
 - ~~Supabase Auth 註冊頻率限制~~ — ✅ 2026-05-11 程式碼完成（Cloudflare Turnstile + Supabase captchaToken），剩下用戶側 Cloudflare 申請 + Supabase Dashboard 啟用
-- ~~7 天免費試用 程式碼完成~~ — ✅ 2026-05-13 A2.1（trial 啟動 / lazy expiry / Pricing CTA / Account 卡 / Dashboard banner）+ A2.2（daily cron sweep + Day 4/6/7 email + aivis 試用 50 配額）全寫完。**待用戶側 SQL + e2e 測試** — 跑 [trial-system.sql](trial-system.sql) + [trial-reminders.sql](trial-reminders.sql)、手動 UPDATE 模擬時間驗證 Day 4/6/7 email
-- ~~NewebPay Phase 1 Step 2（Pro 年繳一次性 NT$13,900 + 早鳥 NT$11,880）~~ — ✅ 2026-05-13 後端 + 前端 + `?pro_success` toast + 早鳥動態名額計數全寫完。**待沙盒帳號核發後實測**
-- ~~NewebPay 退款 API 串接（信用卡走 API 直退 / VACC・WEBATM 走手動轉帳指引）~~ — ✅ 2026-05-13 程式碼完成（`/api/newebpay-notify?action=refund` 分發避破 12 functions 上限 + Account RefundModal + 14 天視窗檢查 + 信用卡 / 手動轉帳雙軌）。**待用戶側跑 [newebpay-refunds.sql](newebpay-refunds.sql) + 沙盒實測**
-- **NewebPay 沙盒測試 Phase 1 Step 1**（Top-up）— 等沙盒帳號核發後即可測（與 Step 2 + 退款一起測）
-- **NewebPay 正式商家審核通過** → 換 env vars 上線（被動等待 1-2 週）
+- ~~7 天免費試用 程式碼~~ — ✅ 2026-05-13 完成（A2.1 trial 啟動 / lazy expiry / Pricing CTA / Account 卡 / Dashboard banner + A2.2 daily cron sweep + Day 4/6/7 email + aivis 試用 50 配額）
+- ~~NewebPay Phase 1 Step 2（Pro 年繳 NT$13,900 + 早鳥 NT$11,880）~~ — ✅ 2026-05-13 程式碼 + 2026-05-19 沙盒實測通過
+- ~~NewebPay 退款 API（信用卡 API 直退 / VACC・WEBATM 手動轉帳）~~ — ✅ 2026-05-13 程式碼 + 2026-05-19 沙盒實測通過
+- ~~NewebPay Phase 1 Step 1（Top-up 小包 NT$490 / 大包 NT$990）~~ — ✅ 2026-05-19 真卡實測通過（三表寫入正確）
+- ~~Top-up 不退款事先同意（消保法 §19-II-5）~~ — ✅ 2026-05-19 完成（TopupModal checkbox + `aivis_topup_consents` 證據表 + 前後端雙層守衛）
+- ~~NPA 月繳定期定額 NT$1,490／月~~ — ✅ 2026-05-19 沙盒實測通過（首扣 + 取消委託 e2e 全綠，踩平 7 個 NewebPay 文件沒講清楚的坑）
+- ~~正式環境 + 金流端到端測試~~ — ✅ 2026-05-20 通過（env 已切回 `core.newebpay.com` + 正式 `MS3830621445`）
+
+**🟢 上線阻擋全數解除（2026-05-20）— SQL schema 驗證 7/7 全綠：**
+- ~~trial-system~~ — ✅ `profiles.trial_started_at / trial_ends_at` 齊全（程式碼不用 trial_status）
+- ~~trial-reminders~~ — ✅ `profiles.trial_reminders_sent TEXT[] DEFAULT '{}'`
+- ~~newebpay-refunds~~ — ✅ `aivis_newebpay_pending` 5 個退款欄位齊全
+- ~~admin-cs-tools~~ — ✅ `profiles.is_admin` 存在（客服工具不依賴 audit_log 表）
+- ~~`ALTER pending.kind CHECK`~~ — ✅ ARRAY 含 `'pro_monthly'`
+- ~~`CREATE aivis_newebpay_period`~~ — ✅ 表 + RLS policy 已建
+- ~~`CREATE aivis_topup_consents`~~ — ✅ 表 + 主要欄位齊全
+
+**接下來純等營運準備：**(a) NewebPay 商家正式審核完成（env 已切正式）(b) 公告文案 / 早鳥計數 banner / 客服通道對外可達 → 拍板上線日。
 
 備註：Top-up 政策為「不過期、用完為止、不退款」，退款流程只針對 Pro 年繳。Top-up 客訴 / 盜刷情境走手動處理（NewebPay 後台 + Supabase 手動扣 credits）。
 
