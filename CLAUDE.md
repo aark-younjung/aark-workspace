@@ -320,7 +320,8 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 ## 待開發 / 未完成功能
 
 - **歷史 websites row 合併**（2026-05-22 加入待辦）：normalizeUrl 已實作於 [src/lib/url.js](src/lib/url.js) 並接入 HomeDark.jsx，但**只影響新建 row**。在這之前同一個 user 用不同 URL 變體（含 trailing slash / www / query string）建出的多筆 row 仍存在。要清乾淨需另寫 migration SQL：(1) 找出同 user_id 且正規化後 URL 相同的 websites（GROUP BY normalized_url, user_id HAVING COUNT > 1）(2) 挑最早建立的 row 當主、把其他 row 的 audits.website_id 改指向主 row (3) 刪 orphan websites row。先記錄不做，等實際資料量決定何時整理（用 `SELECT url, user_id, COUNT(*) FROM websites GROUP BY ... HAVING COUNT > 1` 查看影響範圍）。
-- **pilotoptical.com.tw 類 analyzer 失敗診斷**（2026-05-22 觀察到）：Leo 帳號試了 3 個 URL 變體都沒寫進任何 audits 表。除了 URL 變體問題（normalizeUrl 已修），analyzer 全失敗的根因可能是 (a) fetch-url 被網站 anti-bot 擋 (b) 前端 JS crash 沒 surface。下批排查時要：(1) Vercel logs 看 /api/fetch-url 對 pilotoptical 的回應 (2) 前端加錯誤回報，至少 console.error 改成 supabase insert 進錯誤紀錄表，方便事後查。
+- ~~**pilotoptical.com.tw 類 analyzer 失敗診斷**~~（2026-05-22 已查到並修復）：根因是 SSL 憑證鏈不完整（`UNABLE_TO_VERIFY_LEAF_SIGNATURE`），台灣很多小網站都這樣設定。已在 [api/fetch-url.js](api/fetch-url.js) 加 SSL 容錯 fallback（undici Agent 放寬驗證重試）。
+- **前端錯誤回報強化**（2026-05-22 加入待辦）：HomeDark.jsx analyzer 流程 try/catch 只有 `console.error`，掛了沒寫進 DB 也沒回報給用戶。建議加錯誤紀錄表 `error_logs` 寫進 supabase（user_id、url、step、error_code、created_at），方便客服日後查具體錯誤訊息。
 - ~~`/content-audit`~~：✅ 已完成。15 項檢測（內容結構/字數/Meta/AEO/E-E-A-T/可讀性），免費看分數+清單，Pro 解鎖修復建議
 - ~~`/ga4-report/:id`~~：✅ 已完成。GA4 詳細報告（KPI 卡片、健康指標條、5 分頁 Tabs、建議引擎）
 - ~~`/gsc-report/:id`~~：✅ 已完成。GSC 詳細報告（KPI 卡片、健康指標條、5 分頁 Tabs、機會關鍵字、建議引擎）

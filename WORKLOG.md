@@ -21,7 +21,8 @@
 - ✅ **修法**：新建 [src/lib/url.js](src/lib/url.js) `normalizeUrl()` helper 處理 7 種變體（補 protocol / 全小寫 / 拿掉 www. / 拿掉 trailing slash / 拿掉 query string / 拿掉 hash / 強制 https）；HomeDark.jsx 改用 `normalizeUrl(url)` 取代原本的 `url.trim() + 補 https://`。
 - ⚠️ **未做**：歷史 row 合併（在 normalizeUrl 上線前已建出的多筆同網站變體 row）— 記入 CLAUDE.md TODO 等實際資料量再決定整理時機。
 
-- 🐛 **Bug 3（未解，待查）**：pilotoptical.com.tw 3 個 row 都沒寫進任何 SEO/AEO/GEO/EEAT audits（diagnostic SQL 顯示 0 rows）。可能 fetch-url 被 anti-bot 擋、或前端 analyzer JS crash 沒 surface。記入 CLAUDE.md TODO，下批排查需：(a) Vercel logs 看 /api/fetch-url 對 pilotoptical 的回應 (b) 前端錯誤改寫進 supabase 錯誤紀錄表方便事後查。
+- 🐛 **Bug 3（已查到根因，已修）**：pilotoptical.com.tw 3 個 row 都沒寫進任何 audits — Vercel logs 顯示 `/api/fetch-url` 對 pilotoptical 抛 `UNABLE_TO_VERIFY_LEAF_SIGNATURE` SSL 錯誤。pilotoptical 的伺服器只送終端憑證沒送中間憑證，瀏覽器有寬容機制能自動補但 Node.js 嚴格驗證直接拒連線。台灣很多小網站都這樣設定。
+- ✅ **修法**：[api/fetch-url.js](api/fetch-url.js) 加 SSL 容錯 — 第一次嚴格驗證失敗時，如果是 SSL 憑證相關錯誤碼（`UNABLE_TO_VERIFY_LEAF_SIGNATURE` / `CERT_HAS_EXPIRED` / `SELF_SIGNED_CERT_IN_CHAIN` 等 6 種），動態 import `undici` 用 `new Agent({ connect: { rejectUnauthorized: false } })` 重試。回應加 `sslFallback: true` 旗標供前端日後 surface 警告（目前不顯示）。讀公開 HTML 不傳憑證安全可接受。`undici` 從 supabase-js transitive dep 升為 package.json 明確 dep `^5.29.0`。
 
 - 🔧 **Free 方案功能稽核**（文案 vs 實際對齊）：
   - **修復碼產生器**：Pricing.jsx FEATURES_PRO 寫成 Pro 專屬，但 Dashboard.jsx Tab 2 註解「免費開放」且實際無 `isPro` 守衛 — 文案與實作矛盾。決定走 B 方案（承認既成事實）：從 FEATURES_PRO 移除「修復碼產生器」，加進 FEATURES_FREE 改寫為「基礎修復碼產生器（llms.txt / JSON-LD / FAQ Schema 通用模板）」；FEATURES_PRO 改成更精準的「平台別修復指南（WordPress / Shopify / Wix / HTML 各別整合教學）」對應 IssueBoard 展開的 platform-specific 修復面板。
