@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-05-23（fetch-url 加 maxDuration + 縮短每輪 timeout — canon.co.uk 案例）
+**朋友測 canon.co.uk 沒分數的新失敗模式：**
+
+- 🐛 **新發現：Akamai 等 anti-bot 對 Chrome UA「拖時間」而非直接擋**
+  - 4 輪行為：Googlebot 403（0.8s）/ Chrome timeout 20s ⏱ / Bingbot 403 / AllOrigins 520
+  - 結果：4 輪累積 25-40 秒，**超過 Vercel Hobby function timeout 預設 10s**
+  - Vercel 強砍 function → 前端收到網路錯不是 antiBotBlocked → catch 不走 partial audit → DB 無任何 audit row → 用戶看到「沒分數」
+- ✅ **修法 1：[api/fetch-url.js](api/fetch-url.js) 加 `export const maxDuration = 60`** — Hobby 上限 60s，給 4 輪預算
+- ✅ **修法 2：每輪 timeout 從 20s 縮到 6s（UA 三輪）**
+  - 正常網站 1-3s 就回，6s 對「正常 case」綽綽有餘
+  - 對「拖時間 anti-bot」（Akamai 拖 20s）果斷砍 → Round 2/3/4 仍能跑完
+  - AllOrigins 維持 30s（proxy 多一層 hop 合理需時較久）
+  - 4 輪 worst case：6+6+6+30 = 48s，在 60s 預算內留 12s 緩衝
+- 連帶效應：antiBotBlocked 旗標一定能回到 client → HomeDark partial audit 路徑可觸發 → 用戶會看到「⚠️ 你的網站擋下我們的爬蟲」alert + 跳 SEO 詳情頁看修法
+- 🔖 後續優化（不在這次）：fetch-url 改成回傳 per-round log array 讓 /crawl-check 能秀真實時序（目前是 inference）
+
+---
+
 ### 2026-05-23（/crawl-check 落地頁骨架）
 **對標 aeo.washinmura.jp 後的差異化策略 — 把 anti-bot 主動檢測包裝成單頁落地頁:**
 

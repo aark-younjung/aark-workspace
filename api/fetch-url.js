@@ -8,6 +8,10 @@
  * SSL 失敗時 fallback 用放寬驗證重試是合理且安全的。
  */
 
+// Vercel function timeout（Hobby 預設 10s 太短；Akamai 等 anti-bot 會「拖時間」造成 Chrome round
+// 卡 20s，多輪累加就超過。設 60s 讓 4 輪都能在預算內跑完並回 antiBotBlocked 旗標）
+export const maxDuration = 60
+
 const SSL_ERROR_CODES = new Set([
   'UNABLE_TO_VERIFY_LEAF_SIGNATURE',        // 最常見：憑證鏈不完整
   'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',      // 找不到 issuer cert
@@ -85,7 +89,10 @@ export default async function handler(req, res) {
       'Upgrade-Insecure-Requests': '1',
     }
 
-    const buildOptions = (userAgent, useChromeHeaders = false) => ({
+    // 每輪 timeout 縮短：Akamai 等 anti-bot 會拖時間，要果斷砍才不會 4 輪累加爆 maxDuration
+    // - UA 三輪各 6s（壞掉的會快速回 403，正常的網站 1-3s 就回）
+    // - AllOrigins proxy 給 15s（要過第三方 hop，正常需時較久）
+    const buildOptions = (userAgent, useChromeHeaders = false, timeoutMs = 6000) => ({
       method: 'GET',
       headers: {
         'User-Agent': userAgent,
@@ -96,7 +103,7 @@ export default async function handler(req, res) {
         }),
       },
       redirect: 'follow',
-      signal: AbortSignal.timeout(20000), // 20 秒超時
+      signal: AbortSignal.timeout(timeoutMs),
     })
 
     let response
