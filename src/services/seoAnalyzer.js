@@ -81,7 +81,9 @@ export async function fetchPageContent(url) {
  * @param {boolean} antiBotBlocked - 三輪 UA 全擋
  * @returns {Object} - 檢測結果（傳給 SEO_CHECKS getValue 與 DB JSONB）
  */
-function checkBotAccessibility(uaFallback, antiBotBlocked) {
+// 注意：export 出來給 HomeDark catch block 在 fetch 直接被擋時（HTML 拿不到）
+// 仍能寫一筆 partial audit 給用戶看 bot_accessibility 紅色 finding
+export function checkBotAccessibility(uaFallback, antiBotBlocked) {
   if (antiBotBlocked) {
     return {
       passed: false,

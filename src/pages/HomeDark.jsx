@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import { normalizeUrl } from '../lib/url'
-import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
+import { analyzeSEO, fetchPageContent, parseHTML, checkBotAccessibility } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
@@ -388,10 +388,13 @@ export default function HomeDark() {
     setScanLogs([])
     setStatus('正在建立網站記錄...')
 
+    // websiteId 拉到 try 外，方便 catch 時也能用（anti-bot blocked 仍要寫 partial audit）
+    let websiteId = null
+    let cleanUrl = ''
     try {
       // 用 normalizeUrl helper 把 URL 變體統一（拿 www. / trailing slash / query string / hash 等）
       // 避免「同一網站不同變體」被當成不同網站，造成 dedup 失效（pilotoptical 案例 Leo 帳號被建 3 筆 row）
-      const cleanUrl = normalizeUrl(url)
+      cleanUrl = normalizeUrl(url)
       if (!cleanUrl) throw new Error('URL 格式錯誤')
 
       // 以「URL + user_id」為唯一鍵：同一網址不同用戶各有自己的紀錄，避免資料污染與後台漏抓
@@ -402,7 +405,6 @@ export default function HomeDark() {
         .eq('user_id', user.id)
         .maybeSingle()
 
-      let websiteId
       if (existing) {
         websiteId = existing.id
       } else {
@@ -489,12 +491,11 @@ export default function HomeDark() {
       console.error('Error:', error)
       setStatus('')
       const detail = error?.message || error?.error?.message || JSON.stringify(error).slice(0, 200)
-      // 寫 scan_error_logs 給 admin 後台稽核（取代之前「無聲失敗、靠 Vercel logs 找根因」的瞎子模式）
-      // 非阻塞 — 失敗也不影響 user-facing alert
+      // 寫 scan_error_logs 給 admin 後台稽核
       try {
         await supabase.from('scan_error_logs').insert({
           user_id: user?.id || null,
-          url: url,                                  // 用原始輸入字串，方便還原用戶到底打了什麼
+          url: url,
           step: error?.step || 'unknown',
           error_code: error?.code || error?.cause?.code || null,
           error_message: detail.slice(0, 1000),
@@ -503,6 +504,28 @@ export default function HomeDark() {
       } catch (logErr) {
         console.warn('Failed to write scan_error_logs:', logErr?.message)
       }
+
+      // ───── 特殊路徑：anti-bot 鎖極嚴（3 輪 UA 全擋）─────
+      // 雖然抓不到 HTML 做完整 7 項檢測，但「網站擋下所有爬蟲」本身就是最高優先的 finding
+      // 寫一筆 partial seo_audit 只標 bot_accessibility=blocked，讓用戶到 SEO 詳情頁看完整修復建議
+      if (error?.antiBotBlocked && websiteId) {
+        const blockedBotResult = checkBotAccessibility(false, true)  // uaFallback=false, antiBotBlocked=true
+        try {
+          await supabase.from('seo_audits').insert([{
+            website_id: websiteId,
+            score: 0,                                   // 因為其他 6 項全 0（未檢測）+ 第 7 項 0（blocked）= 0/7
+            bot_accessibility: blockedBotResult,
+          }])
+          fetchMyWebsites()
+          alert(`⚠️ 你的網站擋下我們的爬蟲（anti-bot 鎖極嚴）— 無法跑完整檢測。\n\n我們已產生「爬蟲可達性」修復建議報告，按確定查看完整修法。`)
+          navigate(`/seo-audit/${websiteId}`)
+          return
+        } catch (insertErr) {
+          console.error('Partial audit insert failed:', insertErr)
+          // 落回一般 alert 路徑
+        }
+      }
+
       alert(`發生錯誤：${detail}\n\n請截圖此訊息與主控台（F12）錯誤給開發者`)
     } finally {
       setLoading(false)
