@@ -263,14 +263,16 @@ function checkAltTags(doc) {
  * @returns {Object} - 檢測結果
  */
 function checkMobileCompatibility(doc) {
+  // viewport meta 標籤（最關鍵，沒有的話手機瀏覽器會用 980px 預設寬縮放）
   const viewport = doc.querySelector('meta[name="viewport"]')
   const hasViewport = viewport !== null
-  
-  // 檢查 touch-friendly 元素
+
+  // touch-friendly 元素（資訊用，不參與評分）
   const touchElements = doc.querySelectorAll('a[href], button, [role="button"], [onclick], [ontouchstart]')
   const hasTouchFriendly = touchElements.length > 0
-  
-  // 檢查 CSS 媒體查詢
+
+  // CSS 媒體查詢（inline <style> 與 <link media="...">）
+  // 注意：外部 .css 檔內的 @media 我們抓不到，只能用 inline 偵測 → 偽陰性無法完全避免
   const styleSheets = doc.querySelectorAll('style')
   let hasMediaQueries = false
   styleSheets.forEach(style => {
@@ -278,21 +280,41 @@ function checkMobileCompatibility(doc) {
       hasMediaQueries = true
     }
   })
-  
-  // 檢查 link[media]
   const mediaLinks = doc.querySelectorAll('link[media]')
   if (mediaLinks.length > 0) {
     hasMediaQueries = true
   }
-  
-  const score = hasViewport ? 100 : 50
-  
+
+  // 常見 RWD 框架/CMS 指紋（class 名稱包含這些字串即視為「採用響應式框架」）
+  // 解決偽陰性：很多網站 RWD 寫在外部 CSS、抓不到 @media，但 class 名會洩漏使用框架
+  const bodyClass = (doc.body?.className || '').toLowerCase()
+  const htmlClass = (doc.documentElement?.className || '').toLowerCase()
+  const allClass = bodyClass + ' ' + htmlClass
+  const rwdFrameworkHints = [
+    'elementor', 'wp-', 'oceanwp', 'astra-', 'divi', 'avada',   // WordPress builders / themes
+    'bootstrap', 'container-fluid', 'col-md-', 'col-lg-',         // Bootstrap
+    'tailwind',                                                    // Tailwind
+    'foundation-', 'uk-',                                          // Foundation / UIKit
+  ]
+  const hasRwdFramework = rwdFrameworkHints.some(h => allClass.includes(h))
+
+  // 評分梯度（passed = 任何一個訊號為真就算通過）
+  // viewport meta 是最關鍵的、單獨可拿 90；@media 或框架指紋只能拿 70（行動瀏覽器仍可能縮放異常）
+  let score
+  if (hasViewport && (hasMediaQueries || hasRwdFramework)) score = 100
+  else if (hasViewport) score = 90
+  else if (hasMediaQueries || hasRwdFramework) score = 70
+  else score = 30
+
+  const passed = hasViewport || hasMediaQueries || hasRwdFramework
+
   return {
     hasViewport,
     hasTouchFriendly,
     hasMediaQueries,
+    hasRwdFramework,
     score,
-    passed: hasViewport
+    passed
   }
 }
 

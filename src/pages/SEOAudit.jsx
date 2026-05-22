@@ -89,9 +89,28 @@ const SEO_CHECKS = [
     priority: 'P1',
     getValue: (audit) => {
       if (isPartialAudit(audit)) return NOT_CHECKED
-      const hasViewport = audit?.mobile_compatible?.hasViewport
-      if (!hasViewport) return { passed: false, detail: '未設置 viewport meta 標籤' }
-      return { passed: true, detail: 'viewport 已設置，支援行動裝置' }
+      const m = audit?.mobile_compatible
+      const hasViewport = m?.hasViewport
+      const hasMediaQueries = m?.hasMediaQueries
+      const hasRwdFramework = m?.hasRwdFramework
+      // 三訊號都沒命中 → 真的沒做 RWD
+      if (!hasViewport && !hasMediaQueries && !hasRwdFramework) {
+        return { passed: false, detail: '未偵測到 viewport meta、@media query、或 RWD 框架指紋 — 行動裝置會看到桌面版縮小到無法閱讀' }
+      }
+      // 有 viewport meta（標準做法）
+      if (hasViewport) {
+        const extras = []
+        if (hasMediaQueries) extras.push('@media query')
+        if (hasRwdFramework) extras.push('RWD 框架')
+        const extra = extras.length ? `，並偵測到 ${extras.join(' + ')}` : ''
+        return { passed: true, detail: `viewport 已設置${extra}，支援行動裝置` }
+      }
+      // 沒 viewport 但有 @media 或框架（部分通過，留警告讓用戶補 viewport）
+      return {
+        passed: true,
+        warning: true,
+        detail: `偵測到 ${hasMediaQueries ? '@media query' : ''}${hasMediaQueries && hasRwdFramework ? ' + ' : ''}${hasRwdFramework ? 'RWD 框架' : ''}，但未設 viewport meta — 行動瀏覽器可能仍以 980px 縮放，建議補上 viewport meta`,
+      }
     },
   },
   {

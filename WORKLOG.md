@@ -6,6 +6,21 @@
 
 ---
 
+### 2026-05-22（行動裝置相容判斷放寬）
+**朋友反映 happylandedu.com 行動裝置相容 0 分但實際有 RWD：**
+
+- 原邏輯太死：只看 `<meta name="viewport">` 一個訊號
+  - 偽陰性高：很多網站 RWD 寫在外部 .css（@media 抓不到）、或舊版 audit fetch 拿到 Cloudflare 攔截頁就 0 分
+- ✅ **seoAnalyzer.js checkMobileCompatibility 升級為 3 訊號合判**：
+  - viewport meta 標籤（最關鍵）
+  - inline `<style>` 內 @media query / `<link media="...">`
+  - 常見 RWD 框架/CMS 指紋（elementor / wp- / oceanwp / bootstrap / col-md- / tailwind 等 class 名稱）
+- ✅ **評分梯度**：viewport + (media 或框架) = 100 / viewport only = 90 / media 或框架 only = 70 / 三者全無 = 30
+- ✅ **SEOAudit.jsx detail 文案細分**：viewport 已設 + 有 RWD 訊號 / viewport 已設 / 沒 viewport 但有 RWD（warning=true 可展開看修法）/ 三者皆無
+- 影響：用 Elementor / OceanWP / Bootstrap 等框架的 WordPress 網站不再被誤判為 0 分
+
+---
+
 ### 2026-05-22（UX 修補：warning 狀態可展開）
 **iseeu.tw 案例驗證後發現 UX 漏洞：**
 
