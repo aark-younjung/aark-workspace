@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-05-22（UX 修補：warning 狀態可展開）
+**iseeu.tw 案例驗證後發現 UX 漏洞：**
+
+- 🐛 **bot_accessibility 顯示為「已通過但有警告」（uaFallback case）時用戶無法展開看 Cloudflare WAF 修復碼**
+  - 場景：iseeu.tw Googlebot UA 被擋但 Chrome / Bingbot 通過 → 落在「已通過」column
+  - 問題：IssueBoard 預設 `canExpand = !check.passed`，passed 項目一律不給點 → 修復碼產生器白做
+- ✅ **IssueBoard.jsx**：`canExpand = !check.passed || check.warning`（通過但有警告也允許展開）
+- ✅ **SEOAudit.jsx**：bot_accessibility fallback case 加 `warning: true` 旗標
+- 影響：iseeu.tw 等 anti-bot 偏嚴的網站，現在可以點開「🛡️ 爬蟲可達性」看到 Cloudflare / robots.txt / 其他 WAF 三套修復方案
+
+---
+
 ### 2026-05-22（補完 4 項優化）
 **「爬蟲可達性」生態系完整化 — 4 項優化全到位:**
 

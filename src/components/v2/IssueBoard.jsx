@@ -105,7 +105,8 @@ function IssueLane({ lane, expandedId, onToggle, isPro, printMode }) {
 }
 
 function IssueCard({ check, lane, isOpen, onToggle, isPro }) {
-  const canExpand = !check.passed
+  // 「未通過」一律可展開；「通過但有警告」（如 bot_accessibility uaFallback）也允許展開看修法
+  const canExpand = !check.passed || check.warning
   return (
     <div style={{
       background: 'rgba(0,0,0,.35)',

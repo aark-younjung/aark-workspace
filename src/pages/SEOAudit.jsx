@@ -139,6 +139,7 @@ const SEO_CHECKS = [
       if (bot.fallback) {
         return {
           passed: true,
+          warning: true,   // 通過但有警告 → IssueBoard 允許展開看 Cloudflare WAF 修復碼
           detail: 'Googlebot UA 被擋但 Chrome / Bingbot 通過 — anti-bot 設定偏嚴，部分嚴格驗證的 AI 引擎可能仍抓不到，建議放寬',
         }
       }
