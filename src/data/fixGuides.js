@@ -596,6 +596,127 @@ export const FIX_GUIDES = {
       },
     },
   },
+
+  // ─── 爬蟲可達性（非平台特定，依 anti-bot/WAF 服務分） ─────────
+  bot_accessibility: {
+    summary: '你的網站擋下 AI 爬蟲 — 需在 Cloudflare 或 WAF 後台放行 GPTBot / ChatGPT-User / PerplexityBot / ClaudeBot / anthropic-ai 等 AI 引擎 User-Agent，否則 ChatGPT / Perplexity / Claude 回答客戶時不會引用你的網站。',
+    platforms: {
+      cloudflare: {
+        steps: [
+          '登入 Cloudflare → 選你的網域',
+          '左側選單：Security → Bots → Configure Super Bot Fight Mode',
+          '把「Definitely automated」從 Block 改為 Allow（或關閉 Super Bot Fight Mode 整體）',
+          '再去 Security → WAF → Custom rules → Create rule',
+          '規則名稱：Allow AI Engine Crawlers',
+          '把下方 code 區整段貼進 Expression Editor',
+          'Action 選 Skip，並勾選「Bot Fight Mode」+「Managed Rules」+「WAF Custom Rules」全部 skip',
+          '儲存 → Deploy',
+          '回 AI 雷達重新檢測，「爬蟲可達性」應變綠色 100 分',
+        ],
+        code: `(http.user_agent contains "GPTBot")
+or (http.user_agent contains "ChatGPT-User")
+or (http.user_agent contains "OAI-SearchBot")
+or (http.user_agent contains "PerplexityBot")
+or (http.user_agent contains "Perplexity-User")
+or (http.user_agent contains "ClaudeBot")
+or (http.user_agent contains "anthropic-ai")
+or (http.user_agent contains "Claude-Web")
+or (http.user_agent contains "Google-Extended")
+or (http.user_agent contains "Applebot-Extended")
+or (http.user_agent contains "Bytespider")
+or (http.user_agent contains "Amazonbot")
+or (http.user_agent contains "Googlebot")
+or (http.user_agent contains "Bingbot")`,
+      },
+      robots: {
+        steps: [
+          '網站根目錄找到 robots.txt（沒有的話新建一個）',
+          '把下方 code 區整段貼進去',
+          '儲存後上傳覆蓋既有 robots.txt',
+          '驗證：訪問 https://你的網域/robots.txt 應該能直接看到內容',
+          '注意：robots.txt 只是「禮貌性」協議，惡意爬蟲不會理；真正擋的是 Cloudflare / WAF 那層',
+          '回 AI 雷達重新檢測',
+        ],
+        code: `# AI 雷達建議：允許主流 AI 引擎與搜尋引擎爬蟲存取
+
+# ───── AI 引擎 ─────
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# ───── 標準搜尋引擎 ─────
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# ───── 其他（預設允許）─────
+User-agent: *
+Disallow:`,
+      },
+      otherwaf: {
+        steps: [
+          '若使用 Imperva / DataDome / Sucuri / Akamai 等付費 WAF：',
+          '1. 登入該 WAF 管理後台',
+          '2. 找「Custom Rules」/「Allow List」/「Bot Management」設定區',
+          '3. 加白名單規則 — 條件：User-Agent contains 任一下方列出的 AI bot UA',
+          '4. Action 設為「Allow」/「Bypass」/「Skip Bot Detection」',
+          '5. 若該 WAF 提供「Bot 評分閾值」設定，可降低嚴格度',
+          '6. 儲存規則並 deploy',
+          '7. 回 AI 雷達重新檢測',
+          '若不確定使用哪個 WAF：問你的網站維護工程師「我網站前面是哪家 anti-bot 服務」',
+        ],
+        code: `# 各家 WAF 共用的白名單 User-Agent 清單
+# 通常用 OR 邏輯串接，匹配任一即 bypass
+
+GPTBot
+ChatGPT-User
+OAI-SearchBot
+PerplexityBot
+Perplexity-User
+ClaudeBot
+anthropic-ai
+Claude-Web
+Google-Extended
+Applebot-Extended
+Googlebot
+Bingbot
+
+# 各家 WAF 後台路徑：
+# - Imperva：Site → Settings → Application Delivery → Custom Rules
+# - DataDome：Workspace → Protection → IP/UA Allowlist
+# - Sucuri：Settings → Whitelist → Whitelist a User-Agent
+# - Akamai：Bot Manager → Categories → Add Custom Bot`,
+      },
+    },
+  },
 }
 
 export const PLATFORMS = [
@@ -603,4 +724,8 @@ export const PLATFORMS = [
   { id: 'shopify', label: 'Shopify' },
   { id: 'wix', label: 'Wix' },
   { id: 'html', label: '自架 / HTML' },
+  // 以下為「爬蟲可達性 / SSL」類非平台特定修法所用 tab，只在對應 guide 有設定才顯示
+  { id: 'cloudflare', label: 'Cloudflare WAF' },
+  { id: 'robots', label: 'robots.txt' },
+  { id: 'otherwaf', label: '其他 WAF' },
 ]

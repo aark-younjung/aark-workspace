@@ -6,6 +6,42 @@
 
 ---
 
+### 2026-05-22（補完 4 項優化）
+**「爬蟲可達性」生態系完整化 — 4 項優化全到位:**
+
+- 🆕 **第 4 輪 AllOrigins proxy fallback**（免費 CORS proxy 繞 Cloudflare）：
+  - 接續第 3 輪 Bingbot UA 仍 403 時，呼叫 `https://api.allorigins.win/get?url=...`
+  - AllOrigins 出口 IP 跟 Vercel 不同段，Cloudflare 可能放它過、不放我們過
+  - response.text() 偽造 wrapper 包 proxyData.contents 給後續流程用
+  - 加新旗標 `proxyFallback: true` 標示這條路徑成功
+  - 4 輪全失敗才設 `antiBotBlocked = true`（提高 fallback 機會）
+- 🆕 **WAF Rule 修復碼產生器**（fixGuides.js 加 bot_accessibility）：
+  - PLATFORMS 列表新增 3 個非平台 tab：cloudflare / robots / otherwaf
+  - bot_accessibility guide 含 3 套完整修復步驟 + 一鍵複製 code：
+    - **Cloudflare**：完整 WAF Custom Rule expression（含 14 個 AI/搜尋引擎 UA）+ Super Bot Fight Mode 降級步驟
+    - **robots.txt**：標準格式涵蓋 GPTBot / ChatGPT-User / OAI-SearchBot / PerplexityBot / Perplexity-User / ClaudeBot / anthropic-ai / Claude-Web / Google-Extended / Applebot-Extended / Googlebot / Bingbot
+    - **其他 WAF**：Imperva / DataDome / Sucuri / Akamai 各家後台路徑說明 + 通用 UA 清單
+- 🐛 **修 partial audit 顯示 bug**（用戶反映 iseeu.tw 詳情頁顯示「未設置 Meta 標題」誤導）：
+  - SEOAudit.jsx 新增 `isPartialAudit(audit)` helper：`bot_accessibility.blocked=true && !meta_tags`
+  - 7 項 SEO_CHECKS 的 getValue 開頭都檢查 `if (isPartialAudit(audit)) return NOT_CHECKED`
+  - 顯示「此次未檢測（爬蟲被擋導致無法分析頁面內容）」+ passed:true（不污染分數）
+  - 用戶不再以為自己 Meta 標題 / H1 / Alt 等也有問題
+- 🆕 **首頁 Hero 加 3 個差異化 chip**：
+  - ✓ 7 大檢測項一次到位
+  - ✓ 連 Cloudflare 擋 ChatGPT 都檢得出
+  - ✓ Ahrefs / SEMrush 不做這個
+  - 視覺：綠色 / 橘色 / 藍色三色 chip 並排
+- 🆕 **社群文素材包**（docs/social-posts-anti-bot.md）：5 篇不同調性文章草稿
+  - 1. 痛點科普型（FB / Threads / LinkedIn）— 「Google 排第一但 ChatGPT 沒推薦你」
+  - 2. 數據對比型（LinkedIn / FB）— 「100 個網站抽樣，72% 在 AI 答案中消失」
+  - 3. 技術警示型（LinkedIn / 工程社群）— 「Cloudflare Super Bot Fight Mode 殺掉你 AI 能見度」含完整 WAF Rule
+  - 4. FOMO 限時型（IG / Threads）— 「10 個有 7 個是這個原因」
+  - 5. 案例敘事型（LinkedIn / 部落格）— 「4 週實測 0→65% AI 引用率」
+  - 每篇含建議發佈平台、Hashtag、CTA、圖卡建議
+  - 投放排程：第 1-3 週每週 1-2 篇
+
+---
+
 ### 2026-05-22（最最最後 — 真的最後了）
 **「爬蟲可達性」加進 SEO 變第 7 項 — 把 anti-bot 痛點包裝成產品價值:**
 

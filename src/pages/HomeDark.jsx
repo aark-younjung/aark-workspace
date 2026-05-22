@@ -662,9 +662,22 @@ export default function HomeDark() {
               掌握 AI 能見度<br />贏在搜尋未來
             </p>
 
-            <p className="text-base text-white/80 mb-10 max-w-lg">
+            <p className="text-base text-white/80 mb-4 max-w-lg">
               輸入網址，60 秒內取得你的 AI 能見度完整報告——免費診斷你的網站
             </p>
+
+            {/* 差異化賣點 chip — 強調我們連別人不查的「anti-bot 擋 AI 爬蟲」都檢得出 */}
+            <div className="flex flex-wrap gap-2 mb-10 max-w-lg">
+              <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-medium">
+                ✓ 7 大檢測項一次到位
+              </span>
+              <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 font-medium">
+                ✓ 連 Cloudflare 擋 ChatGPT 都檢得出
+              </span>
+              <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-300 font-medium">
+                ✓ Ahrefs / SEMrush 不做這個
+              </span>
+            </div>
 
             <form onSubmit={handleSubmit}>
               <div className="flex flex-col sm:flex-row gap-3">

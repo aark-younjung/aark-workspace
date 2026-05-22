@@ -14,6 +14,14 @@ import Footer from '../components/Footer'
 const ACCENT = T.seo
 const ACCENT2 = '#06b6d4'
 
+// 偵測「partial audit」狀態（bot_accessibility 全擋導致其他 6 項都沒跑）
+// 此狀態下 audit.meta_tags / h1_structure / 等都是 null，
+// 不該被誤判為「未設置」，而要顯示「此次未檢測」並標 passed=true 避免污染分數
+function isPartialAudit(audit) {
+  return audit?.bot_accessibility?.blocked === true && !audit?.meta_tags
+}
+const NOT_CHECKED = { passed: true, detail: '此次未檢測（爬蟲被擋導致無法分析頁面內容）' }
+
 const SEO_CHECKS = [
   {
     id: 'meta_title', name: 'Meta 標題', icon: '🏷️',
@@ -21,6 +29,7 @@ const SEO_CHECKS = [
     recommendation: '在 <head> 加入 <title>頁面主題 | 品牌名稱</title>，長度控制在 30–60 字，將目標關鍵字放在前半段',
     priority: 'P1',
     getValue: (audit) => {
+      if (isPartialAudit(audit)) return NOT_CHECKED
       const content = audit?.meta_tags?.titleContent
       const len = content?.length || 0
       if (!content) return { passed: false, detail: '未設置 Meta 標題' }
@@ -35,6 +44,7 @@ const SEO_CHECKS = [
     recommendation: '在 <head> 加入 <meta name="description" content="...">，自然帶入關鍵字，並以行動呼籲結尾，長度 70–155 字',
     priority: 'P1',
     getValue: (audit) => {
+      if (isPartialAudit(audit)) return NOT_CHECKED
       const content = audit?.meta_tags?.descriptionContent
       const len = content?.length || 0
       if (!content) return { passed: false, detail: '未設置 Meta 描述' }
@@ -49,6 +59,7 @@ const SEO_CHECKS = [
     recommendation: '確保頁面只有一個 H1 標籤，清楚說明頁面核心主題，並自然包含目標關鍵字',
     priority: 'P2',
     getValue: (audit) => {
+      if (isPartialAudit(audit)) return NOT_CHECKED
       const count = audit?.h1_structure?.h1Count ?? 0
       const content = audit?.h1_structure?.h1Content
       if (count === 0) return { passed: false, detail: '頁面沒有 H1 標題' }
@@ -62,6 +73,7 @@ const SEO_CHECKS = [
     recommendation: '為每張圖片加入描述性的 alt 文字（例如 alt="2024年台北辦公室外觀"），避免空白或通用描述如 alt="圖片"',
     priority: 'P2',
     getValue: (audit) => {
+      if (isPartialAudit(audit)) return NOT_CHECKED
       const total = audit?.alt_tags?.totalImages ?? 0
       const coverage = audit?.alt_tags?.altCoverage ?? 100
       const missing = audit?.alt_tags?.imagesWithoutAlt ?? 0
@@ -76,6 +88,7 @@ const SEO_CHECKS = [
     recommendation: '在 <head> 加入 <meta name="viewport" content="width=device-width, initial-scale=1">，並確認網站在手機上版面正常',
     priority: 'P1',
     getValue: (audit) => {
+      if (isPartialAudit(audit)) return NOT_CHECKED
       const hasViewport = audit?.mobile_compatible?.hasViewport
       if (!hasViewport) return { passed: false, detail: '未設置 viewport meta 標籤' }
       return { passed: true, detail: 'viewport 已設置，支援行動裝置' }
@@ -87,6 +100,7 @@ const SEO_CHECKS = [
     recommendation: '壓縮圖片（使用 WebP 格式）、啟用瀏覽器快取、使用 CDN、移除不必要的 JavaScript 可大幅提升速度',
     priority: 'P3',
     getValue: (audit) => {
+      if (isPartialAudit(audit)) return NOT_CHECKED
       const loadTime = audit?.page_speed?.loadTime
       const grade = audit?.page_speed?.speedGrade
       if (!loadTime) return { passed: false, detail: '無法測量載入速度' }
@@ -98,9 +112,9 @@ const SEO_CHECKS = [
     id: 'ssl_chain', name: 'SSL 憑證鏈完整性', icon: '🔒',
     description: 'SSL 憑證鏈不完整時嚴格爬蟲（含部分 AI 引擎、curl、Node.js）會抓不到網站，影響 AI 引用率。主流瀏覽器有寬容機制能自動補抓，所以肉眼看不出問題。',
     recommendation: '到 https://www.ssllabs.com/ssltest/ 測你的網站確認「Chain issues」狀態。修法：(1) Let\'s Encrypt 用戶證書改用 fullchain.pem (2) Nginx 用戶 ssl_certificate 指向 fullchain (3) 用 Cloudflare 免費版自動完整鏈',
-    priority: 'P2',   // 影響爬蟲可達性比 page_speed 更直接，給 P2
+    priority: 'P2',
     getValue: (audit) => {
-      // 舊資料（2026-05-22 前）沒有 ssl_chain 欄位 → 顯示「未檢測」當作 passed 不扣分
+      if (isPartialAudit(audit)) return NOT_CHECKED
       const ssl = audit?.ssl_chain
       if (!ssl) return { passed: true, detail: '此次掃描未檢測（請重新檢測）' }
       if (ssl.passed) return { passed: true, detail: 'SSL 憑證鏈完整，所有爬蟲都能順利連線' }

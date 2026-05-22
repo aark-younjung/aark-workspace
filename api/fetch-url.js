@@ -142,15 +142,47 @@ export default async function handler(req, res) {
 
     // 第三輪：Bingbot UA（部分 Cloudflare 白名單只放 Bingbot 不放 Googlebot）
     if ([403, 503, 429].includes(response.status)) {
-      console.warn(`[fetch-url] Chrome UA still blocked (HTTP ${response.status}) with ${hostname}, last resort: Bingbot UA`)
+      console.warn(`[fetch-url] Chrome UA still blocked (HTTP ${response.status}) with ${hostname}, fallback round 3: Bingbot UA`)
       try {
         response = await fetch(targetUrl.toString(), buildOptions(UA_BINGBOT))
         uaFallback = true
       } catch (botErr) {
         console.error(`[fetch-url] Bingbot UA fallback failed for ${hostname}:`, botErr.message)
       }
-      // 仍 403 → 真的鎖很嚴，標記給前端 surface 提示
-      if ([403, 503, 429].includes(response.status)) {
+    }
+
+    // 第四輪：AllOrigins 免費 CORS proxy（不同 IP 出口繞過 Cloudflare）
+    // 對 Vercel 而言 AllOrigins 是不同 IP 段，Cloudflare 規則可能放它過、不放我們過
+    // 注意：AllOrigins 回的 JSON 格式不同（contents 欄位包 HTML），要 unwrap
+    let proxyFallback = false
+    if ([403, 503, 429].includes(response.status)) {
+      console.warn(`[fetch-url] All 3 UA rounds blocked, last resort: AllOrigins proxy for ${hostname}`)
+      try {
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl.toString())}`
+        const proxyResp = await fetch(proxyUrl, {
+          method: 'GET',
+          signal: AbortSignal.timeout(30000),   // proxy 多一層 hop，給 30 秒
+        })
+        if (proxyResp.ok) {
+          const proxyData = await proxyResp.json()
+          // AllOrigins 回應結構：{ contents: "<html>...", status: { http_code: 200, ... } }
+          if (proxyData?.contents && (proxyData?.status?.http_code === 200 || !proxyData?.status?.http_code)) {
+            // 偽造一個成功的 response 物件給後續流程用
+            response = {
+              ok: true,
+              status: 200,
+              text: async () => proxyData.contents,
+            }
+            proxyFallback = true
+            uaFallback = true   // 視為 UA fallback 成功
+            console.log(`[fetch-url] AllOrigins proxy succeeded for ${hostname}`)
+          }
+        }
+      } catch (proxyErr) {
+        console.error(`[fetch-url] AllOrigins proxy fallback failed for ${hostname}:`, proxyErr.message)
+      }
+      // 4 輪全失敗 → 真的鎖很嚴
+      if (!response.ok) {
         antiBotBlocked = true
       }
     }
@@ -163,9 +195,10 @@ export default async function handler(req, res) {
         fetchTime,
         sslFallback,
         uaFallback,
+        proxyFallback,
         antiBotBlocked,
         hint: antiBotBlocked
-            ? '目標網站 anti-bot 鎖極嚴 — 已嘗試 Googlebot / Chrome+瀏覽器指紋頭 / Bingbot 三種 UA 全被擋。這意味著 ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎爬蟲很可能也抓不到此站，AI 引用率會嚴重受影響。請聯絡網站管理員調整 Cloudflare / WAF 設定。'
+            ? '目標網站 anti-bot 鎖極嚴 — 已嘗試 Googlebot / Chrome+瀏覽器指紋頭 / Bingbot / AllOrigins proxy 四種途徑全被擋。這意味著 ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎爬蟲很可能也抓不到此站，AI 引用率會嚴重受影響。請聯絡網站管理員調整 Cloudflare / WAF 設定。'
             : response.status === 403 ? '目標網站擋下我們的爬蟲（可能是 Cloudflare 等 anti-bot 設定嚴格）'
             : response.status === 503 ? '目標網站暫時不可用（過載 / 維護中）'
             : null,
@@ -182,8 +215,9 @@ export default async function handler(req, res) {
       status: response.status,
       fetchTime,
       sslFallback,      // true 代表 SSL 憑證鏈有問題（用 relaxed verify 才抓到）
-      uaFallback,       // true 代表 Googlebot UA 被擋，換 Chrome 或 Bingbot UA 才成功
-      antiBotBlocked,   // true 代表 3 輪 UA 全擋（產品可包裝成「你站對 AI 不友善」的 finding）
+      uaFallback,       // true 代表 Googlebot UA 被擋，後續輪才成功
+      proxyFallback,    // true 代表 3 輪 UA 全擋、靠 AllOrigins proxy 才抓到（站對 AI 鎖很嚴的訊號）
+      antiBotBlocked,   // true 代表 4 輪全擋（最嚴重的「對 AI 隱形」狀態）
     })
 
   } catch (error) {
