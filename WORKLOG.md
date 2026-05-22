@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-05-22（最最最後 — 真的最後了）
+**「爬蟲可達性」加進 SEO 變第 7 項 — 把 anti-bot 痛點包裝成產品價值:**
+
+- 🎯 **產品定位連結**：iseeu.tw 案例證明 Cloudflare 嚴格 anti-bot 會擋下我們三種 UA。**這正是「AI 雷達」要找的盲點** — Cloudflare 擋我們 ≈ 也擋 ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎爬蟲 → 客戶的網站在 AI 答案中完全隱形而不自知。Ahrefs / SEMrush 完全不檢這個。
+- ✅ **SQL（用戶側已跑）**：`ALTER TABLE seo_audits ADD COLUMN IF NOT EXISTS bot_accessibility JSONB;`
+- ✅ **修法**：
+  - **seoAnalyzer.js**：fetchPageContent 簽名擴展 → `{ html, sslFallback, uaFallback, antiBotBlocked }`；新增 `checkBotAccessibility(uaFallback, antiBotBlocked)` 函式（三段判定：全擋 0 分 / fallback 60 分 / 第一輪過 100 分）；analyzeSEO 從 6 項變 7 項，總分 ÷6 改 ÷7；result 加 `bot_accessibility` 欄位；getAuditItems 加新檢測項描述。
+  - **HomeDark.jsx**：seo_audits insert 加 `bot_accessibility: seoResult.bot_accessibility`。
+  - **SEOAudit.jsx**：SEO_CHECKS 加第 7 項，priority **P1**（最高優先，影響 AI 引用率最直接），含 3 段詳細訊息（全擋/fallback/正常）與完整 Cloudflare 修法指南（Super Bot Fight Mode 降級 + WAF 白名單 GPTBot / ChatGPT-User / PerplexityBot / ClaudeBot / anthropic-ai 等）。
+- 🔖 **設計取捨**：
+  - **bot_accessibility 給 P1，比 ssl_chain 的 P2 還重要**：SSL 鏈不完整時瀏覽器自動補；anti-bot 直接擋連線，沒辦法補。對 AI 引用率影響更直接。
+  - **fallback 算「passed 但扣分」(60/100)**：Chrome / Bingbot 通過代表大多數爬蟲還能用，不算完全失敗。但 60 分能拉低總分 + 在詳情頁標記黃色警告，誘導用戶處理。
+  - **修復建議文案三條獨立路徑**：Cloudflare（最常見）、其他 WAF（Imperva/DataDome）、白名單 UA 完整列表。客戶不必懂技術也能拿給網管照做。
+
+---
+
 ### 2026-05-22（最最後）
 **iseeu.tw 案例: anti-bot 偵測 + UA fallback + scan_error_logs 取代「無聲失敗」:**
 

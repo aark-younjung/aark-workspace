@@ -413,7 +413,7 @@ export default function HomeDark() {
       }
 
       setStatus('正在分析網站...')
-      // fetchPageContent 現在回傳 { html, sslFallback }（2026-05-22 加 SSL 容錯）
+      // fetchPageContent 回傳 { html, sslFallback, uaFallback, antiBotBlocked } — 旗標供下方 analyzers 用
       const { html } = await fetchPageContent(cleanUrl)
       const doc = parseHTML(html)
 
@@ -458,7 +458,8 @@ export default function HomeDark() {
           meta_tags: seoResult.meta_tags, h1_structure: seoResult.h1_structure,
           alt_tags: seoResult.alt_tags, mobile_compatible: !!seoResult.mobile_compatible,
           page_speed: seoResult.page_speed,
-          ssl_chain: seoResult.ssl_chain,  // 第 6 項 SSL 憑證鏈檢測（2026-05-22 新增）
+          ssl_chain: seoResult.ssl_chain,                       // 第 6 項 SSL 憑證鏈檢測（2026-05-22 新增）
+          bot_accessibility: seoResult.bot_accessibility,       // 第 7 項 爬蟲可達性 / Cloudflare 擋 AI 爬蟲（2026-05-22 新增）
         }]),
         aeoResult && supabase.from('aeo_audits').insert([{
           website_id: websiteId, score: aeoResult.score,

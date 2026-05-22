@@ -107,6 +107,30 @@ const SEO_CHECKS = [
       return { passed: false, detail: '憑證鏈不完整（少送中間憑證）— 我們已 fallback 才抓到資料；嚴格爬蟲會直接拒絕' }
     },
   },
+  {
+    id: 'bot_accessibility', name: '爬蟲可達性', icon: '🛡️',
+    description: 'AI 雷達核心檢測 — Cloudflare / WAF / anti-bot 設定如果太嚴，會把 ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎爬蟲一起擋掉，導致你的網站在 AI 答案中完全隱形。本檢測模擬 3 種爬蟲身份（Googlebot / Chrome+完整指紋 / Bingbot）測試你的網站是否願意放行。',
+    recommendation: '1. 進 Cloudflare 後台 Security → Bots → 把 Super Bot Fight Mode 從 Aggressive 降為 Standard 或 Off。 2. 在 WAF Custom Rules 白名單 AI 引擎 User-Agent：GPTBot / ChatGPT-User / PerplexityBot / ClaudeBot / anthropic-ai。 3. 用其他 anti-bot 服務（Imperva / DataDome 等）同理放寬。 4. 修完後重新檢測，這項會回到 100 分。',
+    priority: 'P1',   // 影響 AI 引用率最直接的因子（甚至比 SSL 更重要）
+    getValue: (audit) => {
+      // 舊資料（2026-05-22 前）沒有 bot_accessibility 欄位 → 顯示「未檢測」當作 passed 不扣分
+      const bot = audit?.bot_accessibility
+      if (!bot) return { passed: true, detail: '此次掃描未檢測（請重新檢測）' }
+      if (bot.blocked) {
+        return {
+          passed: false,
+          detail: '⚠️ AI 引擎抓不到你的網站 — 我們嘗試 Googlebot / Chrome+完整指紋頭 / Bingbot 三種爬蟲身份都被擋。ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎大概率也抓不到，你在 AI 答案中可能完全隱形。',
+        }
+      }
+      if (bot.fallback) {
+        return {
+          passed: true,
+          detail: 'Googlebot UA 被擋但 Chrome / Bingbot 通過 — anti-bot 設定偏嚴，部分嚴格驗證的 AI 引擎可能仍抓不到，建議放寬',
+        }
+      }
+      return { passed: true, detail: '所有爬蟲都能順利存取，AI 引擎抓取無障礙' }
+    },
+  },
 ]
 
 export default function SEOAudit() {

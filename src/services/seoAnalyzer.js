@@ -14,8 +14,11 @@ const API_BASE = '/api/fetch-url'
 /**
  * 取得網頁內容（使用 Serverless API 解決 CORS 問題）
  * @param {string} url - 目標網址
- * @returns {Promise<{html: string, sslFallback: boolean}>} - HTML 內容 + SSL 旗標
- *   sslFallback=true 代表此網站 SSL 憑證鏈不完整，後端用 relaxed verify fallback 才抓到
+ * @returns {Promise<{html: string, sslFallback: boolean, uaFallback: boolean, antiBotBlocked: boolean}>}
+ *   - html: HTML 內容
+ *   - sslFallback: true 代表 SSL 憑證鏈不完整（用 relaxed verify 才抓到）
+ *   - uaFallback: true 代表 Googlebot UA 被擋，後端換 Chrome 或 Bingbot UA 才成功
+ *   - antiBotBlocked: true 代表 3 輪 UA 全擋 = 站對所有爬蟲都鎖死（fetch-url 會回非 200，這欄位主要用於 throw 分支）
  */
 export async function fetchPageContent(url) {
   // 使用 Vercel Serverless Function API
@@ -28,7 +31,12 @@ export async function fetchPageContent(url) {
     try { data = await response.json() } catch { /* 非 JSON 回應 */ }
 
     if (response.ok && data?.success) {
-      return { html: data.content, sslFallback: !!data.sslFallback }
+      return {
+        html: data.content,
+        sslFallback: !!data.sslFallback,
+        uaFallback: !!data.uaFallback,
+        antiBotBlocked: false,   // 成功取得 = 沒被擋
+      }
     }
 
     // 組合更完整的錯誤訊息 — 包含 hint 提示與 http status
@@ -40,6 +48,10 @@ export async function fetchPageContent(url) {
     err.code = data?.error || `HTTP_${response.status}`
     err.status = httpStatus
     err.step = 'fetch_url'
+    // 把 anti-bot 旗標掛在 err 上，供上層 catch 寫 scan_error_logs 用
+    err.antiBotBlocked = !!data?.antiBotBlocked
+    err.sslFallback = !!data?.sslFallback
+    err.uaFallback = !!data?.uaFallback
     throw err
   } catch (error) {
     // 已是我們自己 throw 的就直接 rethrow，原 message 保留
@@ -50,6 +62,53 @@ export async function fetchPageContent(url) {
     wrapped.code = 'NETWORK_ERROR'
     wrapped.step = 'fetch_url'
     throw wrapped
+  }
+}
+
+/**
+ * 爬蟲可達性檢測 — AI 雷達核心 finding
+ *
+ * 從 fetch-url 三輪 UA fallback 結果推斷：
+ *   - 第一輪 Googlebot 直接成功（uaFallback=false）→ 滿分
+ *   - Googlebot 被擋、Chrome/Bingbot 通過（uaFallback=true）→ 部分扣分
+ *   - 三輪全擋（antiBotBlocked=true）→ 0 分
+ *
+ * 對應「AI 雷達」品牌價值：
+ * Cloudflare / WAF 鎖嚴格 → 大概率連 ChatGPTBot / PerplexityBot / ClaudeBot
+ * 等 AI 引擎都抓不到 → 你的網站在 AI 答案中完全隱形
+ *
+ * @param {boolean} uaFallback - Googlebot 被擋換 UA 才成功
+ * @param {boolean} antiBotBlocked - 三輪 UA 全擋
+ * @returns {Object} - 檢測結果（傳給 SEO_CHECKS getValue 與 DB JSONB）
+ */
+function checkBotAccessibility(uaFallback, antiBotBlocked) {
+  if (antiBotBlocked) {
+    return {
+      passed: false,
+      score: 0,
+      blocked: true,
+      fallback: false,
+      message: '你的網站擋下我們的爬蟲（嘗試 Googlebot / Chrome+完整瀏覽器指紋頭 / Bingbot 三種身份全失敗）。這幾乎等同 ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎爬蟲也會被擋 — 你的網站在 AI 答案中可能完全隱形。',
+      recommendation: '1. 用 https://www.cloudflare.com/learning/bots/ 確認你網站是否啟用了 Cloudflare 高等級防護 2. 進 Cloudflare 後台 Security → Bots → 把 Super Bot Fight Mode 從 Aggressive 降為 Standard 或 Off 3. 在 WAF Custom Rules 白名單以下 AI 引擎 User-Agent：GPTBot / ChatGPT-User / PerplexityBot / ClaudeBot / anthropic-ai 4. 如果你用其他 anti-bot 服務（Imperva / DataDome 等）同理放寬 5. 修完後重新檢測，這項分數會回到 100',
+    }
+  }
+  if (uaFallback) {
+    return {
+      passed: true,
+      score: 60,
+      blocked: false,
+      fallback: true,
+      message: '你的網站擋下了 Googlebot UA，我們改用 Chrome 或 Bingbot 才抓到。代表 anti-bot 設定偏嚴，部分嚴格驗證的 AI 引擎爬蟲（特別是新興 LLM bot 還沒被白名單）可能仍抓不到你的網站。',
+      recommendation: '建議放寬 Cloudflare / WAF 設定，特別是 Super Bot Fight Mode 的「假冒 Googlebot」攔截規則。考慮在 WAF Custom Rules 加白名單常見 AI 引擎 UA（GPTBot / ChatGPT-User / PerplexityBot / ClaudeBot）確保 AI 引用率最大化。',
+    }
+  }
+  return {
+    passed: true,
+    score: 100,
+    blocked: false,
+    fallback: false,
+    message: '所有爬蟲都能順利存取你的網站，AI 引擎抓取無障礙',
+    recommendation: '無需處理',
   }
 }
 
@@ -308,21 +367,25 @@ export async function analyzeSEO(url) {
   }
   
   try {
-    // 取得網頁內容 + SSL 旗標（sslFallback=true 代表憑證鏈不完整需 relaxed verify）
-    const { html, sslFallback } = await fetchPageContent(cleanUrl)
+    // 取得網頁內容 + 旗標
+    //   sslFallback: 憑證鏈不完整需 relaxed verify
+    //   uaFallback: Googlebot 被擋換 UA 才成功
+    //   antiBotBlocked: 不會在這條成功分支看到（會走 catch），但 destructure 防 undefined
+    const { html, sslFallback, uaFallback, antiBotBlocked } = await fetchPageContent(cleanUrl)
     const doc = parseHTML(html)
 
-    // 執行各項檢測（第 6 項 SSL 不需 DOM，從 fetch 旗標判定）
+    // 執行 7 項檢測（第 6/7 項從 fetch 旗標判定，不需 DOM）
     const metaTags = checkMetaTags(doc)
     const h1Structure = checkH1Structure(doc)
     const altTags = checkAltTags(doc)
     const mobileCompatible = checkMobileCompatibility(doc)
     const pageSpeed = await checkPageSpeed(cleanUrl)
     const sslChain = checkSSLChain(sslFallback)
+    const botAccessibility = checkBotAccessibility(uaFallback, antiBotBlocked)
 
-    // 計算總分（6 項平均）
+    // 計算總分（7 項平均）
     const totalScore = Math.round(
-      (metaTags.score + h1Structure.score + altTags.score + mobileCompatible.score + pageSpeed.score + sslChain.score) / 6
+      (metaTags.score + h1Structure.score + altTags.score + mobileCompatible.score + pageSpeed.score + sslChain.score + botAccessibility.score) / 7
     )
 
     // 回傳結果
@@ -335,6 +398,7 @@ export async function analyzeSEO(url) {
       mobile_compatible: mobileCompatible,
       page_speed: pageSpeed,
       ssl_chain: sslChain,
+      bot_accessibility: botAccessibility,
       analyzed_at: new Date().toISOString()
     }
 
@@ -388,6 +452,12 @@ export function getAuditItems() {
       name: 'SSL 憑證鏈完整性',
       description: '檢測 SSL 憑證是否包含中間憑證 — 不完整時嚴格爬蟲（含部分 AI 引擎）會抓不到網站',
       icon: '🔒'
+    },
+    {
+      id: 'bot_accessibility',
+      name: '爬蟲可達性',
+      description: '檢測 Cloudflare / WAF 是否擋下 AI 引擎爬蟲 — anti-bot 鎖太嚴會讓你的網站在 ChatGPT/Claude/Gemini 答案中完全隱形',
+      icon: '🛡️'
     }
   ]
 }
