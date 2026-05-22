@@ -163,8 +163,8 @@ export default function AdminWebsites() {
               onChange={e => setSortBy(e.target.value)}
               className="bg-slate-800 border border-slate-700 text-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-500"
             >
-              <option value="created_at">最新分析</option>
-              <option value="score">綜合分數高到低</option>
+              <option value="created_at" style={{ color: '#0f172a', background: '#fff' }}>最新分析</option>
+              <option value="score" style={{ color: '#0f172a', background: '#fff' }}>綜合分數高到低</option>
             </select>
             {/* 測試紀錄篩選 — 預設全部，可切「正式網站」/「僅測試」單獨檢視 */}
             <select
@@ -172,9 +172,9 @@ export default function AdminWebsites() {
               onChange={e => setFilterTest(e.target.value)}
               className="bg-slate-800 border border-slate-700 text-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-500"
             >
-              <option value="all">全部網站</option>
-              <option value="not_test">僅正式網站（前台可見）</option>
-              <option value="test_only">🧪 僅測試網站（前台隱藏）</option>
+              <option value="all" style={{ color: '#0f172a', background: '#fff' }}>全部網站</option>
+              <option value="not_test" style={{ color: '#0f172a', background: '#fff' }}>僅正式網站（前台可見）</option>
+              <option value="test_only" style={{ color: '#0f172a', background: '#fff' }}>🧪 僅測試網站（前台隱藏）</option>
             </select>
           </div>
 

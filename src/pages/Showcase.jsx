@@ -489,9 +489,9 @@ export default function Showcase() {
                     <span className="text-white/50 text-sm hidden sm:block">排序：</span>
                     <select value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(0) }}
                       className="bg-black/40 border border-white/15 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400">
-                      <option value="total_score">總分</option>
-                      <option value="last_scanned_at">最近更新</option>
-                      <option value="scan_count">掃描次數</option>
+                      <option value="total_score" style={{ color: '#0f172a', background: '#fff' }}>總分</option>
+                      <option value="last_scanned_at" style={{ color: '#0f172a', background: '#fff' }}>最近更新</option>
+                      <option value="scan_count" style={{ color: '#0f172a', background: '#fff' }}>掃描次數</option>
                     </select>
                   </div>
                 </div>

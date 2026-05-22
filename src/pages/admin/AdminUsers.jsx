@@ -1186,10 +1186,10 @@ export default function AdminUsers() {
                     onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); setPageInput('1') }}
                     className="px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 focus:outline-none focus:border-orange-500"
                   >
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                    <option value={200}>200</option>
+                    <option value={25} style={{ color: '#0f172a', background: '#fff' }}>25</option>
+                    <option value={50} style={{ color: '#0f172a', background: '#fff' }}>50</option>
+                    <option value={100} style={{ color: '#0f172a', background: '#fff' }}>100</option>
+                    <option value={200} style={{ color: '#0f172a', background: '#fff' }}>200</option>
                   </select>
                   筆
                 </div>
