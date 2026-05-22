@@ -488,6 +488,20 @@ export default function HomeDark() {
       console.error('Error:', error)
       setStatus('')
       const detail = error?.message || error?.error?.message || JSON.stringify(error).slice(0, 200)
+      // 寫 scan_error_logs 給 admin 後台稽核（取代之前「無聲失敗、靠 Vercel logs 找根因」的瞎子模式）
+      // 非阻塞 — 失敗也不影響 user-facing alert
+      try {
+        await supabase.from('scan_error_logs').insert({
+          user_id: user?.id || null,
+          url: url,                                  // 用原始輸入字串，方便還原用戶到底打了什麼
+          step: error?.step || 'unknown',
+          error_code: error?.code || error?.cause?.code || null,
+          error_message: detail.slice(0, 1000),
+          http_status: error?.status || null,
+        })
+      } catch (logErr) {
+        console.warn('Failed to write scan_error_logs:', logErr?.message)
+      }
       alert(`發生錯誤：${detail}\n\n請截圖此訊息與主控台（F12）錯誤給開發者`)
     } finally {
       setLoading(false)

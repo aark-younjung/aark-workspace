@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-05-22（最最後）
+**iseeu.tw 案例: anti-bot 偵測 + UA fallback + scan_error_logs 取代「無聲失敗」:**
+
+- 🐛 **iseeu.tw bug**：lan0915 用戶測 iseeu.tw 沒分數。診斷 SQL 顯示 websites 表有 2 筆 row（含一筆 `https://ihttps//seeu.tw` 的複製貼上錯字 URL），但 audits 全部 NULL。
+- 🔍 **根因（2 個 bug 疊加）**：
+  - **(a) Cloudflare anti-bot 擋假 Googlebot UA**：iseeu.tw 是 WordPress + Cloudflare，對 fake Googlebot（非 Google IP 範圍）回 403。pilotoptical 那次是 SSL 鏈問題、iseeu 這次換 anti-bot 問題 — 同樣是「無聲失敗，audits 全空」。
+  - **(b) normalizeUrl 沒擋住「protocol 字串混進 hostname」錯字**：`https://ihttps//seeu.tw` 被 URL parser 解成 `hostname=ihttps path=//seeu.tw`，DNS 解不出來但 normalizeUrl 沒擋下來，直接 INSERT 進 websites 表變成殭屍 row。
+- ✅ **修法（3 個防護一次到位）**：
+  - **(1) fetch-url UA fallback**：第一輪用 Googlebot UA（多數 SEO 站歡迎），若收到 403/503/429 → 第二輪改 Chrome desktop UA 重試。多數 Cloudflare 設定願意放 Chrome 過、擋 fake Googlebot。response 加 `uaFallback: true` 旗標 + 失敗時加 `hint` 訊息（「Cloudflare 等 anti-bot 設定嚴格」）。
+  - **(2) normalizeUrl 防呆**：偵測 `hostname` 是 `http/https/ftp` 字串（或開頭跟 protocol 接非字母數字）→ 回空字串，HomeDark 上層 throw「URL 格式錯誤」拒絕 INSERT。
+  - **(3) scan_error_logs 表（用戶側待跑 SQL）**：取代「靠 Vercel logs 找根因」的瞎子模式，每次掃描失敗都寫進 DB（user_id, url, step, error_code, error_message, http_status, ssl_fallback, ua_fallback）。HomeDark 的 catch block 加 supabase insert，非阻塞 try/catch 包住。RLS 設 admin 可讀全表、用戶讀自己的。
+- 🔖 **後續優化空間**：
+  - AdminUsers 展開詳情可加「掃描錯誤紀錄」區塊讓客服看每個用戶最近失敗原因
+  - 前端 HomeDark 失敗時可顯示更具體錯誤訊息（用 hint 欄位）
+  - 如果 403 仍持續，可考慮第三輪用其他 UA（如 facebookexternalhit、Slackbot）或 headless browser fallback
+
+---
+
 ### 2026-05-22（再最後）
 **公告 dismiss cache 修 + TOP 8 隱私改 E 方案（公開摘要頁）+ 管理員測試紀錄 toggle:**
 

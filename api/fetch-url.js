@@ -60,24 +60,30 @@ export default async function handler(req, res) {
     }
 
     const startTime = Date.now()
-    const fetchOptions = {
+    // 兩種 User-Agent — 多數 SEO 站歡迎 Googlebot UA，但 Cloudflare 等 anti-bot 會擋假 Googlebot（真 Googlebot 來自 Google IP 範圍）
+    // 偵測到 403 / 503 / blocked 時 fallback 用 Chrome desktop UA 重試
+    const UA_GOOGLEBOT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+    const UA_CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+    const buildOptions = (userAgent) => ({
       method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'User-Agent': userAgent,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
         'Cache-Control': 'no-cache',
       },
       redirect: 'follow',
       signal: AbortSignal.timeout(20000), // 20 秒超時
-    }
+    })
 
     let response
     let sslFallback = false
+    let uaFallback = false
 
+    // 第一輪：Googlebot UA
     try {
-      // 第一次嘗試：標準嚴格 SSL 驗證
-      response = await fetch(targetUrl.toString(), fetchOptions)
+      response = await fetch(targetUrl.toString(), buildOptions(UA_GOOGLEBOT))
     } catch (err) {
       // SSL 憑證鏈不完整 → fallback 用放寬驗證重試（讀公開 HTML 不傳憑證安全可接受）
       if (isSSLError(err)) {
@@ -87,17 +93,29 @@ export default async function handler(req, res) {
           const { Agent, fetch: undiciFetch } = await import('undici')
           const insecureDispatcher = new Agent({ connect: { rejectUnauthorized: false } })
           response = await undiciFetch(targetUrl.toString(), {
-            ...fetchOptions,
+            ...buildOptions(UA_GOOGLEBOT),
             dispatcher: insecureDispatcher,
           })
           sslFallback = true
         } catch (retryErr) {
-          // undici 不可用或重試仍失敗 → 把原始 SSL 錯誤拋回去
           console.error(`[fetch-url] SSL fallback failed for ${hostname}:`, retryErr.message)
           throw err
         }
       } else {
         throw err
+      }
+    }
+
+    // 第二輪：anti-bot 偵測（403 / 503 / 429 通常是 Cloudflare / WAF 擋）
+    // Cloudflare 對假 Googlebot UA 嚴格驗證會回 403；換 Chrome UA 多半能繞過
+    if ([403, 503, 429].includes(response.status)) {
+      console.warn(`[fetch-url] Anti-bot suspected (HTTP ${response.status}) with ${hostname}, retrying with Chrome UA`)
+      try {
+        response = await fetch(targetUrl.toString(), buildOptions(UA_CHROME))
+        uaFallback = true
+      } catch (uaErr) {
+        console.error(`[fetch-url] UA fallback failed for ${hostname}:`, uaErr.message)
+        // 維持原本 403 response
       }
     }
 
@@ -107,6 +125,11 @@ export default async function handler(req, res) {
       return res.status(response.status).json({
         error: `HTTP ${response.status}`,
         fetchTime,
+        sslFallback,
+        uaFallback,
+        hint: response.status === 403 ? '目標網站擋下我們的爬蟲（可能是 Cloudflare 等 anti-bot 設定嚴格）— 已嘗試 Googlebot + Chrome 兩種 UA 都被擋'
+            : response.status === 503 ? '目標網站暫時不可用（過載 / 維護中）'
+            : null,
       })
     }
 
@@ -119,7 +142,8 @@ export default async function handler(req, res) {
       content: html,
       status: response.status,
       fetchTime,
-      sslFallback, // true 代表這個網站憑證鏈有問題，前端可選擇 surface 警告（目前不做）
+      sslFallback, // true 代表 SSL 憑證鏈有問題（用 relaxed verify 才抓到）
+      uaFallback,  // true 代表 Googlebot UA 被擋，換 Chrome UA 才成功
     })
 
   } catch (error) {

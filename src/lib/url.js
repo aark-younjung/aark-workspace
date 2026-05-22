@@ -43,6 +43,15 @@ export function normalizeUrl(input) {
     const u = new URL(s)
     // hostname 拿掉 www. 且全小寫
     const host = u.hostname.toLowerCase().replace(/^www\./, '')
+
+    // 防呆：偵測「protocol 字串混進 hostname 開頭」的複製貼上錯字
+    // 例：用戶把 https:// 重複貼成 https://ihttps//foo.com（hostname=ihttps 是非法情境）
+    // 偵測規則：hostname 開頭剛好是 http / https / ftp 等 protocol 字串（後面跟 . 或結尾才合法 — like httpfoo.com 是合法的）
+    if (/^(https?|ftp)$/.test(host) || /^https?[^a-z0-9-]/.test(host)) {
+      // 拋空字串讓上層 catch / 顯示錯誤訊息
+      return ''
+    }
+
     // path 拿掉 trailing slash（保留中間結構），首頁 '/' 直接變成空字串
     const path = u.pathname.replace(/\/+$/, '')
     // 一律強制 https（http 也升為 https，現代網站幾乎都支援，方便 dedup）
