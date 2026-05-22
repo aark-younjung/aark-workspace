@@ -6,6 +6,16 @@
 
 ---
 
+### 2026-05-22（admin 列表 audit 排序修正）
+**shop-aquas.com 案例暴露的小 bug：**
+
+- 🐛 重掃過的網站，admin「已分析的網站」chip 可能還顯示舊分數
+  - 根因：[AdminUsers.jsx:167](src/pages/admin/AdminUsers.jsx) nested select `seo_audits(score)` 沒指定排序，PostgREST 回傳順序不保證 → render 端 `.audits[0]` 隨機抓到舊 row
+- ✅ **修法**：4 個內嵌 audit 各加 `.order('created_at', { foreignTable: '...', ascending: false })`，把最新一筆保證放在 [0]
+- 連帶把 `created_at` 加進 nested select 欄位
+
+---
+
 ### 2026-05-22（anti-bot 後續優化 1+2）
 **清掉 iseeu.tw 後續優化清單的前兩項：**
 

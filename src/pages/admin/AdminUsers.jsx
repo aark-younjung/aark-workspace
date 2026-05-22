@@ -164,11 +164,17 @@ export default function AdminUsers() {
     if (expandedId === userId) { setExpandedId(null); return }
     setExpandedId(userId)
     if (!userWebsites[userId]) {
+      // 內嵌 audit 用 created_at desc 排序，render 端 .audits[0] 拿到的就是最新一筆
+      // 不加排序的話 PostgREST 回傳順序不保證，重掃後 admin 可能還顯示舊分數
       const { data } = await supabase
         .from('websites')
-        .select('id, url, name, created_at, seo_audits(score), aeo_audits(score), geo_audits(score), eeat_audits(score)')
+        .select('id, url, name, created_at, seo_audits(score, created_at), aeo_audits(score, created_at), geo_audits(score, created_at), eeat_audits(score, created_at)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
+        .order('created_at', { foreignTable: 'seo_audits', ascending: false })
+        .order('created_at', { foreignTable: 'aeo_audits', ascending: false })
+        .order('created_at', { foreignTable: 'geo_audits', ascending: false })
+        .order('created_at', { foreignTable: 'eeat_audits', ascending: false })
       // 依 URL 去重複，保留最新一筆
       const seen = new Set()
       const deduped = (data || []).filter(site => {
