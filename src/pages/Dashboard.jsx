@@ -645,7 +645,11 @@ export default function Dashboard() {
     if ((seoAudit?.alt_tags?.altCoverage || 100) < 80) tips.push({ icon: '🖼️', priority: 'P3', face: 'SEO', time: '4h', title: '補充圖片 Alt 文字', desc: `目前僅 ${seoAudit?.alt_tags?.altCoverage || 0}% 的圖片有 Alt 描述，AI 爬蟲無法理解沒有 Alt 的圖片，建議全部補齊。` })
     return tips
   }
-  const getImprovementSuggestions = () => getAllImprovements().slice(0, 5)
+  // 免費用戶 3 條 / Pro 5 條（與 Pricing 文案一致；超過部分顯示「升級看更多」CTA）
+  const SUGGESTION_LIMIT_FREE = 3
+  const SUGGESTION_LIMIT_PRO = 5
+  const getImprovementSuggestions = () => getAllImprovements().slice(0, isPro ? SUGGESTION_LIMIT_PRO : SUGGESTION_LIMIT_FREE)
+  const hiddenSuggestionCount = Math.max(0, getAllImprovements().length - (isPro ? SUGGESTION_LIMIT_PRO : SUGGESTION_LIMIT_FREE))
 
   const generateLLMsTxt = () => `# ${siteTitle}
 > ${bizInfo.description || siteDesc}
@@ -2274,6 +2278,20 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       </div>
                     )
                   })
+                )}
+                {/* 免費版 CTA：當總建議數 > 3 時，提示還有 N 條被遮蔽，升級可看 */}
+                {!isPro && hiddenSuggestionCount > 0 && (
+                  <div className="mt-2 p-4 rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-amber-500/10 text-center">
+                    <p className="text-sm text-white/85 mb-2">
+                      還有 <strong className="text-orange-300">{hiddenSuggestionCount} 條</strong> 優先處理建議僅 Pro 版可見
+                    </p>
+                    <Link
+                      to="/pricing"
+                      className="inline-block px-5 py-2 text-white text-sm font-semibold rounded-lg bg-orange-500 hover:bg-orange-600 transition-colors"
+                    >
+                      🔒 升級 Pro 解鎖完整建議
+                    </Link>
+                  </div>
                 )}
               </div>
             )}

@@ -10,7 +10,8 @@ const FEATURES_FREE = [
   '追蹤最多 3 個網站',
   'SEO / AEO / GEO / E-E-A-T 5 大面向分數',
   '通過 / 不通過項目清單',
-  'AI 優化建議（3 條通用方向）',
+  'AI 優化建議（3 條優先處理項目）',
+  '基礎修復碼產生器（llms.txt / JSON-LD / FAQ Schema 通用模板）',
   '文章內容分析（基本版）',
   '競品比較（2 個網站）',
   '公開排行榜',
@@ -18,9 +19,9 @@ const FEATURES_FREE = [
 
 const FEATURES_PRO = [
   '追蹤最多 15 個網站',
-  '修復碼產生器（llms.txt / JSON-LD / FAQ Schema）',
+  'AI 優化建議完整版（5 條優先處理項目）',
+  '平台別修復指南（WordPress / Shopify / Wix / HTML 各別整合教學）',
   '歷史趨勢圖（追蹤每次優化成效）',
-  '平台別修復指南（WordPress / Shopify / Wix / HTML）',
   'AEO 每項檢測逐項修復建議',
   'SEO 詳情頁 3 階段優化路線圖',
   '文章內容分析（完整修復建議）',

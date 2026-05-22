@@ -6,6 +6,35 @@
 
 ---
 
+### 2026-05-22（最後）
+**Free 方案功能稽核 + URL 正規化 + websites schema 修補:**
+
+- 🐛 **Bug 1（嚴重）**：`websites.url` 設成「全局 UNIQUE constraint」(`websites_url_key`)，但 HomeDark.jsx dedup 用 `(url + user_id)` 查詢。當用戶 A 已測過某 URL，用戶 B 想測同個 URL 時 dedup 找不到（因 user_id 不同），進到 INSERT 分支噴 `duplicate key value violates unique constraint "websites_url_key"`，整個分析中斷無 audits 寫入。實際撞到的 URL：chuanyuan-water.com.tw（aark6465 內部測過，後續用戶測都掛）。
+- ✅ **修法（用戶側已跑 SQL）**：
+  ```sql
+  ALTER TABLE websites DROP CONSTRAINT websites_url_key;
+  ALTER TABLE websites ADD CONSTRAINT websites_url_user_unique UNIQUE (url, user_id);
+  ```
+  驗證 pg_constraint 顯示 `websites_url_user_unique | UNIQUE (url, user_id)` 已生效。
+
+- 🐛 **Bug 2（URL 變體 dedup 失效）**：HomeDark.jsx `cleanUrl` 只補 `https://`，沒處理 trailing slash / www. / query string / hash。Leo 帳號（leo2895524@gmail.com）試 pilotoptical.com.tw 時從 Google Ads 點進來帶 `?gad_source=1&gad_campaignid=...`，又重打 1 次帶 slash、再 1 次不帶 slash，總共 3 個變體被當 3 個獨立網站建 3 筆 websites row。
+- ✅ **修法**：新建 [src/lib/url.js](src/lib/url.js) `normalizeUrl()` helper 處理 7 種變體（補 protocol / 全小寫 / 拿掉 www. / 拿掉 trailing slash / 拿掉 query string / 拿掉 hash / 強制 https）；HomeDark.jsx 改用 `normalizeUrl(url)` 取代原本的 `url.trim() + 補 https://`。
+- ⚠️ **未做**：歷史 row 合併（在 normalizeUrl 上線前已建出的多筆同網站變體 row）— 記入 CLAUDE.md TODO 等實際資料量再決定整理時機。
+
+- 🐛 **Bug 3（未解，待查）**：pilotoptical.com.tw 3 個 row 都沒寫進任何 SEO/AEO/GEO/EEAT audits（diagnostic SQL 顯示 0 rows）。可能 fetch-url 被 anti-bot 擋、或前端 analyzer JS crash 沒 surface。記入 CLAUDE.md TODO，下批排查需：(a) Vercel logs 看 /api/fetch-url 對 pilotoptical 的回應 (b) 前端錯誤改寫進 supabase 錯誤紀錄表方便事後查。
+
+- 🔧 **Free 方案功能稽核**（文案 vs 實際對齊）：
+  - **修復碼產生器**：Pricing.jsx FEATURES_PRO 寫成 Pro 專屬，但 Dashboard.jsx Tab 2 註解「免費開放」且實際無 `isPro` 守衛 — 文案與實作矛盾。決定走 B 方案（承認既成事實）：從 FEATURES_PRO 移除「修復碼產生器」，加進 FEATURES_FREE 改寫為「基礎修復碼產生器（llms.txt / JSON-LD / FAQ Schema 通用模板）」；FEATURES_PRO 改成更精準的「平台別修復指南（WordPress / Shopify / Wix / HTML 各別整合教學）」對應 IssueBoard 展開的 platform-specific 修復面板。
+  - **AI 優化建議數**：Pricing.jsx 寫「3 條通用方向」，但 Dashboard.jsx `getImprovementSuggestions = () => getAllImprovements().slice(0, 5)` 給所有人 5 條。決定走 B（讓 Free 真的只看 3、Pro 看 5）：`slice(0, isPro ? 5 : 3)` + 加 `hiddenSuggestionCount` 計算被隱藏的條數 + 在 Tab 1 的建議清單下方加「還有 N 條優先處理建議僅 Pro 版可見 → 升級 Pro」CTA 卡。Pricing 文案也對應修飾為「3 條優先處理項目」/「完整版（5 條優先處理項目）」更精準描述。
+
+- 🧪 **驗證重點**：
+  - chuanyuan-water 不同用戶測同 URL 不再噴 unique error，各自有獨立 row 與 audits
+  - pilotoptical 之後新建 row 會用正規化 URL（`https://pilotoptical.com.tw`），不論用戶從 Google Ads / 直接輸入 / 帶 slash 都歸到同一筆
+  - 免費用戶 Dashboard「優化建議」Tab 1 只看到 3 條 + 看到「還有 N 條僅 Pro 可見」CTA 卡
+  - Pro 用戶看 5 條，沒 CTA
+
+---
+
 ### 2026-05-22（深夜補完）
 **加：is_test_order 欄位 — 把 aark6465 內部測試訂單從正式營收剔除:**
 

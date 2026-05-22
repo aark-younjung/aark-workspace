@@ -5,6 +5,7 @@ import AnnouncementBanner from '../components/AnnouncementBanner'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
+import { normalizeUrl } from '../lib/url'
 import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
@@ -387,8 +388,10 @@ export default function HomeDark() {
     setStatus('正在建立網站記錄...')
 
     try {
-      let cleanUrl = url.trim()
-      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) cleanUrl = 'https://' + cleanUrl
+      // 用 normalizeUrl helper 把 URL 變體統一（拿 www. / trailing slash / query string / hash 等）
+      // 避免「同一網站不同變體」被當成不同網站，造成 dedup 失效（pilotoptical 案例 Leo 帳號被建 3 筆 row）
+      const cleanUrl = normalizeUrl(url)
+      if (!cleanUrl) throw new Error('URL 格式錯誤')
 
       // 以「URL + user_id」為唯一鍵：同一網址不同用戶各有自己的紀錄，避免資料污染與後台漏抓
       const { data: existing } = await supabase
