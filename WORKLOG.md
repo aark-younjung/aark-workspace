@@ -6,6 +6,20 @@
 
 ---
 
+### 2026-05-23（/crawl-check 落地頁骨架）
+**對標 aeo.washinmura.jp 後的差異化策略 — 把 anti-bot 主動檢測包裝成單頁落地頁:**
+
+- 新建 [src/pages/CrawlCheck.jsx](src/pages/CrawlCheck.jsx)：URL 輸入 + 動畫式 4 輪 fallback log + 結論卡 + 註冊 CTA
+- 6 種結論狀態（clean / ssl / ua / proxy / blocked / network_error）依 fetch-url 4 旗標（sslFallback / uaFallback / proxyFallback / antiBotBlocked）反推，每種對應獨立 icon / 色 / 文案 / riskLevel
+- 5 種 status badge（pass / warn / fail / skip / error）對應 4 輪的個別結果
+- 不需登入即可測試（降低 friction），CTA 引導免費註冊看完整 7 項報告
+- App.jsx 加路由 `/crawl-check`
+- 視覺現為「功能完整、樣式平實」的骨架版，邏輯資料流全接通
+- 寫交接文件 [docs/crawl-check-handoff.md](docs/crawl-check-handoff.md)：元件樹 / 狀態樹 / 6 種 verdict 真實資料範例 / 視覺自由發揮 vs 不要動的部分 / 動畫時序建議 / 行動裝置考量
+- 待 Claude Design 接手做視覺強化（終端機動畫節奏、雷達背景、icon、漸層、進場動畫等）
+
+---
+
 ### 2026-05-22（admin 列表 audit 排序修正）
 **shop-aquas.com 案例暴露的小 bug：**
 
