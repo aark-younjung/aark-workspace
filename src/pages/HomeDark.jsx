@@ -244,6 +244,9 @@ export default function HomeDark() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
+  // 掃描失敗時的結構化錯誤資訊（title / hint / action / technical）
+  // 取代原本黑箱 alert，讓用戶看到具體原因 + 可行動的下一步
+  const [errorInfo, setErrorInfo] = useState(null)
   // 打字動畫:當前 placeholder 顯示的範例網址片段（循環打/刪）
   const [typedDomain, setTypedDomain] = useState('')
   const [recentScans, setRecentScans] = useState([
@@ -386,6 +389,7 @@ export default function HomeDark() {
     if (!url) return
     setLoading(true)
     setScanLogs([])
+    setErrorInfo(null)   // 開新一輪掃描清掉前次錯誤 banner
     setStatus('正在建立網站記錄...')
 
     // websiteId 拉到 try 外，方便 catch 時也能用（anti-bot blocked 仍要寫 partial audit）
@@ -522,11 +526,68 @@ export default function HomeDark() {
           return
         } catch (insertErr) {
           console.error('Partial audit insert failed:', insertErr)
-          // 落回一般 alert 路徑
+          // 落回一般 errorInfo 路徑
         }
       }
 
-      alert(`發生錯誤：${detail}\n\n請截圖此訊息與主控台（F12）錯誤給開發者`)
+      // 從 error 物件衍生結構化錯誤資訊（取代原本黑箱 alert）
+      // 規則：先看 status / code 分類，再從 error.message（含 fetch-url 回傳的 hint）萃取人話
+      const status = error?.status || error?.code
+      const isNetwork = error?.code === 'ENOTFOUND' || error?.code === 'EAI_AGAIN' || /network|fetch failed/i.test(detail)
+      const isTimeout = error?.code === 'ETIMEDOUT' || /timeout/i.test(detail)
+      const isInvalidUrl = error?.code === 'ERR_INVALID_URL' || /URL 格式/i.test(detail)
+      let info
+      if (error?.antiBotBlocked) {
+        // 走到這代表 partial audit insert 也失敗 — 退而求其次給文字訊息
+        info = {
+          title: '網站擋下我們的爬蟲',
+          hint: '你的網站對所有爬蟲身份都回 403（Cloudflare / WAF anti-bot 鎖極嚴）。ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎大概率也抓不到 — 這正是你在 AI 答案中隱形的主因。',
+          action: '請聯絡網站管理員調整 Cloudflare → Security → Bots → Super Bot Fight Mode 降為 Standard，並在 WAF Custom Rules 白名單 AI 爬蟲 User-Agent。',
+        }
+      } else if (status === 403 || /403/.test(detail)) {
+        info = {
+          title: '網站回 403 — anti-bot 設定偏嚴',
+          hint: '我們嘗試多種爬蟲身份仍被擋。可能是 Cloudflare Bot Fight Mode、防火牆規則、或 robots.txt 拒絕。',
+          action: '請降低 anti-bot 嚴格度，或在 WAF 白名單 GPTBot / ChatGPT-User / PerplexityBot / ClaudeBot / anthropic-ai 等 AI 爬蟲 UA。',
+        }
+      } else if (status === 404 || /404/.test(detail)) {
+        info = {
+          title: '找不到這個網址',
+          hint: '伺服器回 404 — 網址路徑可能拼錯、或頁面已下線。',
+          action: '請確認網址完整且正確（可以直接複製瀏覽器網址列），然後重試。',
+        }
+      } else if (status === 503 || /503/.test(detail)) {
+        info = {
+          title: '網站暫時不可用',
+          hint: '伺服器回 503 — 通常代表過載、維護中、或 anti-bot 服務（如 Cloudflare 5 秒驗證）擋下了我們。',
+          action: '稍後再試一次。如果一直失敗，請檢查網站是否正常運作。',
+        }
+      } else if (isTimeout) {
+        info = {
+          title: '網站回應太慢',
+          hint: '連線超過 30 秒沒回應 — 可能是伺服器負載過高、CDN 設定問題、或防火牆延遲。',
+          action: '稍等幾分鐘再試。如果持續超時，建議檢查網站的伺服器效能。',
+        }
+      } else if (isInvalidUrl) {
+        info = {
+          title: '網址格式錯誤',
+          hint: '輸入的網址無法解析（可能多了字、少了 https://、或主機名稱不合法）。',
+          action: '請複製瀏覽器網址列的完整網址再貼上。',
+        }
+      } else if (isNetwork) {
+        info = {
+          title: '連不上這個網站',
+          hint: 'DNS 解析失敗、或網站根本沒回應。可能是網址拼錯、網站已關閉、或我們所在的網路出口被擋。',
+          action: '先在瀏覽器確認網址打得開，再回來重試。',
+        }
+      } else {
+        info = {
+          title: '掃描失敗',
+          hint: error?.message || '發生未預期的錯誤。',
+          action: '請截圖此訊息回報給客服，我們會協助排查。',
+        }
+      }
+      setErrorInfo({ ...info, code: error?.code || `HTTP_${status || 'UNKNOWN'}`, status: status || null, technical: detail })
     } finally {
       setLoading(false)
     }
@@ -718,6 +779,35 @@ export default function HomeDark() {
                 <p className="mt-3 text-white/50 text-xs">
                   <Link to="/login" className="text-orange-400 hover:text-orange-300 underline font-medium">登入</Link> 或 <Link to="/register" className="text-orange-400 hover:text-orange-300 underline font-medium">免費註冊</Link> 後即可開始分析
                 </p>
+              )}
+
+              {/* 結構化錯誤 banner — 取代原本 alert，給用戶可行動的下一步 */}
+              {errorInfo && (
+                <div className="mt-4 rounded-xl border border-red-500/40 bg-red-950/40 p-4 text-sm" role="alert">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl leading-none mt-0.5">⚠️</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-red-200 mb-1.5">{errorInfo.title}</div>
+                      <div className="text-white/80 leading-relaxed mb-2">{errorInfo.hint}</div>
+                      <div className="text-white/70 leading-relaxed">
+                        <span className="text-amber-300 font-medium">建議行動：</span>{errorInfo.action}
+                      </div>
+                      <details className="mt-3 text-white/45 text-xs">
+                        <summary className="cursor-pointer hover:text-white/70 select-none">技術細節（給客服用）</summary>
+                        <div className="mt-1.5 font-mono break-all">
+                          {errorInfo.code}{errorInfo.status ? ` · ${errorInfo.status}` : ''}
+                          <br />{errorInfo.technical?.slice(0, 300)}
+                        </div>
+                      </details>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setErrorInfo(null)}
+                      className="text-white/40 hover:text-white/80 text-lg leading-none px-1"
+                      aria-label="關閉錯誤訊息"
+                    >×</button>
+                  </div>
+                </div>
               )}
             </form>
           </div>

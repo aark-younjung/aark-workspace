@@ -18,6 +18,7 @@ export default function AdminUsers() {
   const [userTopup, setUserTopup] = useState({}) // { userId: { balance, packs } } — Top-up 加購剩餘次數 + 各包明細
   const [userOrders, setUserOrders] = useState({}) // { userId: [orders] } — NewebPay pro_yearly 訂單（含早鳥 + 退款狀態）
   const [userPeriods, setUserPeriods] = useState({}) // { userId: [periods] } — NPA 月繳訂閱（aivis_newebpay_period）
+  const [userErrorLogs, setUserErrorLogs] = useState({}) // { userId: [logs] } — 最近 10 筆掃描失敗紀錄（scan_error_logs）
   const [grantEmail, setGrantEmail] = useState('')
   const [granting, setGranting] = useState(false)
   const [grantResult, setGrantResult] = useState(null) // { type: 'success'|'error'|'info', msg }
@@ -228,6 +229,17 @@ export default function AdminUsers() {
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
       setUserPeriods(prev => ({ ...prev, [userId]: periods || [] }))
+    }
+    // 載入最近 10 筆掃描失敗紀錄（scan_error_logs）— 客服查「為什麼掃不出來」的依據
+    // 與 HomeDark catch block 寫入同步：含 url / step / error_code / error_message / http_status / fallback 旗標
+    if (!userErrorLogs[userId]) {
+      const { data: logs } = await supabase
+        .from('scan_error_logs')
+        .select('id, url, step, error_code, error_message, http_status, ssl_fallback, ua_fallback, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      setUserErrorLogs(prev => ({ ...prev, [userId]: logs || [] }))
     }
   }
 
@@ -1118,6 +1130,63 @@ export default function AdminUsers() {
                                     <span>E-E-A-T <strong className="text-amber-400">{eeat}</strong></span>
                                   </div>
                                 </Link>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        {/* 掃描失敗紀錄（scan_error_logs）— 客服查「為什麼掃不出來」用，最近 10 筆 */}
+                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-5 mb-3">
+                          最近掃描錯誤紀錄
+                          <span className="ml-2 text-slate-600 normal-case font-normal">（最多 10 筆）</span>
+                        </p>
+                        {!userErrorLogs[u.id] ? (
+                          <p className="text-slate-500 text-sm">載入中...</p>
+                        ) : userErrorLogs[u.id].length === 0 ? (
+                          <p className="text-slate-500 text-sm">無錯誤紀錄</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {userErrorLogs[u.id].map(log => {
+                              const when = new Date(log.created_at).toLocaleString('zh-TW', { dateStyle: 'short', timeStyle: 'short' })
+                              // 從 error_code / http_status 推斷錯誤類型 chip 顏色
+                              const isAntiBot = log.http_status === 403 || /anti.?bot|cloudflare/i.test(log.error_message || '')
+                              const isSSL = log.ssl_fallback || /ssl|cert/i.test(log.error_code || '')
+                              const isTimeout = /timeout|ETIMEDOUT/i.test(log.error_code || '') || /timeout/i.test(log.error_message || '')
+                              const isDns = /ENOTFOUND|EAI_AGAIN|DNS/i.test(log.error_code || '')
+                              const chipLabel = isAntiBot ? '🛡️ Anti-bot' : isSSL ? '🔒 SSL' : isTimeout ? '⏱ 逾時' : isDns ? '🌐 DNS' : '⚠️ 其他'
+                              const chipColor = isAntiBot
+                                ? 'bg-red-500/20 text-red-400'
+                                : isSSL ? 'bg-amber-500/20 text-amber-400'
+                                : isTimeout ? 'bg-yellow-500/20 text-yellow-400'
+                                : isDns ? 'bg-purple-500/20 text-purple-400'
+                                : 'bg-slate-700 text-slate-400'
+                              return (
+                                <div key={log.id} className="bg-slate-800 rounded-lg px-4 py-3 text-xs">
+                                  {/* Header：類型 chip + URL + 時間 */}
+                                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${chipColor}`}>{chipLabel}</span>
+                                    {log.http_status && (
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-700 text-slate-400">HTTP {log.http_status}</span>
+                                    )}
+                                    {log.ua_fallback && (
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-400">UA fallback</span>
+                                    )}
+                                    {log.ssl_fallback && (
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-400">SSL fallback</span>
+                                    )}
+                                    <span className="text-slate-500 ml-auto">{when}</span>
+                                  </div>
+                                  {/* URL（可能很長，截斷顯示） */}
+                                  <p className="text-slate-300 break-all mb-1">{log.url}</p>
+                                  {/* 錯誤訊息 + step */}
+                                  <div className="text-slate-400">
+                                    <span className="text-slate-500">[{log.step || 'unknown'}]</span>{' '}
+                                    <span className="font-mono text-slate-400">{log.error_code || '—'}</span>
+                                    {log.error_message && (
+                                      <span className="text-slate-500"> — {log.error_message.slice(0, 200)}{log.error_message.length > 200 ? '…' : ''}</span>
+                                    )}
+                                  </div>
+                                </div>
                               )
                             })}
                           </div>

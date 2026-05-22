@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-05-22（anti-bot 後續優化 1+2）
+**清掉 iseeu.tw 後續優化清單的前兩項：**
+
+- ✅ **#1 HomeDark 失敗時顯示具體訊息（不再黑箱 alert）**
+  - 加 `errorInfo` state（title / hint / action / code / status / technical）
+  - catch block 從 status / code / message 推斷錯誤類型 → 8 種分類（antiBotBlocked / 403 / 404 / 503 / timeout / invalid url / network / unknown）
+  - 每種類型給「title（發生什麼）+ hint（為什麼）+ action（怎麼辦）」三段式人話
+  - render 結構化錯誤 banner（紅色框 + ⚠️ icon + ✕ 關閉鈕 + 可展開的「技術細節」給客服複製）
+  - 取代原本 `alert('發生錯誤：${detail}')` 黑箱訊息
+- ✅ **#2 AdminUsers 加掃描錯誤紀錄區塊**
+  - 加 `userErrorLogs` state，handleExpand 拉用戶最近 10 筆 scan_error_logs
+  - UI 區塊放在「已分析的網站」之後
+  - 每筆顯示：類型 chip（🛡️ Anti-bot / 🔒 SSL / ⏱ 逾時 / 🌐 DNS / ⚠️ 其他，依 http_status + error_code + error_message 推斷）+ HTTP status + UA/SSL fallback 旗標 + URL + step + error_code + error_message（截 200 字）
+  - 客服回覆速度可大幅提升：以前要去 Vercel logs 撈，現在直接看後台
+
+---
+
 ### 2026-05-22（行動裝置相容判斷放寬）
 **朋友反映 happylandedu.com 行動裝置相容 0 分但實際有 RWD：**
 
