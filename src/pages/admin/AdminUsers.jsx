@@ -37,10 +37,57 @@ export default function AdminUsers() {
   const [emailSubmitting, setEmailSubmitting] = useState(false)
   const [emailError, setEmailError] = useState(null)
   const [emailSuccess, setEmailSuccess] = useState(null) // message_id 顯示用
+  // 分頁狀態（純前端切片，因為 subscriptionType / hasRefund 客戶端算）
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
+  const [pageInput, setPageInput] = useState('1')   // 跳頁輸入框暫存值
+  // is_test_order 切換中狀態（防 double-click）— key 為 merchant_order_no 或 period_no
+  const [togglingTest, setTogglingTest] = useState({})
+
+  // 切換訂單 / 月繳訂閱的 is_test_order 旗標
+  // table = 'aivis_newebpay_pending' 或 'aivis_newebpay_period'
+  // idColumn = 'merchant_order_no' 或 'period_no'
+  const handleToggleTestOrder = async (table, idColumn, idValue, currentValue, userId) => {
+    if (togglingTest[idValue]) return
+    setTogglingTest(prev => ({ ...prev, [idValue]: true }))
+    try {
+      const { error } = await supabase
+        .from(table)
+        .update({ is_test_order: !currentValue })
+        .eq(idColumn, idValue)
+      if (error) throw error
+      // 樂觀更新該用戶的 orders / periods state（不必重 fetch）
+      if (table === 'aivis_newebpay_pending') {
+        setUserOrders(prev => ({
+          ...prev,
+          [userId]: (prev[userId] || []).map(o =>
+            o.merchant_order_no === idValue ? { ...o, is_test_order: !currentValue } : o
+          ),
+        }))
+      } else if (table === 'aivis_newebpay_period') {
+        setUserPeriods(prev => ({
+          ...prev,
+          [userId]: (prev[userId] || []).map(p =>
+            p.period_no === idValue ? { ...p, is_test_order: !currentValue } : p
+          ),
+        }))
+      }
+    } catch (e) {
+      alert('測試標記切換失敗：' + (e.message || '未知錯誤'))
+    } finally {
+      setTogglingTest(prev => ({ ...prev, [idValue]: false }))
+    }
+  }
 
   useEffect(() => {
     fetchUsers()
   }, [filter])
+
+  // filter / search 變動時跳回第 1 頁（避免「目前在第 3 頁但篩選後只剩 1 頁」的空白狀態）
+  useEffect(() => {
+    setCurrentPage(1)
+    setPageInput('1')
+  }, [filter, search])
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -554,6 +601,11 @@ export default function AdminUsers() {
     return (u.email?.toLowerCase().includes(q) || u.name?.toLowerCase().includes(q))
   })
 
+  // 分頁切片
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const safePage = Math.min(Math.max(1, currentPage), totalPages)
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
+
   return (
     <AdminGuard>
       <AdminLayout>
@@ -668,7 +720,7 @@ export default function AdminUsers() {
               <p className="px-6 py-10 text-slate-500 text-sm text-center">沒有符合條件的用戶</p>
             ) : (
               <div className="divide-y divide-slate-700">
-                {filtered.map(u => (
+                {paged.map(u => (
                   <div key={u.id}>
                     {/* 用戶列 */}
                     <div
@@ -874,12 +926,22 @@ export default function AdminUsers() {
                                       }`}>
                                         {isEarlybird ? '🐣 早鳥首年' : '⭐ 一般年繳'}
                                       </span>
-                                      {/* 測試訂單標記 — is_test_order=true 表示內部沙盒/偵錯紀錄，不計入正式營收 */}
-                                      {order.is_test_order && (
-                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-500/20 text-yellow-400" title="此訂單標記為內部測試，不計入 AdminRevenue 營收統計">
-                                          🧪 測試訂單
-                                        </span>
-                                      )}
+                                      {/* 測試訂單標記 — 可點擊切換 is_test_order；true 表示內部沙盒/偵錯紀錄不計入正式營收 */}
+                                      <button
+                                        onClick={e => {
+                                          e.stopPropagation()
+                                          handleToggleTestOrder('aivis_newebpay_pending', 'merchant_order_no', order.merchant_order_no, !!order.is_test_order, u.id)
+                                        }}
+                                        disabled={togglingTest[order.merchant_order_no]}
+                                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-40 ${
+                                          order.is_test_order
+                                            ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                                            : 'bg-slate-700/50 text-slate-500 hover:bg-yellow-500/15 hover:text-yellow-400'
+                                        }`}
+                                        title={order.is_test_order ? '點擊取消測試標記（將計入正式營收）' : '點擊標為測試訂單（從正式營收排除）'}
+                                      >
+                                        {togglingTest[order.merchant_order_no] ? '...' : order.is_test_order ? '🧪 測試訂單' : '⭕ 標為測試'}
+                                      </button>
                                       <span className="text-slate-200 font-semibold">NT$ {Number(order.amount).toLocaleString()}</span>
                                     </div>
                                     {/* 退款狀態 chip */}
@@ -964,12 +1026,22 @@ export default function AdminUsers() {
                                       }`}>
                                         {isActive ? '📅 月繳進行中' : isCancelled ? '⏸ 已取消委託' : period.status}
                                       </span>
-                                      {/* 測試訂單標記 */}
-                                      {period.is_test_order && (
-                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-500/20 text-yellow-400" title="此訂閱標記為內部測試，不計入 AdminRevenue 營收統計">
-                                          🧪 測試訂閱
-                                        </span>
-                                      )}
+                                      {/* 測試訂閱標記 — 可點擊切換 is_test_order */}
+                                      <button
+                                        onClick={e => {
+                                          e.stopPropagation()
+                                          handleToggleTestOrder('aivis_newebpay_period', 'period_no', period.period_no, !!period.is_test_order, u.id)
+                                        }}
+                                        disabled={togglingTest[period.period_no]}
+                                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-40 ${
+                                          period.is_test_order
+                                            ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                                            : 'bg-slate-700/50 text-slate-500 hover:bg-yellow-500/15 hover:text-yellow-400'
+                                        }`}
+                                        title={period.is_test_order ? '點擊取消測試標記（將計入正式營收）' : '點擊標為測試訂閱（從正式營收排除）'}
+                                      >
+                                        {togglingTest[period.period_no] ? '...' : period.is_test_order ? '🧪 測試訂閱' : '⭕ 標為測試'}
+                                      </button>
                                       <span className="text-slate-200 font-semibold">
                                         已扣 {period.already_times || 0} 期・NT$ {lifetimeRevenue.toLocaleString()}
                                       </span>
@@ -1054,6 +1126,73 @@ export default function AdminUsers() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* 分頁 footer — 預設每頁 50 筆，超過時顯示上下頁 + 跳頁 + 每頁筆數選擇 */}
+            {!loading && filtered.length > 0 && (
+              <div className="flex items-center justify-between flex-wrap gap-3 px-6 py-3 bg-slate-900 border-t border-slate-700 text-sm">
+                <div className="text-slate-400">
+                  共 <strong className="text-slate-200">{filtered.length}</strong> 筆
+                  <span className="text-slate-600 mx-2">·</span>
+                  顯示第 <strong className="text-slate-200">{(safePage - 1) * pageSize + 1}</strong>
+                  &ndash;<strong className="text-slate-200">{Math.min(safePage * pageSize, filtered.length)}</strong> 筆
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { const p = Math.max(1, safePage - 1); setCurrentPage(p); setPageInput(String(p)) }}
+                    disabled={safePage === 1}
+                    className="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ← 上一頁
+                  </button>
+                  <div className="flex items-center gap-1 text-slate-400">
+                    第
+                    <input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={pageInput}
+                      onChange={e => setPageInput(e.target.value)}
+                      onBlur={() => {
+                        const n = Math.min(Math.max(1, parseInt(pageInput, 10) || 1), totalPages)
+                        setCurrentPage(n)
+                        setPageInput(String(n))
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          const n = Math.min(Math.max(1, parseInt(pageInput, 10) || 1), totalPages)
+                          setCurrentPage(n)
+                          setPageInput(String(n))
+                          e.currentTarget.blur()
+                        }
+                      }}
+                      className="w-16 px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 text-center focus:outline-none focus:border-orange-500"
+                    />
+                    / {totalPages} 頁
+                  </div>
+                  <button
+                    onClick={() => { const p = Math.min(totalPages, safePage + 1); setCurrentPage(p); setPageInput(String(p)) }}
+                    disabled={safePage === totalPages}
+                    className="px-3 py-1.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    下一頁 →
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400">
+                  每頁
+                  <select
+                    value={pageSize}
+                    onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); setPageInput('1') }}
+                    className="px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-200 focus:outline-none focus:border-orange-500"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                  </select>
+                  筆
+                </div>
               </div>
             )}
           </div>

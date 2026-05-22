@@ -31,6 +31,20 @@
   - 勾「包含測試訂單」會跑回原本帶測試的數字（aark6465 的 6 Top-up + 5 退款），方便偵錯
   - AdminUsers 展開 aark6465 仍會看到完整 11 筆紀錄，每筆有 🧪 黃 chip 標示
 
+- 🔄 **第三階段 — AdminUsers 分頁 + 訂單測試標記 toggle**（同日補完，UI 完整化）：
+  - **分頁系統**：
+    - state：`currentPage` / `pageSize` (預設 50) / `pageInput` (跳頁輸入框)
+    - filter / search 變動時 useEffect 自動 `setCurrentPage(1)` 避免空白頁
+    - `paged = filtered.slice((safePage-1)*pageSize, safePage*pageSize)`，列表 render 改用 paged
+    - footer UI：左邊「共 N 筆・顯示第 X-Y 筆」、中間「← 上一頁 [跳頁 input] / 共 N 頁 下一頁 →」、右邊「每頁 [25/50/100/200] 筆」select
+    - 適用所有 filter（全部/Pro/Free/早鳥/年繳/月繳/授予/退款），切換 filter 自動回第 1 頁
+  - **訂單測試標記 toggle**：
+    - 新增 handler `handleToggleTestOrder(table, idColumn, idValue, currentValue, userId)` — supabase update + 樂觀更新 setState（不必 refetch）
+    - 防 double-click：`togglingTest` 物件 key 為 merchant_order_no 或 period_no
+    - 年繳訂單 chip 從靜態 `<span>` 改為 `<button>`，is_test_order=true 顯示「🧪 測試訂單」黃色 + hover 提示「點擊取消」；false 顯示「⭕ 標為測試」灰色 + hover 變黃
+    - 月繳訂閱 chip 同邏輯，按下切換 `aivis_newebpay_period.is_test_order`
+    - 客服在 admin 端可一鍵切換任一筆訂單的測試狀態，不必跑 SQL UPDATE
+
 - 🔄 **第二階段 — 自動標記**（同日加碼，避免日後手動 UPDATE SQL）：
   - **新建 [api/lib/test-detect.js](api/lib/test-detect.js)**：`isTestOrder(email)` helper 判斷兩條件 OR：
     1. **沙盒環境**（`NEWEBPAY_API_URL` 含 `ccore.newebpay.com`）→ 所有訂單一律標 test
