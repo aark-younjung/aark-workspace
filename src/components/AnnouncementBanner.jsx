@@ -37,16 +37,21 @@ const KIND_STYLE = {
 
 const STORAGE_KEY = 'dismissed_announcements'
 
+// dismiss key 用 `${id}:${updated_at}` 組合 — admin 編輯後 updated_at 變新值，
+// 等於「新公告」，原本被 dismiss 過的也會重新顯示，解決「編輯後前台看不到」問題
+function dismissKey(id, updatedAt) {
+  return `${id}:${updatedAt || ''}`
+}
 function getDismissed() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     return raw ? new Set(raw.split(',').filter(Boolean)) : new Set()
   } catch { return new Set() }
 }
-function addDismissed(id) {
+function addDismissed(key) {
   try {
     const set = getDismissed()
-    set.add(id)
+    set.add(key)
     localStorage.setItem(STORAGE_KEY, [...set].join(','))
   } catch { /* localStorage 不可用就算了 — 重整後 banner 會再出現 */ }
 }
@@ -73,7 +78,7 @@ export default function AnnouncementBanner() {
     let cancelled = false
     supabase
       .from('announcements')
-      .select('id, title, content, kind, target, link_url, link_text')
+      .select('id, title, content, kind, target, link_url, link_text, updated_at')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -90,12 +95,14 @@ export default function AnnouncementBanner() {
     return () => { cancelled = true }
   }, [isPro, authLoading])
 
-  function handleDismiss(id) {
-    addDismissed(id)
-    setDismissed(prev => new Set([...prev, id]))
+  function handleDismiss(id, updatedAt) {
+    const key = dismissKey(id, updatedAt)
+    addDismissed(key)
+    setDismissed(prev => new Set([...prev, key]))
   }
 
-  const visible = items.filter(a => !dismissed.has(a.id))
+  // 用 `${id}:${updated_at}` 比對 dismissed — 編輯後 updated_at 變新值 → 不在 set 內 → 重新顯示
+  const visible = items.filter(a => !dismissed.has(dismissKey(a.id, a.updated_at)))
   if (visible.length === 0) return null
 
   return (
@@ -120,7 +127,7 @@ export default function AnnouncementBanner() {
               )}
             </div>
             <button
-              onClick={() => handleDismiss(a.id)}
+              onClick={() => handleDismiss(a.id, a.updated_at)}
               aria-label="關閉公告"
               className={`absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors ${style.text}`}
             >

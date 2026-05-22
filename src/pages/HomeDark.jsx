@@ -341,9 +341,10 @@ export default function HomeDark() {
   useEffect(() => {
     const init = async () => {
       // 跑馬燈 + TOP 8 排行榜的資料來源:websites 與三大面向 audits
+      // websites query 過濾 is_test_site=true（管理員/QA 測試）+ is_public_optout=true（用戶 opt-out 不入榜）
       const [scansRes, wRes, sRes, aRes, gRes] = await Promise.all([
-        supabase.from('seo_audits').select('created_at, websites(name)').order('created_at', { ascending: false }).limit(15),
-        supabase.from('websites').select('id, name, url'),
+        supabase.from('seo_audits').select('created_at, websites!inner(name, is_test_site, is_public_optout)').eq('websites.is_test_site', false).eq('websites.is_public_optout', false).order('created_at', { ascending: false }).limit(15),
+        supabase.from('websites').select('id, name, url').eq('is_test_site', false).eq('is_public_optout', false),
         supabase.from('seo_audits').select('website_id, score, created_at').order('created_at', { ascending: false }),
         supabase.from('aeo_audits').select('website_id, score, created_at').order('created_at', { ascending: false }),
         supabase.from('geo_audits').select('website_id, score, created_at').order('created_at', { ascending: false }),
@@ -887,9 +888,11 @@ export default function HomeDark() {
                     </div>
                   </GlassCard>
                 )
+                // 真實網站點擊跳「公開摘要頁」(/website-summary/:id)，只看分數不看具體缺陷
+                // 樣本資料無真實 id 不可點
                 return site.isSample
                   ? <div key={site.id || i}>{Inner}</div>
-                  : <Link key={site.id || i} to={`/dashboard/${site.id}`} className="block">{Inner}</Link>
+                  : <Link key={site.id || i} to={`/website-summary/${site.id}`} className="block">{Inner}</Link>
               })}
             </div>
           </div>

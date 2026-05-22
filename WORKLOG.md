@@ -6,6 +6,47 @@
 
 ---
 
+### 2026-05-22（再最後）
+**公告 dismiss cache 修 + TOP 8 隱私改 E 方案（公開摘要頁）+ 管理員測試紀錄 toggle:**
+
+- 🐛 **公告 bug**：用戶反映「後台編輯公告後，前台 banner 看不到」。診斷 SQL 證實公告在 DB 是 `應該顯示中` 狀態，問題在前端 localStorage：原本 `dismissed_announcements` 用 `id` 當 key，admin 編輯後 id 不變 → localStorage 仍認為被 dismiss 過 → 不顯示。
+- ✅ **修法**：[AnnouncementBanner.jsx](src/components/AnnouncementBanner.jsx) dismiss key 改成 `${id}:${updated_at}` 組合。Admin 編輯公告後 updated_at 變新值 → 等於「新公告」→ 原本被 dismiss 過的也會重新顯示。select query 加 `updated_at` 欄位。
+
+- 🆕 **TOP 8 公開排行榜隱私改 E 方案**（用戶選 E：混合）：
+  - **SQL 兩條（用戶側待跑）**：
+    ```sql
+    ALTER TABLE websites ADD COLUMN IF NOT EXISTS is_test_site BOOLEAN DEFAULT false;
+    ALTER TABLE websites ADD COLUMN IF NOT EXISTS is_public_optout BOOLEAN DEFAULT false;
+    UPDATE websites SET is_test_site = true
+      WHERE user_id IN (SELECT id FROM profiles WHERE email = 'aark6465@gmail.com');
+    CREATE INDEX IF NOT EXISTS idx_websites_public ON websites(created_at DESC)
+      WHERE is_test_site = false AND is_public_optout = false;
+    ```
+  - **新建公開摘要頁 [src/pages/WebsiteSummary.jsx](src/pages/WebsiteSummary.jsx)**：只顯示 5 大面向分數（SEO/AEO/GEO/E-E-A-T/內容品質）+ 總分大圓 + 累計掃描次數 + 「免費註冊・分析你自己的網站」CTA。**刻意不顯示具體哪些檢測項通過 / 未通過 / 修復建議**。is_public_optout / is_test_site 為 true 直接 404 不存在。
+  - **App.jsx 加路由 `/website-summary/:id`**。
+  - **HomeDark.jsx**：
+    - TOP 8 query 加 filter `is_test_site=false AND is_public_optout=false`
+    - TOP 8 卡片點擊行為從 `<Link to="/dashboard/:id">` 改 `<Link to="/website-summary/:id">`（公開摘要頁取代完整詳情頁）
+    - 跑馬燈 query 同步加 filter（用 inner join + `websites.is_test_site` 條件）
+  - **AdminWebsites.jsx**：
+    - Row 「網站」欄位旁加「🧪 標為測試 / 🧪 測試」toggle 按鈕（管理員一鍵切換）
+    - is_public_optout=true 時顯示「🔒 不公開」紫色 chip 提示客服這個網站是用戶 opt-out 的
+    - 篩選下拉加「全部 / 僅正式（前台可見）/ 🧪 僅測試（前台隱藏）」三選項
+    - 新增 `handleToggleTestSite` handler + `togglingTest` state 防 double-click
+  - **Account.jsx**：
+    - 新增「排行榜公開設定」GlassCard 列出用戶所有非測試網站
+    - 每個網站獨立 toggle「🌐 公開 / 🔒 不公開」（預設公開，對應 is_public_optout=false）
+    - 用 `.eq('user_id', user.id)` 防越權，被 admin 標 is_test_site 的網站不會出現在此清單（已是隱藏狀態）
+    - 樂觀更新 UI 不必 refetch
+
+- 🔖 **設計取捨**：
+  - **Per-website opt-out 而非 per-user**：用戶可能有的網站想公開（要展示效果）、有的私密（內部工具），給每個網站獨立開關更彈性。
+  - **公開摘要頁**：只給總分與五大面向分數聚合數字，**刻意隱藏具體哪幾項通過/未通過/有什麼問題**，這些屬於網主私密診斷細節。但「總分 73」這種 aggregated 指標仍有展示效果作為社會證明。
+  - **is_test_site 由 admin 操作**：用戶面對 admin 信任邊界，管理員自己內測的網站應該管理員自己標。但 schema 上同時允許未來自動偵測（e.g. email 在 TEST_EMAILS 名單時自動 true，跟 is_test_order 類似機制，目前只手動）。
+  - **WebsiteSummary 對未登入訪客也可看**：故意設計成公開可看（無需登入），降低 TOP 8 點進去的摩擦；末尾 CTA 引導註冊 + 分析自己網站。
+
+---
+
 ### 2026-05-22（最後）
 **Free 方案功能稽核 + URL 正規化 + websites schema 修補:**
 

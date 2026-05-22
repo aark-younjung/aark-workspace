@@ -47,6 +47,44 @@ export default function Account() {
   const [emailSubs, setEmailSubs] = useState([])
   const [unsubLoading, setUnsubLoading] = useState(null)
 
+  // 排行榜公開設定 — 用戶可選擇個別網站不在前台 TOP 8 公開
+  // 對應 websites.is_public_optout 欄位；被 admin 標為測試 (is_test_site) 的網站不在此清單顯示
+  const [userWebsites, setUserWebsites] = useState([])
+  const [togglingOptout, setTogglingOptout] = useState({})  // key=siteId 防 double-click
+
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    ;(async () => {
+      const { data } = await supabase
+        .from('websites')
+        .select('id, name, url, is_public_optout')
+        .eq('user_id', user.id)
+        .eq('is_test_site', false)
+        .order('created_at', { ascending: false })
+      if (!cancelled) setUserWebsites(data || [])
+    })()
+    return () => { cancelled = true }
+  }, [user])
+
+  const handleToggleOptout = async (siteId, currentValue) => {
+    if (togglingOptout[siteId]) return
+    setTogglingOptout(prev => ({ ...prev, [siteId]: true }))
+    try {
+      const { error } = await supabase
+        .from('websites')
+        .update({ is_public_optout: !currentValue })
+        .eq('id', siteId)
+        .eq('user_id', user.id)   // 防越權，只能改自己的網站
+      if (error) throw error
+      setUserWebsites(prev => prev.map(w => w.id === siteId ? { ...w, is_public_optout: !currentValue } : w))
+    } catch (e) {
+      alert('更新失敗：' + e.message)
+    } finally {
+      setTogglingOptout(prev => ({ ...prev, [siteId]: false }))
+    }
+  }
+
   useEffect(() => {
     if (user && isPro) fetchEmailSubs()
   }, [user, isPro])
@@ -550,6 +588,43 @@ export default function Account() {
           </GlassCard>
 
           {/* Email 週報 — 暫時停用，等 Pro 訂閱完整接通再開 */}
+
+          {/* 排行榜公開設定 — 個別網站可勾選「不在首頁 TOP 8 公開」 */}
+          {userWebsites.length > 0 && (
+            <GlassCard style={{ padding: 24 }}>
+              <h3 className="text-sm font-semibold uppercase tracking-wide mb-2" style={{ color: T.textMid }}>排行榜公開設定</h3>
+              <p className="text-xs mb-4" style={{ color: T.textLow }}>
+                關閉「公開」會把該網站從首頁 AI 能見度 TOP 8 排行榜 / 公開摘要頁拿掉，只剩你自己登入後能看到分析。預設公開。
+              </p>
+              <div className="space-y-2">
+                {userWebsites.map(w => {
+                  let host = w.url
+                  try { host = new URL(w.url).hostname.replace(/^www\./, '') } catch { /* */ }
+                  const isPublic = !w.is_public_optout
+                  return (
+                    <div key={w.id} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 border" style={{ background: 'rgba(255,255,255,.03)', borderColor: T.cardBorder }}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: T.text }}>{w.name || host}</p>
+                        <p className="text-xs truncate" style={{ color: T.textLow }}>{host}</p>
+                      </div>
+                      <button
+                        onClick={() => handleToggleOptout(w.id, !!w.is_public_optout)}
+                        disabled={togglingOptout[w.id]}
+                        className="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors disabled:opacity-40"
+                        style={isPublic
+                          ? { background: 'rgba(16,185,129,.15)', color: '#34d399', border: '1px solid rgba(16,185,129,.3)' }
+                          : { background: 'rgba(148,163,184,.15)', color: '#94a3b8', border: '1px solid rgba(148,163,184,.3)' }
+                        }
+                        title={isPublic ? '此網站目前公開在排行榜 — 點擊關閉公開' : '此網站不公開 — 點擊開啟公開'}
+                      >
+                        {togglingOptout[w.id] ? '...' : isPublic ? '🌐 公開' : '🔒 不公開'}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </GlassCard>
+          )}
 
           {/* 帳號操作 — 登出 */}
           <GlassCard style={{ padding: 24 }}>

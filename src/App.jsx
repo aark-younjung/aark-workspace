@@ -19,6 +19,7 @@ import Pricing from './pages/Pricing'
 import Account from './pages/Account'
 import FAQ from './pages/FAQ'
 import ContentAudit from './pages/ContentAudit'
+import WebsiteSummary from './pages/WebsiteSummary'
 import GA4Report from './pages/GA4Report'
 import GSCReport from './pages/GSCReport'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -88,6 +89,8 @@ function AppInner() {
         <Route path="/showcase" element={<Showcase />} />
         <Route path="/compare" element={<Compare />} />
         <Route path="/dashboard/:id" element={<Dashboard />} />
+        {/* 公開摘要頁（TOP 8 點擊進來）— 只顯示分數總覽，不公開具體缺陷 */}
+        <Route path="/website-summary/:id" element={<WebsiteSummary />} />
         <Route path="/seo-audit/:id" element={<SEOAudit />} />
         <Route path="/aeo-audit/:id" element={<AEOAudit />} />
         <Route path="/geo-audit/:id" element={<GEOAudit />} />

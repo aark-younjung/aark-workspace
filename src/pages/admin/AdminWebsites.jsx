@@ -11,6 +11,8 @@ export default function AdminWebsites() {
   const [sortBy, setSortBy] = useState('created_at')
   const [deletingId, setDeletingId] = useState(null)
   const [confirmId, setConfirmId] = useState(null)
+  const [togglingTest, setTogglingTest] = useState({})  // key=siteId, 防 double-click
+  const [filterTest, setFilterTest] = useState('all')  // all / not_test / test_only
 
   useEffect(() => {
     fetchWebsites()
@@ -19,11 +21,11 @@ export default function AdminWebsites() {
   const fetchWebsites = async () => {
     setLoading(true)
     try {
-      // Step 1：取網站 + 分析分數
+      // Step 1：取網站 + 分析分數 + is_test_site / is_public_optout 旗標
       const { data: sitesData, error: sitesError } = await supabase
         .from('websites')
         .select(`
-          id, url, name, created_at, user_id,
+          id, url, name, created_at, user_id, is_test_site, is_public_optout,
           seo_audits(score, created_at),
           aeo_audits(score, created_at),
           geo_audits(score, created_at),
@@ -96,17 +98,43 @@ export default function AdminWebsites() {
     }
   }
 
+  // 切換網站 is_test_site 旗標（測試紀錄不入 TOP 8 公開排行榜）
+  const handleToggleTestSite = async (siteId, currentValue) => {
+    if (togglingTest[siteId]) return
+    setTogglingTest(prev => ({ ...prev, [siteId]: true }))
+    try {
+      const { error } = await supabase
+        .from('websites')
+        .update({ is_test_site: !currentValue })
+        .eq('id', siteId)
+      if (error) throw error
+      setWebsites(prev => prev.map(w => w.id === siteId ? { ...w, is_test_site: !currentValue } : w))
+    } catch (e) {
+      alert('切換測試標記失敗：' + e.message)
+    } finally {
+      setTogglingTest(prev => ({ ...prev, [siteId]: false }))
+    }
+  }
+
   const ScoreBadge = ({ score, color }) => {
     if (score === null) return <span className="text-slate-600">—</span>
     return <span className={`font-semibold ${color}`}>{score}</span>
   }
 
   const filtered = websites
-    .filter(w =>
-      w.url?.toLowerCase().includes(search.toLowerCase()) ||
-      w.name?.toLowerCase().includes(search.toLowerCase()) ||
-      w.profiles?.email?.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter(w => {
+      // is_test_site 篩選
+      if (filterTest === 'not_test' && w.is_test_site) return false
+      if (filterTest === 'test_only' && !w.is_test_site) return false
+      // 搜尋
+      const q = search.toLowerCase()
+      if (!q) return true
+      return (
+        w.url?.toLowerCase().includes(q) ||
+        w.name?.toLowerCase().includes(q) ||
+        w.profiles?.email?.toLowerCase().includes(q)
+      )
+    })
     .sort((a, b) => {
       if (sortBy === 'score') return (getOverall(b) ?? 0) - (getOverall(a) ?? 0)
       return new Date(b.created_at) - new Date(a.created_at)
@@ -137,6 +165,16 @@ export default function AdminWebsites() {
             >
               <option value="created_at">最新分析</option>
               <option value="score">綜合分數高到低</option>
+            </select>
+            {/* 測試紀錄篩選 — 預設全部，可切「正式網站」/「僅測試」單獨檢視 */}
+            <select
+              value={filterTest}
+              onChange={e => setFilterTest(e.target.value)}
+              className="bg-slate-800 border border-slate-700 text-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-500"
+            >
+              <option value="all">全部網站</option>
+              <option value="not_test">僅正式網站（前台可見）</option>
+              <option value="test_only">🧪 僅測試網站（前台隱藏）</option>
             </select>
           </div>
 
@@ -173,10 +211,31 @@ export default function AdminWebsites() {
                 {filtered.map(site => (
                   <div key={site.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-700/30 transition-colors">
                     <div className="col-span-3">
-                      {/* 網站名稱純顯示，不再吃掉外部網址連結 */}
-                      <p className="text-slate-200 text-sm font-medium truncate">
-                        {site.name || site.url}
-                      </p>
+                      {/* 網站名稱 + 測試標記 chip（可點切換） */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-slate-200 text-sm font-medium truncate">
+                          {site.name || site.url}
+                        </p>
+                        <button
+                          onClick={() => handleToggleTestSite(site.id, !!site.is_test_site)}
+                          disabled={togglingTest[site.id]}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-40 ${
+                            site.is_test_site
+                              ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                              : 'bg-slate-700/50 text-slate-500 hover:bg-yellow-500/15 hover:text-yellow-400'
+                          }`}
+                          title={site.is_test_site
+                            ? '此網站已標為測試 — 點擊取消測試標記（讓它重新出現在前台 TOP 8）'
+                            : '點擊標為測試網站（從前台 TOP 8 排行榜排除）'}
+                        >
+                          {togglingTest[site.id] ? '...' : site.is_test_site ? '🧪 測試' : '⭕ 標為測試'}
+                        </button>
+                        {site.is_public_optout && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-300" title="用戶 opt-out 不在 TOP 8 公開">
+                            🔒 不公開
+                          </span>
+                        )}
+                      </div>
                       {/* 網址直接連到客戶實際網站（外部開新分頁） */}
                       <a href={site.url} target="_blank" rel="noopener noreferrer"
                         className="text-slate-500 text-xs hover:text-slate-300 transition-colors truncate block">
