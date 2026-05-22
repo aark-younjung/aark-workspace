@@ -34,6 +34,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { buildPaymentForm, buildPeriodForm, generateOrderNo } from './lib/newebpay.js'
+import { isTestOrder } from './lib/test-detect.js'
 
 const PLAN_SPEC = {
   yearly: {
@@ -122,6 +123,9 @@ export default async function handler(req, res) {
   const merchantOrderNo = generateOrderNo(prefix)
   const dbKind = plan === 'monthly' ? 'pro_monthly' : 'pro_yearly'
 
+  // 沙盒環境 OR email 在 TEST_EMAILS 名單 → 自動標 is_test_order=true，避免測試訂單污染營收統計
+  const testFlag = isTestOrder(email)
+
   const { error: pendingErr } = await supabase
     .from('aivis_newebpay_pending')
     .insert({
@@ -131,6 +135,7 @@ export default async function handler(req, res) {
       pack: plan,
       amount: spec.amount,
       status: 'pending',
+      is_test_order: testFlag,
     })
   if (pendingErr) {
     console.error('Failed to insert pending order:', pendingErr)

@@ -27,6 +27,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { buildPaymentForm, generateOrderNo } from '../lib/newebpay.js'
+import { isTestOrder } from '../lib/test-detect.js'
 
 const PACK_SPEC = {
   small: { amount: 490, quota: 300, label: 'aivis Top-up 小包 加購 300 次' },
@@ -111,6 +112,9 @@ export default async function handler(req, res) {
   }
 
   // 2. 再把 pending 寫進去（如果 NewebPay form-submit 後沒回 notify，這筆會留著當 stale order 追蹤）
+  // 沙盒環境 OR email 在 TEST_EMAILS 名單 → 自動標 is_test_order=true
+  const testFlag = isTestOrder(email)
+
   const { error: pendingErr } = await supabase
     .from('aivis_newebpay_pending')
     .insert({
@@ -121,6 +125,7 @@ export default async function handler(req, res) {
       quota: spec.quota,
       amount: spec.amount,
       status: 'pending',
+      is_test_order: testFlag,
     })
   if (pendingErr) {
     console.error('Failed to insert pending order:', pendingErr)

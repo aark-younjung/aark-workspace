@@ -108,7 +108,11 @@ aark-workspace/
 - `aivis_newebpay_pending.is_test_order` + `aivis_newebpay_period.is_test_order` 兩張表都有 BOOLEAN DEFAULT false
 - 標記內部沙盒/偵錯訂單，避免污染 AdminRevenue 統計
 - AdminRevenue 預設過濾（toggle 可包含測試）；AdminUsers 列表分類過濾但展開詳情仍顯示（加 🧪 chip）
-- 新增測試帳號時：`UPDATE aivis_newebpay_pending SET is_test_order = true WHERE user_id IN (SELECT id FROM profiles WHERE email = 'xxx@example.com')`
+- **自動標記**：所有 checkout endpoint（pro-yearly-newebpay、aivis/checkout-topup-newebpay）+ NPA notify 的 period upsert 都自動呼叫 [api/lib/test-detect.js](api/lib/test-detect.js) `isTestOrder(email)` 設定旗標
+- **判斷條件**（兩條件 OR）：
+  1. **沙盒環境** — `NEWEBPAY_API_URL` 含 `ccore.newebpay.com`
+  2. **測試 email 名單** — Vercel env `TEST_EMAILS="email1@x.com,email2@x.com"` 逗號分隔
+- 新增測試帳號只需把 email 加到 `TEST_EMAILS` env var，不必跑 SQL UPDATE
 
 **Pro 方案判斷：** `profiles.is_pro = true`（目前由 Stripe webhook 寫入，也可在 Supabase 手動切換）
 

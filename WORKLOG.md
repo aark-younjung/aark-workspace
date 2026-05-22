@@ -31,6 +31,17 @@
   - 勾「包含測試訂單」會跑回原本帶測試的數字（aark6465 的 6 Top-up + 5 退款），方便偵錯
   - AdminUsers 展開 aark6465 仍會看到完整 11 筆紀錄，每筆有 🧪 黃 chip 標示
 
+- 🔄 **第二階段 — 自動標記**（同日加碼，避免日後手動 UPDATE SQL）：
+  - **新建 [api/lib/test-detect.js](api/lib/test-detect.js)**：`isTestOrder(email)` helper 判斷兩條件 OR：
+    1. **沙盒環境**（`NEWEBPAY_API_URL` 含 `ccore.newebpay.com`）→ 所有訂單一律標 test
+    2. **email 在 `TEST_EMAILS` 名單**（env 逗號分隔）→ 正式環境下 admin/QA 用真卡買測試單也標
+  - **3 個 insert 點插入 `is_test_order: testFlag`**：
+    - [api/checkout-pro-yearly-newebpay.js](api/checkout-pro-yearly-newebpay.js) — Pro 年繳 / 早鳥 / 月繳 pending insert
+    - [api/aivis/checkout-topup-newebpay.js](api/aivis/checkout-topup-newebpay.js) — Top-up 小/大包 pending insert
+    - [api/newebpay-notify.js](api/newebpay-notify.js) `handlePeriodNotify` — NPA 首期 notify 把 pending.is_test_order 帶到 period upsert（pending 已在 checkout 時設好，period 只是複製過來）
+  - **未來新增測試帳號**：把 email 加到 Vercel env `TEST_EMAILS="aark6465@gmail.com,qa@example.com"` 即可，不必跑 SQL
+  - **沙盒 vs 正式自動切換**：env `NEWEBPAY_API_URL` 切回正式（`core.newebpay.com`）後，沙盒條件自動失效，只剩 email 名單條件生效 — 跟 NewebPay 切沙盒/正式同步
+
 ---
 
 ### 2026-05-22

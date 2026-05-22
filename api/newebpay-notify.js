@@ -515,15 +515,17 @@ async function handlePeriodNotify({ req, res, supabase, payload, result, merchan
   const authTime = result.AuthTime  // NewebPay 格式 YYYYMMDDHHmmss
   const paymentType = result.PaymentType || 'CREDIT'
 
-  // 1. 從 pending 表查回 user — 不論首期還是後續期，pending 都應該存在（首期 checkout 寫入）
+  // 1. 從 pending 表查回 user + is_test_order — 不論首期還是後續期，pending 都應該存在（首期 checkout 寫入）
   //    後續期若 pending 已是 paid 狀態仍能查到 user_id（不刪 pending row）
+  //    is_test_order 從 pending 帶到 period，避免 sandbox/QA 測試訂閱寫進正式 period 表污染統計
   const { data: pending } = await supabase
     .from('aivis_newebpay_pending')
-    .select('user_id, status, kind')
+    .select('user_id, status, kind, is_test_order')
     .eq('merchant_order_no', merchantOrderNo)
     .maybeSingle()
 
   let userId = pending?.user_id
+  const isTest = pending?.is_test_order === true
   // 後續期可能 pending 表 user_id 查不到（罕見邊角，例如 pending 被誤刪），fallback 從 aivis_newebpay_period 查
   if (!userId) {
     const { data: periodRow } = await supabase
@@ -578,6 +580,7 @@ async function handlePeriodNotify({ req, res, supabase, payload, result, merchan
         first_payment_at: new Date().toISOString(),
         last_payment_at: new Date().toISOString(),
         notify_raw_first: payload,
+        is_test_order: isTest,   // 從 pending 帶過來，沙盒/QA 測試訂閱不污染營收統計
       }, { onConflict: 'period_no', ignoreDuplicates: false })
     if (periodErr) {
       console.error('NPA period insert error:', periodErr)
