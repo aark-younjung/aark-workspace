@@ -138,7 +138,8 @@ function checkOutboundLinks(doc, pageUrl) {
  */
 export async function analyzeEEAT(url) {
   try {
-    const html = await fetchPageContent(url)
+    // fetchPageContent 自 2026-05-22 改回傳 { html, sslFallback }，這裡只用 html
+    const { html } = await fetchPageContent(url)
     const doc = parseHTML(html)
 
     const results = {

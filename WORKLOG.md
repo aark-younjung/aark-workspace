@@ -24,6 +24,15 @@
 - 🐛 **Bug 3（已查到根因，已修）**：pilotoptical.com.tw 3 個 row 都沒寫進任何 audits — Vercel logs 顯示 `/api/fetch-url` 對 pilotoptical 抛 `UNABLE_TO_VERIFY_LEAF_SIGNATURE` SSL 錯誤。pilotoptical 的伺服器只送終端憑證沒送中間憑證，瀏覽器有寬容機制能自動補但 Node.js 嚴格驗證直接拒連線。台灣很多小網站都這樣設定。
 - ✅ **修法**：[api/fetch-url.js](api/fetch-url.js) 加 SSL 容錯 — 第一次嚴格驗證失敗時，如果是 SSL 憑證相關錯誤碼（`UNABLE_TO_VERIFY_LEAF_SIGNATURE` / `CERT_HAS_EXPIRED` / `SELF_SIGNED_CERT_IN_CHAIN` 等 6 種），動態 import `undici` 用 `new Agent({ connect: { rejectUnauthorized: false } })` 重試。回應加 `sslFallback: true` 旗標供前端日後 surface 警告（目前不顯示）。讀公開 HTML 不傳憑證安全可接受。`undici` 從 supabase-js transitive dep 升為 package.json 明確 dep `^5.29.0`。
 
+- 🆕 **SSL 憑證鏈檢測加進 SEO 變第 6 項**（同日加碼）：
+  - **SQL（待用戶側跑）**：`ALTER TABLE seo_audits ADD COLUMN IF NOT EXISTS ssl_chain JSONB;`
+  - **fetchPageContent 簽名改變**：從 `Promise<string>` → `Promise<{ html, sslFallback }>`。所有 caller（seoAnalyzer / aeoAnalyzer / geoAnalyzer / eeatAnalyzer / HomeDark）都同步改 destructure。Legacy `pages/_legacy/Home.jsx` 不改（已下線）。
+  - **新增 `checkSSLChain(sslFallback)` 函式**：用 fetch-url 已經給的 sslFallback 旗標判定，0 額外請求成本。passed=true 給 100 分、passed=false 給 0 分。
+  - **analyzeSEO** 從 5 項變 6 項，總分 ÷5 改 ÷6。
+  - **HomeDark.jsx** seo_audits insert 加 `ssl_chain: seoResult.ssl_chain`。
+  - **SEOAudit.jsx** SEO_CHECKS 陣列加第 6 項 `ssl_chain`，priority P2（比 page_speed 的 P3 更重要，因影響爬蟲可達性更直接）。舊資料（沒這欄位）顯示「此次掃描未檢測」當作 passed 不扣分。
+  - **產品定位連結**：SSL 鏈不完整 → 嚴格爬蟲（含部分 AI 引擎）抓不到 → 影響 AI 引用率 → 跟「AI 雷達」主訴求一致，可包裝成差異化亮點（Ahrefs/SEMrush 不檢這個）。
+
 - 🔧 **Free 方案功能稽核**（文案 vs 實際對齊）：
   - **修復碼產生器**：Pricing.jsx FEATURES_PRO 寫成 Pro 專屬，但 Dashboard.jsx Tab 2 註解「免費開放」且實際無 `isPro` 守衛 — 文案與實作矛盾。決定走 B 方案（承認既成事實）：從 FEATURES_PRO 移除「修復碼產生器」，加進 FEATURES_FREE 改寫為「基礎修復碼產生器（llms.txt / JSON-LD / FAQ Schema 通用模板）」；FEATURES_PRO 改成更精準的「平台別修復指南（WordPress / Shopify / Wix / HTML 各別整合教學）」對應 IssueBoard 展開的 platform-specific 修復面板。
   - **AI 優化建議數**：Pricing.jsx 寫「3 條通用方向」，但 Dashboard.jsx `getImprovementSuggestions = () => getAllImprovements().slice(0, 5)` 給所有人 5 條。決定走 B（讓 Free 真的只看 3、Pro 看 5）：`slice(0, isPro ? 5 : 3)` + 加 `hiddenSuggestionCount` 計算被隱藏的條數 + 在 Tab 1 的建議清單下方加「還有 N 條優先處理建議僅 Pro 版可見 → 升級 Pro」CTA 卡。Pricing 文案也對應修飾為「3 條優先處理項目」/「完整版（5 條優先處理項目）」更精準描述。

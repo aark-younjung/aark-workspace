@@ -14,18 +14,19 @@ const API_BASE = '/api/fetch-url'
 /**
  * 取得網頁內容（使用 Serverless API 解決 CORS 問題）
  * @param {string} url - 目標網址
- * @returns {Promise<string>} - HTML 內容
+ * @returns {Promise<{html: string, sslFallback: boolean}>} - HTML 內容 + SSL 旗標
+ *   sslFallback=true 代表此網站 SSL 憑證鏈不完整，後端用 relaxed verify fallback 才抓到
  */
 export async function fetchPageContent(url) {
   // 使用 Vercel Serverless Function API
   const proxyUrl = `${API_BASE}?url=${encodeURIComponent(url)}`
-  
+
   try {
     const response = await fetch(proxyUrl)
     if (response.ok) {
       const data = await response.json()
       if (data.success) {
-        return data.content
+        return { html: data.content, sslFallback: !!data.sslFallback }
       }
       throw new Error(data.error || 'Failed to fetch')
     }
@@ -33,6 +34,27 @@ export async function fetchPageContent(url) {
   } catch (error) {
     console.error('Serverless fetch failed:', error)
     throw new Error('無法抓取網頁內容')
+  }
+}
+
+/**
+ * SSL 憑證鏈完整性檢測
+ * 用 fetch-url 回傳的 sslFallback 旗標判斷
+ * @param {boolean} sslFallback - 是否用 relaxed verify fallback 才抓到
+ * @returns {Object} - 檢測結果
+ */
+function checkSSLChain(sslFallback) {
+  const passed = !sslFallback
+  return {
+    passed,
+    score: passed ? 100 : 0,
+    fallback: !!sslFallback,
+    message: passed
+      ? 'SSL 憑證鏈完整，所有爬蟲都能順利連線'
+      : 'SSL 憑證鏈不完整（少送中間憑證）— 主流瀏覽器會自動補抓所以使用者看不出問題，但 Node.js 爬蟲、curl、部分監控服務、舊版 Android、企業內網代理會直接拒絕連線。含 AI 引擎在內的部分爬蟲會抓不到你的網站，影響 AI 引用率。',
+    recommendation: passed
+      ? '無需處理'
+      : '步驟：(1) 去 https://www.ssllabs.com/ssltest/ 測你的網站，確認 "Chain issues: Incomplete" (2) 找你的網管 / 主機商，把 SSL 設定改成「完整鏈 fullchain」而非單張終端憑證 (3) Let\'s Encrypt 用戶：證書路徑改用 fullchain.pem (4) Nginx 用戶：ssl_certificate 指向 fullchain (5) Cloudflare 免費版預設就有完整鏈，無需處理',
   }
 }
 
@@ -270,22 +292,23 @@ export async function analyzeSEO(url) {
   }
   
   try {
-    // 取得網頁內容
-    const html = await fetchPageContent(cleanUrl)
+    // 取得網頁內容 + SSL 旗標（sslFallback=true 代表憑證鏈不完整需 relaxed verify）
+    const { html, sslFallback } = await fetchPageContent(cleanUrl)
     const doc = parseHTML(html)
-    
-    // 執行各項檢測
+
+    // 執行各項檢測（第 6 項 SSL 不需 DOM，從 fetch 旗標判定）
     const metaTags = checkMetaTags(doc)
     const h1Structure = checkH1Structure(doc)
     const altTags = checkAltTags(doc)
     const mobileCompatible = checkMobileCompatibility(doc)
     const pageSpeed = await checkPageSpeed(cleanUrl)
-    
-    // 計算總分
+    const sslChain = checkSSLChain(sslFallback)
+
+    // 計算總分（6 項平均）
     const totalScore = Math.round(
-      (metaTags.score + h1Structure.score + altTags.score + mobileCompatible.score + pageSpeed.score) / 5
+      (metaTags.score + h1Structure.score + altTags.score + mobileCompatible.score + pageSpeed.score + sslChain.score) / 6
     )
-    
+
     // 回傳結果
     const result = {
       url: cleanUrl,
@@ -295,12 +318,13 @@ export async function analyzeSEO(url) {
       alt_tags: altTags,
       mobile_compatible: mobileCompatible,
       page_speed: pageSpeed,
+      ssl_chain: sslChain,
       analyzed_at: new Date().toISOString()
     }
-    
+
     console.log('SEO Analysis complete:', result)
     return result
-    
+
   } catch (error) {
     console.error('SEO Analysis failed:', error)
     throw error
@@ -342,6 +366,12 @@ export function getAuditItems() {
       name: '網頁載入速度',
       description: '檢測網頁載入時間',
       icon: '⚡'
+    },
+    {
+      id: 'ssl_chain',
+      name: 'SSL 憑證鏈完整性',
+      description: '檢測 SSL 憑證是否包含中間憑證 — 不完整時嚴格爬蟲（含部分 AI 引擎）會抓不到網站',
+      icon: '🔒'
     }
   ]
 }

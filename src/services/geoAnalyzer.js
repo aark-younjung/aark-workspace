@@ -187,7 +187,8 @@ export async function analyzeGEO(url) {
   let doc = null
   try {
     const { fetchPageContent, parseHTML } = await import('./seoAnalyzer')
-    const html = await fetchPageContent(cleanUrl)
+    // fetchPageContent 自 2026-05-22 改回傳 { html, sslFallback }，這裡只用 html
+    const { html } = await fetchPageContent(cleanUrl)
     if (html) doc = parseHTML(html)
   } catch (error) {
     console.warn('Could not fetch page for GEO analysis:', error)

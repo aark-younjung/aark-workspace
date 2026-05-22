@@ -94,6 +94,19 @@ const SEO_CHECKS = [
       return { passed: true, detail: `${loadTime}ms（${grade}）` }
     },
   },
+  {
+    id: 'ssl_chain', name: 'SSL 憑證鏈完整性', icon: '🔒',
+    description: 'SSL 憑證鏈不完整時嚴格爬蟲（含部分 AI 引擎、curl、Node.js）會抓不到網站，影響 AI 引用率。主流瀏覽器有寬容機制能自動補抓，所以肉眼看不出問題。',
+    recommendation: '到 https://www.ssllabs.com/ssltest/ 測你的網站確認「Chain issues」狀態。修法：(1) Let\'s Encrypt 用戶證書改用 fullchain.pem (2) Nginx 用戶 ssl_certificate 指向 fullchain (3) 用 Cloudflare 免費版自動完整鏈',
+    priority: 'P2',   // 影響爬蟲可達性比 page_speed 更直接，給 P2
+    getValue: (audit) => {
+      // 舊資料（2026-05-22 前）沒有 ssl_chain 欄位 → 顯示「未檢測」當作 passed 不扣分
+      const ssl = audit?.ssl_chain
+      if (!ssl) return { passed: true, detail: '此次掃描未檢測（請重新檢測）' }
+      if (ssl.passed) return { passed: true, detail: 'SSL 憑證鏈完整，所有爬蟲都能順利連線' }
+      return { passed: false, detail: '憑證鏈不完整（少送中間憑證）— 我們已 fallback 才抓到資料；嚴格爬蟲會直接拒絕' }
+    },
+  },
 ]
 
 export default function SEOAudit() {
