@@ -6,6 +6,53 @@
 
 ---
 
+### 2026-05-22
+**修：後台 NewebPay 訂閱資料整合（AdminRevenue + AdminUsers）— MRR 漏算 NPA 月繳 + Top-up 全補:**
+
+- 🐛 **症狀**：AdminRevenue 的 MRR 數字嚴重低估
+  - **漏 1 — NPA 月繳完全沒抓**：只查 `aivis_newebpay_pending kind=pro_yearly`，沒查 `aivis_newebpay_period`（NPA 定期定額在這張表）。每位月繳用戶 NT$1,490 MRR 直接不見。
+  - **漏 2 — Top-up 加購完全沒入帳**：`topup_small / topup_large` 訂單沒進營收計算
+  - **漏 3 — MRR 公式錯位**：`mrrFromNewebpay = annualRevenue / 12`（過去 12 月年繳一次性 ÷ 12），上線初期年繳訂單少時嚴重低估，季節跳變
+  - **漏 4 — 退款率分母**：用 `refunded + earlybird + yearly`（只算過去 12 月 active 訂單）當分母，已退款的訂單若在 12 月外會少算
+  - AdminUsers 列表方案標籤只顯示「⭐ Pro / Free」沒拆早鳥/年繳/月繳/授予；展開詳情看不到 NPA 月繳訂閱資料
+
+- ✅ **修法 — AdminRevenue.jsx**：
+  - 並行抓 7 個資料源（多了 `aivis_newebpay_period status=active` 與 Top-up 訂單）
+  - MRR 公式改 per-user：`早鳥 active × (11880/12) + 年繳 active × (13900/12) + NPA active × 1490 + Stripe × 1490`
+  - PLAN_CARDS 從 3 張擴成 5 張（加「Pro 月繳 NPA」青綠、「Top-up 加購」藍兩張卡），grid 改 `sm:grid-cols-2 lg:grid-cols-5`
+  - Top-up 卡內顯示「小 X ・ 大 Y」即時拆分，revenueLabel 動態改「累計營收」 vs 「每月 MRR」
+  - 退款率分母校正為 `newebpayOrders.length`（所有歷史年繳 paid 訂單，含已退款的）
+  - 付費 Pro 去重：三條金流 user_id Set 合併（NewebPay 年繳 + NPA 月繳 + Stripe）
+  - 6 月增長圖 NewebPay 線加進 NPA 月繳新簽（`period.created_at` 月份），看真實「每月新增付費用戶數」
+  - MRR sub-text 改三項拆解：「年繳攤 X + 月繳 Y + Stripe Z」
+
+- ✅ **修法 — AdminUsers.jsx**：
+  - `fetchUsers` 並行 bulk 撈所有歷史年繳訂單 + active 月繳訂閱，建 user_id → subscriptionType map（月繳優先級高於年繳，因為月繳還在扣）
+  - 列表方案標籤從「⭐ Pro / Free」細分為「🐣 早鳥（amber）/ ⭐ 年繳（orange）/ 📅 月繳（teal）/ ⭐ 授予（slate）/ Free」5 種
+  - 退款警示 chip「↩️」加在 badge 旁，不必展開就能看到
+  - 展開詳情新增「Pro 月繳訂閱（NewebPay NPA）」區塊：狀態 chip（active/cancelled）+ 已扣款期數 × NT$1,490 = lifetime revenue + 首次扣款 + 最後扣款 + 下次扣款預估（lastPay + 30 天）+ 委託編號 + 取消備註
+
+- 🔖 **設計取捨**：
+  - **列表 row badge 用 bulk fetch 而非 per-user 查**：list 有 N 個用戶，per-user 查會變 N+1 query。並行兩個 bulk query（yearlyOrders + activePeriods）+ 客戶端 join，效能 OK。
+  - **月繳優先於年繳分類**：用戶同時有年繳 + 月繳訂閱時，列表顯示「月繳」標籤（代表當前扣款方式），年繳訂單在展開詳情仍會列出做客服稽核。
+  - **退款率仍只算年繳分母**：因為公司退款政策只針對 Pro 年繳（月繳跟 Top-up 政策本就不退），分母用年繳訂單合理。標題改「退款率（限年繳）」更精準。
+  - **Top-up 是一次性付款**：不放進 MRR（recurring revenue 定義），放「累計營收」卡片獨立顯示，避免污染 MRR 數字。
+
+- 🧪 **驗證重點**（用戶側部署後）：
+  - MRR 數字應比之前大（多了月繳 + per-user 公式）
+  - 5 張方案卡都顯示，Top-up 卡 sub-text 對得上小+大拆分
+  - 退款率分母對得上「所有歷史年繳 paid 訂單數」
+  - 付費用戶 + 授予用戶加總 = Pro 用戶總數
+  - 月繳用戶在 AdminUsers 列表標「📅 月繳」、展開能看到 NPA 訂閱卡
+
+- 🔄 **第二輪補完**（同日 AdminUsers 補篩選 + 匯出）：
+  - **Filter buttons 從 3 個擴成 8 個**：原 `全部 / Pro / Free` → 加 `🐣 早鳥 / ⭐ 年繳 / 📅 月繳 / ⭐ 授予 / ↩️ 退款` 5 個方案細分。按鈕列加 `flex-wrap` 在窄畫面自動換行。
+  - **`filtered` 客戶端篩選邏輯**：方案細分依賴 `subscriptionType` 與 `hasRefund`（從 bulk-join 算出，server 沒有此欄位），所以細分篩選改在 client 跑。「`granted` = is_pro=true 但 subscriptionType=null」（手動授予判定）。「`refunded` = hasRefund=true」（不限 is_pro 狀態，因為退款後 cron 可能已把 is_pro 改 false）。
+  - **server-side 預篩優化**：方案細分（earlybird/yearly/monthly/granted）一律是 is_pro=true，加進 server `query.eq('is_pro', true)` 預篩，減少 client load 量；`refunded` 不預篩。
+  - **Excel 匯出加 4 欄**：「方案類型 / 到期日 / 退款狀態 / 金流」。匯出邏輯重寫並行抓 profiles + yearlyOrders + activePeriods 三來源 → 建 map → 推算每位用戶該 4 欄。月繳到期日寫「下次扣款 YYYY/MM/DD」（last_payment + 30 天估算）；年繳寫 paid_at + 365 天；授予寫 pro_expires_at 或「無到期日」。金流欄位區分「NewebPay NPA」/「NewebPay MPG」/「Stripe（歷史）」/「無」。
+
+---
+
 ### 2026-05-21
 **改：rename 收尾 + 定價頁文案微調 + 製作 30 秒 1:1 行銷動畫:**
 
@@ -25,16 +72,67 @@
 - 🐛 **症狀（hero 標語精準度）**：「你的品牌名是否會被**說出口**？」— 「說出口」描述偏 narrative 但不夠精準，AI 答案的實際行為是「被推薦給提問者」，且「推薦」是 SEO/AEO 高搜尋量關鍵字。
 - ✅ **修法**：[commit 863bc5d](https://github.com/aark-younjung/aark-workspace/commit/863bc5d) `Pricing.jsx:477` 「說出口」→「推薦」，更貼近 LLM 引用行為的本質。
 
-- 🎬 **製作 30 秒 1:1 HTML 行銷動畫 [demo-animation/ai-radar-30s-1x1.html](demo-animation/ai-radar-30s-1x1.html)**：未推 git（本機 demo，跟既有 `let-ai-see-you.html` 並列備存）。9 個 scene、純 CSS keyframes、JS timer 同步字幕。經 5 輪用戶 review 反覆迭代：
+- 🎬 **製作 1:1 HTML 行銷動畫 [demo-animation/ai-radar-53s-1x1.html](demo-animation/ai-radar-53s-1x1.html)（最終 53 秒版）**：未推 git（本機 demo，跟既有 `let-ai-see-you.html` 並列備存）。9 個 scene、純 CSS keyframes、JS timer 同步字幕。經 7 輪用戶 review 反覆迭代：
   - **第 1 輪**：基本 scene 鋪好 → 用戶要求「網站風格 + 英文放大 + 加字幕」
   - **第 2 輪**：套 HomeDark 漸層 / grain / glass card、`.en` class 統一英數放大 132% + Inter 字型、底部 13% 字幕條 → 用戶要求「文字置中 + 右下角加漸層 + 字幕 3x + 移到 1/3 處」
   - **第 3 輪**：背景疊第二層 `radial-gradient at 85% 88%` 右下對角光、所有 scene `text-align:center`、字幕 21→64px（3x）、位置從 bottom:0 改 top:60% → 用戶要求「數字 / 英文 / 內容品質統一黃色」
   - **第 4 輪**：`.en` 與 `.num` 加 `color:#fbbf24` + 黃光暈、移除 5 大面向卡的多色配置改全黃 → 用戶反映「AI 字模糊」+「右下漸層不夠明顯」
   - **第 5 輪**：診斷出 brand-reveal / logo-fin 的 `background-clip:text` 把子層 `.en` 的 color 強制透明化，剩下的 `text-shadow` 看起來像鬼影；改成「中文白 + .en 實心金黃」雙色策略。右下漸層 circle→ellipse、`.42 → .65` 透明度、外圈 55%→70% 覆蓋面積約 1.5x。字幕 SEO/AEO/GEO/E-E-A-T 後面的「內容品質」也補上 `.yellow` class。
-- 📁 **檔案位置**：本機 `demo-animation/ai-radar-30s-1x1.html`，未 commit 也未部署上 Vercel — 屬於行銷素材本機 demo（沿用 2026-04-22 `let-ai-see-you.html` 同樣的命名與用途）。要剪 MP4 / GIF 走 puppeteer 截影 + ffmpeg 壓縮路徑，方法同 [let-ai-see-you-60fps.mp4](demo-animation/) 的產出流程。
+  - **第 6 輪**：中文主字體改 Google Fonts `Kosugi Maru`（日系圓潤體，給予柔和現代感），中文缺字 fallback Noto Sans TC；`.en` / `.num` 維持 Inter 保留英數硬朗對比。
+  - **第 7 輪**：用戶反映「24 小時監測」那幕字幕最後一行被切 + 整片節奏太快。修法：(a) `.subtitle-bar` `top:60% height:40%` → `top:55% height:42%`，字幕區整體上移 5% + 底部留 3% 緩衝避免被進度條切到；(b) 整片時間軸 ×5/3 從 30s 拉長至 50s — 9 個 `s1`–`s9` scene 容器 + progress bar 從 `30s linear` → `50s linear`，30+ 個絕對延遲（4.2/6/10/11/12/12.2-13.4/16/16.2-16.8/17.6-18.2/20.2-20.8/21.2-21.8/22.6/23.4/24.2/25/27.2/27.8/28.3-28.8s）全數按比例放大，JS timer `t>=30` → `t>=50`，9 句字幕 data-from/to 重新對齊新 scene 邊界（0/5/10/15/20/26.7/33.3/40/45/50）。檔名從 `ai-radar-30s-1x1.html` rename 為 `ai-radar-50s-1x1.html`。
+  - **第 8 輪**：Scene 5 五大面向卡靜態分數（89/82/76/85/91）改成「飆升動畫」— 起始 32/28/41/35/39（5 個都不同、皆 < 50）藍色（#60a5fa）顯示「不及格氛圍」，23.0s 起 ease-out cubic 插值 1.6s 飆到 87/84/81/88/86（皆 80+ 且互異），跨過 70 分門檻時 JS 移除 `.cool` class 經 CSS transition 0.28s 平滑切到黃 (#fbbf24)；24.9s 起 c1→c5 stagger 0.1s 依序 `cardPop`（scale 1→1.18→1 + 金黃 box-shadow + outline）強調，最後一卡 pop 結束於 25.85s，留 1.15s 給 scene 27s fade-out。`cardPop` keyframes 必須明寫 `opacity:1 + rotateY(0)`，因為 `.gcard.pop` 的 animation 屬性會整個蓋掉 `cardFlip forwards`，不寫的話元素會掉回 `.gcard` base 的 `opacity:0 / rotateY(90deg)` 變透明加翻面。
+  - **第 9 輪**：文案 + 排版微調 — (a) 10-15s 字幕「在 AI 時代，沒被推薦 = 不存在」→「在 AI 時代，網站沒被推薦，就等於不存在」（加上「網站」主體與「就等於」連接詞更口語）；(b) Scene 7 四大平台卡（WP/Shop/Wix/HTML）`width:68px height:68px` → `flex:1 aspect-ratio:1/1`，`.platforms` 加 `width:100% max-width:78%` 與下方 code-box `max-width:78%` 對齊；font-size 13px → 26px 配大方塊；border-radius 16 → 20 視覺和諧。(c) Scene 9 slogan「現在就看見你」→「現在就讓 AI 看見你的網站」；CTA「立即免費試用 7 天」→「立即免費分析」（試用/退款承諾移除避免過早承諾）；(d) 45-50s 收尾字幕拿掉「7 天免費試用・14 天無條件退款」，剩下的 `.small` 升格主行同步改成「AI 雷達 — 現在就讓 AI 看見你的網站」呼應 slogan。
+  - **第 10 輪**：Scene 9「AI 雷達」logo 下方加可愛老闆人偶 — 全 CSS 幾何造型（圓+矩形+三角，零 SVG/emoji），戴兩撇鬍子（CSS border 三角技法外八對稱）、右手拿紅書、左手拿黃筆（含深色筆尖）、青綠襯衫 + 黃色領帶（`::before` 三角倒立做領結 + `::after` clip-path polygon 做領帶身）、紅潤臉頰 + 微笑半圓嘴。動畫：整體 `bossBob` 上下浮 2.4s、頭 `bossHeadTilt` 左右搖 3.4s、左臂（拿書）`bossArmL` 輕擺 2.6s、右臂（拿筆）`bossArmR` 大幅度寫字感 1.8s（4 段位 0/25/75/100% 不對稱）、眼睛 `bossBlink` 4.2s 間歇眨、頭頂兩顆菱形 `bossSpark` 旋轉脈動。45.9s `fadeUp` 進場（接在 logo-fin 45.3s 之後、slogan 46.3s 之前的空檔），跑到 scene fade 結束。
+  - **第 11 輪**（30s→50s→53s）：用戶提 5 項修正一次到位。修法：
+    - **(a) 第一/二畫面文字 2x**：Scene 1 phone 寬 46% → 60%、phone-bar 11px → 22px、chat-title 12px → 24px、bubble 15px → 30px、cursor 8×14 → 14×26；Scene 2 answer-card 寬 78% → 88%、ac-head h3 13px → 26px、comp 14px → 28px、b 24px方→40px+font 12→22、pct 12px→24px、you-missing 13px→26px。
+    - **(b) 插入 Scene 0 — 你的網站首頁 mockup（0-3s）**：browser-chrome（紅/黃/綠 traffic-light dots + yourbrand.com url 列）+ web-nav（你的品牌 logo + 關於/服務/案例/聯絡 menu）+ web-hero（46px h1 + 諮詢 CTA）+ 3 張漸層 feature card。z-index:5 覆蓋其他 scene。3s 自帶 fade in/hold/fade out 三段 keyframes。
+    - **(c) 整片 50s → 53s**：9 個 s1–s9 scene 容器加 `animation-delay:3s`、progress bar 50s → 53s、JS timer t≥50 → t≥53、SCORE_TICK/POP 23/24.9 → 26/27.9、30+ 個絕對延遲值（typeIn .2s/flashRed 7s/ghostOut 10s/dotPing 16.7s/brandIn 18.3s/radar-dot delay 17.5-18.3s/cardFlip 20.3-22.3s/s5-title 20s/LLM 27-28s/badge 17.6+animation-delay 17.9-18.2s/s6-title 16s/plat 33.7-34.7s/code 35.3-36.3s/toast 37.7+39s/deal 40.3s/pop 41.7s/logo 45.3s/slogan 46.3s/CTA 47.2s+btnPulse 48s/ping 47.3s/boss-char 45.9s+bossBob 46.5s/bossHeadTilt 46.5s/bossBlink 47s/bossArmL 46.5s/bossArmR 46.7s/bossSpark 47.4s+ spark delays 47.4-47.9s）全部 +3 秒。9 句字幕 data-from/to 重新對齊（0→3、5→8、10→13、15→18、20→23、26.7→29.7、33.3→36.3、40→43、45→48），新增 0-3s「你的網站，AI 看得見嗎？」呼應 scene 0。
+    - **(d) Perplexity 改 Claude**：Scene 6 LLM card l2 ico 文字 Pp → Cl、name Perplexity → Claude、ico 漸層從 cyan #06b6d4/0891b2 → Claude 品牌橘 #cc785c/a85e44、badge 顏色從藍 → 暖橘 #f4a487。29.7-36.3s 字幕同步改 Claude。
+    - **(e) Scene 9 收尾頁大改**：刪除 48-53s 字幕「AI 雷達 — 現在就讓 AI 看見你的網站」；老闆人偶從 .closing flex column 內搬出來，改 absolute 定位到 stage 層（top:60%、margin-left:-115、width 230×height 300），z-index 85 居於 subtitle-bar 上方；臉部 head 62px → 120px（約 2x）、身體 boss-body 從圓角矩形 74×68 改為長條膠囊 100×220 + `border-radius:9999px`（pill 上下圓）、其餘所有部件（眼睛/鬍子/嘴/雙手/書筆/閃星）等比放大 ~2x；CTA 「立即免費分析」padding 14/38px → 28/76px、font 16px → 32px、shadow 也加倍；bossBlink keyframes 把眨眼動作從 93-97% 段挪到 36-42% 段，確保 4.2s cycle + 50s delay 內第一次眨眼能落在 51.8s 出現（scene 9 視窗 48-53s 內）。
+    - **(f) 檔名同步**：`ai-radar-50s-1x1.html` → `ai-radar-53s-1x1.html`，WORKLOG 連結同步。
+  - **第 12 輪**（同日連續迭代）：用戶又指 4 處細節調整：
+    - **(a) Scene 5 五大面向分數 2x**：`.gcard .score` font-size 36px → 72px、margin-top 10 → 14、text-shadow 散度從 24px → 32px。低分藍 / 高分黃 / cardPop 邏輯維持。
+    - **(b) Scene 6 三大 AI 模型卡 2x**：`.llm-wrap` width 88%→96%、gap 18→28；`.llm` padding 18/10→32/18、border-radius 20→28；`.llm .ico` 50px→96px+font 18→34+border-radius 14→24；`.llm .name` 13px→26px；`.llm .badge` padding 7/14→12/22+font 12→22。
+    - **(c) 18-23s 字幕刪 AI 字**：「AI 雷達，幫你掃出 AI 看不見的盲點」→「AI 雷達，幫你掃出看不見的盲點」（句中第二個 AI 拿掉，避免重複拗口）。
+    - **(d) Scene 9 老闆人偶大改**（5 處）：
+      - 臉型：圓形 120×120 → 長橢圓 100×140（vertical-elongated，呼應身體膠囊形）
+      - 頭髮 → 雅痞紳士帽（fedora）：`.boss-hair` 從半圓蓋頂改造成「帽冠 84×50 圓頂矩形」+ `::before` 帽簷 138×20 水平橢圓（向兩側延伸 27px 超過頭部）+ `::after` 金色帽帶 ribbon（fedora 經典款式）
+      - 拿掉鬍子：HTML 刪除 `.boss-stache-l/-r` 兩個 div，CSS 對應規則一併移除
+      - 身體縮短：`.boss-body` height 230 → 108（更短粗，比例不再壓過頭部），位置 top:108 → 152 配合長臉
+      - 雙手高舉：`.boss-arm` top:24 → -20（從身體頂端向上突出），加 `transform-origin:bottom center` + `transform:rotate(±30deg)` 外擴；`.boss-hand` / `.boss-book` / `.boss-pen` 從 `bottom:-N` 改為 `top:-N`（書筆在手掌上方而非下方）；`bossArmL/R` keyframes 改成圍繞 ±30 基準小幅擺動 ±12deg（揮舞慶祝動作）；筆漸層方向反轉（`to top`）讓深色筆尖朝上
+      - 領帶下尖：`.boss-body::after` clip-path 從六角形 `polygon(50% 0, 100% 18%, 100% 100%, 50% 88%, 0 100%, 0 18%)` 改為上寬下尖 `polygon(50% 0%, 100% 14%, 95% 78%, 50% 100%, 5% 78%, 0 14%)`（傳統領帶尾端尖角）
+      - 連帶：boss-char height 300 → 260；眼睛/嘴巴/臉頰位置依長臉重算；閃星挪到帽子兩側上方（top:0/8、left/right:32）作為「歡呼」氛圍。
+    - **(e) Stacking 設計**：head 與 body 都不設 z-index 創建 stacking context，依賴 DOM 順序（head 在 body 前 = head 在下層，被 body 領子蓋住 8px 做脖子過渡）；`.boss-hair`（帽子）獨設 z-index:3 確保蓋住頭頂；arms 在 body 內最後位置 → 自然在 body 與 head 之上（包含旋轉延伸到頭側面的書/筆）。
+  - **第 13 輪**（人偶體態三細項微調）：
+    - **(a) 臉型改 pill** — `.boss-head` `border-radius:50%` → `9999px`，從橢圓變膠囊（跟身體 boss-body 同形狀），整體看起來更修長有個性、頭身呼應一致。
+    - **(b) 身體加長** — `.boss-body` height 108 → 160（用戶要求「再長一點」），boss-char 容器高度也跟著 260 → 320 避免溢出。
+    - **(c) 雙手提到臉旁** — `.boss-arm` height 90→110 + top:-20→-60（更高從身體頂端伸出）、角度 ±30→±28（減少外擴讓手往上而非往兩側）；`.boss-hand` 維持 top:-12；`.boss-book` top:-38→-25 + transform rotate(-12)→rotate(18)（補償手臂 -28deg 傾角讓書直立）；`.boss-pen` top:-42→-28 + rotate(12)→rotate(-18)（補償右臂 +28deg）。bossArmL/R keyframes 基準角度同步從 ±30/±42 改成 ±28/±38。
+    - **(d) 閃星位置調整** — `.boss-spark-1/2` 從 (top:0, left:32) / (top:8, right:32) 挪到 (top:-10, left:62) / (top:-4, right:62)，避開新的雙手位置（X=±52）和書筆延伸範圍，改在帽簷兩側上方。
+    - 數學驗證：手掌新位置約在臉部 Y=105（眼-嘴之間）、X=±52（臉外緣 ±50 剛好外側 2px）— 視覺上手掌貼著臉頰兩側、書筆在眼-鼻高度，呼應「兩手提到臉旁」歡呼姿態。
+  - **第 14 輪**（Scene 8 移除 + Scene 4 加 5 大 LLM 標籤 + 18-23s 字幕修詞）：
+    - **(a) 移除 Scene 8 早鳥價頁**：用戶決定整段拿掉。刪除 `.s8` 容器 + `.deal/.tag/.old/.new/.unit/.perk` 全套 CSS + `@keyframes s8` + `@keyframes pop` + Scene 8 HTML 整段 div + 43-48s 字幕「前 100 名・首年 NT$990／月⋯」。
+    - **(b) Scene 9 提前 5 秒接續 Scene 7**：避免 43-48s 出現空白，Scene 9 從 48s 提前到 43s 開始。keyframes 由 `0%,89%/91%` 改為 `0%,80%/82%`（80% × 50s = 40s 內部時間 = page 43s）。Scene 9 內部 13 個絕對延遲值全數 -5s：logo 48.3→43.3、slogan 49.3→44.3、cta 50.2→45.2 + btnPulse 51→46、ping 50.3→45.3、boss-char 48.9→43.9 + bossBob 49.5→44.5、bossHeadTilt 49.5→44.5、bossBlink 50→45、bossArmL 49.5→44.5、bossArmR 49.7→44.7、bossSpark 50.4→45.4、spark-1/2 delay 50.4/50.9→45.4/45.9。
+    - **(c) Scene 4 加五大 LLM 標籤環繞雷達**：用戶要求「雷達四周出現五大大語言模型文字」。在 `.radar-wrap` 加 5 個 `.llm-label` pill 徽章（ChatGPT/Claude/Gemini/Perplexity/Copilot），用 r=53% 從中心向外推、72deg 間隔做 pentagon 排列（0deg 正上、72 右上、144 右下、216 左下、288 左上）；CSS 用 padding:8/18 + border-radius:999px 形成 pill；19-21s 依序 stagger 0.4s fade in + scale .6→1（呼應雷達掃描「掃到一個亮一個」氛圍）。
+    - **(d) 18-23s 字幕修詞**：「AI 雷達，幫你掃出看不見的盲點」→「AI 雷達幫你掃描出看不見的盲點」（拿掉逗號 + 掃出→掃描出更精準對應雷達意象）。
+  - **第 15 輪**（製作 16:9 橫向版）：新增 [demo-animation/ai-radar-53s-16x9.html](demo-animation/ai-radar-53s-16x9.html)，從 1:1 版 cp 後做以下調整 — 其餘 HTML / 動畫時間軸 / 字幕內容完全不動：
+    - `.stage` `aspect-ratio:1/1` → `16/9`、寬度公式 `min(100vh,100vw)` → `min(100vw, calc(100vh * 16 / 9))`（16:9 寬畫面在橫向 viewport 鋪滿，直向 viewport 縮為符合 16:9 寬高）。
+    - `.canvas` `bottom:40%` → `32%`（場景區從 60% 高 → 68% 高，因 16:9 較矮給場景更多上方空間）；`.subtitle-bar` `top:55% height:42%` → `top:68% height:29%`（往下挪配合新 canvas 邊界）。
+    - `.boss-char` `top:60%` → `68%`（搬到新字幕區位置）；高度 320 維持，1080p 16:9 viewport 下 boss 區域 734-1054 仍在 1080 內。
+    - 主要場景元素寬度按 9/16 比例縮小（保持絕對 px 寬度接近 1:1 版本，避免在寬畫面被拉得過大）：`.phone` 60→34%、`.answer-card` 88→50%、`.radar-wrap` 58→33%、`.grid5` 86→48%、`.llm-wrap` 96→54%、`.s7-inner` 84→47%、`.website-mockup` 88→50%。aspect-ratio 鎖定的元素（gcard / web-card / radar-ring / llm 卡）自動依 width 等比調整高度，比例保持不變。
+    - 兩版差異化：1:1 版用於 IG 貼文 / 1:1 廣告位、16:9 版用於 YouTube / 橫向社群 / 簡報嵌入。底層動畫邏輯（CSS keyframes、JS timer、subtitle data-from/to、boss 動畫鏈）完全共用，只調 layout container 與場景元素寬度。
+    - **檔案位置**：兩支 .html 並列在 `demo-animation/`，要剪 MP4 / GIF 各自跑 puppeteer screencast（用 1080×1080 viewport 或 1920×1080 viewport 對應抓）。
+  - **第 16 輪**（9:16 直式版給 Reels / TikTok / Shorts 用）：新增 [demo-animation/ai-radar-53s-9x16.html](demo-animation/ai-radar-53s-9x16.html)，從 1:1 版 cp 後做以下調整：
+    - `.stage` `aspect-ratio:9/16`、寬度公式改 `height:min(100vh, calc(100vw * 16/9))`（橫向 viewport 變直立窄條居中，直向 viewport 鋪滿）。
+    - `.canvas` `bottom:40%` → `30%`（場景區從 60% 高 → 70% 高，直式有更多縱向空間放場景）；`.subtitle-bar` `top:55% height:42%` → `top:70% height:27%`（往下挪配合 70/30 分隔）；`.boss-char` `top:60%` → `70%`。
+    - `.website-mockup` 加 `aspect-ratio:1.5/1` + `max-height:88%`（直式 canvas 太高 1344px，若用 height:88% 會被拉成 1183px 超高長條 — 加 aspect-ratio 鎖瀏覽器視窗比例）。
+    - 其餘場景元素（phone / answer-card / radar / grid5 / llm-wrap / s7-inner）寬度不動 — 因為 stage 寬度在 1:1 與 9:16 都是 1080，% 寬度絕對 px 不變。aspect-ratio 鎖定的元素自動依寬度等比縮放。
+    - **意外驚喜：phone 變成真正的直式手機**：1:1 版 phone 60×78% 在 1080×1080 stage 是 648×505（壓扁手機），在 9:16 stage 1080×1920 變成 648×1048（aspect 0.62:1，真正的直式手機比例）。chat 用 `justify-content:flex-end` bubbles 自動沉底，視覺上像真實手機 screenshot 中對話下半部，沒違和感。
+    - **三版差異化定位**：1:1 → IG 貼文 / 1:1 廣告版位；16:9 → YouTube / 橫向社群 / 簡報嵌入；9:16 → IG Reels / TikTok / YouTube Shorts。底層動畫邏輯（CSS keyframes、JS timer、subtitle data-from/to、boss 動畫鏈、所有 53s 內部時間軸）三版完全共用，只改 layout container 與少數溢出元素的 aspect-ratio。
+    - **檔案位置**：三支 .html 並列在 `demo-animation/`，puppeteer 抓 MP4 / GIF 各自用對應 viewport（1080×1080 / 1920×1080 / 1080×1920）。
+- 📁 **檔案位置**：本機 `demo-animation/ai-radar-53s-1x1.html`，未 commit 也未部署上 Vercel — 屬於行銷素材本機 demo（沿用 2026-04-22 `let-ai-see-you.html` 同樣的命名與用途）。要剪 MP4 / GIF 走 puppeteer 截影 + ffmpeg 壓縮路徑，方法同 [let-ai-see-you-60fps.mp4](demo-animation/) 的產出流程。
 
 - 🔖 **未完成 / pending**：
-  - 30 秒影片 MP4 / GIF 匯出（用 puppeteer screencast）— 待用戶確認動畫定稿
+  - 53 秒影片 MP4 / GIF 匯出（用 puppeteer screencast）— 待用戶確認動畫定稿
   - 9:16 直式版（IG Reels / TikTok 用）— 待匯出後再生對應 viewport
   - 後續若品牌風格定錨後，可考慮把這個 1:1 動畫嵌進 `/pricing` 頁 hero 區替代靜態圖
 

@@ -17,6 +17,7 @@ export default function AdminUsers() {
   const [userAivis, setUserAivis] = useState({}) // { userId: { monthUsd, totalUsd, monthRuns, totalRuns } }
   const [userTopup, setUserTopup] = useState({}) // { userId: { balance, packs } } — Top-up 加購剩餘次數 + 各包明細
   const [userOrders, setUserOrders] = useState({}) // { userId: [orders] } — NewebPay pro_yearly 訂單（含早鳥 + 退款狀態）
+  const [userPeriods, setUserPeriods] = useState({}) // { userId: [periods] } — NPA 月繳訂閱（aivis_newebpay_period）
   const [grantEmail, setGrantEmail] = useState('')
   const [granting, setGranting] = useState(false)
   const [grantResult, setGrantResult] = useState(null) // { type: 'success'|'error'|'info', msg }
@@ -49,11 +50,58 @@ export default function AdminUsers() {
         .select('id, name, email, is_pro, is_admin, created_at, marketing_consent, pro_expires_at, admin_history, payment_gateway')
         .order('created_at', { ascending: false })
 
-      if (filter === 'pro') query = query.eq('is_pro', true)
+      // server-side 預篩：付費類細分（早鳥/年繳/月繳/授予）一律是 is_pro=true，先 server 過濾減少 client load
+      // refunded 不預篩（退款後 is_pro 可能已被 cron 改 false，會錯過）
+      const proOnlyFilters = ['pro', 'earlybird', 'yearly', 'monthly', 'granted']
+      if (proOnlyFilters.includes(filter)) query = query.eq('is_pro', true)
       if (filter === 'free') query = query.eq('is_pro', false)
 
-      const { data } = await query
-      setUsers(data || [])
+      // 並行抓 user classifications：bulk 撈所有歷史年繳訂單 + active 月繳訂閱
+      // 用於列表「方案類型」標籤細分（早鳥 / 年繳 / 月繳 / 授予 Pro）
+      const [
+        { data: usersData },
+        { data: yearlyOrders },
+        { data: activePeriods },
+      ] = await Promise.all([
+        query,
+        supabase
+          .from('aivis_newebpay_pending')
+          .select('user_id, pack, refund_status, paid_at')
+          .eq('kind', 'pro_yearly')
+          .eq('status', 'paid'),
+        supabase
+          .from('aivis_newebpay_period')
+          .select('user_id')
+          .eq('status', 'active'),
+      ])
+
+      // 月繳 active 用戶（優先級最高，因為定期定額還在扣）
+      const monthlyUserIds = new Set((activePeriods || []).map(p => p.user_id))
+
+      // 每位用戶取「最新 paid_at」的年繳訂單做分類（早鳥/年繳 + 是否退款）
+      const yearlyByUser = new Map()
+      ;(yearlyOrders || []).forEach(o => {
+        const existing = yearlyByUser.get(o.user_id)
+        if (!existing || (o.paid_at && (!existing.paid_at || new Date(o.paid_at) > new Date(existing.paid_at)))) {
+          yearlyByUser.set(o.user_id, o)
+        }
+      })
+
+      // 為每個 user 計算 subscriptionType + hasRefund
+      const enriched = (usersData || []).map(u => {
+        let subscriptionType = null
+        let hasRefund = false
+        if (monthlyUserIds.has(u.id)) {
+          subscriptionType = 'monthly'
+        } else if (yearlyByUser.has(u.id)) {
+          const order = yearlyByUser.get(u.id)
+          subscriptionType = order.pack === 'earlybird' ? 'earlybird' : 'yearly'
+          hasRefund = order.refund_status === 'completed' || order.refund_status === 'pending'
+        }
+        return { ...u, subscriptionType, hasRefund }
+      })
+
+      setUsers(enriched)
     } catch (e) {
       console.error(e)
     } finally {
@@ -122,6 +170,15 @@ export default function AdminUsers() {
         .order('paid_at', { ascending: false })
       setUserOrders(prev => ({ ...prev, [userId]: orders || [] }))
     }
+    // 載入 NPA 月繳訂閱（aivis_newebpay_period）— active + cancelled 都拿，cancelled 也要顯示給客服看歷史
+    if (!userPeriods[userId]) {
+      const { data: periods } = await supabase
+        .from('aivis_newebpay_period')
+        .select('period_no, status, created_at, last_payment_at, already_times, cancelled_at, cancel_note')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      setUserPeriods(prev => ({ ...prev, [userId]: periods || [] }))
+    }
   }
 
   const handleTogglePro = async (userId, currentPro) => {
@@ -143,28 +200,101 @@ export default function AdminUsers() {
   }
 
   const handleExportExcel = async () => {
-    // 取全部用戶（不受目前 filter 限制）
-    const { data: allUsers } = await supabase
-      .from('profiles')
-      .select('id, name, email, is_pro, is_admin, created_at, marketing_consent')
-      .order('created_at', { ascending: false })
+    // 並行抓 3 個來源：全用戶 + 年繳訂單（含退款）+ active 月繳訂閱
+    const [
+      { data: allUsers },
+      { data: yearlyOrders },
+      { data: activePeriods },
+    ] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, name, email, is_pro, is_admin, created_at, marketing_consent, pro_expires_at, payment_gateway')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('aivis_newebpay_pending')
+        .select('user_id, pack, refund_status, paid_at')
+        .eq('kind', 'pro_yearly')
+        .eq('status', 'paid'),
+      supabase
+        .from('aivis_newebpay_period')
+        .select('user_id, last_payment_at, already_times')
+        .eq('status', 'active'),
+    ])
 
-    const rows = (allUsers || []).map((u, i) => ({
-      '#': i + 1,
-      '姓名': u.name || '',
-      'Email': u.email || '',
-      '方案': u.is_pro ? 'Pro' : 'Free',
-      '管理員': u.is_admin ? '是' : '否',
-      '行銷同意': u.marketing_consent ? '是' : '否',
-      '註冊時間': u.created_at ? new Date(u.created_at).toLocaleString('zh-TW') : '',
-      '用戶 ID': u.id,
-    }))
+    // 建立月繳 + 年繳查找 map（跟 fetchUsers 同邏輯）
+    const monthlyMap = new Map() // user_id → { last_payment_at, already_times }
+    ;(activePeriods || []).forEach(p => {
+      monthlyMap.set(p.user_id, p)
+    })
+    const yearlyByUser = new Map() // user_id → 最新 paid_at 的訂單
+    ;(yearlyOrders || []).forEach(o => {
+      const existing = yearlyByUser.get(o.user_id)
+      if (!existing || (o.paid_at && (!existing.paid_at || new Date(o.paid_at) > new Date(existing.paid_at)))) {
+        yearlyByUser.set(o.user_id, o)
+      }
+    })
+
+    const rows = (allUsers || []).map((u, i) => {
+      // 推算方案類型 + 到期日 + 退款狀態 + 金流
+      let planType = '—'
+      let expireDate = '—'
+      let refundStatus = '—'
+      let gateway = '—'
+
+      if (!u.is_pro) {
+        planType = 'Free'
+      } else if (monthlyMap.has(u.id)) {
+        const m = monthlyMap.get(u.id)
+        planType = `📅 月繳（已扣 ${m.already_times || 0} 期）`
+        // 月繳沒有固定到期日，預估「last_payment + 30 天」當下次扣款
+        expireDate = m.last_payment_at
+          ? `下次扣款 ${new Date(new Date(m.last_payment_at).getTime() + 30 * 86400 * 1000).toLocaleDateString('zh-TW')}`
+          : '—'
+        refundStatus = '—'   // 月繳不退款
+        gateway = 'NewebPay NPA'
+      } else if (yearlyByUser.has(u.id)) {
+        const o = yearlyByUser.get(u.id)
+        planType = o.pack === 'earlybird' ? '🐣 早鳥首年' : '⭐ 一般年繳'
+        // 年繳到期日 = paid_at + 365 天
+        expireDate = o.paid_at
+          ? new Date(new Date(o.paid_at).getTime() + 365 * 86400 * 1000).toLocaleDateString('zh-TW')
+          : '—'
+        refundStatus = o.refund_status === 'completed' ? '✓ 已退款'
+          : o.refund_status === 'pending' ? '⏳ 待手動轉帳'
+          : o.refund_status === 'failed' ? '⚠️ 退款失敗'
+          : '—'
+        gateway = 'NewebPay MPG'
+      } else {
+        // is_pro=true 但無付費紀錄 = 手動授予
+        planType = '⭐ 手動授予'
+        expireDate = u.pro_expires_at
+          ? new Date(u.pro_expires_at).toLocaleDateString('zh-TW')
+          : '無到期日'
+        refundStatus = '—'
+        gateway = u.payment_gateway === 'stripe' ? 'Stripe（歷史）' : '無'
+      }
+
+      return {
+        '#': i + 1,
+        '姓名': u.name || '',
+        'Email': u.email || '',
+        '方案類型': planType,
+        '到期日': expireDate,
+        '退款狀態': refundStatus,
+        '金流': gateway,
+        '管理員': u.is_admin ? '是' : '否',
+        '行銷同意': u.marketing_consent ? '是' : '否',
+        '註冊時間': u.created_at ? new Date(u.created_at).toLocaleString('zh-TW') : '',
+        '用戶 ID': u.id,
+      }
+    })
 
     const ws = XLSX.utils.json_to_sheet(rows)
-    // 欄寬
+    // 欄寬（順序：# / 姓名 / Email / 方案類型 / 到期日 / 退款狀態 / 金流 / 管理員 / 行銷同意 / 註冊時間 / 用戶 ID）
     ws['!cols'] = [
-      { wch: 4 }, { wch: 16 }, { wch: 30 }, { wch: 8 },
-      { wch: 8 }, { wch: 10 }, { wch: 20 }, { wch: 38 },
+      { wch: 4 }, { wch: 16 }, { wch: 30 }, { wch: 20 },
+      { wch: 22 }, { wch: 16 }, { wch: 18 }, { wch: 8 },
+      { wch: 10 }, { wch: 20 }, { wch: 38 },
     ]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, '用戶名單')
@@ -399,10 +529,24 @@ export default function AdminUsers() {
     }
   }
 
-  const filtered = users.filter(u =>
-    u.email?.toLowerCase().includes(search.toLowerCase()) ||
-    u.name?.toLowerCase().includes(search.toLowerCase())
-  )
+  // 篩選邏輯：先按方案類型篩，再按搜尋關鍵字（email / 姓名）篩
+  // filter 值：all / pro / free / earlybird / yearly / monthly / granted / refunded
+  const filtered = users.filter(u => {
+    // 1. 方案類型篩選
+    if (filter === 'pro' && !u.is_pro) return false
+    if (filter === 'free' && u.is_pro) return false
+    if (filter === 'earlybird' && u.subscriptionType !== 'earlybird') return false
+    if (filter === 'yearly' && u.subscriptionType !== 'yearly') return false
+    if (filter === 'monthly' && u.subscriptionType !== 'monthly') return false
+    // granted = is_pro=true 但 subscriptionType=null（手動授予，無付費紀錄）
+    if (filter === 'granted' && !(u.is_pro && !u.subscriptionType)) return false
+    // refunded = 有退款紀錄
+    if (filter === 'refunded' && !u.hasRefund) return false
+    // 2. 搜尋關鍵字
+    const q = search.toLowerCase()
+    if (!q) return true
+    return (u.email?.toLowerCase().includes(q) || u.name?.toLowerCase().includes(q))
+  })
 
   return (
     <AdminGuard>
@@ -473,12 +617,22 @@ export default function AdminUsers() {
               onChange={e => setSearch(e.target.value)}
               className="flex-1 min-w-48 bg-slate-800 border border-slate-700 text-slate-200 placeholder-slate-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"
             />
-            <div className="flex gap-1 bg-slate-800 border border-slate-700 rounded-lg p-1">
-              {[['all', '全部'], ['pro', 'Pro'], ['free', 'Free']].map(([val, label]) => (
+            {/* 篩選按鈕 — 8 個選項分兩排：付費狀態（全部/Pro/Free）+ 方案細分（早鳥/年繳/月繳/授予/退款） */}
+            <div className="flex gap-1 bg-slate-800 border border-slate-700 rounded-lg p-1 flex-wrap">
+              {[
+                ['all', '全部'],
+                ['pro', 'Pro'],
+                ['free', 'Free'],
+                ['earlybird', '🐣 早鳥'],
+                ['yearly', '⭐ 年繳'],
+                ['monthly', '📅 月繳'],
+                ['granted', '⭐ 授予'],
+                ['refunded', '↩️ 退款'],
+              ].map(([val, label]) => (
                 <button
                   key={val}
                   onClick={() => setFilter(val)}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === val ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === val ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-slate-200'}`}
                 >
                   {label}
                 </button>
@@ -520,10 +674,28 @@ export default function AdminUsers() {
                         <p className="text-slate-500 text-xs mt-0.5">{u.email}</p>
                       </div>
                       <div className="col-span-2">
-                        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${u.is_pro ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-700 text-slate-400'}`}>
-                          {u.is_pro ? '⭐ Pro' : 'Free'}
-                        </span>
+                        {/* 方案標籤：依 subscriptionType 細分為 早鳥/年繳/月繳/授予 Pro/Free */}
+                        {(() => {
+                          if (!u.is_pro) {
+                            return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-slate-700 text-slate-400">Free</span>
+                          }
+                          if (u.subscriptionType === 'earlybird') {
+                            return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-amber-500/20 text-amber-400">🐣 早鳥</span>
+                          }
+                          if (u.subscriptionType === 'yearly') {
+                            return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-orange-500/20 text-orange-400">⭐ 年繳</span>
+                          }
+                          if (u.subscriptionType === 'monthly') {
+                            return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-teal-500/20 text-teal-400">📅 月繳</span>
+                          }
+                          // is_pro 但無付費記錄 = 手動授予
+                          return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-slate-600/40 text-slate-300">⭐ 授予</span>
+                        })()}
                         {u.is_admin && <span className="ml-1 text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">Admin</span>}
+                        {/* 退款警示 — 列表上即時看到，不必展開 */}
+                        {u.hasRefund && (
+                          <span className="ml-1 text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400" title="此用戶有退款紀錄">↩️</span>
+                        )}
                         {/* Pro 到期日（僅在有設定 pro_expires_at 時顯示）— 客服參考用 */}
                         {u.is_pro && u.pro_expires_at && (
                           <p className="text-slate-500 text-[10px] mt-1">
@@ -746,6 +918,75 @@ export default function AdminUsers() {
                                     <div className="mt-2 pt-2 border-t border-slate-700/50">
                                       <p className="text-slate-500 text-[10px] mb-0.5">退款備註</p>
                                       <p className="text-slate-400 whitespace-pre-wrap">{order.refund_note}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        {/* NPA 月繳訂閱（aivis_newebpay_period）— 客服稽核 + lifetime value 追蹤 */}
+                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-5 mb-3">Pro 月繳訂閱（NewebPay NPA）</p>
+                        {!userPeriods[u.id] ? (
+                          <p className="text-slate-500 text-sm">載入中...</p>
+                        ) : userPeriods[u.id].length === 0 ? (
+                          <p className="text-slate-500 text-sm">尚無月繳訂閱紀錄</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {userPeriods[u.id].map(period => {
+                              const isActive = period.status === 'active'
+                              const isCancelled = period.status === 'cancelled'
+                              const createdDate = period.created_at ? new Date(period.created_at) : null
+                              const lastPayDate = period.last_payment_at ? new Date(period.last_payment_at) : null
+                              const cancelledDate = period.cancelled_at ? new Date(period.cancelled_at) : null
+                              // 月繳 lifetime revenue = 已扣款次數 × NT$1,490
+                              const lifetimeRevenue = (Number(period.already_times) || 0) * 1490
+                              return (
+                                <div key={period.period_no} className="bg-slate-800 rounded-lg px-4 py-3 text-xs">
+                                  {/* Header row：狀態 chip + 已扣款次數 + lifetime revenue */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                        isActive ? 'bg-teal-500/20 text-teal-400' : 'bg-slate-700 text-slate-400'
+                                      }`}>
+                                        {isActive ? '📅 月繳進行中' : isCancelled ? '⏸ 已取消委託' : period.status}
+                                      </span>
+                                      <span className="text-slate-200 font-semibold">
+                                        已扣 {period.already_times || 0} 期・NT$ {lifetimeRevenue.toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <span className="text-slate-500">NT$ 1,490／月</span>
+                                  </div>
+                                  {/* 詳細資訊 grid */}
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-slate-400">
+                                    <div>
+                                      <p className="text-slate-500 text-[10px]">首次扣款</p>
+                                      <p className="text-slate-300">{createdDate ? createdDate.toLocaleDateString('zh-TW') : '—'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-slate-500 text-[10px]">最後扣款</p>
+                                      <p className="text-slate-300">{lastPayDate ? lastPayDate.toLocaleDateString('zh-TW') : '—'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-slate-500 text-[10px]">{isCancelled ? '取消日期' : '下次扣款（預估）'}</p>
+                                      <p className={isCancelled ? 'text-red-400' : 'text-slate-300'}>
+                                        {isCancelled
+                                          ? (cancelledDate ? cancelledDate.toLocaleDateString('zh-TW') : '—')
+                                          : (lastPayDate ? new Date(lastPayDate.getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('zh-TW') : '—')
+                                        }
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-slate-500 text-[10px]">委託編號</p>
+                                      <p className="text-slate-500 font-mono text-[10px] truncate" title={period.period_no}>{period.period_no}</p>
+                                    </div>
+                                  </div>
+                                  {/* 取消備註（取消的話） */}
+                                  {isCancelled && period.cancel_note && (
+                                    <div className="mt-2 pt-2 border-t border-slate-700/50">
+                                      <p className="text-slate-500 text-[10px] mb-0.5">取消備註</p>
+                                      <p className="text-slate-400 whitespace-pre-wrap">{period.cancel_note}</p>
                                     </div>
                                   )}
                                 </div>

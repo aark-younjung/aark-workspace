@@ -283,7 +283,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 ### 第二階段（進行中）
 - [x] **系統監控 AdminMonitoring（B3 — 2026-05-13 完成）**：4 KPI（本月掃描 / API 成本 / 提及率 / 活躍用戶）+ 7/30 天趨勢圖 + Top 10 重度使用者。錯誤日誌 viewer 待 schema 加 error 欄位後另外做。
 - [x] 客服工具：補發 Top-up（B2a）/ 延長 Pro 到期日（B2b）/ 寄自訂 email（B2c）— 2026-05-13 完成 ✅（待用戶側跑 [admin-cs-tools.sql](admin-cs-tools.sql)）
-- [ ] NewebPay 訂閱資料整合：AdminUsers 顯示方案類型 / 到期日 / 退款紀錄、AdminRevenue 拆早鳥 vs 一般年繳（原 Stripe 整合項目，2026-05-13 因金流主力切到 NewebPay 而改寫）
+- [x] **NewebPay 訂閱資料整合（2026-05-22 完成）**：AdminUsers 列表方案標籤細分（早鳥/年繳/月繳/授予 Pro），加退款警示 chip；展開詳情新增「Pro 月繳訂閱 NPA」區塊（已扣期數 + lifetime revenue + 下次扣款日 + 取消備註）；AdminRevenue 加 NPA 月繳 MRR + Top-up 累計營收兩張卡，MRR 公式改「per-user × 月攤分」加總，退款率分母校正為「所有歷史年繳已付款訂單」。
 
 ### 第三階段（待開發）
 - [ ] 內容管理：~~公告~~（✅ 2026-05-07 完成）、FAQ、定價文案
