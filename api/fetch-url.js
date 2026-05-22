@@ -60,18 +60,40 @@ export default async function handler(req, res) {
     }
 
     const startTime = Date.now()
-    // 兩種 User-Agent — 多數 SEO 站歡迎 Googlebot UA，但 Cloudflare 等 anti-bot 會擋假 Googlebot（真 Googlebot 來自 Google IP 範圍）
-    // 偵測到 403 / 503 / blocked 時 fallback 用 Chrome desktop UA 重試
+    // 三輪 User-Agent fallback — 應對不同 anti-bot 策略：
+    //   Round 1: Googlebot — 多數 SEO-friendly 站歡迎，但 Cloudflare 會驗 IP 範圍直接擋
+    //   Round 2: Chrome desktop + 完整 Sec-Ch-Ua 等瀏覽器指紋頭 — 模擬真人瀏覽器
+    //   Round 3: Bingbot — 部分 Cloudflare 設定白名單 Bingbot 但不白名單 Googlebot
     const UA_GOOGLEBOT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
     const UA_CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    const UA_BINGBOT = 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)'
 
-    const buildOptions = (userAgent) => ({
+    // 通用瀏覽器 headers — 跟 UA 一起送讓 fingerprint 更像真人
+    const CHROME_HEADERS = {
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+      'Sec-Ch-Ua': '"Chromium";v="120", "Not(A:Brand";v="24", "Google Chrome";v="120"',
+      'Sec-Ch-Ua-Mobile': '?0',
+      'Sec-Ch-Ua-Platform': '"Windows"',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+    }
+
+    const buildOptions = (userAgent, useChromeHeaders = false) => ({
       method: 'GET',
       headers: {
         'User-Agent': userAgent,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
-        'Cache-Control': 'no-cache',
+        ...(useChromeHeaders ? CHROME_HEADERS : {
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+          'Cache-Control': 'no-cache',
+        }),
       },
       redirect: 'follow',
       signal: AbortSignal.timeout(20000), // 20 秒超時
@@ -79,7 +101,8 @@ export default async function handler(req, res) {
 
     let response
     let sslFallback = false
-    let uaFallback = false
+    let uaFallback = false       // true 代表用了第二或第三輪 UA
+    let antiBotBlocked = false   // true 代表 3 輪都被擋 = 真的鎖很嚴
 
     // 第一輪：Googlebot UA
     try {
@@ -106,16 +129,29 @@ export default async function handler(req, res) {
       }
     }
 
-    // 第二輪：anti-bot 偵測（403 / 503 / 429 通常是 Cloudflare / WAF 擋）
-    // Cloudflare 對假 Googlebot UA 嚴格驗證會回 403；換 Chrome UA 多半能繞過
+    // 第二輪：Chrome UA + 完整 Sec-Ch-Ua 瀏覽器指紋頭（模擬真人）
     if ([403, 503, 429].includes(response.status)) {
-      console.warn(`[fetch-url] Anti-bot suspected (HTTP ${response.status}) with ${hostname}, retrying with Chrome UA`)
+      console.warn(`[fetch-url] Anti-bot suspected (HTTP ${response.status}) with ${hostname}, retrying with Chrome UA + browser fingerprint headers`)
       try {
-        response = await fetch(targetUrl.toString(), buildOptions(UA_CHROME))
+        response = await fetch(targetUrl.toString(), buildOptions(UA_CHROME, true))
         uaFallback = true
       } catch (uaErr) {
-        console.error(`[fetch-url] UA fallback failed for ${hostname}:`, uaErr.message)
-        // 維持原本 403 response
+        console.error(`[fetch-url] Chrome UA fallback failed for ${hostname}:`, uaErr.message)
+      }
+    }
+
+    // 第三輪：Bingbot UA（部分 Cloudflare 白名單只放 Bingbot 不放 Googlebot）
+    if ([403, 503, 429].includes(response.status)) {
+      console.warn(`[fetch-url] Chrome UA still blocked (HTTP ${response.status}) with ${hostname}, last resort: Bingbot UA`)
+      try {
+        response = await fetch(targetUrl.toString(), buildOptions(UA_BINGBOT))
+        uaFallback = true
+      } catch (botErr) {
+        console.error(`[fetch-url] Bingbot UA fallback failed for ${hostname}:`, botErr.message)
+      }
+      // 仍 403 → 真的鎖很嚴，標記給前端 surface 提示
+      if ([403, 503, 429].includes(response.status)) {
+        antiBotBlocked = true
       }
     }
 
@@ -127,7 +163,10 @@ export default async function handler(req, res) {
         fetchTime,
         sslFallback,
         uaFallback,
-        hint: response.status === 403 ? '目標網站擋下我們的爬蟲（可能是 Cloudflare 等 anti-bot 設定嚴格）— 已嘗試 Googlebot + Chrome 兩種 UA 都被擋'
+        antiBotBlocked,
+        hint: antiBotBlocked
+            ? '目標網站 anti-bot 鎖極嚴 — 已嘗試 Googlebot / Chrome+瀏覽器指紋頭 / Bingbot 三種 UA 全被擋。這意味著 ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎爬蟲很可能也抓不到此站，AI 引用率會嚴重受影響。請聯絡網站管理員調整 Cloudflare / WAF 設定。'
+            : response.status === 403 ? '目標網站擋下我們的爬蟲（可能是 Cloudflare 等 anti-bot 設定嚴格）'
             : response.status === 503 ? '目標網站暫時不可用（過載 / 維護中）'
             : null,
       })
@@ -142,8 +181,9 @@ export default async function handler(req, res) {
       content: html,
       status: response.status,
       fetchTime,
-      sslFallback, // true 代表 SSL 憑證鏈有問題（用 relaxed verify 才抓到）
-      uaFallback,  // true 代表 Googlebot UA 被擋，換 Chrome UA 才成功
+      sslFallback,      // true 代表 SSL 憑證鏈有問題（用 relaxed verify 才抓到）
+      uaFallback,       // true 代表 Googlebot UA 被擋，換 Chrome 或 Bingbot UA 才成功
+      antiBotBlocked,   // true 代表 3 輪 UA 全擋（產品可包裝成「你站對 AI 不友善」的 finding）
     })
 
   } catch (error) {
