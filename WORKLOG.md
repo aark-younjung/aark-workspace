@@ -6,6 +6,33 @@
 
 ---
 
+### 2026-05-22（深夜補完）
+**加：is_test_order 欄位 — 把 aark6465 內部測試訂單從正式營收剔除:**
+
+- 🐛 **症狀**：AdminRevenue 部署後跑對照 SQL 發現「Pro 用戶 2、MRR 0、退款率 5/5=100%、Top-up 4,440」— 程式邏輯正確，但 6 筆 Top-up + 5 筆年繳全是 aark6465 內部沙盒測試訂單，把營收統計變很怪（退款率 100% 嚇人但無意義）。
+- ✅ **修法**：
+  - **SQL 加欄位**（用戶側 Supabase Dashboard 已跑）：
+    ```sql
+    ALTER TABLE aivis_newebpay_pending ADD COLUMN is_test_order BOOLEAN DEFAULT false;
+    ALTER TABLE aivis_newebpay_period  ADD COLUMN is_test_order BOOLEAN DEFAULT false;
+    CREATE INDEX idx_pending_test ON aivis_newebpay_pending(is_test_order) WHERE is_test_order = false;
+    CREATE INDEX idx_period_test  ON aivis_newebpay_period(is_test_order)  WHERE is_test_order = false;
+    UPDATE aivis_newebpay_pending SET is_test_order = true WHERE user_id IN (SELECT id FROM profiles WHERE email = 'aark6465@gmail.com');
+    UPDATE aivis_newebpay_period  SET is_test_order = true WHERE user_id IN (SELECT id FROM profiles WHERE email = 'aark6465@gmail.com');
+    ```
+  - **AdminRevenue.jsx**：新增 `includeTest` state（預設 false），三個訂單查詢條件加 `.eq('is_test_order', false)`；useEffect 依賴改 `[includeTest]` 切換時重 fetch；header 加 checkbox toggle「包含測試訂單」+ 開啟時顯示 🧪 黃色 chip 提示「含測試訂單」。
+  - **AdminUsers.jsx**：fetchUsers bulk + Excel 匯出查詢加 `.eq('is_test_order', false)`（列表分類不被測試訂單污染，測試用戶 badge 變回「⭐ 授予」）；展開詳情查詢不過濾，但加 `is_test_order` 欄位 → 兩處 chip（年繳訂單 + 月繳訂閱）加「🧪 測試訂單 / 🧪 測試訂閱」黃色標記。
+- 🔖 **設計取捨**：
+  - **toggle 只在 AdminRevenue，不放 AdminUsers**：AdminRevenue 是「數字看板」需要乾淨；AdminUsers 是「用戶詳情」需要完整歷史。前者預設過濾 + 可切換、後者預設過濾分類但展開仍看到完整紀錄。
+  - **沒走 email 過濾 (TEST_EMAILS const)**：用 schema 欄位比 hardcode email 更彈性 — 未來如果 QA 帳號、客服帳號、外部測試者也要標記，直接 UPDATE SQL 就好，不必改程式。
+  - **不刪測試紀錄**：金流測試紀錄要保留作 audit（NewebPay 後台對帳、稽核 trail），純標記不刪。
+- 🧪 **預期效果**：
+  - 部署後 AdminRevenue 預設顯示：Pro 用戶 0、MRR 0、退款率 0/0 = 「— / 無資料」、Top-up 累計 0（乾淨基準線）
+  - 勾「包含測試訂單」會跑回原本帶測試的數字（aark6465 的 6 Top-up + 5 退款），方便偵錯
+  - AdminUsers 展開 aark6465 仍會看到完整 11 筆紀錄，每筆有 🧪 黃 chip 標示
+
+---
+
 ### 2026-05-22
 **修：後台 NewebPay 訂閱資料整合（AdminRevenue + AdminUsers）— MRR 漏算 NPA 月繳 + Top-up 全補:**
 

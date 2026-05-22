@@ -58,6 +58,7 @@ export default function AdminUsers() {
 
       // 並行抓 user classifications：bulk 撈所有歷史年繳訂單 + active 月繳訂閱
       // 用於列表「方案類型」標籤細分（早鳥 / 年繳 / 月繳 / 授予 Pro）
+      // 列表分類排除 is_test_order=true 的內部測試訂單（aark6465 之流），讓測試用戶顯示「授予」而非污染「早鳥/年繳/月繳」標籤
       const [
         { data: usersData },
         { data: yearlyOrders },
@@ -68,11 +69,13 @@ export default function AdminUsers() {
           .from('aivis_newebpay_pending')
           .select('user_id, pack, refund_status, paid_at')
           .eq('kind', 'pro_yearly')
-          .eq('status', 'paid'),
+          .eq('status', 'paid')
+          .eq('is_test_order', false),
         supabase
           .from('aivis_newebpay_period')
           .select('user_id')
-          .eq('status', 'active'),
+          .eq('status', 'active')
+          .eq('is_test_order', false),
       ])
 
       // 月繳 active 用戶（優先級最高，因為定期定額還在扣）
@@ -158,12 +161,12 @@ export default function AdminUsers() {
       const balance = list.reduce((s, p) => s + Number(p.quota_remaining || 0), 0)
       setUserTopup(prev => ({ ...prev, [userId]: { balance, packs: list } }))
     }
-    // 載入 NewebPay Pro 年繳訂單（含早鳥 + 退款 metadata）
-    // 只抓 paid 狀態（pending/failed 訂單不顯示，避免雜訊）；含已完成退款的也保留供客服稽核
+    // 載入 NewebPay Pro 年繳訂單（含早鳥 + 退款 metadata + is_test_order）
+    // 展開詳情不過濾測試訂單 — 給客服看完整歷史；UI 用 🧪 chip 標示測試訂單
     if (!userOrders[userId]) {
       const { data: orders } = await supabase
         .from('aivis_newebpay_pending')
-        .select('merchant_order_no, kind, pack, amount, status, payment_type, paid_at, refund_status, refund_amount, refund_method, refunded_at, refund_note')
+        .select('merchant_order_no, kind, pack, amount, status, payment_type, paid_at, refund_status, refund_amount, refund_method, refunded_at, refund_note, is_test_order')
         .eq('user_id', userId)
         .eq('kind', 'pro_yearly')
         .eq('status', 'paid')
@@ -174,7 +177,7 @@ export default function AdminUsers() {
     if (!userPeriods[userId]) {
       const { data: periods } = await supabase
         .from('aivis_newebpay_period')
-        .select('period_no, status, created_at, last_payment_at, already_times, cancelled_at, cancel_note')
+        .select('period_no, status, created_at, last_payment_at, already_times, cancelled_at, cancel_note, is_test_order')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
       setUserPeriods(prev => ({ ...prev, [userId]: periods || [] }))
@@ -210,15 +213,18 @@ export default function AdminUsers() {
         .from('profiles')
         .select('id, name, email, is_pro, is_admin, created_at, marketing_consent, pro_expires_at, payment_gateway')
         .order('created_at', { ascending: false }),
+      // Excel 匯出同步排除測試訂單，避免「方案類型 / 到期日」欄被測試資料污染
       supabase
         .from('aivis_newebpay_pending')
         .select('user_id, pack, refund_status, paid_at')
         .eq('kind', 'pro_yearly')
-        .eq('status', 'paid'),
+        .eq('status', 'paid')
+        .eq('is_test_order', false),
       supabase
         .from('aivis_newebpay_period')
         .select('user_id, last_payment_at, already_times')
-        .eq('status', 'active'),
+        .eq('status', 'active')
+        .eq('is_test_order', false),
     ])
 
     // 建立月繳 + 年繳查找 map（跟 fetchUsers 同邏輯）
@@ -862,12 +868,18 @@ export default function AdminUsers() {
                                 <div key={order.merchant_order_no} className="bg-slate-800 rounded-lg px-4 py-3 text-xs">
                                   {/* Header row：方案 + 金額 + 退款狀態 */}
                                   <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
                                         isEarlybird ? 'bg-amber-500/20 text-amber-400' : 'bg-orange-500/20 text-orange-400'
                                       }`}>
                                         {isEarlybird ? '🐣 早鳥首年' : '⭐ 一般年繳'}
                                       </span>
+                                      {/* 測試訂單標記 — is_test_order=true 表示內部沙盒/偵錯紀錄，不計入正式營收 */}
+                                      {order.is_test_order && (
+                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-500/20 text-yellow-400" title="此訂單標記為內部測試，不計入 AdminRevenue 營收統計">
+                                          🧪 測試訂單
+                                        </span>
+                                      )}
                                       <span className="text-slate-200 font-semibold">NT$ {Number(order.amount).toLocaleString()}</span>
                                     </div>
                                     {/* 退款狀態 chip */}
@@ -946,12 +958,18 @@ export default function AdminUsers() {
                                 <div key={period.period_no} className="bg-slate-800 rounded-lg px-4 py-3 text-xs">
                                   {/* Header row：狀態 chip + 已扣款次數 + lifetime revenue */}
                                   <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
                                         isActive ? 'bg-teal-500/20 text-teal-400' : 'bg-slate-700 text-slate-400'
                                       }`}>
                                         {isActive ? '📅 月繳進行中' : isCancelled ? '⏸ 已取消委託' : period.status}
                                       </span>
+                                      {/* 測試訂單標記 */}
+                                      {period.is_test_order && (
+                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-500/20 text-yellow-400" title="此訂閱標記為內部測試，不計入 AdminRevenue 營收統計">
+                                          🧪 測試訂閱
+                                        </span>
+                                      )}
                                       <span className="text-slate-200 font-semibold">
                                         已扣 {period.already_times || 0} 期・NT$ {lifetimeRevenue.toLocaleString()}
                                       </span>

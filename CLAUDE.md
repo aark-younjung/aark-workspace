@@ -104,6 +104,12 @@ aark-workspace/
 | `content_audits` | 內容品質分析結果（15 項檢測，含 heading/word_count/meta/aeo/author/images/links/outbound/multimedia/readability JSONB；2026-05-20 新增，給 `/content-audit/:id` 詳情頁吃 cached + 趨勢迷你圖）|
 | `aivis_brands` | AI 曝光監測模組 — 使用者追蹤的品牌清單（Phase 1，2026-04-23 新增）|
 
+**訂單表 `is_test_order` 欄位（2026-05-22 新增）：**
+- `aivis_newebpay_pending.is_test_order` + `aivis_newebpay_period.is_test_order` 兩張表都有 BOOLEAN DEFAULT false
+- 標記內部沙盒/偵錯訂單，避免污染 AdminRevenue 統計
+- AdminRevenue 預設過濾（toggle 可包含測試）；AdminUsers 列表分類過濾但展開詳情仍顯示（加 🧪 chip）
+- 新增測試帳號時：`UPDATE aivis_newebpay_pending SET is_test_order = true WHERE user_id IN (SELECT id FROM profiles WHERE email = 'xxx@example.com')`
+
 **Pro 方案判斷：** `profiles.is_pro = true`（目前由 Stripe webhook 寫入，也可在 Supabase 手動切換）
 
 **Auth：** Supabase Auth，支援 Email/Password 與 Google OAuth

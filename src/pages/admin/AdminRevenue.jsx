@@ -17,10 +17,13 @@ export default function AdminRevenue() {
   const [proUsers, setProUsers] = useState([])
   const [chartData, setChartData] = useState([])
   const [loading, setLoading] = useState(true)
+  // 包含測試訂單 toggle — 預設關閉（is_test_order=false 的訂單才計入營收）
+  // 開啟時顯示全部資料（含內部沙盒測試訂單），方便偵錯
+  const [includeTest, setIncludeTest] = useState(false)
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [includeTest])
 
   const fetchData = async () => {
     setLoading(true)
@@ -29,6 +32,12 @@ export default function AdminRevenue() {
       const oneYearAgo = new Date(now.getTime() - ONE_YEAR_MS)
 
       // 並行抓 7 個資料源：用戶/Pro/Stripe/列表/網站數 + NPA 月繳 active 訂閱 + Top-up 加購訂單
+      // 訂單類查詢依 includeTest toggle 決定要不要排除 is_test_order=true 的內部測試訂單
+      const npaQuery = supabase.from('aivis_newebpay_period').select('user_id, period_no, status, created_at, last_payment_at, already_times').eq('status', 'active').order('created_at', { ascending: false })
+      if (!includeTest) npaQuery.eq('is_test_order', false)
+      const topupQuery = supabase.from('aivis_newebpay_pending').select('user_id, kind, amount, paid_at, refund_status').in('kind', ['topup_small', 'topup_large']).eq('status', 'paid').order('paid_at', { ascending: false })
+      if (!includeTest) topupQuery.eq('is_test_order', false)
+
       const [
         { count: totalUsers },
         { count: proCount },
@@ -43,19 +52,19 @@ export default function AdminRevenue() {
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_pro', true).not('stripe_subscription_id', 'is', null),
         supabase.from('profiles').select('id, name, email, created_at, stripe_subscription_id, subscribed_at, payment_gateway').eq('is_pro', true).order('created_at', { ascending: false }),
         supabase.from('websites').select('*', { count: 'exact', head: true }),
-        // NPA 月繳 active 訂閱（每筆 NT$1,490／月 持續扣款）
-        supabase.from('aivis_newebpay_period').select('user_id, period_no, status, created_at, last_payment_at, already_times').eq('status', 'active').order('created_at', { ascending: false }),
-        // Top-up 加購（小+大），一次性付款
-        supabase.from('aivis_newebpay_pending').select('user_id, kind, amount, paid_at, refund_status').in('kind', ['topup_small', 'topup_large']).eq('status', 'paid').order('paid_at', { ascending: false }),
+        npaQuery,
+        topupQuery,
       ])
 
       // 抓 NewebPay Pro 年繳已付款訂單（含早鳥 + 退款狀態），用於拆早鳥 vs 一般年繳
-      const { data: newebpayOrdersRaw } = await supabase
+      const yearlyQuery = supabase
         .from('aivis_newebpay_pending')
         .select('user_id, pack, amount, paid_at, refund_status')
         .eq('kind', 'pro_yearly')
         .eq('status', 'paid')
         .order('paid_at', { ascending: false })
+      if (!includeTest) yearlyQuery.eq('is_test_order', false)
+      const { data: newebpayOrdersRaw } = await yearlyQuery
       const newebpayOrders = newebpayOrdersRaw || []
       const npaMonthlyActive = npaMonthlyRaw || []
       const topupOrders = topupOrdersRaw || []
@@ -279,11 +288,26 @@ export default function AdminRevenue() {
     <AdminGuard>
       <AdminLayout>
         <div className="p-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white">營收儀表板</h1>
-            <p className="text-slate-400 text-sm mt-1">
-              MRR = NewebPay 年繳（每位 active 用戶 ÷ 12）+ NPA 月繳（每位 × NT$1,490）+ Stripe 月繳。Top-up 為一次性購買，列累計營收不計入 MRR。退款訂單與手動授予不計入。
-            </p>
+          <div className="mb-6 flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-white">
+                營收儀表板
+                {includeTest && <span className="ml-2 text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 font-semibold align-middle">🧪 含測試訂單</span>}
+              </h1>
+              <p className="text-slate-400 text-sm mt-1">
+                MRR = NewebPay 年繳（每位 active 用戶 ÷ 12）+ NPA 月繳（每位 × NT$1,490）+ Stripe 月繳。Top-up 為一次性購買，列累計營收不計入 MRR。退款訂單與手動授予不計入。
+              </p>
+            </div>
+            {/* 包含測試訂單 toggle — 預設關閉只看正式營收，開啟時把 is_test_order=true 訂單一起算進來方便偵錯 */}
+            <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 hover:border-slate-600 transition-colors">
+              <input
+                type="checkbox"
+                checked={includeTest}
+                onChange={e => setIncludeTest(e.target.checked)}
+                className="w-4 h-4 rounded accent-yellow-500 cursor-pointer"
+              />
+              <span className="text-sm text-slate-300">包含測試訂單</span>
+            </label>
           </div>
 
           {/* 上排：4 張總覽卡 */}
