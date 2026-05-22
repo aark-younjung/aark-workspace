@@ -215,6 +215,11 @@ export default function GEOAudit() {
             {!geoAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={GEO_ACCENT} accentGlow={`${GEO_ACCENT}28`} />}
           </div>
 
+          {/* llms.txt 自動生成 + 代管 — 對標 washinmura.jp，免費功能不 Pro-gate */}
+          <div style={{ marginBottom: 32 }}>
+            <LlmsTxtSection websiteId={id} />
+          </div>
+
           {/* 生成式 AI 優化建議 */}
           <div className="mt-8">
             <GlassCard color={T.geo} style={{ padding: 32 }}>
@@ -243,6 +248,161 @@ export default function GEOAudit() {
       </div>
       <Footer dark />
     </PageBg>
+  )
+}
+
+/**
+ * llms.txt 自動生成 + 代管區塊 — 對標 washinmura.jp 的免費代管功能
+ *
+ * 用戶看到的價值：
+ *   1. 我們已根據你的網站資料自動生成 llms.txt 標準格式
+ *   2. 預覽完整內容
+ *   3. 兩種接到自己網站的方式：
+ *      (a) 下載 .txt 檔，上傳到網站 root（最簡單）
+ *      (b) 在 robots.txt 加 LLM-Sitemap 指向我們代管 URL（不用改網站）
+ */
+function LlmsTxtSection({ websiteId }) {
+  const [content, setContent] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(null)   // 'url' | 'content' | null
+  const hostedUrl = `${window.location.origin}/llms/${websiteId}.txt`
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/llms/${websiteId}`)
+      .then(r => r.text())
+      .then(text => { if (!cancelled) { setContent(text); setLoading(false) } })
+      .catch(() => { if (!cancelled) { setContent('生成失敗，請重整頁面再試'); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [websiteId])
+
+  function copyToClipboard(text, key) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key)
+      setTimeout(() => setCopied(null), 1800)
+    })
+  }
+
+  function downloadFile() {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'llms.txt'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <GlassCard color={T.geo} style={{ padding: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        <span style={{ fontSize: 22 }}>📄</span>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: T.text }}>
+          llms.txt 自動生成（已根據你的最新檢測資料）
+        </h3>
+        <span style={{
+          fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+          background: T.geo + '26', color: T.geo, border: `1px solid ${T.geo}55`,
+        }}>免費功能</span>
+      </div>
+      <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
+        我們已自動生成符合 <a href="https://llmstxt.org/" target="_blank" rel="noopener noreferrer" style={{ color: T.geo, textDecoration: 'underline' }}>llmstxt.org 標準</a> 的 llms.txt 給你 — 這份檔案告訴 ChatGPT、Claude、Perplexity 等 AI 引擎你的網站結構、歡迎哪些 AI 爬蟲、可引用內容在哪。下方有兩種接到你網站的方式。
+      </p>
+
+      {/* 代管 URL + 複製按鈕 */}
+      <div style={{
+        background: 'rgba(0,0,0,0.4)', border: `1px solid ${T.cardBorder}`,
+        borderRadius: T.rM, padding: '10px 14px', marginBottom: 14,
+        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+      }}>
+        <span style={{ fontSize: 11, color: T.textLow, letterSpacing: '.05em' }}>代管 URL</span>
+        <code style={{
+          flex: 1, minWidth: 200, fontSize: 12, fontFamily: T.mono, color: T.text,
+          overflow: 'auto', whiteSpace: 'nowrap',
+        }}>{hostedUrl}</code>
+        <button
+          type="button"
+          onClick={() => copyToClipboard(hostedUrl, 'url')}
+          style={{
+            fontSize: 11, fontWeight: 600, padding: '5px 12px', borderRadius: 5,
+            background: copied === 'url' ? T.pass + '33' : 'rgba(255,255,255,0.05)',
+            color: copied === 'url' ? T.pass : T.text,
+            border: `1px solid ${copied === 'url' ? T.pass + '55' : T.cardBorder}`,
+            cursor: 'pointer', fontFamily: T.font,
+          }}
+        >{copied === 'url' ? '✓ 已複製' : '複製連結'}</button>
+      </div>
+
+      {/* 預覽區 — 顯示生成出來的 llms.txt 內容 */}
+      <div style={{
+        background: 'rgba(0,0,0,0.55)', border: `1px solid ${T.cardBorder}`,
+        borderRadius: T.rM, padding: 14, marginBottom: 14,
+        maxHeight: 280, overflow: 'auto',
+      }}>
+        <pre style={{
+          margin: 0, fontSize: 11, lineHeight: 1.65,
+          color: T.textMid, fontFamily: T.mono, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+        }}>{loading ? '載入中...' : content}</pre>
+      </div>
+
+      {/* 動作按鈕 */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+        <button
+          type="button"
+          onClick={downloadFile}
+          disabled={loading || !content}
+          style={{
+            fontSize: 13, fontWeight: 700, padding: '10px 18px', borderRadius: T.rM,
+            background: `linear-gradient(135deg, ${T.geo}, #14b8a6)`,
+            color: 'white', border: 'none', cursor: 'pointer', fontFamily: T.font,
+            opacity: loading ? 0.5 : 1,
+          }}
+        >⬇ 下載 llms.txt</button>
+        <button
+          type="button"
+          onClick={() => copyToClipboard(content, 'content')}
+          disabled={loading || !content}
+          style={{
+            fontSize: 13, fontWeight: 600, padding: '10px 18px', borderRadius: T.rM,
+            background: copied === 'content' ? T.pass + '22' : 'rgba(255,255,255,0.05)',
+            color: copied === 'content' ? T.pass : T.text,
+            border: `1px solid ${copied === 'content' ? T.pass + '55' : T.cardBorder}`,
+            cursor: 'pointer', fontFamily: T.font,
+            opacity: loading ? 0.5 : 1,
+          }}
+        >{copied === 'content' ? '✓ 已複製內容' : '複製內容'}</button>
+      </div>
+
+      {/* 怎麼接到網站的兩種方式 */}
+      <details style={{ fontSize: 13, color: T.textMid, lineHeight: 1.75 }}>
+        <summary style={{ cursor: 'pointer', color: T.text, fontWeight: 600, marginBottom: 8 }}>
+          ▶ 怎麼把這個 llms.txt 接到我的網站？
+        </summary>
+        <div style={{ paddingLeft: 16, paddingTop: 8 }}>
+          <p style={{ marginBottom: 12 }}>
+            <strong style={{ color: T.text }}>方法 1：下載 → 上傳到網站 root（推薦，標準做法）</strong><br />
+            按上方「⬇ 下載 llms.txt」拿到檔案，透過 FTP / cPanel / WP-FTP 等工具上傳到你網站根目錄。完成後訪客和爬蟲都能透過 <code style={{ background: 'rgba(0,0,0,0.4)', padding: '1px 6px', borderRadius: 3, fontFamily: T.mono, fontSize: 11 }}>你的網域/llms.txt</code> 存取。
+          </p>
+          <p style={{ marginBottom: 12 }}>
+            <strong style={{ color: T.text }}>方法 2：在 robots.txt 加 LLM-Sitemap 指向（不用改網站內容）</strong><br />
+            在你網站的 robots.txt 加一行：
+          </p>
+          <pre style={{
+            margin: '0 0 12px 0', padding: 10, fontSize: 11, lineHeight: 1.5,
+            background: 'rgba(0,0,0,0.5)', border: `1px solid ${T.cardBorder}`,
+            borderRadius: 6, color: '#cbd5e1', fontFamily: T.mono, overflow: 'auto',
+          }}>{`LLM-Sitemap: ${hostedUrl}`}</pre>
+          <p style={{ marginBottom: 12 }}>
+            這是 emerging convention — 越來越多 AI 工具會讀 robots.txt 的這欄找 llms.txt。優點：不用改你網站內容，連結指向我們代管的 URL，未來 audit 跑新版自動跟進更新。
+          </p>
+          <p style={{ color: T.textLow, fontSize: 12, paddingTop: 8, borderTop: `1px solid ${T.cardBorder}` }}>
+            💡 兩種方式可以並行 — 方法 1 確保 LLM 直接讀到，方法 2 是備援 + 自動更新。每次你在 AI 雷達重跑 audit，這份 llms.txt 都會自動帶入最新資料。
+          </p>
+        </div>
+      </details>
+    </GlassCard>
   )
 }
 

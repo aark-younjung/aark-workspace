@@ -6,6 +6,30 @@
 
 ---
 
+### 2026-05-23（B. llms.txt 代管功能 — 對標 washinmura.jp 偷學）
+**對標分析後識別的差異化補強 — washinmura.jp 有「免費 llms.txt 代管」我們沒有：**
+
+- 🆕 **endpoint：[api/llms/[id].js](api/llms/[id].js)** — Vercel dynamic route
+  - 從 websites + 4 種 audit 最新一筆動態生成 llms.txt（符合 llmstxt.org 標準）
+  - 內容含：site title / description / homepage / sitemap / AI crawler welcome list（14 個 AI/搜尋引擎 UA）/ structured data signals
+  - service role 繞 RLS 拉資料、尊重用戶 opt_out
+  - text/plain content-type + 1hr CDN cache + 1day stale-while-revalidate
+- 🆕 **vercel.json rewrite**：`/llms/:id.txt → /api/llms/:id` 讓對外 URL 漂亮
+  - 同時把 `llms/` 加進 fallback exclusion 避免被 SPA index.html 攔截
+- 🆕 **GEO 詳情頁加 LlmsTxtSection 組件**（[GEOAudit.jsx](src/pages/GEOAudit.jsx)）
+  - 代管 URL 顯示 + 一鍵複製
+  - 內容預覽（讀 /api/llms/{id} 拿即時生成內容）
+  - 下載 llms.txt 檔（Blob + download attr）
+  - 複製內容 / 複製連結兩個按鈕，1.8 秒 ✓ 已複製 反饋
+  - 折疊「怎麼接到我的網站？」教學：方法 1 下載上傳 root / 方法 2 robots.txt 加 LLM-Sitemap 指向
+  - 標「免費功能」chip，不 Pro-gate（讓進 GEO 頁的用戶都能用，建立 goodwill）
+- 設計取捨：
+  - **Path-based** 不做 subdomain — DNS 門檻高、對 LLM 來說 path/subdomain 無差只是視覺加分
+  - **不做用戶編輯** — 完整版（B 等級）會新增 llms_files 表 + textarea 編輯器，這版先做最小有用版
+  - **內容繁中標題 + 英文 section name** — section name 用英文（GPTBot/ClaudeBot 等爬蟲對英文 section name 識別度高），描述文案保留繁中
+
+---
+
 ### 2026-05-23（fetch-url 加 maxDuration + 縮短每輪 timeout — canon.co.uk 案例）
 **朋友測 canon.co.uk 沒分數的新失敗模式：**
 

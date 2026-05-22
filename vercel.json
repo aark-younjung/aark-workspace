@@ -2,7 +2,8 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/((?!api/|sitemap.xml|robots.txt).*)", "destination": "/index.html" }
+    { "source": "/llms/:id.txt", "destination": "/api/llms/:id" },
+    { "source": "/((?!api/|llms/|sitemap.xml|robots.txt).*)", "destination": "/index.html" }
   ],
   "crons": [
     {
