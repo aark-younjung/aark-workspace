@@ -44,11 +44,15 @@ export function normalizeUrl(input) {
     // hostname 拿掉 www. 且全小寫
     const host = u.hostname.toLowerCase().replace(/^www\./, '')
 
-    // 防呆：偵測「protocol 字串混進 hostname 開頭」的複製貼上錯字
-    // 例：用戶把 https:// 重複貼成 https://ihttps//foo.com（hostname=ihttps 是非法情境）
-    // 偵測規則：hostname 開頭剛好是 http / https / ftp 等 protocol 字串（後面跟 . 或結尾才合法 — like httpfoo.com 是合法的）
-    if (/^(https?|ftp)$/.test(host) || /^https?[^a-z0-9-]/.test(host)) {
-      // 拋空字串讓上層 catch / 顯示錯誤訊息
+    // 防呆 1：所有公開網域至少要有一個點（domain.tld）
+    // 例：'https://ihttps//seeu.tw' → hostname='ihttps' (無點) → 拒絕
+    // 例：'https://localhost' → 拒絕（雖然上層 fetch-url 也擋，這裡早攔早好）
+    if (!host.includes('.')) {
+      return ''
+    }
+
+    // 防呆 2：hostname 內含 / 是非法（URL parser 應該不允許但保險擋一次）
+    if (host.includes('/')) {
       return ''
     }
 

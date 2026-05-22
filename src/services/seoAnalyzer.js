@@ -23,17 +23,33 @@ export async function fetchPageContent(url) {
 
   try {
     const response = await fetch(proxyUrl)
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success) {
-        return { html: data.content, sslFallback: !!data.sslFallback }
-      }
-      throw new Error(data.error || 'Failed to fetch')
+    // 不論 HTTP 200 還是非 200，都嘗試 parse JSON body 拿錯誤細節（fetch-url 在 4xx/5xx 也會回 JSON）
+    let data = null
+    try { data = await response.json() } catch { /* 非 JSON 回應 */ }
+
+    if (response.ok && data?.success) {
+      return { html: data.content, sslFallback: !!data.sslFallback }
     }
-    throw new Error(`HTTP ${response.status}`)
+
+    // 組合更完整的錯誤訊息 — 包含 hint 提示與 http status
+    const httpStatus = data?.status || response.status
+    const errPart = data?.error || `HTTP ${response.status}`
+    const hintPart = data?.hint ? `（${data.hint}）` : ''
+    const msgPart = data?.message ? ` — ${data.message}` : ''
+    const err = new Error(`${errPart}${hintPart}${msgPart}`)
+    err.code = data?.error || `HTTP_${response.status}`
+    err.status = httpStatus
+    err.step = 'fetch_url'
+    throw err
   } catch (error) {
+    // 已是我們自己 throw 的就直接 rethrow，原 message 保留
+    if (error?.step === 'fetch_url') throw error
+    // network-level 錯誤（CORS、proxy 連不上等）— 包裝成易讀訊息
     console.error('Serverless fetch failed:', error)
-    throw new Error('無法抓取網頁內容')
+    const wrapped = new Error(`無法抓取網頁內容：${error.message || '網路連線失敗'}`)
+    wrapped.code = 'NETWORK_ERROR'
+    wrapped.step = 'fetch_url'
+    throw wrapped
   }
 }
 
