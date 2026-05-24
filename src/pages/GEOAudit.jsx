@@ -270,7 +270,9 @@ function LlmsTxtSection({ websiteId }) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)   // 'url' | 'content' | null
-  const hostedUrl = `${window.location.origin}/llms/${websiteId}.txt`
+  // 注意：用 /api/llms-txt?id=... 而非 /llms/{id}.txt（vercel rewrite 規則對 `:id.txt` 有 build 兼容問題）
+  // 用戶 robots.txt LLM-Sitemap 指向這個 URL 完全可以，AI bot 會跟著走
+  const hostedUrl = `${window.location.origin}/api/llms-txt?id=${websiteId}`
 
   useEffect(() => {
     let cancelled = false
