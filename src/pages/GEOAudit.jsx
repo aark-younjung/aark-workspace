@@ -275,7 +275,8 @@ function LlmsTxtSection({ websiteId }) {
   useEffect(() => {
     let cancelled = false
     // X-AARK-Internal header 讓 endpoint 跳過 visit log（避免 preview 污染統計）
-    fetch(`/api/llms/${websiteId}`, { headers: { 'X-AARK-Internal': 'true' } })
+    // 注意：用 query string ?id=...，不是 path /api/llms/{id}（避免 Vercel 對方括號路徑的 build 問題）
+    fetch(`/api/llms-txt?id=${websiteId}`, { headers: { 'X-AARK-Internal': 'true' } })
       .then(r => r.text())
       .then(text => { if (!cancelled) { setContent(text); setLoading(false) } })
       .catch(() => { if (!cancelled) { setContent('生成失敗，請重整頁面再試'); setLoading(false) } })

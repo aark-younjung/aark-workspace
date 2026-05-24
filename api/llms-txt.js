@@ -1,16 +1,14 @@
 /**
- * GET /api/llms/{id}（或經由 vercel.json rewrite 對外暴露為 /llms/{id}.txt）
+ * GET /api/llms-txt?id={websiteId}（經由 vercel.json rewrite 對外暴露為 /llms/{id}.txt）
  *
  * llms.txt 代管端點 — 從用戶 audit 資料自動生成 llms.txt，回 text/plain
  *
- * 為什麼用 path-based（非 subdomain）：
- *   - DNS 設定門檻高、新增功能要動 DNS 不靈活
- *   - 對 LLM 爬蟲而言 path vs subdomain 無差，只是視覺加分
- *   - 之後 user 接到自己網站時，會用 /llms.txt（他自己 root），這個 endpoint 是「正本來源」
+ * ⚠️ 為什麼用扁平命名 + query param（不用 api/llms/[id].js 動態路由）：
+ *   2026-05-23 從 `api/llms/[id].js` 改過來。原方括號路徑導致 Vercel build 連續 4 個 commit 失敗，
+ *   懷疑跟 Windows checkout `[` `]` 字元、或巢狀資料夾動態路由的兼容性有關。
+ *   改成扁平 `api/llms-txt.js`、id 走 query string，最穩。
  *
  * 標準參考：https://llmstxt.org/
- *
- * Cache：CDN cache 1 小時（audit 不會頻繁變、避免每次 hit 都打 Supabase）
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -58,7 +56,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET') return res.status(405).send('Method not allowed')
 
-  // 從 URL 拿 website id（rewrite 後 .txt 後綴可能會被帶進來，過濾掉）
+  // 從 query 拿 website id（rewrite 後 .txt 後綴可能會被帶進來，過濾掉）
   const rawId = (req.query.id || '').toString().replace(/\.txt$/i, '')
   if (!rawId) return res.status(400).send('Missing website id')
 
@@ -99,8 +97,6 @@ export default async function handler(req, res) {
     const ua = req.headers['user-agent'] || ''
     const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim()
     const { isAiBot, botName } = detectAiBot(ua)
-    // 不 await — fire-and-forget，避免拖慢 response
-    // 但 Vercel function 在 response 後就會 terminate，要保險還是 await
     try {
       await supabase.from('crawler_visits').insert({
         website_id: rawId,
