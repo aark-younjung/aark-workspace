@@ -6,6 +6,28 @@
 
 ---
 
+### 2026-05-23（fetch-url 修 3 個獨立 bug — 朋友測 4 個失敗網站）
+**朋友回報 scalebar.co / canon.co.uk / plantex.my / taishinbank.com.tw 都失敗，診斷後是 3 個獨立 bug：**
+
+- 🐛 **Bug 1：SSL_ERROR_CODES 漏接 `ERR_TLS_CERT_ALTNAME_INVALID`**（憑證 hostname 不符）
+  - scalebar.co + taishinbank.com.tw 是此類 — 憑證有效但 CN 跟訪問的 hostname 對不上
+  - 修法：白名單加 `ERR_TLS_CERT_ALTNAME_INVALID` + `ERR_TLS_CERT_ALTNAME_FORMAT` + `HOSTNAME_MISMATCH`（老 Node code）
+  - 驗證：taishinbank.com.tw 用 undici 放寬 SSL → 200 OK 211KB「個人金融 - 台新銀行」
+- 🐛 **Bug 2：Round 1 timeout/throw 就死掉，沒 fall through Round 2-4**
+  - plantex.my 案例：站在馬來西亞，Vercel→MY RTT 高，Round 1 Googlebot 容易 timeout
+  - 但 Round 2 Chrome 通常較快通過（不同 UA 走不同 anti-bot 路徑）
+  - 原邏輯：Round 1 throw → 整個 request 失敗。修法：Round 1 catch 對「非 SSL」error 設 `response = null`，後續輪 `shouldFallback(response)` helper 接管
+  - 同步 Round 2-3-4 都從 `response.status === 403/...` 改為 `shouldFallback(response)`，含 null 也算「該繼續」
+  - 4 輪都 throw 的 edge case → 返回 503 + `antiBotBlocked: true` 讓 HomeDark partial audit 接住
+- 🐛 **Bug 3：scalebar.co 「200 + 空 body」沒有具體錯誤訊息**
+  - 該站 Apache 回 200 OK chunked 但 0 byte（broken WordPress / 維護中）
+  - 原本：拿到空 HTML → 全部 analyzer 跑 0 分 → 用戶以為自己網站很爛
+  - 修法：fetch-url 在 `html.trim().length < 50` 時回 502 + 具體 hint「目標網站回應 200 但內容為空，可能網站維護中 / 應用程式錯誤」
+- ⚙️ **per-round timeout 從 6s 微調到 8s**：Vercel→海外網站 latency 比本地高，6s 太緊
+  - 新 worst case：8+8+8+30 = 54s，maxDuration 60s 留 6s 緩衝
+
+---
+
 ### 2026-05-23（C. 爬蟲訪問日誌 — 對標 washinmura.jp wow factor）
 **順著 B 剛蓋的 llms.txt endpoint 加 visit logging — 不另做 JS pixel（純 JS 對 AI bot 無效）:**
 

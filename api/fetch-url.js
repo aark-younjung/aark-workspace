@@ -19,6 +19,9 @@ const SSL_ERROR_CODES = new Set([
   'DEPTH_ZERO_SELF_SIGNED_CERT',            // 自簽憑證
   'SELF_SIGNED_CERT_IN_CHAIN',              // 鏈中有自簽憑證
   'CERT_UNTRUSTED',                         // 不受信任的 CA
+  'ERR_TLS_CERT_ALTNAME_INVALID',           // 憑證 hostname 不符（如 scalebar.co、taishinbank.com.tw）
+  'ERR_TLS_CERT_ALTNAME_FORMAT',            // altname 格式異常
+  'HOSTNAME_MISMATCH',                      // 老版 Node hostname mismatch code
 ])
 
 function isSSLError(err) {
@@ -89,10 +92,11 @@ export default async function handler(req, res) {
       'Upgrade-Insecure-Requests': '1',
     }
 
-    // 每輪 timeout 縮短：Akamai 等 anti-bot 會拖時間，要果斷砍才不會 4 輪累加爆 maxDuration
-    // - UA 三輪各 6s（壞掉的會快速回 403，正常的網站 1-3s 就回）
-    // - AllOrigins proxy 給 15s（要過第三方 hop，正常需時較久）
-    const buildOptions = (userAgent, useChromeHeaders = false, timeoutMs = 6000) => ({
+    // 每輪 timeout：8s（Vercel 在美國、客戶網站可能在 Asia/EU、TLS handshake + slow CDN 容易突破 6s）
+    // 4 輪 worst case：8 + 8 + 8 + 30 = 54s，maxDuration 60s 留 6s 緩衝
+    // - UA 三輪各 8s（正常網站 1-3s 就回，慢的給到 8s）
+    // - AllOrigins proxy 給 30s（要過第三方 hop，正常需時較久）
+    const buildOptions = (userAgent, useChromeHeaders = false, timeoutMs = 8000) => ({
       method: 'GET',
       headers: {
         'User-Agent': userAgent,
@@ -111,7 +115,10 @@ export default async function handler(req, res) {
     let uaFallback = false       // true 代表用了第二或第三輪 UA
     let antiBotBlocked = false   // true 代表 3 輪都被擋 = 真的鎖很嚴
 
-    // 第一輪：Googlebot UA
+    // helper：判斷該不該嘗試下一輪 — null response（前輪 timeout/throw）或 anti-bot status 都該繼續
+    const shouldFallback = (r) => !r || [403, 503, 429].includes(r.status)
+
+    // 第一輪：Googlebot UA — 即使 timeout / network error 也只設 response=null，不 throw（讓後續輪有機會）
     try {
       response = await fetch(targetUrl.toString(), buildOptions(UA_GOOGLEBOT))
     } catch (err) {
@@ -129,29 +136,36 @@ export default async function handler(req, res) {
           sslFallback = true
         } catch (retryErr) {
           console.error(`[fetch-url] SSL fallback failed for ${hostname}:`, retryErr.message)
-          throw err
+          response = null   // SSL fallback 也失敗 → 讓後續輪有機會（雖然 SSL 是該 host 通病，但說不定 cdn IP 改了）
         }
       } else {
-        throw err
+        // timeout / network error：不 throw，讓後續輪嘗試（Round 1 timeout 的網站 Round 2 可能成功）
+        console.warn(`[fetch-url] Round 1 (Googlebot) failed for ${hostname}: ${err.message}`)
+        response = null
       }
     }
 
     // 第二輪：Chrome UA + 完整 Sec-Ch-Ua 瀏覽器指紋頭（模擬真人）
-    if ([403, 503, 429].includes(response.status)) {
-      console.warn(`[fetch-url] Anti-bot suspected (HTTP ${response.status}) with ${hostname}, retrying with Chrome UA + browser fingerprint headers`)
+    if (shouldFallback(response)) {
+      const reason = response ? `HTTP ${response.status}` : 'Round 1 failed'
+      console.warn(`[fetch-url] ${reason} with ${hostname}, retrying with Chrome UA + browser fingerprint headers`)
       try {
-        response = await fetch(targetUrl.toString(), buildOptions(UA_CHROME, true))
+        const r2 = await fetch(targetUrl.toString(), buildOptions(UA_CHROME, true))
+        response = r2
         uaFallback = true
       } catch (uaErr) {
         console.error(`[fetch-url] Chrome UA fallback failed for ${hostname}:`, uaErr.message)
+        // 不更新 response — 維持 Round 1 結果（或 null）
       }
     }
 
     // 第三輪：Bingbot UA（部分 Cloudflare 白名單只放 Bingbot 不放 Googlebot）
-    if ([403, 503, 429].includes(response.status)) {
-      console.warn(`[fetch-url] Chrome UA still blocked (HTTP ${response.status}) with ${hostname}, fallback round 3: Bingbot UA`)
+    if (shouldFallback(response)) {
+      const reason = response ? `Round 2 returned HTTP ${response.status}` : 'Round 2 also failed'
+      console.warn(`[fetch-url] ${reason} with ${hostname}, fallback round 3: Bingbot UA`)
       try {
-        response = await fetch(targetUrl.toString(), buildOptions(UA_BINGBOT))
+        const r3 = await fetch(targetUrl.toString(), buildOptions(UA_BINGBOT))
+        response = r3
         uaFallback = true
       } catch (botErr) {
         console.error(`[fetch-url] Bingbot UA fallback failed for ${hostname}:`, botErr.message)
@@ -162,8 +176,9 @@ export default async function handler(req, res) {
     // 對 Vercel 而言 AllOrigins 是不同 IP 段，Cloudflare 規則可能放它過、不放我們過
     // 注意：AllOrigins 回的 JSON 格式不同（contents 欄位包 HTML），要 unwrap
     let proxyFallback = false
-    if ([403, 503, 429].includes(response.status)) {
-      console.warn(`[fetch-url] All 3 UA rounds blocked, last resort: AllOrigins proxy for ${hostname}`)
+    if (shouldFallback(response)) {
+      const reason = response ? `Round 3 returned HTTP ${response.status}` : '3 UA rounds all failed'
+      console.warn(`[fetch-url] ${reason}, last resort: AllOrigins proxy for ${hostname}`)
       try {
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl.toString())}`
         const proxyResp = await fetch(proxyUrl, {
@@ -188,13 +203,26 @@ export default async function handler(req, res) {
       } catch (proxyErr) {
         console.error(`[fetch-url] AllOrigins proxy fallback failed for ${hostname}:`, proxyErr.message)
       }
-      // 4 輪全失敗 → 真的鎖很嚴
-      if (!response.ok) {
+      // 4 輪全失敗 → 真的鎖很嚴（含 response=null 的情況）
+      if (!response || !response.ok) {
         antiBotBlocked = true
       }
     }
 
     const fetchTime = Date.now() - startTime
+
+    // response=null（4 輪全 throw，從未拿到任何 response）→ 回 503 + antiBotBlocked，讓上層 catch 走 partial audit
+    if (!response) {
+      return res.status(503).json({
+        error: 'All fetch rounds failed',
+        fetchTime,
+        sslFallback,
+        uaFallback,
+        proxyFallback,
+        antiBotBlocked: true,
+        hint: '目標網站 4 種爬蟲身份都連不上 — 可能網域 DNS 異常、SSL 配置錯、防火牆全擋。同樣的問題會讓 AI 引擎抓不到此站。',
+      })
+    }
 
     if (!response.ok) {
       return res.status(response.status).json({
@@ -213,6 +241,19 @@ export default async function handler(req, res) {
     }
 
     const html = await response.text()
+
+    // 200 但 body 為空 / 過短 → 網站本身壞掉（scalebar.co 案例：Apache 回 200 chunked 但 0 byte）
+    // 給上層具體提示，不是讓 analyzer 全部回 0 分讓用戶以為自己網站很爛
+    if (!html || html.trim().length < 50) {
+      return res.status(502).json({
+        error: 'Empty or near-empty response',
+        fetchTime,
+        sslFallback, uaFallback, proxyFallback,
+        antiBotBlocked: false,
+        responseSize: html?.length || 0,
+        hint: `目標網站回應 200 但內容為空（${html?.length || 0} bytes）— 可能網站維護中、應用程式錯誤（WordPress white screen 等）、或對特定爬蟲只回殼。請用瀏覽器確認網站正常後重試。`,
+      })
+    }
 
     // 返回內容
     return res.status(200).json({
