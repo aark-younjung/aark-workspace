@@ -220,6 +220,11 @@ export default function GEOAudit() {
             <LlmsTxtSection websiteId={id} />
           </div>
 
+          {/* 爬蟲訪問日誌 — 顯示誰來讀過你的代管 llms.txt（對標 washinmura wow factor） */}
+          <div style={{ marginBottom: 32 }}>
+            <CrawlerVisitsSection websiteId={id} />
+          </div>
+
           {/* 生成式 AI 優化建議 */}
           <div className="mt-8">
             <GlassCard color={T.geo} style={{ padding: 32 }}>
@@ -269,7 +274,8 @@ function LlmsTxtSection({ websiteId }) {
 
   useEffect(() => {
     let cancelled = false
-    fetch(`/api/llms/${websiteId}`)
+    // X-AARK-Internal header 讓 endpoint 跳過 visit log（避免 preview 污染統計）
+    fetch(`/api/llms/${websiteId}`, { headers: { 'X-AARK-Internal': 'true' } })
       .then(r => r.text())
       .then(text => { if (!cancelled) { setContent(text); setLoading(false) } })
       .catch(() => { if (!cancelled) { setContent('生成失敗，請重整頁面再試'); setLoading(false) } })
@@ -404,6 +410,157 @@ function LlmsTxtSection({ websiteId }) {
       </details>
     </GlassCard>
   )
+}
+
+/**
+ * 爬蟲訪問日誌區塊 — 顯示誰來讀過代管 llms.txt
+ *
+ * 60 秒自動 refresh（對標 washinmura.jp 的「live tracker」體驗）
+ * AI bot visit 用彩色 chip + bot name，一般訪問淡灰
+ *
+ * 限制（要對用戶誠實）：
+ *   - 只記「對代管 llms.txt 的訪問」，不是用戶網站本身
+ *   - 多數 AI bot 不會主動讀 llms.txt，要等用戶把 LLM-Sitemap 寫進 robots.txt
+ *     或下載放網站 root 才會被 AI 引擎發現
+ */
+function CrawlerVisitsSection({ websiteId }) {
+  const [visits, setVisits] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchVisits() {
+      try {
+        // RLS 確保只有 owner / admin 能讀
+        const { data } = await supabase
+          .from('crawler_visits')
+          .select('id, user_agent, is_ai_bot, bot_name, source, created_at')
+          .eq('website_id', websiteId)
+          .order('created_at', { ascending: false })
+          .limit(30)
+        if (!cancelled) {
+          setVisits(data || [])
+          setLoading(false)
+        }
+      } catch {
+        if (!cancelled) { setVisits([]); setLoading(false) }
+      }
+    }
+    fetchVisits()
+    // 60 秒 polling — 對標 washinmura「live tracker」體驗
+    const t = setInterval(fetchVisits, 60000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [websiteId])
+
+  const aiBotCount = (visits || []).filter(v => v.is_ai_bot).length
+  const totalCount = (visits || []).length
+  // 過去 24 小時 AI bot 訪問
+  const now = Date.now()
+  const last24hAiBot = (visits || []).filter(v => v.is_ai_bot && (now - new Date(v.created_at).getTime()) < 86400000).length
+
+  return (
+    <GlassCard color={T.geo} style={{ padding: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 22 }}>📡</span>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: T.text }}>
+          AI 爬蟲訪問日誌
+        </h3>
+        <span style={{
+          fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+          background: T.geo + '26', color: T.geo, border: `1px solid ${T.geo}55`,
+        }}>每 60 秒更新</span>
+      </div>
+      <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
+        顯示誰來讀過你的代管 llms.txt。AI 引擎（GPTBot / ClaudeBot / PerplexityBot 等）會自動標彩色 chip。
+        {totalCount === 0 && (
+          <><br /><strong style={{ color: T.warn }}>目前還沒有訪問紀錄</strong> — 把 llms.txt 接到你網站（用上方教學「方法 2」最快），AI 引擎下次來爬就會被記錄。</>
+        )}
+      </p>
+
+      {/* KPI chips */}
+      {totalCount > 0 && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+          <KPIChip label="總訪問次數" value={totalCount} color={T.textMid} />
+          <KPIChip label="AI 爬蟲訪問" value={aiBotCount} color={T.geo} />
+          <KPIChip label="24 小時內 AI 訪問" value={last24hAiBot} color={T.pass} />
+        </div>
+      )}
+
+      {/* Visit timeline */}
+      {loading ? (
+        <p style={{ fontSize: 13, color: T.textLow }}>載入中...</p>
+      ) : visits && visits.length > 0 ? (
+        <div style={{
+          background: 'rgba(0,0,0,0.4)', border: `1px solid ${T.cardBorder}`,
+          borderRadius: T.rM, maxHeight: 320, overflow: 'auto',
+        }}>
+          {visits.map(v => (
+            <div key={v.id} style={{
+              padding: '10px 14px', borderBottom: `1px solid ${T.cardBorder}`,
+              display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+            }}>
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+                background: v.is_ai_bot ? T.geo + '26' : 'rgba(255,255,255,0.05)',
+                color: v.is_ai_bot ? T.geo : T.textLow,
+                border: `1px solid ${v.is_ai_bot ? T.geo + '55' : T.cardBorder}`,
+                fontFamily: T.mono,
+              }}>
+                {v.is_ai_bot ? '🤖 AI BOT' : '👤 OTHER'}
+              </span>
+              {v.is_ai_bot && (
+                <span style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>
+                  {v.bot_name}
+                </span>
+              )}
+              <span style={{
+                fontSize: 11, color: T.textLow, fontFamily: T.mono,
+                flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }} title={v.user_agent}>
+                {v.user_agent || '(no user agent)'}
+              </span>
+              <span style={{ fontSize: 11, color: T.textLow, fontFamily: T.mono }}>
+                {formatRelativeTime(v.created_at)}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{
+          padding: 28, textAlign: 'center', fontSize: 13, color: T.textLow,
+          background: 'rgba(0,0,0,0.4)', border: `1px dashed ${T.cardBorder}`,
+          borderRadius: T.rM,
+        }}>
+          📭 還沒有任何爬蟲訪問紀錄
+        </div>
+      )}
+
+      <p style={{ fontSize: 11, color: T.textLow, lineHeight: 1.6, marginTop: 12, fontStyle: 'italic' }}>
+        ⓘ 此日誌只記錄對「我們代管的 llms.txt」的訪問。要追蹤對你整個網站的訪問，需要在伺服器端裝 log forwarder（Pro 功能規劃中）。
+      </p>
+    </GlassCard>
+  )
+}
+
+function KPIChip({ label, value, color }) {
+  return (
+    <div style={{
+      padding: '8px 14px', borderRadius: T.rM,
+      background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.cardBorder}`,
+      display: 'flex', alignItems: 'baseline', gap: 8,
+    }}>
+      <span style={{ fontSize: 11, color: T.textMid }}>{label}</span>
+      <span style={{ fontSize: 18, fontWeight: 800, color, fontFamily: T.font }}>{value}</span>
+    </div>
+  )
+}
+
+function formatRelativeTime(iso) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000
+  if (diff < 60) return `${Math.floor(diff)} 秒前`
+  if (diff < 3600) return `${Math.floor(diff / 60)} 分鐘前`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} 小時前`
+  return `${Math.floor(diff / 86400)} 天前`
 }
 
 // 共用的暗色背景 wrapper（與首頁 HomeDark 同款：黑底 + 左上 155deg + 右下 335deg 雙漸層 + 雜訊）

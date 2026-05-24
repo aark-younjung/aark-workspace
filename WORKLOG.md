@@ -6,6 +6,61 @@
 
 ---
 
+### 2026-05-23（C. 爬蟲訪問日誌 — 對標 washinmura.jp wow factor）
+**順著 B 剛蓋的 llms.txt endpoint 加 visit logging — 不另做 JS pixel（純 JS 對 AI bot 無效）:**
+
+- 🆕 **SQL：建 `crawler_visits` 表**（用戶側待跑，已給 paste-ready SQL）
+  - 欄位：website_id / user_agent / ip_hash / is_ai_bot / bot_name / source / created_at
+  - 2 個 index（按 website + 時間 desc / 只看 AI bot）
+  - RLS：用戶看自己網站、admin 看全部
+- 🆕 **[api/llms/[id].js](api/llms/[id].js) 加 visit logging**：
+  - 知名 AI bot UA 識別表（15 個：GPTBot / ChatGPT-User / OAI-SearchBot / ClaudeBot / Claude-Web / anthropic-ai / PerplexityBot / Perplexity-User / Google-Extended / Applebot-Extended / Bytespider / CCBot / Amazonbot / Meta-ExternalAgent / YouBot）
+  - 子字串 match 判定 is_ai_bot + bot_name
+  - IP 去識別化（SHA-256 hash 前 16 字）
+  - **排除 X-AARK-Internal: true header** — 避免 GEO 詳情頁的 preview fetch 污染統計
+  - **Cache-Control 從 3600s 縮到 60s** — 否則 CDN cache hit 不會打到 endpoint、漏記 visit
+- 🆕 **[GEOAudit.jsx](src/pages/GEOAudit.jsx) 加 CrawlerVisitsSection 組件**：
+  - 3 個 KPI chip：總訪問次數 / AI 爬蟲訪問 / 24 小時內 AI 訪問
+  - Visit timeline 列最近 30 筆，AI bot 用青綠 chip、一般訪問淡灰
+  - 每筆顯示：bot type chip + bot name（若 AI）+ UA（截斷顯示，hover 看完整）+ 相對時間
+  - **60 秒自動 refresh**（對標 washinmura「live tracker」體驗）
+  - 誠實揭露限制：「只記對代管 llms.txt 的訪問，要追蹤整站訪問需要 server log forwarder（Pro 功能規劃中）」
+- 設計取捨：
+  - **不做 JS pixel** — AI bot 不執行 JS，做了白做
+  - **不做 image pixel** — 多數 AI bot 也不抓圖
+  - **只記代管 llms.txt 訪問** — 是「最低 build cost、最高訊號可信度」的組合（endpoint 在我們手上，記到的 UA 是真的 hit 過我們）
+- 後續想要「整站訪問追蹤」的話走 Pro：server-side log forwarder（WP plugin / Nginx snippet）— 規劃中
+
+**用戶側要跑的 SQL（paste-ready）：**
+```sql
+CREATE TABLE IF NOT EXISTS crawler_visits (
+  id BIGSERIAL PRIMARY KEY,
+  website_id UUID NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+  user_agent TEXT NOT NULL,
+  ip_hash TEXT,
+  is_ai_bot BOOLEAN DEFAULT false,
+  bot_name TEXT,
+  source TEXT DEFAULT 'llms_txt',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_crawler_visits_website_recent
+  ON crawler_visits (website_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_crawler_visits_ai_bots
+  ON crawler_visits (website_id, created_at DESC)
+  WHERE is_ai_bot = true;
+ALTER TABLE crawler_visits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "users read own crawler visits" ON crawler_visits;
+CREATE POLICY "users read own crawler visits" ON crawler_visits
+  FOR SELECT TO authenticated
+  USING (website_id IN (SELECT id FROM websites WHERE user_id = auth.uid()));
+DROP POLICY IF EXISTS "admins read all crawler visits" ON crawler_visits;
+CREATE POLICY "admins read all crawler visits" ON crawler_visits
+  FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true));
+```
+
+---
+
 ### 2026-05-23（B. llms.txt 代管功能 — 對標 washinmura.jp 偷學）
 **對標分析後識別的差異化補強 — washinmura.jp 有「免費 llms.txt 代管」我們沒有：**
 

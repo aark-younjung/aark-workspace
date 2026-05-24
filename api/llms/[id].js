@@ -14,6 +14,42 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
+
+// 知名 AI bot UA 識別表 — 子字串 match
+// key 是匹配的 substring（lowercase），value 是顯示用 bot name
+const AI_BOT_UA_MAP = {
+  'gptbot': 'GPTBot (OpenAI)',
+  'chatgpt-user': 'ChatGPT-User (OpenAI)',
+  'oai-searchbot': 'OAI-SearchBot (OpenAI)',
+  'claudebot': 'ClaudeBot (Anthropic)',
+  'claude-web': 'Claude-Web (Anthropic)',
+  'anthropic-ai': 'anthropic-ai (Anthropic)',
+  'perplexitybot': 'PerplexityBot (Perplexity)',
+  'perplexity-user': 'Perplexity-User (Perplexity)',
+  'google-extended': 'Google-Extended (Google AI)',
+  'applebot-extended': 'Applebot-Extended (Apple Intelligence)',
+  'bytespider': 'Bytespider (ByteDance/Doubao)',
+  'ccbot': 'CCBot (Common Crawl)',
+  'amazonbot': 'Amazonbot (Amazon AI)',
+  'meta-externalagent': 'Meta-ExternalAgent (Meta AI)',
+  'youbot': 'YouBot (You.com)',
+}
+
+function detectAiBot(ua) {
+  if (!ua) return { isAiBot: false, botName: null }
+  const lower = ua.toLowerCase()
+  for (const [needle, name] of Object.entries(AI_BOT_UA_MAP)) {
+    if (lower.includes(needle)) return { isAiBot: true, botName: name }
+  }
+  return { isAiBot: false, botName: null }
+}
+
+// IP 去識別化 — SHA-256 hash 前 16 字
+function hashIp(ip) {
+  if (!ip) return null
+  return crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)
+}
 
 export default async function handler(req, res) {
   // CORS — 公開資源、允許所有來源讀
@@ -56,9 +92,34 @@ export default async function handler(req, res) {
     eeatAudit: eeatRes.data,
   })
 
+  // 記錄訪問日誌 — 排除我們自己內部 fetch（GEO 詳情頁 preview）
+  // 排除規則：X-AARK-Internal: true header（前端 fetch 時手動帶上）
+  const isInternal = req.headers['x-aark-internal'] === 'true'
+  if (!isInternal) {
+    const ua = req.headers['user-agent'] || ''
+    const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim()
+    const { isAiBot, botName } = detectAiBot(ua)
+    // 不 await — fire-and-forget，避免拖慢 response
+    // 但 Vercel function 在 response 後就會 terminate，要保險還是 await
+    try {
+      await supabase.from('crawler_visits').insert({
+        website_id: rawId,
+        user_agent: ua.slice(0, 500),     // 截 500 字防 abuse
+        ip_hash: hashIp(ip),
+        is_ai_bot: isAiBot,
+        bot_name: botName,
+        source: 'llms_txt',
+      })
+    } catch (logErr) {
+      // 記錄失敗不該阻擋 llms.txt 回傳，吃掉 error
+      console.warn('[llms] visit log insert failed:', logErr?.message)
+    }
+  }
+
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-  // 1 小時 CDN cache + stale-while-revalidate 1 天（audit 變化頻率不高、值得 cache）
-  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+  // ⚠️ Cache-Control 縮短到 60s — 否則 CDN cache hit 不會打到我們 endpoint、無法記 visit
+  // 60s 已經足以扛大流量（多數 AI bot 訪問頻率 << 1/min per site），又不會錯過 visit
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600')
   return res.status(200).send(llmsTxt)
 }
 
