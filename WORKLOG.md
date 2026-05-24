@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-05-23（Vercel deploy fail 根因 — Hobby 12 function 上限）
+**6 個 commit 連續 build pass 但 deploy fail 的真實原因：**
+
+- 🐛 **根因：Vercel Hobby plan 一個 deployment 最多 12 個 serverless functions**
+  - 24dc683 加 `api/llms/[id].js` → function 數 12 → 13，超上限
+  - 後續 6 個 commit 都帶著這個違規 → deploy 階段被 Vercel 阻擋
+  - 症狀：Build Logs 顯示 `Build Completed [55s] / Deploying outputs...` 後沒下文
+  - Vercel UI 沒在明顯地方顯示「超過 function 上限」訊息（user 展開 Deployment Summary/Checks 都看不到），是隱藏式的 deploy block
+- ✅ **修法：合併 public-stats + llms-txt 進 `api/public.js`**
+  - 兩者都是公開讀 + service role + 無 auth，邏輯天然相容
+  - 用 `?action=stats` / `?action=llms` 分流
+  - 刪 `api/public-stats.js` + `api/llms-txt.js` → function 數退回 12
+  - 連帶恢復 B + C + 3 個 fetch-url bug fix（scalebar / canon / plantex / taishinbank）
+- 學到的：以後新增 function 前先 `find api -maxdepth 3 -name "*.js" -not -path "api/lib/*" | wc -l` 看一下，到 12 就要合併不能加
+- 設計取捨：未來如果功能持續增加且想保持每個 function 邏輯清晰 → 升 Vercel Pro 解除上限。短期靠合併撐
+
+---
+
 ### 2026-05-23（fetch-url 修 3 個獨立 bug — 朋友測 4 個失敗網站）
 **朋友回報 scalebar.co / canon.co.uk / plantex.my / taishinbank.com.tw 都失敗，診斷後是 3 個獨立 bug：**
 
