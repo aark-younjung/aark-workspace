@@ -183,14 +183,15 @@ export default function Pricing() {
   //   - 每月查詢硬上限 1,000 次（內含 + Top-up 合計），Agency 推出後解除
   const aivisIncludedPerMonth = 150
 
-  // A5 社會證明 KPI：上線前必修項，從 /api/public-stats 拉真實聚合數字
+  // A5 社會證明 KPI：上線前必修項，從 /api/public?action=stats 拉真實聚合數字
   // 走後端 service role 而非前端直查 Supabase — 訪客 anon role 對 user-scoped 表的 RLS 會拿到 0
   // 載入中 / 失敗顯示 '—'，避免假數字外露被質疑
   // earlybird_taken 同源 — Pricing 早鳥進度條也吃這個（已售 N / 100 名動態顯示）
+  // 2026-05-23：原 /api/public-stats 合併進 /api/public（Vercel Hobby 12 function 限制）
   const [stats, setStats] = useState({ brands: null, reports: null, mentions: null, scans: null, earlybird_taken: null })
   useEffect(() => {
     let cancelled = false
-    fetch('/api/public-stats')
+    fetch('/api/public?action=stats')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (!cancelled && d) setStats(d) })
       .catch(() => { /* 失敗就維持 null → 顯示 — */ })

@@ -270,15 +270,14 @@ function LlmsTxtSection({ websiteId }) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)   // 'url' | 'content' | null
-  // 注意：用 /api/llms-txt?id=... 而非 /llms/{id}.txt（vercel rewrite 規則對 `:id.txt` 有 build 兼容問題）
+  // 對外 URL：合併到 /api/public?action=llms&id=... 是因為 Vercel Hobby 12 function 上限
   // 用戶 robots.txt LLM-Sitemap 指向這個 URL 完全可以，AI bot 會跟著走
-  const hostedUrl = `${window.location.origin}/api/llms-txt?id=${websiteId}`
+  const hostedUrl = `${window.location.origin}/api/public?action=llms&id=${websiteId}`
 
   useEffect(() => {
     let cancelled = false
     // X-AARK-Internal header 讓 endpoint 跳過 visit log（避免 preview 污染統計）
-    // 注意：用 query string ?id=...，不是 path /api/llms/{id}（避免 Vercel 對方括號路徑的 build 問題）
-    fetch(`/api/llms-txt?id=${websiteId}`, { headers: { 'X-AARK-Internal': 'true' } })
+    fetch(`/api/public?action=llms&id=${websiteId}`, { headers: { 'X-AARK-Internal': 'true' } })
       .then(r => r.text())
       .then(text => { if (!cancelled) { setContent(text); setLoading(false) } })
       .catch(() => { if (!cancelled) { setContent('生成失敗，請重整頁面再試'); setLoading(false) } })

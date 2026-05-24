@@ -1,21 +1,20 @@
 /**
- * GET /api/llms-txt?id={websiteId}（經由 vercel.json rewrite 對外暴露為 /llms/{id}.txt）
+ * GET /api/public?action=stats           — Pricing 頁社會證明 KPI（取代 /api/public-stats）
+ * GET /api/public?action=llms&id={uuid}  — llms.txt 代管 endpoint（取代 /api/llms-txt）
  *
- * llms.txt 代管端點 — 從用戶 audit 資料自動生成 llms.txt，回 text/plain
+ * 為什麼合併：Vercel Hobby plan 一個 deployment 最多 12 個 serverless functions。
+ *   加 llms-txt 後超過上限導致 4 個 commit 連續 deploy fail。合併 public-stats + llms-txt
+ *   為同一 endpoint（兩者都是公開讀 + service role + 無 auth），讓 function 數退回 12。
  *
- * ⚠️ 為什麼用扁平命名 + query param（不用 api/llms/[id].js 動態路由）：
- *   2026-05-23 從 `api/llms/[id].js` 改過來。原方括號路徑導致 Vercel build 連續 4 個 commit 失敗，
- *   懷疑跟 Windows checkout `[` `]` 字元、或巢狀資料夾動態路由的兼容性有關。
- *   改成扁平 `api/llms-txt.js`、id 走 query string，最穩。
- *
- * 標準參考：https://llmstxt.org/
+ * 路由分流以 ?action= query param 為準。預設 / 未知 action → 400
  */
 
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
-// 知名 AI bot UA 識別表 — 子字串 match
-// key 是匹配的 substring（lowercase），value 是顯示用 bot name
+// ───────────────────────────────────────────────────────────
+// llms.txt 用：AI bot UA 識別表
+// ───────────────────────────────────────────────────────────
 const AI_BOT_UA_MAP = {
   'gptbot': 'GPTBot (OpenAI)',
   'chatgpt-user': 'ChatGPT-User (OpenAI)',
@@ -43,29 +42,72 @@ function detectAiBot(ua) {
   return { isAiBot: false, botName: null }
 }
 
-// IP 去識別化 — SHA-256 hash 前 16 字
 function hashIp(ip) {
   if (!ip) return null
   return crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)
 }
 
+// ───────────────────────────────────────────────────────────
+// Main handler — 依 action 分流
+// ───────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  // CORS — 公開資源、允許所有來源讀
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET') return res.status(405).send('Method not allowed')
 
-  // 從 query 拿 website id（rewrite 後 .txt 後綴可能會被帶進來，過濾掉）
-  const rawId = (req.query.id || '').toString().replace(/\.txt$/i, '')
-  if (!rawId) return res.status(400).send('Missing website id')
-
   const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return res.status(500).send('Service unavailable')
+    return res.status(500).json({ error: 'Service unavailable' })
   }
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+  const action = (req.query.action || '').toString()
+  if (action === 'stats') return handleStats(req, res, supabase)
+  if (action === 'llms') return handleLlms(req, res, supabase)
+  return res.status(400).json({ error: 'Missing or invalid action (expected: stats | llms)' })
+}
+
+// ───────────────────────────────────────────────────────────
+// action=stats — Pricing 頁 KPI 聚合
+// ───────────────────────────────────────────────────────────
+async function handleStats(req, res, supabase) {
+  try {
+    // 並行 8 查（4 個 audit 表 + 3 個 aivis 表 + 1 個早鳥已售名額），head:true 只回 count 不抓 row 資料
+    const [brandsRes, seoRes, aeoRes, geoRes, eeatRes, mentionsRes, scansRes, earlybirdRes] = await Promise.all([
+      supabase.from('aivis_brands').select('*', { count: 'exact', head: true }),
+      supabase.from('seo_audits').select('*', { count: 'exact', head: true }),
+      supabase.from('aeo_audits').select('*', { count: 'exact', head: true }),
+      supabase.from('geo_audits').select('*', { count: 'exact', head: true }),
+      supabase.from('eeat_audits').select('*', { count: 'exact', head: true }),
+      supabase.from('aivis_mentions').select('*', { count: 'exact', head: true }).eq('brand_mentioned', true),
+      supabase.from('aivis_responses').select('*', { count: 'exact', head: true }),
+      supabase.from('aivis_newebpay_pending').select('*', { count: 'exact', head: true })
+        .eq('pack', 'earlybird').eq('status', 'paid').neq('refund_status', 'completed'),
+    ])
+
+    const brands = brandsRes.count || 0
+    const reports = (seoRes.count || 0) + (aeoRes.count || 0) + (geoRes.count || 0) + (eeatRes.count || 0)
+    const mentions = mentionsRes.count || 0
+    const scans = scansRes.count || 0
+    const earlybird_taken = earlybirdRes.count || 0
+
+    // 5 分鐘 CDN cache + 10 分鐘 stale-while-revalidate
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600')
+    return res.status(200).json({ brands, reports, mentions, scans, earlybird_taken })
+  } catch (err) {
+    console.error('[public/stats] query failed:', err)
+    return res.status(500).json({ error: 'Failed to load stats' })
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+// action=llms — llms.txt 代管 + visit logging
+// ───────────────────────────────────────────────────────────
+async function handleLlms(req, res, supabase) {
+  const rawId = (req.query.id || '').toString().replace(/\.txt$/i, '')
+  if (!rawId) return res.status(400).send('Missing website id')
 
   // 並行拉 website + 4 種 audit 的最新一筆
   const [websiteRes, seoRes, aeoRes, eeatRes] = await Promise.all([
@@ -80,7 +122,6 @@ export default async function handler(req, res) {
 
   const website = websiteRes.data
   if (!website) return res.status(404).send('Website not found')
-  // 尊重用戶 opt-out — 不對外暴露 llms.txt 內容
   if (website.is_public_optout) return res.status(403).send('This llms.txt is not publicly available')
 
   const llmsTxt = generateLlmsTxt({
@@ -91,7 +132,6 @@ export default async function handler(req, res) {
   })
 
   // 記錄訪問日誌 — 排除我們自己內部 fetch（GEO 詳情頁 preview）
-  // 排除規則：X-AARK-Internal: true header（前端 fetch 時手動帶上）
   const isInternal = req.headers['x-aark-internal'] === 'true'
   if (!isInternal) {
     const ua = req.headers['user-agent'] || ''
@@ -100,49 +140,38 @@ export default async function handler(req, res) {
     try {
       await supabase.from('crawler_visits').insert({
         website_id: rawId,
-        user_agent: ua.slice(0, 500),     // 截 500 字防 abuse
+        user_agent: ua.slice(0, 500),
         ip_hash: hashIp(ip),
         is_ai_bot: isAiBot,
         bot_name: botName,
         source: 'llms_txt',
       })
     } catch (logErr) {
-      // 記錄失敗不該阻擋 llms.txt 回傳，吃掉 error
-      console.warn('[llms] visit log insert failed:', logErr?.message)
+      console.warn('[public/llms] visit log insert failed:', logErr?.message)
     }
   }
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-  // ⚠️ Cache-Control 縮短到 60s — 否則 CDN cache hit 不會打到我們 endpoint、無法記 visit
-  // 60s 已經足以扛大流量（多數 AI bot 訪問頻率 << 1/min per site），又不會錯過 visit
+  // 60s CDN cache — 太短沒意義、太長會錯過 visit 記錄
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600')
   return res.status(200).send(llmsTxt)
 }
 
 /**
  * 從 audit 資料生成 llms.txt 標準格式（llmstxt.org）
- *
- * 缺欄位時 graceful degrade：用 fallback 文案而非錯
  */
 function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
-  // 標題：優先用 website.name，沒有就從 URL 推 hostname
   const hostname = safeHostname(website.url)
   const title = website.name || hostname
-
-  // 描述：優先用 SEO meta description → AEO og description → fallback
   const metaDesc = seoAudit?.meta_tags?.description?.trim()
   const ogDesc = aeoAudit?.open_graph?.description?.trim()
   const description = metaDesc || ogDesc || `${title} — AI 能見度檢測網站`
-
   const today = new Date().toISOString().split('T')[0]
   const baseUrl = website.url.replace(/\/$/, '')
-
-  // Organization schema info（若有）
   const hasOrgSchema = !!eeatAudit?.organization_schema
   const hasAboutPage = !!eeatAudit?.about_page
   const hasContactPage = !!eeatAudit?.contact_page
 
-  // 組 llms.txt — 依 llmstxt.org 標準（H1 標題、blockquote 描述、## sections、- bullet links）
   const lines = []
   lines.push(`# ${title}`)
   lines.push('')
@@ -151,8 +180,6 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
   lines.push(`This file describes ${title} for Large Language Models and AI crawlers.`)
   lines.push(`Generated by AI Radar (aark-workspace.vercel.app) on ${today}.`)
   lines.push('')
-
-  // Section: Site information
   lines.push('## Site information')
   lines.push('')
   lines.push(`- [Homepage](${baseUrl}): ${title}`)
@@ -160,8 +187,6 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
   if (hasAboutPage) lines.push(`- [About](${baseUrl}/about): Organization information`)
   if (hasContactPage) lines.push(`- [Contact](${baseUrl}/contact): Contact information`)
   lines.push('')
-
-  // Section: AI crawler policy（重要訊號 — 告訴 LLM 我們歡迎你抓）
   lines.push('## AI crawler policy')
   lines.push('')
   lines.push('This site welcomes the following AI crawlers:')
@@ -180,7 +205,6 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
   lines.push('Content from this site may be cited in AI-generated answers.')
   lines.push('')
 
-  // Section: Structured data signals（讓 LLM 知道我們有哪些 schema 可解析）
   const signals = []
   if (aeoAudit?.json_ld) signals.push('JSON-LD structured data is available across pages')
   if (hasOrgSchema) signals.push('Organization schema is present (provides entity context)')
@@ -192,14 +216,11 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
     lines.push('')
   }
 
-  // Optional section — llmstxt.org 標準的「次要資訊」，AI 工具想精簡時可略過
   lines.push('## Optional')
   lines.push('')
   lines.push(`- [AI visibility report](https://aark-workspace.vercel.app/website-summary/${website.id}): public summary of this site's AI visibility scores`)
   lines.push(`- [llms.txt specification](https://llmstxt.org/): about this file format`)
   lines.push('')
-
-  // Footer
   lines.push('---')
   lines.push(`This llms.txt is auto-generated and refreshed when new AI Radar audits run.`)
   lines.push(`To regenerate: rescan ${baseUrl} at https://aark-workspace.vercel.app`)
