@@ -20,6 +20,8 @@ export default function Login() {
   const [showInAppWarning, setShowInAppWarning] = useState(false)
   const [copied, setCopied] = useState(false)
   const [captchaToken, setCaptchaToken] = useState('')
+  // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生簡中錯誤）
+  const [turnstileError, setTurnstileError] = useState(false)
   const turnstileRef = useRef(null)
   const { signIn, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
@@ -231,16 +233,33 @@ export default function Login() {
               </div>
             )}
 
-            {/* Cloudflare Turnstile 人機驗證 — Supabase 啟用 CAPTCHA 後 signin 也必須帶 token */}
-            <div className="flex justify-center">
+            {/* Cloudflare Turnstile 人機驗證 — Supabase 啟用 CAPTCHA 後 signin 也必須帶 token
+                onError 時除清 token 也標 turnstileError，下方顯示友善錯誤 UI
+                （跟 Register.jsx 同一套 UX，避免用戶看不懂 Cloudflare 原生簡中錯誤）*/}
+            <div className="flex flex-col items-center gap-2">
               <Turnstile
                 ref={turnstileRef}
                 siteKey={TURNSTILE_SITE_KEY}
-                onSuccess={setCaptchaToken}
+                onSuccess={(token) => { setCaptchaToken(token); setTurnstileError(false) }}
                 onExpire={() => setCaptchaToken('')}
-                onError={() => setCaptchaToken('')}
+                onError={() => { setCaptchaToken(''); setTurnstileError(true) }}
                 options={{ theme: 'dark', size: 'normal' }}
               />
+              {turnstileError && (
+                <div className="w-full p-3 rounded-lg" style={{
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                  fontSize: 12, lineHeight: 1.6, color: T.text,
+                }}>
+                  <div className="font-semibold mb-1" style={{ color: T.warn }}>⚠️ 人機驗證載入失敗</div>
+                  <div style={{ color: T.textMid }}>
+                    可能是網路問題或 Cloudflare 服務暫時無法回應。請：
+                    <br />1. 重整本頁（Ctrl + R）
+                    <br />2. 或暫時關閉廣告攔截器 / VPN 後再試
+                    <br />3. 持續失敗請改用上方「Google 帳號登入」
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
