@@ -22,6 +22,37 @@
 
 ---
 
+### 2026-05-25（移除 Cloudflare Turnstile captcha — 多輪修法仍無法解的打字中斷問題）
+**6+ 輪修法後決定暫時拿掉 captcha：**
+
+- 🐛 **核心問題：Cloudflare Turnstile 在無痕模式持續中斷用戶打字**
+  - 用戶實測：每打一個字停 1-2 秒、字一個一個出來、整個註冊跑不完
+  - 中斷源自 Cloudflare 的 background fingerprinting，即使 widget 設成 invisible/execute 模式仍會做
+- 嘗試過的修法路徑（全部失敗）：
+  1. ❌ 修 hostname 截斷
+  2. ❌ 修 hostname 拼錯（少 .app）
+  3. ❌ props reference 穩定（useCallback + 模組常數 options）
+  4. ❌ React.memo 隔離 IsolatedTurnstile 子元件
+  5. ❌ Deferred execute (`appearance: 'execute'` + `execution: 'execute'`)
+  6. ❌ Conditional mount（只在按提交時掛 widget）
+- ✅ **決定走 Path X：移除整個 Turnstile**
+  - 刪 `src/components/v2/IsolatedTurnstile.jsx`
+  - Register.jsx + Login.jsx 移除所有 captcha 相關 state / handler / JSX
+  - handleSubmit 直接呼叫 signUp / signIn（不傳 captchaToken）
+  - AuthContext.jsx 的 signUp / signIn 本來就支援 optional captchaToken，不用改
+  - 保留 `@marsidev/react-turnstile` 在 package.json（dev dep 用、tree-shake 不會入 bundle）
+- 🔧 **用戶側需做**：進 Supabase Dashboard → Authentication → Attack Protection → 把「Enable Captcha protection」toggle **關掉** → Save
+- 安全層仍在（沒有真的「裸奔」）：
+  - Email 驗證信（bot 仍需真實 inbox）
+  - Supabase per-IP rate limit
+  - profiles.is_pro 預設 false（bot 拿不到 Pro）
+  - aivis 配額硬上限 50（試用）
+  - Google OAuth 自帶反 bot
+- 之後若真的看到 bot 浪潮 → 回頭研究 hCaptcha 或自家後端速率限制
+- CLAUDE.md「上線前必修」清單裡的「Supabase Auth 註冊頻率限制」status 暫時改為「移除（換 server-side rate limit）」
+
+---
+
 ### 2026-05-25（/schema-check 落地頁 — 第二個工具集成員）
 **順著「每個痛點配一個獨立落地頁」格局做的第二個工具，姊妹頁是 /crawl-check：**
 

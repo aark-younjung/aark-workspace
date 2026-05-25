@@ -1,15 +1,15 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
-import IsolatedTurnstile from '../components/v2/IsolatedTurnstile'
 
-// Cloudflare Turnstile site key — 防 7 天試用刷單
-// env 沒設時用 Cloudflare 官方測試 key（永遠通過驗證），讓 dev 環境照常運作
-// Production 必須在 Vercel env 設 VITE_TURNSTILE_SITE_KEY + Supabase Dashboard 啟用 CAPTCHA
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
+// 2026-05-25：移除 Cloudflare Turnstile captcha
+// 原因：Cloudflare widget 持續中斷用戶打字（即使 conditional mount 也擋不住），
+// 多輪修法後決定暫時關掉 captcha 換取可用性。
+// 防護其他層仍在：Email 驗證信、Supabase per-IP rate limit、profiles.is_pro 預設 false、
+// aivis 配額硬上限、Google OAuth 自帶反 bot。需要 Supabase Dashboard 端關 Captcha protection。
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -23,60 +23,7 @@ export default function Register() {
   const [success, setSuccess] = useState(false)
   const [showInAppWarning, setShowInAppWarning] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [captchaToken, setCaptchaToken] = useState('')
-  // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生「无法连接到网站」）
-  const [turnstileError, setTurnstileError] = useState(false)
-  // 等待 captcha 完成才繼續送出註冊的狀態旗標
-  // (conditional mount 模式：用戶按提交 → 才 mount Turnstile widget → 自動跑 challenge → 過了才 signup)
-  // 必須 conditional mount 是因為 execute 選項實測仍會跑背景指紋分析中斷用戶打字
-  const [awaitingCaptcha, setAwaitingCaptcha] = useState(false)
-  // 控制 Turnstile widget 是否真的 mount 到 DOM — false 時 widget 完全不存在
-  // 打字時 Turnstile script 根本沒載入 → 零中斷
-  const [mountCaptcha, setMountCaptcha] = useState(false)
-  // 暫存表單值，等 captcha 過了就拿來 signUp（避免閉包抓到舊值）
-  const pendingSignupRef = useRef(null)
-  const turnstileRef = useRef(null)
-  // ⚠️ useAuth() 必須先解構，下面 useCallback dependency array 才能引用 signUp
-  // 順序錯會 temporal dead zone 整個 component crash → 白屏
   const { signUp, signInWithGoogle } = useAuth()
-
-  // 共用 signup 邏輯 — 從 handleSubmit 或 onCaptchaSuccess 兩條路都呼叫
-  const doSignup = useCallback(async (token) => {
-    const data = pendingSignupRef.current
-    if (!data) return
-    setLoading(true)
-    setError('')
-    const { error: err } = await signUp(data.email, data.password, data.name, data.marketingConsent, token)
-    if (err) {
-      setError(err.message === 'User already registered' ? '此信箱已註冊，請直接登入' : err.message)
-      setLoading(false)
-      setCaptchaToken('')
-      // unmount Turnstile widget 讓用戶能重新編輯欄位（不再被指紋分析中斷打字）
-      // 下次按提交會 re-mount 取新 token
-      setMountCaptcha(false)
-    } else {
-      setSuccess(true)
-    }
-    pendingSignupRef.current = null
-  }, [signUp])
-
-  // captcha 驗證完成 — 若 awaitingCaptcha=true，自動繼續完成 signup
-  const onCaptchaSuccess = useCallback((token) => {
-    setCaptchaToken(token); setTurnstileError(false)
-    if (awaitingCaptcha) {
-      setAwaitingCaptcha(false)
-      doSignup(token)
-    }
-  }, [awaitingCaptcha, doSignup])
-  const onCaptchaExpire = useCallback(() => setCaptchaToken(''), [])
-  const onCaptchaError = useCallback(() => {
-    setCaptchaToken('')
-    setTurnstileError(true)
-    setAwaitingCaptcha(false)
-    setLoading(false)
-    // 失敗後也 unmount，避免 widget 持續跑指紋分析
-    setMountCaptcha(false)
-  }, [])
 
   // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth）
   const inApp = useMemo(() => isInAppBrowser(), [])
@@ -114,22 +61,16 @@ export default function Register() {
     if (!name || !email || !password || !confirm) return setError('請填寫所有欄位')
     if (password.length < 6) return setError('密碼至少需要 6 個字元')
     if (password !== confirm) return setError('兩次密碼輸入不一致')
-    setError('')
-
-    // 暫存表單值，等 captcha 過了用
-    pendingSignupRef.current = { name, email, password, marketingConsent }
-
-    if (captchaToken) {
-      // 已有 token（罕見，如重試）→ 直接送
-      doSignup(captchaToken)
-      return
-    }
-
-    // 還沒驗 → 真正掛載 Turnstile widget（conditional mount）
-    // Widget mount 後會自動跑 challenge，onCaptchaSuccess 拿到 token 自動繼續 signup
-    setAwaitingCaptcha(true)
     setLoading(true)
-    setMountCaptcha(true)
+    setError('')
+    // captcha 已移除 — 不傳 token 給 signUp，Supabase 端的 captcha protection 也已 disable
+    const { error: err } = await signUp(email, password, name, marketingConsent)
+    if (err) {
+      setError(err.message === 'User already registered' ? '此信箱已註冊，請直接登入' : err.message)
+      setLoading(false)
+    } else {
+      setSuccess(true)
+    }
   }
 
   // 共用的暗色背景 wrapper（雙端大面積漸層 + 雜訊疊層，與 HomeDark / Login 一致）
@@ -314,44 +255,14 @@ export default function Register() {
               </span>
             </label>
 
-            {/* Cloudflare Turnstile 人機驗證 — 防 bot 刷 7 天試用
-                ⚠️ Conditional mount：只在用戶按提交後才 mount widget
-                打字過程中 Turnstile script 根本沒被載入 → 完全零中斷
-                Widget 一掛載自動跑 challenge → 過了 onSuccess 拿 token → 繼續 signup */}
-            <div className="flex flex-col items-center gap-2">
-              {mountCaptcha && (
-                <IsolatedTurnstile
-                  ref={turnstileRef}
-                  siteKey={TURNSTILE_SITE_KEY}
-                  onSuccess={onCaptchaSuccess}
-                  onExpire={onCaptchaExpire}
-                  onError={onCaptchaError}
-                />
-              )}
-              {turnstileError && (
-                <div className="w-full p-3 rounded-lg" style={{
-                  background: 'rgba(245, 158, 11, 0.12)',
-                  border: '1px solid rgba(245, 158, 11, 0.35)',
-                  fontSize: 12, lineHeight: 1.6, color: T.text,
-                }}>
-                  <div className="font-semibold mb-1" style={{ color: T.warn }}>⚠️ 人機驗證載入失敗</div>
-                  <div style={{ color: T.textMid }}>
-                    可能是網路問題或 Cloudflare 服務暫時無法回應。請：
-                    <br />1. 重整本頁（Ctrl + R）
-                    <br />2. 或暫時關閉廣告攔截器 / VPN 後再試
-                    <br />3. 持續失敗請改用下方「Google 帳號註冊」
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* 2026-05-25 移除 Turnstile captcha — 多輪修法仍無法解打字中斷，暫時關閉
+                安全層仍在：Email 驗證信、Supabase per-IP rate limit、aivis 配額硬上限 */}
 
-            {/* deferred execute 流程：按鈕只在 loading 中 disable
-                Captcha 在背景跑、不擋按鈕 — 按下後才觸發 challenge，過了自動 signup */}
             <button
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-900/50">
-              {awaitingCaptcha ? '🔒 人機驗證中...' : loading ? '建立中...' : '立即取得免費分析額度'}
+              {loading ? '建立中...' : '立即取得免費分析額度'}
             </button>
           </form>
 

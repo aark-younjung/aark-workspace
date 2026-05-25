@@ -1,15 +1,12 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
-import IsolatedTurnstile from '../components/v2/IsolatedTurnstile'
 
-// Cloudflare Turnstile site key — Supabase 啟用 CAPTCHA 後 signin 也會強制要求 token
-// env 沒設時用測試 key（永遠通過）避免 dev 卡住
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
+// 2026-05-25：移除 Cloudflare Turnstile captcha（理由與 Register.jsx 同）
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -19,56 +16,10 @@ export default function Login() {
   const [error, setError] = useState('')
   const [showInAppWarning, setShowInAppWarning] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [captchaToken, setCaptchaToken] = useState('')
-  // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生簡中錯誤）
-  const [turnstileError, setTurnstileError] = useState(false)
-  // 等待 captcha 過了才繼續送 signIn 的旗標（conditional mount 模式）
-  const [awaitingCaptcha, setAwaitingCaptcha] = useState(false)
-  // 控制 Turnstile widget 是否真的 mount — false 時 widget 完全不存在、不會做指紋分析中斷打字
-  const [mountCaptcha, setMountCaptcha] = useState(false)
-  // 暫存登入表單值，等 captcha 過了用
-  const pendingLoginRef = useRef(null)
-  const turnstileRef = useRef(null)
   const { signIn, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from || '/'
-
-  // 共用 signIn 邏輯 — 從 handleSubmit 或 onCaptchaSuccess 兩條路都呼叫
-  const doSignIn = useCallback(async (token) => {
-    const data = pendingLoginRef.current
-    if (!data) return
-    setLoading(true)
-    setError('')
-    const { error: err } = await signIn(data.email, data.password, token)
-    if (err) {
-      setError(err.message === 'Invalid login credentials' ? '帳號或密碼錯誤' : err.message)
-      setLoading(false)
-      setCaptchaToken('')
-      // unmount widget — 失敗後讓用戶重編欄位不被指紋分析中斷
-      setMountCaptcha(false)
-    } else {
-      navigate(from, { replace: true })
-    }
-    pendingLoginRef.current = null
-  }, [signIn, navigate, from])
-
-  // useCallback 鎖定 callback reference — 配合 IsolatedTurnstile 的 React.memo
-  const onCaptchaSuccess = useCallback((token) => {
-    setCaptchaToken(token); setTurnstileError(false)
-    if (awaitingCaptcha) {
-      setAwaitingCaptcha(false)
-      doSignIn(token)
-    }
-  }, [awaitingCaptcha, doSignIn])
-  const onCaptchaExpire = useCallback(() => setCaptchaToken(''), [])
-  const onCaptchaError = useCallback(() => {
-    setCaptchaToken('')
-    setTurnstileError(true)
-    setAwaitingCaptcha(false)
-    setLoading(false)
-    setMountCaptcha(false)   // 失敗後 unmount
-  }, [])
 
   // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth），避免每次 render 重算
   const inApp = useMemo(() => isInAppBrowser(), [])
@@ -114,22 +65,16 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email || !password) return
-    setError('')
-
-    // 暫存表單值
-    pendingLoginRef.current = { email, password }
-
-    if (captchaToken) {
-      // 已有 token（罕見，如重試）→ 直接送
-      doSignIn(captchaToken)
-      return
-    }
-
-    // 還沒驗 → conditional mount Turnstile widget
-    // Widget mount 後自動跑 challenge，onSuccess 拿到 token 自動繼續 signIn
-    setAwaitingCaptcha(true)
     setLoading(true)
-    setMountCaptcha(true)
+    setError('')
+    // captcha 已移除 — 不傳 token，Supabase 端 captcha protection 也已 disable
+    const { error: err } = await signIn(email, password)
+    if (err) {
+      setError(err.message === 'Invalid login credentials' ? '帳號或密碼錯誤' : err.message)
+      setLoading(false)
+    } else {
+      navigate(from, { replace: true })
+    }
   }
 
   // Login / Register 是純 dark 頁面，沒有 light 備份分支
@@ -278,43 +223,13 @@ export default function Login() {
               </div>
             )}
 
-            {/* Cloudflare Turnstile 人機驗證 — Supabase 啟用 CAPTCHA 後 signin 也必須帶 token
-                ⚠️ Conditional mount：只在用戶按提交後才掛 widget
-                打字過程中 Turnstile script 根本沒被載入 → 完全零中斷 */}
-            <div className="flex flex-col items-center gap-2">
-              {mountCaptcha && (
-                <IsolatedTurnstile
-                  ref={turnstileRef}
-                  siteKey={TURNSTILE_SITE_KEY}
-                  onSuccess={onCaptchaSuccess}
-                  onExpire={onCaptchaExpire}
-                  onError={onCaptchaError}
-                />
-              )}
-              {turnstileError && (
-                <div className="w-full p-3 rounded-lg" style={{
-                  background: 'rgba(245, 158, 11, 0.12)',
-                  border: '1px solid rgba(245, 158, 11, 0.35)',
-                  fontSize: 12, lineHeight: 1.6, color: T.text,
-                }}>
-                  <div className="font-semibold mb-1" style={{ color: T.warn }}>⚠️ 人機驗證載入失敗</div>
-                  <div style={{ color: T.textMid }}>
-                    可能是網路問題或 Cloudflare 服務暫時無法回應。請：
-                    <br />1. 重整本頁（Ctrl + R）
-                    <br />2. 或暫時關閉廣告攔截器 / VPN 後再試
-                    <br />3. 持續失敗請改用上方「Google 帳號登入」
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* 2026-05-25 移除 Turnstile captcha — 多輪修法仍無法解打字中斷，暫時關閉 */}
 
-            {/* deferred execute 流程：按鈕只在 loading 中 disable
-                Captcha 不擋按鈕、按下後才觸發 challenge，過了自動 signIn */}
             <button
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-900/50">
-              {awaitingCaptcha ? '🔒 人機驗證中...' : loading ? '登入中...' : '登入'}
+              {loading ? '登入中...' : '登入'}
             </button>
           </form>
 
