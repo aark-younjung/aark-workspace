@@ -22,20 +22,47 @@ export default function Login() {
   const [captchaToken, setCaptchaToken] = useState('')
   // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生簡中錯誤）
   const [turnstileError, setTurnstileError] = useState(false)
+  // 等待 captcha 過了才繼續送 signIn 的旗標（deferred execute 模式）
+  const [awaitingCaptcha, setAwaitingCaptcha] = useState(false)
+  // 暫存登入表單值，等 captcha 過了用
+  const pendingLoginRef = useRef(null)
   const turnstileRef = useRef(null)
-
-  // useCallback 鎖定 callback reference — 避免每次 render 都產生新函式造成 widget 重 init
-  const onCaptchaSuccess = useCallback((token) => {
-    setCaptchaToken(token); setTurnstileError(false)
-  }, [])
-  const onCaptchaExpire = useCallback(() => setCaptchaToken(''), [])
-  const onCaptchaError = useCallback(() => {
-    setCaptchaToken(''); setTurnstileError(true)
-  }, [])
   const { signIn, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from || '/'
+
+  // 共用 signIn 邏輯 — 從 handleSubmit 或 onCaptchaSuccess 兩條路都呼叫
+  const doSignIn = useCallback(async (token) => {
+    const data = pendingLoginRef.current
+    if (!data) return
+    setLoading(true)
+    setError('')
+    const { error: err } = await signIn(data.email, data.password, token)
+    if (err) {
+      setError(err.message === 'Invalid login credentials' ? '帳號或密碼錯誤' : err.message)
+      setLoading(false)
+      // Supabase 用過的 captcha token 不能重送，失敗後 reset widget 取新 token
+      turnstileRef.current?.reset()
+      setCaptchaToken('')
+    } else {
+      navigate(from, { replace: true })
+    }
+    pendingLoginRef.current = null
+  }, [signIn, navigate, from])
+
+  // useCallback 鎖定 callback reference — 配合 IsolatedTurnstile 的 React.memo
+  const onCaptchaSuccess = useCallback((token) => {
+    setCaptchaToken(token); setTurnstileError(false)
+    if (awaitingCaptcha) {
+      setAwaitingCaptcha(false)
+      doSignIn(token)
+    }
+  }, [awaitingCaptcha, doSignIn])
+  const onCaptchaExpire = useCallback(() => setCaptchaToken(''), [])
+  const onCaptchaError = useCallback(() => {
+    setCaptchaToken(''); setTurnstileError(true); setAwaitingCaptcha(false); setLoading(false)
+  }, [])
 
   // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth），避免每次 render 重算
   const inApp = useMemo(() => isInAppBrowser(), [])
@@ -81,18 +108,26 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email || !password) return
-    if (!captchaToken) { setError('請先完成人機驗證'); return }
-    setLoading(true)
     setError('')
-    const { error } = await signIn(email, password, captchaToken)
-    if (error) {
-      setError(error.message === 'Invalid login credentials' ? '帳號或密碼錯誤' : error.message)
+
+    // 暫存表單值
+    pendingLoginRef.current = { email, password }
+
+    if (captchaToken) {
+      // 已有 token（罕見，如重試）→ 直接送
+      doSignIn(captchaToken)
+      return
+    }
+
+    // 還沒驗 → 觸發 captcha challenge（deferred execute）
+    setAwaitingCaptcha(true)
+    setLoading(true)
+    try {
+      turnstileRef.current?.execute()
+    } catch {
+      setError('人機驗證觸發失敗，請重新整理頁面再試')
+      setAwaitingCaptcha(false)
       setLoading(false)
-      // 用過的 token 不能重送，失敗後 reset widget 取新 token
-      turnstileRef.current?.reset()
-      setCaptchaToken('')
-    } else {
-      navigate(from, { replace: true })
     }
   }
 
@@ -270,11 +305,13 @@ export default function Login() {
               )}
             </div>
 
+            {/* deferred execute 流程：按鈕只在 loading 中 disable
+                Captcha 不擋按鈕、按下後才觸發 challenge，過了自動 signIn */}
             <button
               type="submit"
-              disabled={loading || !captchaToken}
+              disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-900/50">
-              {loading ? '登入中...' : '登入'}
+              {awaitingCaptcha ? '🔒 人機驗證中...' : loading ? '登入中...' : '登入'}
             </button>
           </form>
 

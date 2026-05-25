@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
@@ -26,15 +26,43 @@ export default function Register() {
   const [captchaToken, setCaptchaToken] = useState('')
   // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生「无法连接到网站」）
   const [turnstileError, setTurnstileError] = useState(false)
+  // 等待 captcha 完成才繼續送出註冊的狀態旗標
+  // (deferred execute 模式：用戶按提交 → execute() → 等 onSuccess → 自動繼續 signup)
+  const [awaitingCaptcha, setAwaitingCaptcha] = useState(false)
+  // 暫存表單值，等 captcha 過了就拿來 signUp（避免閉包抓到舊值）
+  const pendingSignupRef = useRef(null)
+  const turnstileRef = useRef(null)
 
-  // useCallback 鎖定 callback reference — 配合 IsolatedTurnstile 的 React.memo，
-  // 確保 captcha widget 不會因為父元件 re-render（如打字）而重新跑 challenge
+  // 共用 signup 邏輯 — 從 handleSubmit 或 onCaptchaSuccess 兩條路都呼叫
+  const doSignup = useCallback(async (token) => {
+    const data = pendingSignupRef.current
+    if (!data) return
+    setLoading(true)
+    setError('')
+    const { error: err } = await signUp(data.email, data.password, data.name, data.marketingConsent, token)
+    if (err) {
+      setError(err.message === 'User already registered' ? '此信箱已註冊，請直接登入' : err.message)
+      setLoading(false)
+      // Supabase 用過的 captcha token 不能重送，失敗後 reset widget 取新 token
+      turnstileRef.current?.reset()
+      setCaptchaToken('')
+    } else {
+      setSuccess(true)
+    }
+    pendingSignupRef.current = null
+  }, [signUp])
+
+  // captcha 驗證完成 — 若 awaitingCaptcha=true，自動繼續完成 signup
   const onCaptchaSuccess = useCallback((token) => {
     setCaptchaToken(token); setTurnstileError(false)
-  }, [])
+    if (awaitingCaptcha) {
+      setAwaitingCaptcha(false)
+      doSignup(token)
+    }
+  }, [awaitingCaptcha, doSignup])
   const onCaptchaExpire = useCallback(() => setCaptchaToken(''), [])
   const onCaptchaError = useCallback(() => {
-    setCaptchaToken(''); setTurnstileError(true)
+    setCaptchaToken(''); setTurnstileError(true); setAwaitingCaptcha(false); setLoading(false)
   }, [])
   const { signUp, signInWithGoogle } = useAuth()
 
@@ -74,19 +102,27 @@ export default function Register() {
     if (!name || !email || !password || !confirm) return setError('請填寫所有欄位')
     if (password.length < 6) return setError('密碼至少需要 6 個字元')
     if (password !== confirm) return setError('兩次密碼輸入不一致')
-    if (!captchaToken) return setError('請先完成人機驗證')
-
-    setLoading(true)
     setError('')
-    const { error } = await signUp(email, password, name, marketingConsent, captchaToken)
-    if (error) {
-      setError(error.message === 'User already registered' ? '此信箱已註冊，請直接登入' : error.message)
+
+    // 暫存表單值，等 captcha 過了用
+    pendingSignupRef.current = { name, email, password, marketingConsent }
+
+    if (captchaToken) {
+      // 已有 token（罕見，如重試）→ 直接送
+      doSignup(captchaToken)
+      return
+    }
+
+    // 還沒驗 → 觸發 captcha challenge（deferred execute）
+    // widget 在背景跑，不會出現在打字過程中，避免反覆中斷
+    setAwaitingCaptcha(true)
+    setLoading(true)
+    try {
+      turnstileRef.current?.execute()
+    } catch {
+      setError('人機驗證觸發失敗，請重新整理頁面再試')
+      setAwaitingCaptcha(false)
       setLoading(false)
-      // Supabase 用過的 captcha token 不能重送，失敗後 reset widget 取新 token
-      turnstileRef.current?.reset()
-      setCaptchaToken('')
-    } else {
-      setSuccess(true)
     }
   }
 
@@ -277,6 +313,7 @@ export default function Register() {
                 確保 widget 在父元件每次 re-render（如打字）時不會跟著 re-render → 不中斷 challenge */}
             <div className="flex flex-col items-center gap-2">
               <IsolatedTurnstile
+                ref={turnstileRef}
                 siteKey={TURNSTILE_SITE_KEY}
                 onSuccess={onCaptchaSuccess}
                 onExpire={onCaptchaExpire}
@@ -299,11 +336,13 @@ export default function Register() {
               )}
             </div>
 
+            {/* deferred execute 流程：按鈕只在 loading 中 disable
+                Captcha 在背景跑、不擋按鈕 — 按下後才觸發 challenge，過了自動 signup */}
             <button
               type="submit"
-              disabled={loading || !captchaToken}
+              disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-900/50">
-              {loading ? '建立中...' : '立即取得免費分析額度'}
+              {awaitingCaptcha ? '🔒 人機驗證中...' : loading ? '建立中...' : '立即取得免費分析額度'}
             </button>
           </form>
 
