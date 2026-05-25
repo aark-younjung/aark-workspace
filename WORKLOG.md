@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-05-25（Register 頁兩個 bug — 品牌文案漏改 + Turnstile 載入失敗 UX 改善）
+**用戶截圖回報 /register 跟「final 版本」不一樣，診斷出兩個獨立問題：**
+
+- 🐛 **Bug 1：行銷同意 checkbox 文案還寫「AARK」**（CLAUDE.md 規範品牌名應為「AI 雷達」）
+  - 2026-05-20 rename 後忘了改這一行
+  - 修法：[Register.jsx:260](src/pages/Register.jsx) 文案改成「我同意接收 AI 雷達 的產品更新...」
+- 🐛 **Bug 2：Cloudflare Turnstile widget 載入失敗，顯示原生簡中錯誤「无法连接到网站」**
+  - 用戶看不懂這個訊息，且因為 `if (!captchaToken) return setError('請先完成人機驗證')` 邏輯 → **所有新註冊被擋**
+  - 真實 root cause 在 Vercel env / Cloudflare dashboard 配置（待用戶側確認）
+  - UX 改善：onError 時除清 token 也標 `turnstileError=true`，下方顯示友善錯誤 banner：
+    - 標題「⚠️ 人機驗證載入失敗」
+    - 3 個 fallback 步驟：(1) 重整 (2) 關閉廣告攔截器 / VPN (3) 改用 Google 註冊
+- 🔧 **待用戶側確認**：Vercel env `VITE_TURNSTILE_SITE_KEY` 設定 + Cloudflare Turnstile dashboard 的 Allowed Domains 是否含 `aark-workspace.vercel.app`
+
+---
+
 ### 2026-05-25（/schema-check 落地頁 — 第二個工具集成員）
 **順著「每個痛點配一個獨立落地頁」格局做的第二個工具，姊妹頁是 /crawl-check：**
 

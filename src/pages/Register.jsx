@@ -24,6 +24,8 @@ export default function Register() {
   const [showInAppWarning, setShowInAppWarning] = useState(false)
   const [copied, setCopied] = useState(false)
   const [captchaToken, setCaptchaToken] = useState('')
+  // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生「无法连接到网站」）
+  const [turnstileError, setTurnstileError] = useState(false)
   const turnstileRef = useRef(null)
   const { signUp, signInWithGoogle } = useAuth()
 
@@ -257,20 +259,37 @@ export default function Register() {
                 className="mt-0.5 w-4 h-4 rounded accent-orange-500 cursor-pointer"
               />
               <span className="text-xs leading-relaxed" style={{ color: T.textLow }}>
-                我同意接收 AARK 的產品更新、優化建議與行銷資訊（可隨時取消）
+                我同意接收 AI 雷達 的產品更新、優化建議與行銷資訊（可隨時取消）
               </span>
             </label>
 
-            {/* Cloudflare Turnstile 人機驗證 — 防 bot 刷 7 天試用 */}
-            <div className="flex justify-center">
+            {/* Cloudflare Turnstile 人機驗證 — 防 bot 刷 7 天試用
+                onError 時除清 token 也標 turnstileError，下方顯示友善錯誤 UI
+                取代 Cloudflare widget 內建的「无法连接到网站」簡體中文錯誤 */}
+            <div className="flex flex-col items-center gap-2">
               <Turnstile
                 ref={turnstileRef}
                 siteKey={TURNSTILE_SITE_KEY}
-                onSuccess={setCaptchaToken}
+                onSuccess={(token) => { setCaptchaToken(token); setTurnstileError(false) }}
                 onExpire={() => setCaptchaToken('')}
-                onError={() => setCaptchaToken('')}
+                onError={() => { setCaptchaToken(''); setTurnstileError(true) }}
                 options={{ theme: 'dark', size: 'normal' }}
               />
+              {turnstileError && (
+                <div className="w-full p-3 rounded-lg" style={{
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                  fontSize: 12, lineHeight: 1.6, color: T.text,
+                }}>
+                  <div className="font-semibold mb-1" style={{ color: T.warn }}>⚠️ 人機驗證載入失敗</div>
+                  <div style={{ color: T.textMid }}>
+                    可能是網路問題或 Cloudflare 服務暫時無法回應。請：
+                    <br />1. 重整本頁（Ctrl + R）
+                    <br />2. 或暫時關閉廣告攔截器 / VPN 後再試
+                    <br />3. 持續失敗請改用下方「Google 帳號註冊」
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
