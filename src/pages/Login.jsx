@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { useAuth } from '../context/AuthContext'
@@ -10,6 +10,9 @@ import { GlassCard } from '../components/v2'
 // Cloudflare Turnstile site key — Supabase 啟用 CAPTCHA 後 signin 也會強制要求 token
 // env 沒設時用測試 key（永遠通過）避免 dev 卡住
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
+
+// options 提到 component 外 — 跟 Register.jsx 同理，杜絕 widget 每次 render 重新 init
+const TURNSTILE_OPTIONS = { theme: 'dark', size: 'normal' }
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -23,6 +26,15 @@ export default function Login() {
   // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生簡中錯誤）
   const [turnstileError, setTurnstileError] = useState(false)
   const turnstileRef = useRef(null)
+
+  // useCallback 鎖定 callback reference — 避免每次 render 都產生新函式造成 widget 重 init
+  const onCaptchaSuccess = useCallback((token) => {
+    setCaptchaToken(token); setTurnstileError(false)
+  }, [])
+  const onCaptchaExpire = useCallback(() => setCaptchaToken(''), [])
+  const onCaptchaError = useCallback(() => {
+    setCaptchaToken(''); setTurnstileError(true)
+  }, [])
   const { signIn, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -234,16 +246,16 @@ export default function Login() {
             )}
 
             {/* Cloudflare Turnstile 人機驗證 — Supabase 啟用 CAPTCHA 後 signin 也必須帶 token
-                onError 時除清 token 也標 turnstileError，下方顯示友善錯誤 UI
-                （跟 Register.jsx 同一套 UX，避免用戶看不懂 Cloudflare 原生簡中錯誤）*/}
+                ⚠️ siteKey + callbacks + options 都用穩定 reference（useCallback + 模組常數）
+                否則無痕模式互動式 challenge 會被每次 render 中斷重跑（跟 Register.jsx 同理）*/}
             <div className="flex flex-col items-center gap-2">
               <Turnstile
                 ref={turnstileRef}
                 siteKey={TURNSTILE_SITE_KEY}
-                onSuccess={(token) => { setCaptchaToken(token); setTurnstileError(false) }}
-                onExpire={() => setCaptchaToken('')}
-                onError={() => { setCaptchaToken(''); setTurnstileError(true) }}
-                options={{ theme: 'dark', size: 'normal' }}
+                onSuccess={onCaptchaSuccess}
+                onExpire={onCaptchaExpire}
+                onError={onCaptchaError}
+                options={TURNSTILE_OPTIONS}
               />
               {turnstileError && (
                 <div className="w-full p-3 rounded-lg" style={{

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { useAuth } from '../context/AuthContext'
@@ -10,6 +10,10 @@ import { GlassCard } from '../components/v2'
 // env 沒設時用 Cloudflare 官方測試 key（永遠通過驗證），讓 dev 環境照常運作
 // Production 必須在 Vercel env 設 VITE_TURNSTILE_SITE_KEY + Supabase Dashboard 啟用 CAPTCHA
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
+
+// 把 options 物件提到 component 外 — 避免每次 React render 都產生新 reference
+// 導致 Turnstile widget 認為設定變了重新跑 challenge（無痕模式互動式驗證會被中斷）
+const TURNSTILE_OPTIONS = { theme: 'dark', size: 'normal' }
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -27,6 +31,16 @@ export default function Register() {
   // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生「无法连接到网站」）
   const [turnstileError, setTurnstileError] = useState(false)
   const turnstileRef = useRef(null)
+
+  // useCallback 鎖定 callback reference — 避免每次 render 都產生新函式
+  // 跟 TURNSTILE_OPTIONS 提到 component 外配套，杜絕 widget 重 init 中斷用戶打字
+  const onCaptchaSuccess = useCallback((token) => {
+    setCaptchaToken(token); setTurnstileError(false)
+  }, [])
+  const onCaptchaExpire = useCallback(() => setCaptchaToken(''), [])
+  const onCaptchaError = useCallback(() => {
+    setCaptchaToken(''); setTurnstileError(true)
+  }, [])
   const { signUp, signInWithGoogle } = useAuth()
 
   // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth）
@@ -264,16 +278,18 @@ export default function Register() {
             </label>
 
             {/* Cloudflare Turnstile 人機驗證 — 防 bot 刷 7 天試用
-                onError 時除清 token 也標 turnstileError，下方顯示友善錯誤 UI
-                取代 Cloudflare widget 內建的「无法连接到网站」簡體中文錯誤 */}
+                ⚠️ 重要：siteKey + onSuccess/Expire/Error + options 全部要用穩定 reference
+                （TURNSTILE_OPTIONS 提到 component 外 + useCallback 鎖定 callbacks），
+                否則每次 input onChange render 都會觸發 Turnstile 重新 init，無痕模式
+                互動式 challenge 會被反覆中斷。*/}
             <div className="flex flex-col items-center gap-2">
               <Turnstile
                 ref={turnstileRef}
                 siteKey={TURNSTILE_SITE_KEY}
-                onSuccess={(token) => { setCaptchaToken(token); setTurnstileError(false) }}
-                onExpire={() => setCaptchaToken('')}
-                onError={() => { setCaptchaToken(''); setTurnstileError(true) }}
-                options={{ theme: 'dark', size: 'normal' }}
+                onSuccess={onCaptchaSuccess}
+                onExpire={onCaptchaExpire}
+                onError={onCaptchaError}
+                options={TURNSTILE_OPTIONS}
               />
               {turnstileError && (
                 <div className="w-full p-3 rounded-lg" style={{
