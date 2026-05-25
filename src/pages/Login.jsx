@@ -1,18 +1,15 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Turnstile } from '@marsidev/react-turnstile'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
+import IsolatedTurnstile from '../components/v2/IsolatedTurnstile'
 
 // Cloudflare Turnstile site key — Supabase 啟用 CAPTCHA 後 signin 也會強制要求 token
 // env 沒設時用測試 key（永遠通過）避免 dev 卡住
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
-
-// options 提到 component 外 — 跟 Register.jsx 同理，杜絕 widget 每次 render 重新 init
-const TURNSTILE_OPTIONS = { theme: 'dark', size: 'normal' }
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -246,16 +243,15 @@ export default function Login() {
             )}
 
             {/* Cloudflare Turnstile 人機驗證 — Supabase 啟用 CAPTCHA 後 signin 也必須帶 token
-                ⚠️ siteKey + callbacks + options 都用穩定 reference（useCallback + 模組常數）
-                否則無痕模式互動式 challenge 會被每次 render 中斷重跑（跟 Register.jsx 同理）*/}
+                ⚠️ 用 IsolatedTurnstile（React.memo 包裝）— 父元件每次 input render 也不會
+                影響 widget，避免無痕模式互動式 challenge 被中斷重跑 */}
             <div className="flex flex-col items-center gap-2">
-              <Turnstile
+              <IsolatedTurnstile
                 ref={turnstileRef}
                 siteKey={TURNSTILE_SITE_KEY}
                 onSuccess={onCaptchaSuccess}
                 onExpire={onCaptchaExpire}
                 onError={onCaptchaError}
-                options={TURNSTILE_OPTIONS}
               />
               {turnstileError && (
                 <div className="w-full p-3 rounded-lg" style={{
