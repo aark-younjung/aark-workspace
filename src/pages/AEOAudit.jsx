@@ -127,6 +127,7 @@ export default function AEOAudit() {
         score: result.score,
         json_ld: result.json_ld,
         faq_schema: result.faq_schema,
+        faq_visual: result.faq_visual,   // 2026-05-25 新增：頁面有視覺 FAQ 但缺 schema → 修法引導
         canonical: result.canonical,
         breadcrumbs: result.breadcrumbs,
         open_graph: result.open_graph,
@@ -146,11 +147,16 @@ export default function AEOAudit() {
   const score = Math.round((passedCount / totalCount) * 100)
 
   // 把 AEO_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
-  const checks = AEO_CHECKS.map(c => ({
-    ...c,
-    passed: getCheckStatus(c.id) === 'pass',
-    detail: c.description,
-  }))
+  // 特殊處理 faq_schema：若 faq_visual=true 但 faq_schema=false → 用更精準的 detail 訊息引導用戶補 schema
+  // 這樣用戶看到「有 FAQ 但 AI 看不到」而非籠統的「缺 FAQ schema」
+  const checks = AEO_CHECKS.map(c => {
+    const passed = getCheckStatus(c.id) === 'pass'
+    let detail = c.description
+    if (c.id === 'faq_schema' && !passed && aeoAudit?.faq_visual) {
+      detail = '⚠️ 偵測到你的頁面有 FAQ 區塊（標題或多個 Q/A 內容）但缺 FAQPage schema — 對「人類訪客」可見、但 ChatGPT / Claude / Perplexity 等 AI 引擎抓不到。請把 Q&A 包成 JSON-LD 結構化資料，AI 才能直接引用。'
+    }
+    return { ...c, passed, detail }
+  })
 
   if (loading) {
     return (

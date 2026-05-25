@@ -217,7 +217,7 @@ export default function GEOAudit() {
 
           {/* llms.txt 自動生成 + 代管 — 對標 washinmura.jp，免費功能不 Pro-gate */}
           <div style={{ marginBottom: 32 }}>
-            <LlmsTxtSection websiteId={id} />
+            <LlmsTxtSection websiteId={id} websiteUrl={website?.url} />
           </div>
 
           {/* 爬蟲訪問日誌 — 顯示誰來讀過你的代管 llms.txt（對標 washinmura wow factor） */}
@@ -266,10 +266,13 @@ export default function GEOAudit() {
  *      (a) 下載 .txt 檔，上傳到網站 root（最簡單）
  *      (b) 在 robots.txt 加 LLM-Sitemap 指向我們代管 URL（不用改網站）
  */
-function LlmsTxtSection({ websiteId }) {
+function LlmsTxtSection({ websiteId, websiteUrl }) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)   // 'url' | 'content' | null
+  // 驗證用戶網站 root 的 llms.txt 是否真的上傳成功 — 避免「以為上傳了但其實 404」的踩坑
+  // status: 'idle' | 'checking' | 'live' | 'not_found' | 'invalid' | 'error'
+  const [verify, setVerify] = useState({ status: 'idle', detail: '' })
   // 對外 URL：合併到 /api/public?action=llms&id=... 是因為 Vercel Hobby 12 function 上限
   // 用戶 robots.txt LLM-Sitemap 指向這個 URL 完全可以，AI bot 會跟著走
   const hostedUrl = `${window.location.origin}/api/public?action=llms&id=${websiteId}`
@@ -289,6 +292,47 @@ function LlmsTxtSection({ websiteId }) {
       setCopied(key)
       setTimeout(() => setCopied(null), 1800)
     })
+  }
+
+  // 驗證用戶網站 root 的 /llms.txt 真實 HTTP 狀態 — 透過 /api/fetch-url 走後端避免 CORS
+  // 規則：success + content.length > 30 + 像 llms.txt 格式（含 # heading 或 > blockquote）才算 live
+  // 中間態看似 200 但 content 是 HTML 的 builder 404 頁、或全空 body 都會被擋掉
+  async function handleVerify() {
+    if (!websiteUrl) {
+      setVerify({ status: 'error', detail: '無法取得網站 URL' })
+      return
+    }
+    setVerify({ status: 'checking', detail: '' })
+    try {
+      const targetUrl = websiteUrl.replace(/\/$/, '') + '/llms.txt'
+      const r = await fetch(`/api/fetch-url?url=${encodeURIComponent(targetUrl)}`)
+      const data = await r.json()
+      if (!data.success) {
+        // fetch-url 自己 wrap 過 error，可能是 HTTP 404 或其他
+        setVerify({
+          status: 'not_found',
+          detail: data.error === 'HTTP 404' || data.status === 404
+            ? '檔案不存在（HTTP 404）— 上傳失敗或路徑錯了'
+            : `${data.error || '抓取失敗'}${data.hint ? '：' + data.hint : ''}`,
+        })
+        return
+      }
+      const body = data.content || ''
+      // 偵測 builder 攔截：用戶 builder 的 404 頁通常是完整 HTML、開頭含 <!DOCTYPE 或 <html
+      const looksLikeHtml = /^\s*<(?:!doctype|html)/i.test(body)
+      const looksLikeLlms = /^#\s/m.test(body) || /^>\s/m.test(body) || /^User-agent:/im.test(body)
+      if (body.length < 30) {
+        setVerify({ status: 'invalid', detail: `檔案存在但內容太短（${body.length} bytes）— 可能上傳了空檔` })
+      } else if (looksLikeHtml) {
+        setVerify({ status: 'invalid', detail: '檔案存在但內容是 HTML — 你的 builder 把 /llms.txt 路徑指向錯頁（builder 404 攔截）' })
+      } else if (!looksLikeLlms) {
+        setVerify({ status: 'invalid', detail: '檔案存在但不像 llms.txt 標準格式（缺 # 標題 / > 描述）— 可能上傳錯檔' })
+      } else {
+        setVerify({ status: 'live', detail: `✅ HTTP 200 · ${body.length} bytes · 格式正確` })
+      }
+    } catch (err) {
+      setVerify({ status: 'error', detail: err.message || '驗證失敗，請重試' })
+    }
   }
 
   function downloadFile() {
@@ -356,7 +400,7 @@ function LlmsTxtSection({ websiteId }) {
       </div>
 
       {/* 動作按鈕 */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <button
           type="button"
           onClick={downloadFile}
@@ -381,7 +425,61 @@ function LlmsTxtSection({ websiteId }) {
             opacity: loading ? 0.5 : 1,
           }}
         >{copied === 'content' ? '✓ 已複製內容' : '複製內容'}</button>
+        {/* 驗證 llms.txt 是否真的活著 — 避免用戶踩「以為上傳成功但 builder 404」的坑（soileng 案例）*/}
+        <button
+          type="button"
+          onClick={handleVerify}
+          disabled={verify.status === 'checking' || !websiteUrl}
+          style={{
+            fontSize: 13, fontWeight: 600, padding: '10px 18px', borderRadius: T.rM,
+            background: 'rgba(255,255,255,0.05)',
+            color: T.text,
+            border: `1px solid ${T.cardBorder}`,
+            cursor: verify.status === 'checking' ? 'wait' : 'pointer',
+            fontFamily: T.font,
+          }}
+          title="實際打你網站 root 的 /llms.txt 看真實 HTTP 狀態"
+        >
+          {verify.status === 'checking' ? '🔍 驗證中…' : '🔍 驗證上傳是否成功'}
+        </button>
       </div>
+
+      {/* 驗證結果 banner — 依 status 不同色 + 不同 icon */}
+      {verify.status !== 'idle' && verify.status !== 'checking' && (
+        <div style={{
+          marginBottom: 18, padding: '12px 14px', borderRadius: T.rM,
+          fontSize: 12, lineHeight: 1.6,
+          background: verify.status === 'live'
+            ? `${T.pass}15`
+            : verify.status === 'invalid' || verify.status === 'not_found'
+            ? `${T.warn}15`
+            : `${T.fail}15`,
+          border: `1px solid ${
+            verify.status === 'live'
+              ? T.pass + '55'
+              : verify.status === 'invalid' || verify.status === 'not_found'
+              ? T.warn + '55'
+              : T.fail + '55'
+          }`,
+          color: T.text,
+        }}>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+            {verify.status === 'live' && <>🟢 llms.txt 已成功上線</>}
+            {verify.status === 'not_found' && <>🟡 llms.txt 不存在</>}
+            {verify.status === 'invalid' && <>🟡 llms.txt 存在但內容有問題</>}
+            {verify.status === 'error' && <>🔴 驗證時發生錯誤</>}
+          </div>
+          <div style={{ color: T.textMid }}>
+            檢測 URL：<code style={{ fontFamily: T.mono, fontSize: 11 }}>{websiteUrl?.replace(/\/$/, '')}/llms.txt</code>
+          </div>
+          <div style={{ color: T.textMid, marginTop: 4 }}>{verify.detail}</div>
+          {(verify.status === 'not_found' || verify.status === 'invalid') && (
+            <div style={{ color: T.textLow, marginTop: 8, fontStyle: 'italic' }}>
+              💡 替代方案：在你網站的 robots.txt 加 <code style={{ fontFamily: T.mono }}>LLM-Sitemap: {hostedUrl}</code>，不用改 root 檔案就能讓 AI 爬蟲讀到。
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 怎麼接到網站的兩種方式 */}
       <details style={{ fontSize: 13, color: T.textMid, lineHeight: 1.75 }}>

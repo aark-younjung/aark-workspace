@@ -470,6 +470,7 @@ export default function HomeDark() {
         aeoResult && supabase.from('aeo_audits').insert([{
           website_id: websiteId, score: aeoResult.score,
           json_ld: aeoResult.json_ld, faq_schema: aeoResult.faq_schema,
+          faq_visual: aeoResult.faq_visual,    // 2026-05-25：頁面有視覺 FAQ 但缺 schema 的訊號
           canonical: aeoResult.canonical, breadcrumbs: aeoResult.breadcrumbs,
           open_graph: aeoResult.open_graph, question_headings: aeoResult.question_headings,
         }]),

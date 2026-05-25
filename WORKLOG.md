@@ -6,6 +6,39 @@
 
 ---
 
+### 2026-05-25（soileng.com.tw 兩個踩坑 → 兩個增強）
+**朋友測 soileng 反映 (a) 加了 llms.txt 還是被測到缺 (b) 視覺有 FAQ 卻沒被測到：**
+
+- 🐛 **(a) 根因：用戶以為上傳成功但實際 builder 404**
+  - 診斷：soileng 用 Hostinger Builder（`Server: hcdn`），`/llms.txt` 實際回 HTTP 404 + builder 404 頁
+  - Builder 不開放 root 路徑放純文字檔 → 用戶完全沒辦法察覺上傳失敗
+- 🆕 **增強 1：GEO 詳情頁 LlmsTxtSection 加「🔍 驗證上傳是否成功」按鈕**
+  - 透過 /api/fetch-url 後端打用戶網站的 `/llms.txt` 取真實 HTTP 狀態
+  - 偵測 4 種失敗模式：404 / 200 但 body 是 HTML（builder 攔截）/ 200 但 < 30 bytes / 200 但不像 llms.txt 標準（缺 # 或 >）
+  - 5 種狀態 banner（live / not_found / invalid / error / idle）配色 + 失敗時自動推「方案 B」修法（在 robots.txt 加 LLM-Sitemap 指向我們代管 URL）
+  - 對 builder 用戶意義最大：避免「以為上傳了但其實 AI 看不到」的隱形失敗
+
+- 🐛 **(b) 根因：analyzer 只認 FAQPage schema，視覺 FAQ 無 schema 一律算 fail**
+  - 但用戶 builder 通常自動生成的 FAQ 元件不會 inject JSON-LD
+  - 結果：用戶肉眼看得到 FAQ 但 audit 一律報「缺 FAQ schema」，無法區分「沒做 FAQ vs 做了但缺 schema」
+- 🆕 **增強 2：[aeoAnalyzer.js](src/services/aeoAnalyzer.js) 加視覺 FAQ 偵測**
+  - 3 個 heuristic 訊號：
+    1. 標題類似「常見問題 / FAQ / Q&A / Frequently Asked Questions / 問與答」（含 h1-h6 / class*=faq / id*=faq）
+    2. `<details>` 元素 ≥ 3 個（HTML 折疊式 FAQ 慣用法）
+    3. FAQ 標題 + ≥3 個「？」結尾短文字（問句模式）
+  - 判定：(有 FAQ 標題 AND ≥3 問句) 或 (`<details>` ≥3) → `hasVisualFaq=true`
+  - 輸出新欄位 `faq_visual` 到 result + DB（需用戶側跑 ALTER TABLE）
+- 🆕 **AEOAudit 顯示邏輯增強**：FAQ schema 失敗時若 `faq_visual=true` 改顯示精準訊息
+  > 「⚠️ 偵測到你的頁面有 FAQ 區塊但缺 FAQPage schema — 對人類訪客可見、但 ChatGPT / Claude / Perplexity 等 AI 引擎抓不到」
+- 連帶：用戶展開 FAQ schema 卡會看到 [fixGuides.js](src/data/fixGuides.js) 既有的 WP/Shopify/Wix/HTML 平台別 FAQPage JSON-LD 範例 code（Pro 限定）
+
+**用戶側要跑的 SQL（paste-ready）：**
+```sql
+ALTER TABLE aeo_audits ADD COLUMN IF NOT EXISTS faq_visual BOOLEAN DEFAULT false;
+```
+
+---
+
 ### 2026-05-23（Vercel deploy fail 根因 — Hobby 12 function 上限）
 **6 個 commit 連續 build pass 但 deploy fail 的真實原因：**
 

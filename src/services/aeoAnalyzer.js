@@ -33,8 +33,18 @@ function checkJsonLd(doc) {
 
 /**
  * 2. FAQ Schema 檢測 (FAQPage 或 QAPage)
+ *
+ * 兩階段判定：
+ *   (a) 結構化：JSON-LD 含 FAQPage / QAPage → 真的能被 AI 直接讀取
+ *   (b) 視覺：頁面有「常見問題 / FAQ」標題 + 多個 Q/A 區塊 → 用戶肉眼有 FAQ 但缺 schema
+ *
+ * passed 仍然只看結構化（AEO 對 AI 引擎有意義的部分）
+ * hasVisualFaq 是補充訊號，給 UI 用「你有 FAQ 但 AI 看不到，請補 schema」修法引導
+ *
+ * soileng.com.tw 案例：Builder 拖了 FAQ 元件但沒 inject FAQPage schema → 視覺有、AI 抓不到
  */
 function checkFaqSchema(doc) {
+  // === (a) 結構化 FAQ schema ===
   const scripts = doc.querySelectorAll('script[type="application/ld+json"]')
   let hasFaqSchema = false
 
@@ -50,7 +60,46 @@ function checkFaqSchema(doc) {
     } catch (e) {}
   })
 
-  return { passed: hasFaqSchema }
+  // === (b) 視覺 FAQ 偵測（heuristic）===
+  // Signal 1：找標題類似「常見問題」「FAQ」「Q&A」「Frequently Asked Questions」
+  const FAQ_HEADING_RE = /常見問題|FAQ|Q\s*[&＆]\s*A|Q\s*and\s*A|Frequently\s+Asked\s+Questions|問與答/i
+  const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, [class*="faq" i], [id*="faq" i]')
+  let hasFaqHeading = false
+  for (const h of headings) {
+    if (FAQ_HEADING_RE.test(h.textContent || '') || FAQ_HEADING_RE.test(h.getAttribute('id') || '') || FAQ_HEADING_RE.test(h.getAttribute('class') || '')) {
+      hasFaqHeading = true
+      break
+    }
+  }
+
+  // Signal 2：有 ≥2 個 <details> 元素（HTML 原生折疊，常被當 FAQ 用）
+  const detailsCount = doc.querySelectorAll('details').length
+
+  // Signal 3：頁面有 ≥3 個包含「？」的短文字（問句模式），且總文字夠長表示是正式 FAQ 區塊
+  // 用內文 chinese question mark 或英文 ? 結尾的短行（< 80 字）當問句訊號
+  let questionLikeCount = 0
+  if (hasFaqHeading) {
+    // 只有偵測到 FAQ 標題才繼續算問句（避免一般頁面誤判）
+    const paragraphs = doc.querySelectorAll('p, dt, summary, strong, li, h3, h4, h5')
+    for (const p of paragraphs) {
+      const text = (p.textContent || '').trim()
+      if (text.length > 0 && text.length < 80 && /[？?]$/.test(text)) {
+        questionLikeCount++
+        if (questionLikeCount >= 3) break
+      }
+    }
+  }
+
+  // 判定有「視覺 FAQ」：(有 FAQ 標題 AND ≥3 個問句) 或 (≥3 個 details 元素)
+  const hasVisualFaq = (hasFaqHeading && questionLikeCount >= 3) || detailsCount >= 3
+
+  return {
+    passed: hasFaqSchema,
+    hasVisualFaq,            // 補充訊號：用戶看得到 FAQ 但 AI 看不到
+    hasFaqHeading,           // debug 用
+    detailsCount,            // debug 用
+    questionLikeCount,       // debug 用
+  }
 }
 
 /**
@@ -250,6 +299,9 @@ export async function analyzeAEO(url) {
     score,
     json_ld: jsonLd.passed,
     faq_schema: faqSchema.passed,
+    // 視覺 FAQ 旗標：用戶頁面有 FAQ 區塊但缺 schema → AEOAudit 顯示「請補 schema」修法引導
+    // 為什麼跟 faq_schema 並列：產品需要區分「沒 FAQ vs 有 FAQ 但 AI 看不到」兩種 case
+    faq_visual: !!faqSchema.hasVisualFaq,
     canonical: canonical.passed,
     breadcrumbs: breadcrumbs.passed,
     open_graph: openGraph.passed,
