@@ -27,17 +27,13 @@ import { Turnstile } from '@marsidev/react-turnstile'
 
 // options 物件用模組常數定義 — 進一步杜絕 reference 不穩
 //
-// 2026-05-25 改採「deferred execute」模式：
-//   - appearance: 'execute' → widget 預設不渲染挑戰 UI
-//   - 父元件在用戶按提交時呼叫 ref.execute() 觸發驗證
-//   - 避免 Cloudflare 在用戶打字時持續重跑 challenge（無痕模式特別嚴重）
-//
-// execution 預設 'render' 會 mount 時自動跑，改 'execute' 才是真正的「手動觸發」
+// 2026-05-25 update：execute 選項實測仍會跑背景指紋分析中斷用戶打字。
+// 改用「conditional mount」策略：父元件用 {flag && <IsolatedTurnstile />} 控制
+// 真正掛載時機 — Turnstile script 在打字前根本沒載入，徹底零中斷。
+// Widget mount 後直接執行 challenge（render 模式），靠 onSuccess 拿 token。
 const DEFAULT_OPTIONS = {
   theme: 'dark',
   size: 'normal',
-  appearance: 'execute',
-  execution: 'execute',
 }
 
 // forwardRef 把 ref 直透到底層 Turnstile widget — 父元件可呼叫 .reset() / .execute()

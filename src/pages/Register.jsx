@@ -27,8 +27,12 @@ export default function Register() {
   // Turnstile 載入失敗時的狀態 — 用來顯示友善錯誤訊息（取代 Cloudflare 原生「无法连接到网站」）
   const [turnstileError, setTurnstileError] = useState(false)
   // 等待 captcha 完成才繼續送出註冊的狀態旗標
-  // (deferred execute 模式：用戶按提交 → execute() → 等 onSuccess → 自動繼續 signup)
+  // (conditional mount 模式：用戶按提交 → 才 mount Turnstile widget → 自動跑 challenge → 過了才 signup)
+  // 必須 conditional mount 是因為 execute 選項實測仍會跑背景指紋分析中斷用戶打字
   const [awaitingCaptcha, setAwaitingCaptcha] = useState(false)
+  // 控制 Turnstile widget 是否真的 mount 到 DOM — false 時 widget 完全不存在
+  // 打字時 Turnstile script 根本沒載入 → 零中斷
+  const [mountCaptcha, setMountCaptcha] = useState(false)
   // 暫存表單值，等 captcha 過了就拿來 signUp（避免閉包抓到舊值）
   const pendingSignupRef = useRef(null)
   const turnstileRef = useRef(null)
@@ -46,9 +50,10 @@ export default function Register() {
     if (err) {
       setError(err.message === 'User already registered' ? '此信箱已註冊，請直接登入' : err.message)
       setLoading(false)
-      // Supabase 用過的 captcha token 不能重送，失敗後 reset widget 取新 token
-      turnstileRef.current?.reset()
       setCaptchaToken('')
+      // unmount Turnstile widget 讓用戶能重新編輯欄位（不再被指紋分析中斷打字）
+      // 下次按提交會 re-mount 取新 token
+      setMountCaptcha(false)
     } else {
       setSuccess(true)
     }
@@ -65,7 +70,12 @@ export default function Register() {
   }, [awaitingCaptcha, doSignup])
   const onCaptchaExpire = useCallback(() => setCaptchaToken(''), [])
   const onCaptchaError = useCallback(() => {
-    setCaptchaToken(''); setTurnstileError(true); setAwaitingCaptcha(false); setLoading(false)
+    setCaptchaToken('')
+    setTurnstileError(true)
+    setAwaitingCaptcha(false)
+    setLoading(false)
+    // 失敗後也 unmount，避免 widget 持續跑指紋分析
+    setMountCaptcha(false)
   }, [])
 
   // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth）
@@ -115,17 +125,11 @@ export default function Register() {
       return
     }
 
-    // 還沒驗 → 觸發 captcha challenge（deferred execute）
-    // widget 在背景跑，不會出現在打字過程中，避免反覆中斷
+    // 還沒驗 → 真正掛載 Turnstile widget（conditional mount）
+    // Widget mount 後會自動跑 challenge，onCaptchaSuccess 拿到 token 自動繼續 signup
     setAwaitingCaptcha(true)
     setLoading(true)
-    try {
-      turnstileRef.current?.execute()
-    } catch {
-      setError('人機驗證觸發失敗，請重新整理頁面再試')
-      setAwaitingCaptcha(false)
-      setLoading(false)
-    }
+    setMountCaptcha(true)
   }
 
   // 共用的暗色背景 wrapper（雙端大面積漸層 + 雜訊疊層，與 HomeDark / Login 一致）
@@ -311,16 +315,19 @@ export default function Register() {
             </label>
 
             {/* Cloudflare Turnstile 人機驗證 — 防 bot 刷 7 天試用
-                ⚠️ 重要：用 IsolatedTurnstile（React.memo 包裝）+ useCallback 鎖 callbacks
-                確保 widget 在父元件每次 re-render（如打字）時不會跟著 re-render → 不中斷 challenge */}
+                ⚠️ Conditional mount：只在用戶按提交後才 mount widget
+                打字過程中 Turnstile script 根本沒被載入 → 完全零中斷
+                Widget 一掛載自動跑 challenge → 過了 onSuccess 拿 token → 繼續 signup */}
             <div className="flex flex-col items-center gap-2">
-              <IsolatedTurnstile
-                ref={turnstileRef}
-                siteKey={TURNSTILE_SITE_KEY}
-                onSuccess={onCaptchaSuccess}
-                onExpire={onCaptchaExpire}
-                onError={onCaptchaError}
-              />
+              {mountCaptcha && (
+                <IsolatedTurnstile
+                  ref={turnstileRef}
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onSuccess={onCaptchaSuccess}
+                  onExpire={onCaptchaExpire}
+                  onError={onCaptchaError}
+                />
+              )}
               {turnstileError && (
                 <div className="w-full p-3 rounded-lg" style={{
                   background: 'rgba(245, 158, 11, 0.12)',
