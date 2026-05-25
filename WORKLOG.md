@@ -6,6 +6,28 @@
 
 ---
 
+### 2026-05-25（/schema-check 落地頁 — 第二個工具集成員）
+**順著「每個痛點配一個獨立落地頁」格局做的第二個工具，姊妹頁是 /crawl-check：**
+
+- 🆕 **[src/pages/SchemaCheck.jsx](src/pages/SchemaCheck.jsx)** — 「你的網站有哪些 Schema？AI 看得到嗎？」單一痛點檢測頁
+  - 免註冊單一輸入 → /api/fetch-url → 解析 HTML 所有 `<script type="application/ld+json">` → 列出所有 schema type
+  - 處理 3 種 JSON-LD 結構：頂層 @type / @type 為 array / @graph 巢狀
+  - parseAllSchemas helper：回 `{ types, invalidCount, totalScripts }`，含 source 標註（哪個 script 哪個 @graph index）
+  - 17 個 KEY_SCHEMA_TYPES 清單（Organization / WebSite / Article / FAQPage / BreadcrumbList / Product / LocalBusiness 等），分 3 層優先級（essential / recommended / context）
+  - 偵測到的 schema：⚠️ 在我們清單裡的標 label + purpose；不在清單裡的標「非常見 type」
+  - missingEssentials：自動列出 essential 級但缺漏的 type（給「強烈建議補上」區用）
+  - 共用 aeoAnalyzer.js 的視覺 FAQ heuristic（detectVisualFaq）— 沒 FAQPage schema 但有視覺 FAQ 時跳警告
+  - 動畫式掃描 log（5 行 / 每 600ms 一條）
+- 🆕 **App.jsx 加路由** `/schema-check`
+- 🆕 **AEOAudit 加微入口**（既有用戶 cross-link）：IssueBoard 下方加「🔬 想看你網站上所有 Schema 一覽？」卡，帶 `?url=...` query 預填到 SchemaCheck
+- 🆕 **交接文件 [docs/schema-check-handoff.md](docs/schema-check-handoff.md)** — 給 Claude Design 後續視覺強化
+- 設計取捨：
+  - **獨立路由 + 微入口雙軌**（不放 Dashboard / 不開「工具」menu）— 等到第 3 個工具上線再規劃 menu
+  - **不重新發明 schema 偵測邏輯** — 複用 aeoAnalyzer.js 既有 checkFaqSchema 的 hasVisualFaq 邏輯
+  - **CTA 導去註冊**（不導去 Pricing）— 免費版就能跑完整 AEO 分析，註冊比直接升 Pro 阻力小
+
+---
+
 ### 2026-05-25（soileng.com.tw 兩個踩坑 → 兩個增強）
 **朋友測 soileng 反映 (a) 加了 llms.txt 還是被測到缺 (b) 視覺有 FAQ 卻沒被測到：**
 

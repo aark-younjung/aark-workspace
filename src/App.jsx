@@ -21,6 +21,7 @@ import FAQ from './pages/FAQ'
 import ContentAudit from './pages/ContentAudit'
 import WebsiteSummary from './pages/WebsiteSummary'
 import CrawlCheck from './pages/CrawlCheck'
+import SchemaCheck from './pages/SchemaCheck'
 import GA4Report from './pages/GA4Report'
 import GSCReport from './pages/GSCReport'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -102,6 +103,7 @@ function AppInner() {
         <Route path="/account" element={<Account />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/crawl-check" element={<CrawlCheck />} />
+        <Route path="/schema-check" element={<SchemaCheck />} />
         <Route path="/content-audit" element={<ContentAudit />} />
         {/* 從 Dashboard 第 5 張卡點進來的 DB-backed 模式（綁定 website_id，吃 cached + 趨勢） */}
         <Route path="/content-audit/:id" element={<ContentAudit />} />

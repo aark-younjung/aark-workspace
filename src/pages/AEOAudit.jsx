@@ -219,6 +219,32 @@ export default function AEOAudit() {
             {!aeoAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={AEO_ACCENT} accentGlow={`${AEO_ACCENT}28`} />}
           </div>
 
+          {/* /schema-check 微入口 — 既有用戶 cross-link 到獨立 schema 健檢工具
+              定位：AEO 8 項是「策展過的關鍵 schema」，/schema-check 是「完整 schema 全覽」 */}
+          {website?.url && (
+            <div style={{
+              background: 'rgba(0,0,0,0.4)', border: `1px solid ${T.cardBorder}`,
+              borderRadius: T.rL, padding: '16px 20px', marginBottom: 32,
+              display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: 22 }}>🔬</span>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 2 }}>
+                  想看你網站上所有 Schema 一覽？
+                </div>
+                <div style={{ fontSize: 11, color: T.textLow, lineHeight: 1.5 }}>
+                  AEO 這頁列出 8 項關鍵 schema；Schema 健檢工具會掃出你網站**所有** JSON-LD，列出 type / 來源 / 對 AI 引用的意義
+                </div>
+              </div>
+              <Link to={`/schema-check?url=${encodeURIComponent(website.url)}`} style={{
+                fontSize: 12, fontWeight: 700, padding: '8px 14px', borderRadius: 6,
+                background: T.aeo + '22', color: T.aeo,
+                border: `1px solid ${T.aeo}55`, textDecoration: 'none',
+                whiteSpace: 'nowrap',
+              }}>用 Schema 健檢工具 →</Link>
+            </div>
+          )}
+
           {/* AI 搜尋優化建議 */}
           <div className="mt-8">
             <GlassCard color={T.aeo} style={{ padding: 32 }}>
