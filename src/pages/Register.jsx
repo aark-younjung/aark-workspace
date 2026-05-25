@@ -32,6 +32,9 @@ export default function Register() {
   // 暫存表單值，等 captcha 過了就拿來 signUp（避免閉包抓到舊值）
   const pendingSignupRef = useRef(null)
   const turnstileRef = useRef(null)
+  // ⚠️ useAuth() 必須先解構，下面 useCallback dependency array 才能引用 signUp
+  // 順序錯會 temporal dead zone 整個 component crash → 白屏
+  const { signUp, signInWithGoogle } = useAuth()
 
   // 共用 signup 邏輯 — 從 handleSubmit 或 onCaptchaSuccess 兩條路都呼叫
   const doSignup = useCallback(async (token) => {
@@ -64,7 +67,6 @@ export default function Register() {
   const onCaptchaError = useCallback(() => {
     setCaptchaToken(''); setTurnstileError(true); setAwaitingCaptcha(false); setLoading(false)
   }, [])
-  const { signUp, signInWithGoogle } = useAuth()
 
   // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth）
   const inApp = useMemo(() => isInAppBrowser(), [])
