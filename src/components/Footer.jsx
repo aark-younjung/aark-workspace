@@ -52,7 +52,6 @@ export default function Footer({ dark = false }) {
               <li><span className={t.sub}>營運單位：</span>優勢方舟數位行銷</li>
               <li><span className={t.sub}>負責人：</span>陳泓翔</li>
               <li><span className={t.sub}>地址：</span>701 台南市東區<br />　　　怡東路 86 巷 10 號</li>
-              <li><span className={t.sub}>電話：</span>0952-555-365</li>
               <li><span className={t.sub}>服務時間：</span>週一至週五<br />　　　　　10:00–18:00</li>
             </ul>
           </div>

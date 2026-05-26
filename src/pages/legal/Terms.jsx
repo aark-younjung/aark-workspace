@@ -18,7 +18,6 @@ export default function Terms() {
         <li>負責人：陳泓翔</li>
         <li>營業地址：701 台南市東區怡東路 86 巷 10 號</li>
         <li>客服信箱：aark.younjung@gmail.com</li>
-        <li>客服電話：0952-555-365</li>
         <li>服務時間：週一至週五 10:00–18:00（國定假日除外）</li>
       </ul>
 
@@ -166,8 +165,7 @@ export default function Terms() {
       <h2>十一、聯絡我們</h2>
       <p>對本條款有任何疑問，請透過下列管道聯絡本公司：</p>
       <ul>
-        <li>客服信箱：aark.younjung@gmail.com</li>
-        <li>客服電話：0952-555-365（週一至週五 10:00–18:00）</li>
+        <li>客服信箱：aark.younjung@gmail.com（週一至週五 10:00–18:00 回覆）</li>
         <li>營業地址：701 台南市東區怡東路 86 巷 10 號</li>
       </ul>
     </LegalPageLayout>

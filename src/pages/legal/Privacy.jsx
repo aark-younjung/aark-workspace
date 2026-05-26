@@ -169,8 +169,7 @@ export default function Privacy() {
         </p>
         <ul style={{ marginBottom: 0 }}>
           <li>姓名：陳泓翔（負責人）</li>
-          <li>客服信箱：aark.younjung@gmail.com</li>
-          <li>客服電話：0952-555-365（週一至週五 10:00–18:00）</li>
+          <li>客服信箱：aark.younjung@gmail.com（週一至週五 10:00–18:00 回覆）</li>
           <li>營業地址：701 台南市東區怡東路 86 巷 10 號</li>
         </ul>
       </div>

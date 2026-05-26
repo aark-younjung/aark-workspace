@@ -59,7 +59,6 @@ export default function LegalPageLayout({ title, subtitle, lastUpdated, children
           <a href="mailto:aark.younjung@gmail.com" style={{ color: T.orange, textDecoration: 'underline' }}>
             aark.younjung@gmail.com
           </a>
-          {' '}或撥打客服電話 0952-555-365
         </div>
       </main>
 

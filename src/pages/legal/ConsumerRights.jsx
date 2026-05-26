@@ -15,7 +15,6 @@ export default function ConsumerRights() {
           <li>負責人：陳泓翔</li>
           <li>營業地址：701 台南市東區怡東路 86 巷 10 號</li>
           <li>客服信箱：aark.younjung@gmail.com</li>
-          <li>客服電話：0952-555-365</li>
           <li>服務時間：週一至週五 10:00–18:00（國定假日除外）</li>
         </ul>
       </div>
@@ -111,8 +110,7 @@ export default function ConsumerRights() {
       <h2>六、退款申請流程</h2>
       <h3>6.1 申請方式</h3>
       <p>
-        請來信至 <a href="mailto:aark.younjung@gmail.com">aark.younjung@gmail.com</a>
-        或撥打客服電話 0952-555-365，提供下列資訊：
+        請來信至 <a href="mailto:aark.younjung@gmail.com">aark.younjung@gmail.com</a>，提供下列資訊：
       </p>
       <ul>
         <li>註冊 Email（必填）</li>
@@ -162,8 +160,7 @@ export default function ConsumerRights() {
         如您對付款、退款、服務內容有任何疑問或爭議，請優先透過下列管道聯繫本公司客服：
       </p>
       <ul>
-        <li>客服信箱：<a href="mailto:aark.younjung@gmail.com">aark.younjung@gmail.com</a>（建議優先使用）</li>
-        <li>客服電話：0952-555-365</li>
+        <li>客服信箱：<a href="mailto:aark.younjung@gmail.com">aark.younjung@gmail.com</a></li>
         <li>服務時間：週一至週五 10:00–18:00（國定假日除外）</li>
       </ul>
       <p>本公司將於 3 個工作天內回覆，並竭力協助您解決問題。</p>
@@ -200,8 +197,7 @@ export default function ConsumerRights() {
       <div className="highlight-box">
         <p style={{ marginBottom: 8 }}>消費者權益相關問題，歡迎透過下列管道聯絡本公司：</p>
         <ul style={{ marginBottom: 0 }}>
-          <li>客服信箱：aark.younjung@gmail.com</li>
-          <li>客服電話：0952-555-365（週一至週五 10:00–18:00）</li>
+          <li>客服信箱：aark.younjung@gmail.com（週一至週五 10:00–18:00 回覆）</li>
           <li>營業地址：701 台南市東區怡東路 86 巷 10 號</li>
           <li>負責人：陳泓翔</li>
         </ul>
