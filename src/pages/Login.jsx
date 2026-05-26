@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -9,8 +9,10 @@ import { GlassCard } from '../components/v2'
 // 2026-05-25：移除 Cloudflare Turnstile captcha（理由與 Register.jsx 同）
 
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  // 非受控 input — ref 代替 state，避免按一個鍵就觸發 React 重 render（解中文 IME 打字卡頓）
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
+
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
@@ -64,6 +66,9 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    // 從非受控 input ref 讀值
+    const email = emailRef.current?.value.trim() || ''
+    const password = passwordRef.current?.value || ''
     if (!email || !password) return
     setLoading(true)
     setError('')
@@ -177,14 +182,16 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* 非受控 input — ref 讀值，不用 value/onChange，避免每按一個鍵都重 render */}
             <div>
               <label className="block text-sm mb-2" style={{ color: T.textMid }}>電子郵件</label>
               <input
+                ref={emailRef}
                 type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                defaultValue=""
                 placeholder="your@email.com"
                 disabled={loading}
+                autoComplete="email"
                 className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 disabled:opacity-50"
                 style={{
                   background: 'rgba(255,255,255,0.06)',
@@ -196,11 +203,12 @@ export default function Login() {
             <div>
               <label className="block text-sm mb-2" style={{ color: T.textMid }}>密碼</label>
               <input
+                ref={passwordRef}
                 type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
+                defaultValue=""
                 placeholder="••••••••"
                 disabled={loading}
+                autoComplete="current-password"
                 className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 disabled:opacity-50"
                 style={{
                   background: 'rgba(255,255,255,0.06)',

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
@@ -12,10 +12,14 @@ import { GlassCard } from '../components/v2'
 // aivis 配額硬上限、Google OAuth 自帶反 bot。需要 Supabase Dashboard 端關 Captcha protection。
 
 export default function Register() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
+  // 用 useRef 取代 useState 存表單值 — 改成「非受控 input」
+  // 每按一個鍵不會觸發 React 重 render（state 不變），效能跟 Google 搜尋框等級
+  // 副作用：欄位內容只在按提交時讀取，沒辦法做即時驗證（但本頁本來也只 submit 驗證）
+  const nameRef = useRef(null)
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
+  const confirmRef = useRef(null)
+
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [marketingConsent, setMarketingConsent] = useState(true)
@@ -58,6 +62,12 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    // 從非受控 input 的 ref 讀值
+    const name = nameRef.current?.value.trim() || ''
+    const email = emailRef.current?.value.trim() || ''
+    const password = passwordRef.current?.value || ''
+    const confirm = confirmRef.current?.value || ''
+
     if (!name || !email || !password || !confirm) return setError('請填寫所有欄位')
     if (password.length < 6) return setError('密碼至少需要 6 個字元')
     if (password !== confirm) return setError('兩次密碼輸入不一致')
@@ -164,14 +174,17 @@ export default function Register() {
         {/* 表單 */}
         <GlassCard color={T.orange} style={{ padding: 32 }}>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* 非受控 input — 用 ref 讀值（按提交時讀），不用 value/onChange 避免每按一個鍵都
+                觸發 React 重 render，效能跟原生 HTML input 等同（Google 搜尋等級） */}
             <div>
               <label className="block text-sm mb-2" style={{ color: T.textMid }}>姓名</label>
               <input
+                ref={nameRef}
                 type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
+                defaultValue=""
                 placeholder="您的姓名"
                 disabled={loading}
+                autoComplete="name"
                 className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 disabled:opacity-50"
                 style={{
                   background: 'rgba(255,255,255,0.06)',
@@ -183,11 +196,12 @@ export default function Register() {
             <div>
               <label className="block text-sm mb-2" style={{ color: T.textMid }}>電子郵件</label>
               <input
+                ref={emailRef}
                 type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                defaultValue=""
                 placeholder="your@email.com"
                 disabled={loading}
+                autoComplete="email"
                 className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 disabled:opacity-50"
                 style={{
                   background: 'rgba(255,255,255,0.06)',
@@ -199,11 +213,12 @@ export default function Register() {
             <div>
               <label className="block text-sm mb-2" style={{ color: T.textMid }}>密碼</label>
               <input
+                ref={passwordRef}
                 type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
+                defaultValue=""
                 placeholder="至少 6 個字元"
                 disabled={loading}
+                autoComplete="new-password"
                 className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 disabled:opacity-50"
                 style={{
                   background: 'rgba(255,255,255,0.06)',
@@ -215,11 +230,12 @@ export default function Register() {
             <div>
               <label className="block text-sm mb-2" style={{ color: T.textMid }}>確認密碼</label>
               <input
+                ref={confirmRef}
                 type="password"
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
+                defaultValue=""
                 placeholder="再輸入一次密碼"
                 disabled={loading}
+                autoComplete="new-password"
                 className="w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 disabled:opacity-50"
                 style={{
                   background: 'rgba(255,255,255,0.06)',
