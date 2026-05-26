@@ -21,6 +21,9 @@ const TOTAL_SLOTS = 100   // 早鳥總名額（CLAUDE.md 規格）
 const PRICE_EARLYBIRD = 11880  // 早鳥首年 NT$ (NT$990/月 × 12)
 const PRICE_REGULAR = 13900    // 一般年繳 NT$
 const STORAGE_KEY = 'dismissed_earlybird_banner'
+// 「剩 N / 100 名」+ 進度條只在 ≥ 20 名賣出後才顯示
+// 避免初期『已售 0 / 100』讓產品看起來冷清；累積 20 名社會證明後再秀
+const COUNTER_REVEAL_THRESHOLD = 20
 
 export default function EarlybirdBanner() {
   const { isPro, loading: authLoading } = useAuth()
@@ -47,6 +50,8 @@ export default function EarlybirdBanner() {
 
   const progressPct = Math.min(100, Math.round((taken / TOTAL_SLOTS) * 100))
   const urgent = remaining <= 20   // 剩 20 名以下用更急迫的紅色
+  // 累積夠多社會證明才秀計數 — 初期『已售 0 / 100』反而傷品牌
+  const showCounter = taken >= COUNTER_REVEAL_THRESHOLD
 
   function handleDismiss() {
     try { localStorage.setItem(STORAGE_KEY, 'true') } catch { /* localStorage 不可用就算 */ }
@@ -67,17 +72,19 @@ export default function EarlybirdBanner() {
             : '0 0 20px rgba(249,115,22,0.12)',
         }}
       >
-        {/* 進度條背景 — 直接畫在 banner 底部，視覺帶緊迫感 */}
-        <div
-          className="absolute bottom-0 left-0 h-1"
-          style={{
-            width: `${progressPct}%`,
-            background: urgent
-              ? 'linear-gradient(90deg, #ef4444, #f59e0b)'
-              : 'linear-gradient(90deg, #f97316, #f59e0b)',
-            transition: 'width 0.6s ease',
-          }}
-        />
+        {/* 進度條背景 — 跟「剩 N 名」文字一組，未達 20 名時都隱藏 */}
+        {showCounter && (
+          <div
+            className="absolute bottom-0 left-0 h-1"
+            style={{
+              width: `${progressPct}%`,
+              background: urgent
+                ? 'linear-gradient(90deg, #ef4444, #f59e0b)'
+                : 'linear-gradient(90deg, #f97316, #f59e0b)',
+              transition: 'width 0.6s ease',
+            }}
+          />
+        )}
 
         <div className="px-4 py-3 pr-10">
           <div className="flex items-center gap-3 flex-wrap">
@@ -96,10 +103,14 @@ export default function EarlybirdBanner() {
                 <div className="text-xs text-white/80 mt-0.5 leading-relaxed">
                   Pro 首年 <strong className="text-amber-200">NT$ {PRICE_EARLYBIRD.toLocaleString()}</strong>
                   <span className="text-white/40 line-through ml-1.5">NT$ {PRICE_REGULAR.toLocaleString()}</span>
-                  <span className="ml-2">·</span>
-                  <span className={`ml-1.5 font-semibold ${urgent ? 'text-red-200' : 'text-amber-200'}`}>
-                    剩 {remaining} 名（已售 {taken} / {TOTAL_SLOTS}）
-                  </span>
+                  {showCounter && (
+                    <>
+                      <span className="ml-2">·</span>
+                      <span className={`ml-1.5 font-semibold ${urgent ? 'text-red-200' : 'text-amber-200'}`}>
+                        剩 {remaining} 名（已售 {taken} / {TOTAL_SLOTS}）
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
