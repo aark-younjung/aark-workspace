@@ -16,6 +16,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { T } from '../styles/v2-tokens'
 import { normalizeUrl } from '../lib/url'
+import { useAuth } from '../context/AuthContext'
 
 // 常見且對 AI / SEO 有意義的 schema types — 用來分類偵測結果與推薦補上
 // 來源：schema.org + Google Rich Results 支援清單，過濾出對 AI 引用 / SEO 顯示有實際影響的
@@ -124,6 +125,8 @@ export default function SchemaCheck() {
   const [result, setResult] = useState(null)     // { foundTypes, missingEssentials, hasVisualFaq, totalScripts, invalidCount }
   const [errorMsg, setErrorMsg] = useState(null)
   const timersRef = useRef([])
+  // 偵測登入狀態 — 已登入時 CTA 切換為「進首頁掃描」而非「免費註冊」
+  const { user } = useAuth()
 
   useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
 
@@ -203,8 +206,14 @@ export default function SchemaCheck() {
       }}>
         <Link to="/" style={{ color: T.text, textDecoration: 'none', fontWeight: 700 }}>AI 雷達</Link>
         <div style={{ display: 'flex', gap: 12 }}>
-          <Link to="/login" style={{ color: T.textMid, textDecoration: 'none', fontSize: 13 }}>登入</Link>
-          <Link to="/register" style={{ color: T.text, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>免費註冊</Link>
+          {user ? (
+            <Link to="/" style={{ color: T.text, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>回首頁 →</Link>
+          ) : (
+            <>
+              <Link to="/login" style={{ color: T.textMid, textDecoration: 'none', fontSize: 13 }}>登入</Link>
+              <Link to="/register" style={{ color: T.text, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>免費註冊</Link>
+            </>
+          )}
         </div>
       </header>
 
@@ -368,7 +377,9 @@ export default function SchemaCheck() {
               </section>
             )}
 
-            {/* CTA */}
+            {/* CTA — 依登入狀態切換文案 + 連結
+                未登入：免費註冊 → /register
+                已登入：直接跳首頁掃描 → / */}
             <section style={{
               background: `linear-gradient(135deg, ${T.aeo}22, ${T.aivis}22)`,
               border: `1px solid ${T.aeo}55`,
@@ -378,17 +389,25 @@ export default function SchemaCheck() {
                 想要每個 Schema 的修法 code？
               </h2>
               <p style={{ color: T.textMid, fontSize: 14, marginBottom: 18, lineHeight: 1.6 }}>
-                免費註冊用 AI 雷達跑完整 AEO 分析，含 WordPress / Shopify / Wix / 純 HTML 平台別 JSON-LD 範例。<br />
-                Pro 還會自動產生你網站專屬的 FAQPage / Organization / BreadcrumbList 等 schema code。
+                {user ? (
+                  <>跑完整 AEO 分析會給你 schema 清單 + 缺漏建議。<br />
+                  <strong style={{ color: T.text }}>基本款 schema（Organization / WebSite / OG / Canonical）修法 code 免費開放</strong>；<br />
+                  進階 schema（FAQPage / BreadcrumbList / Product 等）含 WordPress / Shopify / Wix / 自架 HTML 平台別範例為 Pro 限定。</>
+                ) : (
+                  <>免費註冊用 AI 雷達跑完整 AEO 分析，<strong style={{ color: T.text }}>基本款 schema 修法 code 免費開放</strong>。<br />
+                  進階 schema（FAQPage / BreadcrumbList 等）+ 平台別範例（WP / Shopify / Wix / HTML）為 Pro 限定。</>
+                )}
               </p>
-              <Link to="/register" style={{
+              <Link to={user ? '/' : '/register'} style={{
                 display: 'inline-block', padding: '14px 36px', fontSize: 15, fontWeight: 700,
                 background: `linear-gradient(135deg, ${T.aeo}, #a855f7)`, color: 'white',
                 borderRadius: T.rM, textDecoration: 'none',
-              }}>免費註冊 → 看完整修法</Link>
-              <div style={{ marginTop: 12, fontSize: 11, color: T.textLow }}>
-                30 秒註冊・不需信用卡・3 個免費網站額度
-              </div>
+              }}>{user ? '回首頁掃描你的網站 →' : '免費註冊 → 看完整修法'}</Link>
+              {!user && (
+                <div style={{ marginTop: 12, fontSize: 11, color: T.textLow }}>
+                  30 秒註冊・不需信用卡・3 個免費網站額度
+                </div>
+              )}
             </section>
           </>
         )}

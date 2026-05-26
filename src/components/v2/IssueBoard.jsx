@@ -152,7 +152,10 @@ function IssueCard({ check, lane, isOpen, onToggle, isPro }) {
           borderTop: `1px solid ${lane.c}33`,
           background: 'rgba(255,255,255,.02)', padding: 14,
         }}>
-          {isPro
+          {/* 部分 essentials（json_ld / canonical / open_graph / llms_txt）標 freeForAll
+              對所有用戶開放完整修法 code，免註冊就能看；其餘 schema/E-E-A-T 仍 Pro 限定。
+              這是「give first」策略：基本款先給、進階/平台別範例留 Pro */}
+          {(isPro || FIX_GUIDES[check.id]?.freeForAll)
             ? <IssueFixPanel check={check} lane={lane} />
             : <IssueLockCTA lane={lane} />}
         </div>

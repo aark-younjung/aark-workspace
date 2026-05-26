@@ -262,6 +262,9 @@ export const FIX_GUIDES = {
 
   // ─── AEO ────────────────────────────────────────────────────
   json_ld: {
+    // 2026-05-25：標 freeForAll — 基本款 schema（Organization / WebSite）對所有用戶開放
+    // 進階 schema（FAQPage / BreadcrumbList / Product / Article 等）仍 Pro 限定
+    freeForAll: true,
     summary: '在 <head> 加入 JSON-LD 結構化資料，讓 AI 和搜尋引擎精確理解你的網站',
     platforms: {
       wordpress: {
@@ -347,6 +350,7 @@ export const FIX_GUIDES = {
   },
 
   canonical: {
+    freeForAll: true,   // 基本 SEO hygiene，所有用戶開放
     summary: '加入 canonical 標籤，告訴搜尋引擎這個頁面的標準網址',
     platforms: {
       wordpress: {
@@ -386,6 +390,7 @@ export const FIX_GUIDES = {
   },
 
   open_graph: {
+    freeForAll: true,   // 基本社群分享 meta，所有用戶開放
     summary: '加入 Open Graph 標籤，讓分享到社群媒體時顯示正確的標題和縮圖',
     platforms: {
       wordpress: {
@@ -427,6 +432,7 @@ export const FIX_GUIDES = {
 
   // ─── GEO ────────────────────────────────────────────────────
   llms_txt: {
+    freeForAll: true,   // 我們本來就有 /api/llms-txt 代管功能對外免費，gate 沒意義
     summary: '在網站根目錄建立 llms.txt，讓 AI 爬蟲快速了解你的網站內容',
     platforms: {
       wordpress: {

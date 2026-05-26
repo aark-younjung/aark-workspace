@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 import { T } from '../styles/v2-tokens'
@@ -27,7 +27,12 @@ export default function Register() {
   const [success, setSuccess] = useState(false)
   const [showInAppWarning, setShowInAppWarning] = useState(false)
   const [copied, setCopied] = useState(false)
-  const { signUp, signInWithGoogle } = useAuth()
+  const { signUp, signInWithGoogle, user } = useAuth()
+  const navigate = useNavigate()
+
+  // 已登入用戶直接跳首頁，不要再給他看註冊表單
+  // 之前漏這個 guard，導致從 SchemaCheck CTA 點過來的已登入用戶看到註冊頁誤以為被登出
+  if (user) { navigate('/', { replace: true }); return null }
 
   // mount 時偵測 in-app browser（FB / LINE / IG 等內建瀏覽器會擋 Google OAuth）
   const inApp = useMemo(() => isInAppBrowser(), [])
