@@ -640,7 +640,7 @@ export default function Dashboard() {
     if (!eeatAudit?.privacy_policy) tips.push({ icon: '🔏', priority: 'P2', face: 'EEAT', time: '2h', title: '建立隱私權政策', desc: '缺少隱私權政策。建立 /privacy-policy 頁面並在頁尾加入連結，是合規與信任的基本要求。' })
     if (!aeoAudit?.question_headings) tips.push({ icon: '💬', priority: 'P2', face: 'AEO', time: '1h', title: '使用問句式 H2/H3 標題', desc: '問答式標題更容易被 Google 選為精選摘要來源，將部分標題改為「什麼是...？」「如何...？」格式。' })
     if (!eeatAudit?.organization_schema) tips.push({ icon: '🏷️', priority: 'P3', face: 'EEAT', time: '1h', title: '加入 Organization Schema', desc: '缺少機構結構化資料。在 JSON-LD 加入 Organization schema（含 name、url、logo），讓 Google 和 AI 明確識別你的品牌。' })
-    if (!aeoAudit?.canonical) tips.push({ icon: '🔒', priority: 'P3', face: 'AEO', time: '30m', title: '設置 Canonical 標籤', desc: '未設置 canonical 可能導致 AI 引用錯誤版本的頁面，在每頁 <head> 加入 <link rel="canonical" href="..."> 即可修正。' })
+    if (!aeoAudit?.canonical) tips.push({ icon: '📌', priority: 'P3', face: 'AEO', time: '30m', title: '設置 Canonical 標籤', desc: '未設置 canonical 可能導致 AI 引用錯誤版本的頁面，在每頁 <head> 加入 <link rel="canonical" href="..."> 即可修正。' })
     if (!aeoAudit?.breadcrumbs) tips.push({ icon: '🍞', priority: 'P3', face: 'AEO', time: '2h', title: '加入麵包屑導航 Schema', desc: '麵包屑導航幫助 AI 理解你網站的資訊架構，使用 BreadcrumbList schema 可提升出現在精選摘要的機率。' })
     if ((seoAudit?.alt_tags?.altCoverage || 100) < 80) tips.push({ icon: '🖼️', priority: 'P3', face: 'SEO', time: '4h', title: '補充圖片 Alt 文字', desc: `目前僅 ${seoAudit?.alt_tags?.altCoverage || 0}% 的圖片有 Alt 描述，AI 爬蟲無法理解沒有 Alt 的圖片，建議全部補齊。` })
     return tips

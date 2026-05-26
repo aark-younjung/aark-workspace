@@ -32,7 +32,7 @@ const AEO_CHECKS = [
     id: 'canonical',
     name: 'Canonical 標籤',
     description: '驗證 canonical 標籤是否正確設置，防止重複內容影響精選摘要排名',
-    icon: '🔒',
+    icon: '📌',  // 從 🔒 改成 📌 — 原本「鎖定」概念但跟 Pro lock icon 混淆，改用「釘住正確 URL」
     priority: 'P1',
     recommendation: '在所有頁面 <head> 設置正確的 <link rel="canonical" href="..."> 標籤',
   },
