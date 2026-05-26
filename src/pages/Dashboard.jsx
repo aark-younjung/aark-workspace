@@ -1196,7 +1196,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   dataKey="fullMark"
                   stroke="rgba(255,255,255,0.5)"
                   fill="none"
-                  strokeWidth={2}
+                  strokeWidth={1}
                   dot={false}
                   isAnimationActive={false}
                   legendType="none"
