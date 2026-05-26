@@ -84,7 +84,13 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name }, ...(captchaToken ? { captchaToken } : {}) }
+      options: {
+        // 明確指定驗證信點完跳回我們網站 root；不指定的話 Supabase 用 Dashboard Site URL 預設值
+        // 帶 ?from=signup 讓我們之後想做「歡迎新用戶」流程能識別
+        emailRedirectTo: `${window.location.origin}/?from=signup`,
+        data: { name },
+        ...(captchaToken ? { captchaToken } : {}),
+      }
     })
     if (data.user && !error) {
       await supabase.from('profiles').insert([{
