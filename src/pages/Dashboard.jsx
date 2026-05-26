@@ -1189,6 +1189,18 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   }}
                 />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)' }} />
+                {/* 100 分外框 — 額外加一條明顯的最外圈，視覺上把雷達圖框起來
+                    （PolarGrid 預設的灰線太淡，用 Radar 顯式畫一條 stroke 較深的外框）*/}
+                <Radar
+                  name="100 分滿分線"
+                  dataKey="fullMark"
+                  stroke="rgba(255,255,255,0.5)"
+                  fill="none"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                  legendType="none"
+                />
                 {/* 合格基準線（80 分=「良好」門檻）— 白色虛線，畫在現況之下 */}
                 <Radar
                   name="合格基準（80 分）"
