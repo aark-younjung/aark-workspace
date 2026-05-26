@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import SiteHeader from '../components/v2/SiteHeader'
 import AnnouncementBanner from '../components/AnnouncementBanner'
+import EarlybirdBanner from '../components/EarlybirdBanner'
 import Footer from '../components/Footer'
 import { GlassCard } from '../components/v2'
 import { T } from '../styles/v2-tokens'
@@ -821,6 +822,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
       <div className="relative z-10">
       {/* 站內公告 banner */}
       <AnnouncementBanner />
+      {/* 早鳥優惠 banner — 自動依 earlybird_taken 顯示剩餘名額，售完自動藏；Pro 用戶不顯示 */}
+      <EarlybirdBanner />
       {/* 試用倒數 banner — 試用期間提醒到期日 + 升級入口 */}
       {isTrial && trialEndsAt && (
         <div

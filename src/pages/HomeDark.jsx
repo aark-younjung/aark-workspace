@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Footer from '../components/Footer'
 import AnnouncementBanner from '../components/AnnouncementBanner'
+import EarlybirdBanner from '../components/EarlybirdBanner'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
@@ -828,6 +829,8 @@ export default function HomeDark() {
       {/* 站內公告 banner（admin 後臺管理） */}
       <div className="relative z-10">
         <AnnouncementBanner />
+        {/* 早鳥優惠 banner — 自動依 earlybird_taken 顯示剩餘名額，售完自動藏；Pro 用戶不顯示 */}
+        <EarlybirdBanner />
       </div>
 
       {/* Hero */}
