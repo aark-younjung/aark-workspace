@@ -247,6 +247,9 @@ export default function HomeDark() {
   // 掃描失敗時的結構化錯誤資訊（title / hint / action / technical）
   // 取代原本黑箱 alert，讓用戶看到具體原因 + 可行動的下一步
   const [errorInfo, setErrorInfo] = useState(null)
+  // anti-bot 鎖極嚴的聳動 modal — 取代瀏覽器原生 alert，用紅色警示 + 強烈衝擊文案
+  // 4 輪爬蟲全擋 → 用戶網站對 AI 完全隱形，這是核心商業價值「AI 看不見你」最有衝擊力的展示瞬間
+  const [antiBotModal, setAntiBotModal] = useState({ open: false, websiteId: null, url: '' })
   // 打字動畫:當前 placeholder 顯示的範例網址片段（循環打/刪）
   const [typedDomain, setTypedDomain] = useState('')
   const [recentScans, setRecentScans] = useState([
@@ -522,8 +525,10 @@ export default function HomeDark() {
             bot_accessibility: blockedBotResult,
           }])
           fetchMyWebsites()
-          alert(`⚠️ 你的網站擋下我們的爬蟲（anti-bot 鎖極嚴）— 無法跑完整檢測。\n\n我們已產生「爬蟲可達性」修復建議報告，按確定查看完整修法。`)
-          navigate(`/seo-audit/${websiteId}`)
+          // 用聳動 modal 取代原生 alert — anti-bot 全擋是最有衝擊力的 finding，要視覺強化
+          setAntiBotModal({ open: true, websiteId, url: cleanUrl })
+          setLoading(false)
+          setStatus('')
           return
         } catch (insertErr) {
           console.error('Partial audit insert failed:', insertErr)
@@ -597,6 +602,143 @@ export default function HomeDark() {
   return (
     <>
     {loading && <DarkScanningOverlay logs={scanLogs} targetUrl={url} />}
+
+    {/* Anti-bot 鎖極嚴的聳動 modal — 取代原生 alert，用衝擊式視覺強調「AI 看不見你」這個核心商業 finding */}
+    {antiBotModal.open && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm"
+        style={{ background: 'rgba(0,0,0,0.85)' }}
+        onClick={() => setAntiBotModal({ open: false, websiteId: null, url: '' })}
+      >
+        <div
+          className="relative w-full max-w-xl rounded-3xl overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, rgba(127,29,29,0.95) 0%, rgba(15,23,42,0.98) 60%, rgba(0,0,0,1) 100%)',
+            border: '1px solid rgba(239,68,68,0.5)',
+            boxShadow: '0 0 80px rgba(239,68,68,0.35), 0 0 200px rgba(239,68,68,0.15)',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* 頂部紅色警示條：跳動 pulse 動畫 */}
+          <div style={{
+            background: 'linear-gradient(90deg, #ef4444, #dc2626, #ef4444)',
+            backgroundSize: '200% 100%',
+            animation: 'antiBotPulse 2.5s ease-in-out infinite',
+            padding: '6px 0',
+            textAlign: 'center',
+            fontSize: 11, fontWeight: 800, letterSpacing: '.15em',
+            color: 'white', textTransform: 'uppercase',
+          }}>
+            🚨 CRITICAL · 爬蟲可達性 0 分 · AI 隱形警報
+          </div>
+
+          <div className="p-8 sm:p-10">
+            {/* 大 icon — 紅色禁止符號疊在 AI bot 上 */}
+            <div className="flex justify-center mb-5">
+              <div className="relative" style={{ width: 88, height: 88 }}>
+                <div className="absolute inset-0 rounded-full" style={{
+                  background: 'radial-gradient(circle, rgba(239,68,68,0.35) 0%, transparent 70%)',
+                  animation: 'antiBotPulse 2.5s ease-in-out infinite',
+                }} />
+                <div className="relative w-full h-full flex items-center justify-center text-6xl">
+                  🚫
+                </div>
+              </div>
+            </div>
+
+            {/* 主標題 — 大、粗、紅 */}
+            <h2 className="text-center mb-3" style={{
+              fontSize: 26, fontWeight: 900, color: '#fff',
+              textShadow: '0 0 30px rgba(239,68,68,0.4)',
+              lineHeight: 1.3,
+            }}>
+              你的網站對 AI<br />
+              <span style={{ color: '#fca5a5' }}>完全隱形</span>
+            </h2>
+
+            {/* URL chip */}
+            <div className="text-center mb-6">
+              <code style={{
+                display: 'inline-block',
+                padding: '4px 12px',
+                background: 'rgba(0,0,0,0.4)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: 6,
+                fontSize: 12,
+                color: '#fca5a5',
+                fontFamily: 'JetBrains Mono, monospace',
+              }}>{antiBotModal.url}</code>
+            </div>
+
+            {/* 衝擊文案 */}
+            <div style={{
+              padding: 16,
+              background: 'rgba(0,0,0,0.35)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 12,
+              fontSize: 14, lineHeight: 1.75,
+              color: 'rgba(255,255,255,0.85)',
+              marginBottom: 20,
+            }}>
+              我們嘗試了 <strong style={{ color: '#fff' }}>4 種爬蟲身份</strong>（Googlebot / Chrome / Bingbot / 第三方 proxy）<strong style={{ color: '#fca5a5' }}>全部被擋下</strong>。
+              <br /><br />
+              代表 <strong style={{ color: '#fff' }}>ChatGPT、Claude、Perplexity</strong> 等 AI 引擎**也讀不到你的網站**。
+              當用戶問 AI「推薦哪一家」時 — <strong style={{ color: '#fca5a5' }}>AI 根本看不見你的存在</strong>。
+              <br /><br />
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+                這是 Cloudflare 等 anti-bot 設定太嚴造成的「AI 隱形殺手」，台灣很多中小企業中招而不自知。
+              </span>
+            </div>
+
+            {/* CTA 兩顆按鈕 */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => {
+                  const id = antiBotModal.websiteId
+                  setAntiBotModal({ open: false, websiteId: null, url: '' })
+                  if (id) navigate(`/seo-audit/${id}`)
+                }}
+                className="flex-1 px-6 py-3.5 rounded-xl font-bold text-white transition-all shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  boxShadow: '0 8px 24px rgba(239,68,68,0.4)',
+                  fontSize: 15,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(239,68,68,0.55)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 8px 24px rgba(239,68,68,0.4)' }}
+              >
+                立即查看修復方案 →
+              </button>
+              <button
+                onClick={() => setAntiBotModal({ open: false, websiteId: null, url: '' })}
+                className="px-5 py-3.5 rounded-xl font-medium transition-colors"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontSize: 14,
+                }}
+              >
+                稍後處理
+              </button>
+            </div>
+
+            {/* footer：小字社會證明 / 緊迫感 */}
+            <div className="text-center mt-5" style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
+              💡 修復通常需要請工程師調 Cloudflare 設定或加 robots.txt 白名單，<br />
+              詳情頁有完整的「平台別」修法指引（WordPress / Shopify / 自架 HTML）
+            </div>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes antiBotPulse {
+            0%, 100% { opacity: 1; background-position: 0% 0%; }
+            50% { opacity: 0.85; background-position: 100% 0%; }
+          }
+        `}</style>
+      </div>
+    )}
     <div className="min-h-screen relative overflow-hidden" style={{
       background: '#000',
     }}>
