@@ -22,6 +22,29 @@
 
 ---
 
+### 2026-05-25（一輪集中驗證 — 近 2 週功能 7/8 全綠）
+**用戶實測驗證 8 個近期功能，7 個 OK、1 個是設計疑問（非 bug）：**
+
+- ✅ **#1 /schema-check 未登入 CTA**：header 顯示「登入 / 免費註冊」，掃描後 CTA 寫「免費註冊 → 看完整修法」
+- ❓ **#2 /crawl-check 功能用途**：用戶不知道這頁是什麼。設計上是「外部落地頁」（社群文/廣告用），目前無內部入口。社群文素材包在 [docs/social-posts-anti-bot.md](docs/social-posts-anti-bot.md)。**未決定**是否加內部入口（之前討論等第 3 個工具上線再開「工具」menu）
+- ✅ **#3 雷達圖 100 分外框可見度**：白色細線清楚（之前 PolarGrid 0.1 透明度幾乎看不到）
+- ✅ **#4 SchemaCheck 已登入 CTA 切換**：header 變「回首頁 →」、CTA 變「回首頁掃描你的網站 →」
+- ✅ **#5 AEO 詳情頁 Free/Pro 分層**：JSON-LD / Canonical / Open Graph 開放、FAQ Schema 鎖 Pro、Canonical icon 改 📌 不再跟 lock 混淆
+- ✅ **#6 GEOAudit「📡 AI 爬蟲訪問日誌」+「🔍 驗證上傳是否成功」**：crawler_visits SQL 跑完後正常顯示空狀態
+- ✅ **#7 canon.co.uk 觸發聳動 modal**：紅色玻璃擬態 + CRITICAL 警示條 + 大字「你的網站對 AI 完全隱形」
+- ✅ **#8 註冊 → 驗證信 → 自動登入**：emailRedirectTo + Supabase Site URL 配對正確、新 email 完整 e2e 跑通
+
+**SQL migration 驗證（用戶側已跑）：**
+- ✅ `crawler_visits` 表 + indexes + RLS policies
+- ✅ `aeo_audits.faq_visual` BOOLEAN DEFAULT false
+
+**還沒處理的設計問題：**
+- `/crawl-check` 跟 `/schema-check` 都沒有內部入口，目前純外部 SEO/廣告 landing page 用途
+- 社群文（docs/social-posts-anti-bot.md）寫好但還沒發布
+- 沒有 schema 痛點版的第二批社群文
+
+---
+
 ### 2026-05-25（移除 Cloudflare Turnstile captcha — 多輪修法仍無法解的打字中斷問題）
 **6+ 輪修法後決定暫時拿掉 captcha：**
 
