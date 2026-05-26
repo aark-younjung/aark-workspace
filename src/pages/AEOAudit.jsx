@@ -15,7 +15,7 @@ const AEO_CHECKS = [
   {
     id: 'json_ld',
     name: 'JSON-LD 結構化資料',
-    description: '驗證網頁是否包含 schema.org JSON-LD 標記（特別是 FAQ/HowTo），幫助 Google 理解內容結構',
+    description: '驗證網頁是否含 Organization / WebSite 等基本 schema — 這是你交給 Google / AI 的「品牌報名表」。沒交 = AI 把你當「不存在的品牌」或跟同名競爭對手搞混（曾有母嬰品牌被誤認成大學縮寫的案例）',
     icon: '📋',
     priority: 'P1',
     recommendation: '使用 schema.org 標準添加 JSON-LD 標記，至少包含 WebSite 或 Organization schema',

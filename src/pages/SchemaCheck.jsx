@@ -412,23 +412,41 @@ export default function SchemaCheck() {
           </>
         )}
 
-        {/* 教育型內容 — 為什麼 Schema 對 AI 重要 */}
+        {/* 教育型內容 — 用「報名表」比喻講為什麼 Organization Schema 是品牌存活的關鍵 */}
         <section style={{
           background: 'rgba(0,0,0,0.3)', border: `1px solid ${T.cardBorder}`,
-          borderRadius: T.rL, padding: 20, marginTop: 32,
-          color: T.textMid, fontSize: 13, lineHeight: 1.7,
+          borderRadius: T.rL, padding: 24, marginTop: 32,
+          color: T.textMid, fontSize: 13, lineHeight: 1.75,
         }}>
-          <h3 style={{ color: T.text, fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
-            為什麼 Schema 對 AI 引用率這麼重要？
+          <h3 style={{ color: T.text, fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
+            🧐 為什麼缺 Organization Schema = AI 把你當「不存在的品牌」？
           </h3>
-          <p style={{ marginBottom: 10 }}>
-            ChatGPT / Claude / Perplexity 等 AI 引擎抓你網頁時，**只看得懂結構化資料（JSON-LD）**。
-            你頁面上漂亮的 FAQ 元件、產品卡、麵包屑導航，對人類看得到，但 AI 看到的是一團糾纏的 div 跟 span。
+          <p style={{ marginBottom: 12 }}>
+            想像 Schema 是<strong style={{ color: T.text }}>你交給 Google / AI 引擎的「品牌報名表」</strong>。
+            上面寫著你是誰、做什麼、網址、地址、聯絡方式、社群連結。
           </p>
-          <p>
-            加上對應的 Schema 標記 → AI 一次性 parse JSON 就拿到乾淨資料 → <strong style={{ color: T.text }}>
-            你的 Q&A 才會被直接引用、產品才會出現在 AI 答案、品牌資訊才能被準確辨認</strong>。
+          <p style={{ marginBottom: 12 }}>
+            <strong style={{ color: T.aeo }}>沒交報名表會怎樣？</strong>AI 引擎抓你網頁看到一團糾纏的 div 跟 span，
+            無法確定「青鳥設計 = 哪間公司」。結果：
           </p>
+          <ul style={{ marginLeft: 20, marginBottom: 12, color: T.textMid, lineHeight: 1.9 }}>
+            <li>❌ AI 完全跳過你 — 用戶問「推薦設計公司」AI 看不見你</li>
+            <li>❌ <strong style={{ color: '#fca5a5' }}>更慘：被同名品牌頂掉</strong> — 例如另一家也叫「青鳥」的競爭對手有交報名表，AI 推薦他不推你</li>
+            <li>❌ 你的客戶把「青鳥」名字告訴 AI，AI 回傳完全不相干的公司 / 機構（曾發生母嬰品牌被誤認成大學縮寫的案例）</li>
+          </ul>
+          <p style={{ marginBottom: 12 }}>
+            <strong style={{ color: T.aivis }}>有了 Organization Schema 就解決：</strong>
+            AI 一次性 parse JSON 拿到乾淨的「品牌身份」 → 你的 Q&A 才會被直接引用、產品才會出現在 AI 答案、品牌才能被正確辨認。
+          </p>
+          <div style={{
+            marginTop: 16, padding: '12px 14px',
+            background: T.aeo + '15', border: `1px solid ${T.aeo}33`,
+            borderRadius: T.rM, fontSize: 12,
+            color: T.text, lineHeight: 1.65,
+          }}>
+            💡 <strong>3 分鐘修好</strong>：免費註冊 → 跑 AEO 分析 → 拿到 Organization Schema 的修法 code →
+            複製貼到網站 head → 完工。
+          </div>
         </section>
       </main>
 

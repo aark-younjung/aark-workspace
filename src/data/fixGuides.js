@@ -265,7 +265,7 @@ export const FIX_GUIDES = {
     // 2026-05-25：標 freeForAll — 基本款 schema（Organization / WebSite）對所有用戶開放
     // 進階 schema（FAQPage / BreadcrumbList / Product / Article 等）仍 Pro 限定
     freeForAll: true,
-    summary: '在 <head> 加入 JSON-LD 結構化資料，讓 AI 和搜尋引擎精確理解你的網站',
+    summary: '在 <head> 加入 Organization JSON-LD — 等於交「品牌報名表」給 Google / AI，告訴它你是誰、做什麼、聯絡方式。沒交的話 AI 可能把你跟同名競爭對手搞混。',
     platforms: {
       wordpress: {
         steps: [
