@@ -6,6 +6,29 @@
 
 ---
 
+### 2026-05-26（個人化 Organization Schema 產生器 — Pro 限定工具上線）
+**對應上次「品牌報名表」教育敘事的下一步 — 把 YouTube 影片裡「用 ChatGPT 生 schema code」的手工痛點，直接做成永久儲存 + 一鍵複製的 Pro 工具。**
+
+- 🆕 **新元件 [src/components/v2/OrgSchemaGenerator.jsx](src/components/v2/OrgSchemaGenerator.jsx)**
+  - 表單欄位：公司名 / 英文名 / 網址 / Logo / 簡介 / Email / 電話 / 地址 / 5 個社群連結（sameAs）
+  - 儲存到 `profiles.org_schema_data` JSONB → 永久持有、未來都用同一份
+  - 自動產出 `<script type="application/ld+json">...</script>` Organization 完整 code
+  - 一鍵複製到剪貼簿 + 內嵌平台安裝指引（WP / Shopify / Wix / 自架 HTML）
+  - 編輯 / 預覽雙模式切換
+  - **打字效能**：所有 input/textarea 用 `defaultValue + onBlur`（uncontrolled）跟註冊頁同款，避免重新渲染卡頓
+- 🔓 **權限分層**
+  - **Pro 用戶**：完整表單 + 預覽 + 複製
+  - **免費用戶**：顯示 upsell card（「填一次 → 永久存著 → 自動產 code」訴求）→ `/pricing`
+  - **未登入**：完全不渲染（這頁只給已登入用戶看到）
+- 📍 **掛載位置**：[src/pages/AEOAudit.jsx](src/pages/AEOAudit.jsx) IssueBoard 之後、`/schema-check` 微入口之前 — 用戶看完「缺什麼 schema」立刻看到「我可以幫你生」
+- 🗃️ **SQL migration（用戶側待跑）**：
+  ```sql
+  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS org_schema_data JSONB DEFAULT NULL;
+  ```
+- 🎯 **定位**：對應 CLAUDE.md「修復碼產生器」Pro 核心功能 — 從「告訴你缺什麼」升級成「幫你生出來」，把產品從工具升級為平台
+
+---
+
 ### 2026-05-25（Register 頁兩個 bug — 品牌文案漏改 + Turnstile 載入失敗 UX 改善）
 **用戶截圖回報 /register 跟「final 版本」不一樣，診斷出兩個獨立問題：**
 

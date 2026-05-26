@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { useAuth } from '../context/AuthContext'
 import { T } from '../styles/v2-tokens'
-import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero, HeroSkeleton, AEOSignature } from '../components/v2'
+import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero, HeroSkeleton, AEOSignature, OrgSchemaGenerator } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 
@@ -217,6 +217,13 @@ export default function AEOAudit() {
           </div>
           <div style={{ marginBottom: 32 }}>
             {!aeoAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={AEO_ACCENT} accentGlow={`${AEO_ACCENT}28`} />}
+          </div>
+
+          {/* 個人化 Organization Schema 產生器 — Pro 限定（免費版顯示 upsell card）
+              位置選擇：IssueBoard 後、/schema-check 微入口前 — 用戶看完「缺什麼 schema」立刻看到「我可以幫你生」
+              對應 YouTube 影片教用戶用 ChatGPT 生 code 的痛點，我們直接做成永久儲存 + 一鍵複製的工具 */}
+          <div style={{ marginBottom: 24 }}>
+            <OrgSchemaGenerator />
           </div>
 
           {/* /schema-check 微入口 — 既有用戶 cross-link 到獨立 schema 健檢工具
