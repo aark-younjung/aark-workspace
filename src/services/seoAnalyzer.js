@@ -260,12 +260,31 @@ function checkAltTags(doc) {
 /**
  * 4. 行動版相容性檢測
  * @param {Document} doc - DOM 物件
+ * @param {string} rawHtml - 原始 HTML（給 regex fallback 用，避免 DOMParser 邊緣 case false negative）
  * @returns {Object} - 檢測結果
  */
-function checkMobileCompatibility(doc) {
+function checkMobileCompatibility(doc, rawHtml = '') {
   // viewport meta 標籤（最關鍵，沒有的話手機瀏覽器會用 980px 預設寬縮放）
-  const viewport = doc.querySelector('meta[name="viewport"]')
-  const hasViewport = viewport !== null
+  // 兩層偵測：先 DOMParser querySelector（嚴格），不中再 regex（容錯 — 大小寫變體、單雙引號、屬性順序、parser 邊緣狀況）
+  // 案例：kimbo3899.com.tw（2026-05-26）— rendered HTML 確實有 viewport 但前端 DOMParser 偶爾抓不到
+  const viewportDom = doc.querySelector('meta[name="viewport"]')
+  let viewportSource = null
+  let viewportTagRaw = null
+  if (viewportDom) {
+    viewportSource = 'dom'
+    viewportTagRaw = viewportDom.outerHTML
+  } else if (rawHtml) {
+    // case-insensitive、容忍引號變體、容忍屬性順序
+    // 1) name 屬性在前：<meta name="viewport" content="...">
+    // 2) content 屬性在前：<meta content="..." name="viewport">
+    const reA = /<meta\s+[^>]*\bname\s*=\s*['"]?viewport['"]?[^>]*>/i
+    const m = rawHtml.match(reA)
+    if (m) {
+      viewportSource = 'regex'
+      viewportTagRaw = m[0]
+    }
+  }
+  const hasViewport = viewportSource !== null
 
   // touch-friendly 元素（資訊用，不參與評分）
   const touchElements = doc.querySelectorAll('a[href], button, [role="button"], [onclick], [ontouchstart]')
@@ -313,6 +332,8 @@ function checkMobileCompatibility(doc) {
     hasTouchFriendly,
     hasMediaQueries,
     hasRwdFramework,
+    viewportSource,        // 'dom' | 'regex' | null — 給 fix guide 顯示「我們是用哪種方式偵測到的」
+    viewportTagRaw,        // 實際抓到的 tag 原文（給 fix guide 顯示「你網站上的 viewport 長這樣」）
     score,
     passed
   }
@@ -402,7 +423,7 @@ export async function analyzeSEO(url) {
     const metaTags = checkMetaTags(doc)
     const h1Structure = checkH1Structure(doc)
     const altTags = checkAltTags(doc)
-    const mobileCompatible = checkMobileCompatibility(doc)
+    const mobileCompatible = checkMobileCompatibility(doc, html)
     const pageSpeed = await checkPageSpeed(cleanUrl)
     const sslChain = checkSSLChain(sslFallback)
     const botAccessibility = checkBotAccessibility(uaFallback, antiBotBlocked)

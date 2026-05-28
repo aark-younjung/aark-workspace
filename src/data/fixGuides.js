@@ -181,6 +181,16 @@ export const FIX_GUIDES = {
 
   mobile_compatible: {
     summary: '在 <head> 加入 viewport meta 標籤，確保手機版正常顯示',
+    // 排查線索：用戶若回報「我明明有 viewport 卻被判失敗」，可能是這 3 種情況之一。
+    // 渲染位置：IssueBoard FixPanel — summary 下方獨立黃色區塊
+    troubleshooting: {
+      title: '已經有 viewport 卻被判失敗？',
+      reasons: [
+        '**快取插件吐出舊版 HTML** — LiteSpeed Cache / WP Rocket / W3 Total Cache 可能還在送沒 viewport 那版的快取。進外掛清快取（Purge All）後再重掃。',
+        '**子主題 / Builder 覆寫 header** — 你看到的 header.php 是父主題，但實際渲染走子主題、Elementor、Divi、Astra Builder 自己的 header template。檢查「外觀 → 自訂 → header」或子主題目錄有沒有 header.php。',
+        '**條件式輸出** — 主題寫了 `<?php if (wp_is_mobile()) { ?> <meta name="viewport"...> <?php } ?>`，伺服器判 Googlebot UA 為桌面 → 跳過 viewport。把這段條件拿掉、無條件輸出。',
+      ],
+    },
     platforms: {
       wordpress: {
         steps: [

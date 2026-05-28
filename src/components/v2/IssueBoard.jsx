@@ -183,6 +183,29 @@ function IssueFixPanel({ check, lane }) {
         {guide?.summary || check.recommendation}
       </div>
 
+      {/* 排查線索區塊 — 用戶若回報「我明明已經修好卻被判失敗」，提供 3 種常見假陰性情境 */}
+      {guide?.troubleshooting && (
+        <div style={{
+          fontSize: 12, color: T.textMid, lineHeight: 1.75,
+          padding: '10px 12px',
+          background: 'rgba(251,191,36,0.06)',     // 琥珀色微底
+          border: '1px solid rgba(251,191,36,0.25)',
+          borderRadius: 8,
+        }}>
+          <div style={{ color: '#fbbf24', fontWeight: 700, marginBottom: 6 }}>
+            ⚠️ {guide.troubleshooting.title}
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {guide.troubleshooting.reasons.map((r, i) => (
+              <li key={i} dangerouslySetInnerHTML={{
+                // 簡易 Markdown bold：把 **xxx** 轉成 <strong>
+                __html: r.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#e5e7eb">$1</strong>'),
+              }} />
+            ))}
+          </ul>
+        </div>
+      )}
+
       {availablePlatforms.length > 0 && (
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>

@@ -466,7 +466,7 @@ export default function HomeDark() {
         seoResult && supabase.from('seo_audits').insert([{
           website_id: websiteId, score: seoResult.score,
           meta_tags: seoResult.meta_tags, h1_structure: seoResult.h1_structure,
-          alt_tags: seoResult.alt_tags, mobile_compatible: !!seoResult.mobile_compatible,
+          alt_tags: seoResult.alt_tags, mobile_compatible: seoResult.mobile_compatible,
           page_speed: seoResult.page_speed,
           ssl_chain: seoResult.ssl_chain,                       // 第 6 項 SSL 憑證鏈檢測（2026-05-22 新增）
           bot_accessibility: seoResult.bot_accessibility,       // 第 7 項 爬蟲可達性 / Cloudflare 擋 AI 爬蟲（2026-05-22 新增）

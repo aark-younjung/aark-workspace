@@ -6,6 +6,19 @@
 
 ---
 
+### 2026-05-26（行動裝置相容性檢測 false negative — HomeDark 雙驚嘆號 bug + 防呆強化）
+**用戶實測 kimbo3899.com.tw 回報「明明有 viewport 卻被判失敗」，diagnose 後找到真正 root cause：**
+
+- 🐛 **Root cause（很尷尬）**：[HomeDark.jsx:469](src/pages/HomeDark.jsx#L469) 寫成 `mobile_compatible: !!seoResult.mobile_compatible` — 雙驚嘆號把整個 object 強轉成 boolean（永遠是 `true`，因為 object 永遠 truthy），存到 DB JSONB 欄位變成 `true`。但 [SEOAudit.jsx:90-114](src/pages/SEOAudit.jsx#L90) 讀取時當 object 用：`m?.hasViewport`、`m?.hasMediaQueries`、`m?.hasRwdFramework` → 三個 sub-field 都 undefined → 跑進「未偵測到 viewport meta、@media query、或 RWD 框架指紋」分支 → 用戶看到「行動裝置會看到桌面版縮小到無法閱讀」紅字
+- **影響範圍**：**所有從首頁觸發的掃描都中招** — 過去寫的所有 audit row 的 mobile_compatible 欄位都是 boolean `true`，讀取頁面看起來都像「沒有 viewport」
+- **為什麼之前沒被發現**：分數計算用的是 `mobileCompatible.score`，是在分析當下計算的，存進 DB 的是「不對的 boolean」但 UI 只在詳情頁才會解開讀子欄位 → 大部分用戶只看雷達圖總分沒進詳情頁
+- **修法**：去掉 `!!`，跟 alt_tags / meta_tags / page_speed 等一致存完整 object
+- 🛡️ **順手加防呆**：seoAnalyzer.js `checkMobileCompatibility(doc, html)` 加 regex fallback — DOMParser 找不到 viewport 就用 `/<meta\s+[^>]*\bname\s*=\s*['"]?viewport['"]?[^>]*>/i` 掃 raw HTML。多回兩個診斷欄位 `viewportSource`（'dom' / 'regex' / null）與 `viewportTagRaw`（實際抓到的 tag 原文）。未來大小寫變體、引號變體、parser 邊緣 case 都會被 regex 接住
+- 📋 **fixGuides.js + IssueBoard.jsx 加 troubleshooting 區塊**：mobile_compatible 加 3 條假陰性排查線索（快取插件 / 子主題覆寫 / `wp_is_mobile()` 條件包住），琥珀色底色 + ⚠️ 標題醒目顯示。框架通用 — 未來其他 check 也能加 troubleshooting 欄位
+- ⚠️ **歷史 audit 不會自動修好**：DB 裡舊資料是 boolean `true`，用戶需要重新掃描才能看到正確結果
+
+---
+
 ### 2026-05-26（個人化 Organization Schema 產生器 — Pro 限定工具上線）
 **對應上次「品牌報名表」教育敘事的下一步 — 把 YouTube 影片裡「用 ChatGPT 生 schema code」的手工痛點，直接做成永久儲存 + 一鍵複製的 Pro 工具。**
 
