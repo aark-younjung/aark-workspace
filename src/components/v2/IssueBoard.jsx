@@ -170,7 +170,19 @@ function IssueFixPanel({ check, lane }) {
     ? PLATFORMS.filter(p => guide.platforms?.[p.id])
     : []
   const [activePlatform, setActivePlatform] = useState(availablePlatforms[0]?.id || 'html')
-  const platformData = guide?.platforms?.[activePlatform]
+  // 兩階段選擇：先抓平台、再看是否有 scenarios（多情境，例如 H1 missing vs too_many）
+  // 有 scenarios 且 check 帶了 scenario 就用對應的；沒指定就用 scenarios 的第一個；
+  // 平台沒拆 scenarios（大部分 check）就直接讀 platforms[id]。維持向後相容。
+  const rawPlatform = guide?.platforms?.[activePlatform]
+  let platformData = rawPlatform
+  let scenarioTitle = null
+  if (rawPlatform?.scenarios) {
+    const scenarioKey = check.scenario && rawPlatform.scenarios[check.scenario]
+      ? check.scenario
+      : Object.keys(rawPlatform.scenarios)[0]
+    platformData = rawPlatform.scenarios[scenarioKey]
+    scenarioTitle = platformData?.title
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -222,6 +234,17 @@ function IssueFixPanel({ check, lane }) {
                 }}>{p.label}</button>
             ))}
           </div>
+
+          {/* scenario 標題（拆情境的 check 才有，例如 H1 missing/too_many） */}
+          {scenarioTitle && (
+            <div style={{
+              fontSize: 12, fontWeight: 700, color: lane.c,
+              padding: '8px 12px',
+              background: lane.c + '12',
+              borderLeft: `3px solid ${lane.c}`,
+              borderRadius: 4,
+            }}>{scenarioTitle}</div>
+          )}
 
           {platformData?.steps && (
             <ol style={{

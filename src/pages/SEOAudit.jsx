@@ -62,8 +62,9 @@ const SEO_CHECKS = [
       if (isPartialAudit(audit)) return NOT_CHECKED
       const count = audit?.h1_structure?.h1Count ?? 0
       const content = audit?.h1_structure?.h1Content
-      if (count === 0) return { passed: false, detail: '頁面沒有 H1 標題' }
-      if (count > 1) return { passed: false, detail: `頁面有 ${count} 個 H1 標題，應只有 1 個` }
+      // scenario 給 FixPanel 用 — 0 個 vs 多個是完全不同的修法（補上 vs 刪掉）
+      if (count === 0) return { passed: false, scenario: 'missing', detail: '頁面沒有 H1 標題（page builder 預設常用 div 代替）' }
+      if (count > 1) return { passed: false, scenario: 'too_many', detail: `頁面有 ${count} 個 H1 標題，應只有 1 個` }
       return { passed: true, detail: `「${content?.length > 35 ? content.substring(0, 35) + '...' : content}」` }
     },
   },

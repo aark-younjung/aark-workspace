@@ -95,43 +95,109 @@ export const FIX_GUIDES = {
 
   h1_structure: {
     summary: '每個頁面只保留一個 H1 標籤，清楚說明頁面核心主題',
+    // 兩個情境完全不同的修法：missing = 補一個 / too_many = 刪多餘
+    // IssueBoard FixPanel 會根據 check.scenario 自動選用對應 scenarios.xxx，沒指定就用 platforms[id]
+    // 同時保留 platforms 給沒 scenario 標記的 fallback case
     platforms: {
       wordpress: {
-        steps: [
-          '進入頁面編輯，切換到「程式碼編輯器」（區塊編輯器右上角「⋮」→「程式碼編輯器」）',
-          '搜尋 <h1>，確認全頁只有一個',
-          '多餘的 <h1> 改成 <h2> 或 <h3>',
-          '頁面標題欄位（最上方的 Title）通常就是主要 H1，不要再加',
-          '儲存',
-        ],
-        code: null,
+        scenarios: {
+          missing: {
+            title: '頁面 0 個 H1 — 通常是 Elementor / Divi / Builder 用 div 代替 H1',
+            steps: [
+              '判斷你的頁面是用什麼工具編輯：Elementor / Divi / Bricks / Astra Builder / Beaver Builder / 區塊編輯器（Gutenberg）— 第一行最關鍵',
+              '【Elementor】編輯該頁 → 找最大的標題 widget（通常是 Hero 區的主標）→ 左側面板「內容」→ 「HTML 標籤（HTML Tag）」下拉 → 改成 H1 → 更新',
+              '【Divi】編輯該頁 → 點 Hero 主標模組 → 設定 → 內容 → Title 欄位下方有「H 級別」→ 改成 H1 → 儲存',
+              '【Bricks】編輯該頁 → 點主標 element → 右側設定 → 「Tag」改成 h1 → 儲存',
+              '【區塊編輯器（Gutenberg）】這種情境少見；如果首頁是用一般文章/頁面，編輯器頂部標題欄位通常會自動輸出 H1。0 個代表主題 single.php / page.php 沒寫 the_title() — 需檢查主題或聯絡主題作者',
+              '改完務必清快取（LiteSpeed Cache / WP Rocket / 主機商快取）再重新檢測',
+            ],
+            code: `<!-- 正確：頁面唯一一個 H1（建議是頁面主標題、含目標關鍵字） -->\n<h1>福斯急速熄火關閉記憶線組 | 金鉑汽車影音科技</h1>`,
+          },
+          too_many: {
+            title: '頁面有多個 H1 — 刪掉多餘的、只留 1 個',
+            steps: [
+              '進入頁面編輯，切換到「程式碼編輯器」（區塊編輯器右上角「⋮」→「程式碼編輯器」）',
+              '搜尋 <h1，確認全頁只有一個',
+              '多餘的 <h1> 改成 <h2> 或 <h3>',
+              '頁面標題欄位（最上方的 Title）通常就是主要 H1，不要再加',
+              '儲存',
+            ],
+            code: null,
+          },
+        },
       },
       shopify: {
-        steps: [
-          '後台 → 線上商店 → 主題 → 編輯程式碼',
-          '找到對應頁面的 Liquid 模板',
-          '搜尋 <h1>，確認只有一個，其餘改為 <h2>',
-          '儲存',
-        ],
-        code: null,
+        scenarios: {
+          missing: {
+            title: '頁面 0 個 H1 — Shopify 通常 product.liquid / page.liquid 預設有 H1，被改掉的話需補回',
+            steps: [
+              '後台 → 線上商店 → 主題 → 編輯程式碼',
+              '打開該頁類型對應的 Liquid 模板：商品頁 → sections/main-product.liquid；一般頁 → sections/main-page.liquid；首頁 → sections/main-hero.liquid 或自訂',
+              '找到顯示頁面主標題的地方（通常用 {{ product.title }} 或 {{ page.title }}）',
+              '確認該標題包在 <h1> 標籤裡（如果被改成 <div class="h1"> 或 <h2>，改回 <h1>）',
+              '儲存',
+            ],
+            code: `<h1 class="product__title">{{ product.title }}</h1>`,
+          },
+          too_many: {
+            title: '頁面有多個 H1 — 通常是 section 模板有自己的 H1 又跟主標 H1 重複',
+            steps: [
+              '後台 → 線上商店 → 主題 → 編輯程式碼',
+              '找到對應頁面的 Liquid 模板',
+              '搜尋 <h1，確認只有一個，其餘改為 <h2>',
+              '儲存',
+            ],
+            code: null,
+          },
+        },
       },
       wix: {
-        steps: [
-          '進入 Wix 編輯器，點選頁面上的文字元素',
-          '右側面板查看「文字樣式」，確認只有一個元素設為「標題 1（H1）」',
-          '其餘大標題改為「標題 2（H2）」',
-          '發布',
-        ],
-        code: null,
+        scenarios: {
+          missing: {
+            title: '頁面 0 個 H1 — Wix 編輯器需手動標記主標題為 H1',
+            steps: [
+              '進入 Wix 編輯器，點選頁面上「最重要的那個標題」文字元素',
+              '右側面板「文字樣式」下拉 → 選「標題 1（Heading 1 / H1）」',
+              '確認其他大標題不是 H1（避免重複）',
+              '發布',
+            ],
+            code: null,
+          },
+          too_many: {
+            title: '頁面有多個 H1 — Wix 編輯器需逐一改成 H2',
+            steps: [
+              '進入 Wix 編輯器，點選頁面上的文字元素',
+              '右側面板查看「文字樣式」，確認只有一個元素設為「標題 1（H1）」',
+              '其餘大標題改為「標題 2（H2）」',
+              '發布',
+            ],
+            code: null,
+          },
+        },
       },
       html: {
-        steps: [
-          '打開 HTML 檔案，搜尋 <h1',
-          '確認全頁只有一個 <h1> 標籤',
-          '多餘的改為 <h2> 或 <h3>',
-          '上傳到主機',
-        ],
-        code: `<!-- 正確：只有一個 H1 -->\n<h1>你的頁面核心主題（含關鍵字）</h1>\n\n<!-- 次級標題改用 H2 -->\n<h2>次標題</h2>`,
+        scenarios: {
+          missing: {
+            title: '頁面 0 個 H1 — 在主標題位置加上 <h1>',
+            steps: [
+              '打開該頁 HTML 檔案',
+              '找到頁面主標題（通常在 <header>、Hero 區、或 <main> 開頭）',
+              '把該標題包在 <h1> 裡（取代原本的 <div>、<span>、<p>）',
+              '存檔上傳',
+            ],
+            code: `<!-- 把主標題包在 H1 -->\n<h1>你的頁面核心主題（含關鍵字）</h1>`,
+          },
+          too_many: {
+            title: '頁面有多個 H1 — 留 1 個、其餘改 H2/H3',
+            steps: [
+              '打開 HTML 檔案，搜尋 <h1',
+              '確認全頁只有一個 <h1> 標籤',
+              '多餘的改為 <h2> 或 <h3>',
+              '上傳到主機',
+            ],
+            code: `<!-- 正確：只有一個 H1 -->\n<h1>你的頁面核心主題（含關鍵字）</h1>\n\n<!-- 次級標題改用 H2 -->\n<h2>次標題</h2>`,
+          },
+        },
       },
     },
   },

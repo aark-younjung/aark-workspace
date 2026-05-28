@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-05-26（H1 fix guide 拆 missing / too_many 兩情境 — page builder 用戶不再卡）
+**用戶實測 kimbo3899.com.tw 後追問 H1 fix guide 不適用情境 — diagnose 後發現 fix guide 預設「太多 H1」case，但實際很多用戶是「0 個 H1」（page builder 用 div 代替）：**
+
+- **觀察**：kimbo3899 首頁實測 H1 = 0，H2-H6 全部 0，整頁無語義化 heading → Elementor 蓋的（也驗到 wp-content/themes/responsive）
+- **問題**：[fixGuides.js h1_structure](src/data/fixGuides.js) 原本只寫「搜尋 <h1>、多餘的改成 <h2>」，假設用戶頁面有過多 H1，但實際 page builder（Elementor / Divi / Bricks）預設用 div + CSS 字級，根本 0 個 H1。用戶照步驟操作會找不到任何 H1 → 困惑
+- **修法（資料 + UI 雙改）**：
+  - [SEOAudit.jsx getValue](src/pages/SEOAudit.jsx) — h1_structure 的 getValue 加 `scenario` 欄位（'missing' / 'too_many'），count=0 標 missing、count>1 標 too_many
+  - [fixGuides.js](src/data/fixGuides.js) h1_structure 每個平台改成 `scenarios: { missing, too_many }` 結構：
+    - WP missing：分 Elementor / Divi / Bricks / Astra Builder / Gutenberg 五種 builder 各自的「找 widget → HTML Tag 改 H1」操作
+    - WP too_many：原本的「程式碼編輯器搜 <h1> 改 H2」步驟
+    - Shopify / Wix / HTML 同理拆兩個 scenario
+  - [IssueBoard.jsx FixPanel](src/components/v2/IssueBoard.jsx) — 偵測 `rawPlatform.scenarios` 存在時，依 `check.scenario` key 切到對應 scenario object（fallback 拿第一個）；scenario 有 `title` 就在 steps 上方顯示一條彩色橫條告訴用戶現在看的是哪個情境
+- 🔄 **設計上向後相容**：其他 check（meta_title / canonical / json_ld 等）沒拆 scenarios → FixPanel 直接讀 `platforms[id]`，老資料結構不破。未來其他 check 想拆情境（例如 canonical 「沒設」vs「指向其他網站」）只要加 scenarios 結構就生效
+- ⚠️ `src/components/FixGuide.jsx` 是死代碼（沒人 import）— 用 grep 確認後未動，留著日後清理
+
+---
+
 ### 2026-05-26（行動裝置相容性檢測 false negative — HomeDark 雙驚嘆號 bug + 防呆強化）
 **用戶實測 kimbo3899.com.tw 回報「明明有 viewport 卻被判失敗」，diagnose 後找到真正 root cause：**
 
