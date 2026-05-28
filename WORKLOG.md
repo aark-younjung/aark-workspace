@@ -6,6 +6,17 @@
 
 ---
 
+### 2026-05-26（H1 fix guide 加 WPBakery 步驟 — page builder 偵測別憑印象猜的教訓）
+**前一個 commit 拆 H1 fix guide 時，我憑印象寫了 Elementor / Divi / Bricks 步驟，但用戶 kimbo3899 客戶實際後台是 WPBakery（Visual Composer），被糾正：**
+
+- 🐛 **判斷錯誤的點**：fetch kimbo3899 HTML 偵測時 `js_composer`（WPBakery）跟 `elementor-` 都有 match，我覺得「Elementor 比較主流」就跳過 WPBakery，只在 fix guide 寫 Elementor / Divi / Bricks 步驟
+- ✅ **修法**：[fixGuides.js h1_structure missing](src/data/fixGuides.js) 加 WPBakery 步驟到第一順位（台灣 WP 老站 WPBakery 比例不低，舊主題很多綁這個外掛）
+  - WPBakery Custom Heading 元素：Element tag 下拉改 h1
+  - WPBakery Text Block 元素：段落 P 改標題 1
+- 🧠 **教訓記到 memory**：[feedback_builder_detection.md](C:\Users\ROG STRIX\.claude\projects\c--Users-ROG-STRIX-Desktop-Vibe-Coding-AI---\memory\feedback_builder_detection.md) — HTML fingerprint 多重 match 時不能憑印象猜，要列全或先問用戶。rendered HTML 留下的指紋可能是舊主題殘留、不代表用戶實際編輯時用什麼 builder
+
+---
+
 ### 2026-05-26（H1 fix guide 拆 missing / too_many 兩情境 — page builder 用戶不再卡）
 **用戶實測 kimbo3899.com.tw 後追問 H1 fix guide 不適用情境 — diagnose 後發現 fix guide 預設「太多 H1」case，但實際很多用戶是「0 個 H1」（page builder 用 div 代替）：**
 
