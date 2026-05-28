@@ -102,13 +102,14 @@ export const FIX_GUIDES = {
       wordpress: {
         scenarios: {
           missing: {
-            title: '頁面 0 個 H1 — 通常是 Elementor / Divi / Builder 用 div 代替 H1',
+            title: '頁面 0 個 H1 — 通常是 page builder 用 div 代替 H1',
             steps: [
-              '判斷你的頁面是用什麼工具編輯：Elementor / Divi / Bricks / Astra Builder / Beaver Builder / 區塊編輯器（Gutenberg）— 第一行最關鍵',
-              '【Elementor】編輯該頁 → 找最大的標題 widget（通常是 Hero 區的主標）→ 左側面板「內容」→ 「HTML 標籤（HTML Tag）」下拉 → 改成 H1 → 更新',
-              '【Divi】編輯該頁 → 點 Hero 主標模組 → 設定 → 內容 → Title 欄位下方有「H 級別」→ 改成 H1 → 儲存',
-              '【Bricks】編輯該頁 → 點主標 element → 右側設定 → 「Tag」改成 h1 → 儲存',
-              '【區塊編輯器（Gutenberg）】這種情境少見；如果首頁是用一般文章/頁面，編輯器頂部標題欄位通常會自動輸出 H1。0 個代表主題 single.php / page.php 沒寫 the_title() — 需檢查主題或聯絡主題作者',
+              '判斷你的頁面是用什麼工具編輯：WPBakery / Elementor / Divi / Bricks / Astra Builder / Beaver Builder / 區塊編輯器（Gutenberg）— 第一行最關鍵，不確定可在後台「頁面 → 編輯」看上方工具列',
+              '【WPBakery（Visual Composer）】編輯該頁 → 切「Backend Editor」→ 滑鼠移到主標元素點 ✏️ → 若是「Custom Heading」元素，找「Element tag」下拉改 h1；若是「Text Block」，把標題那行的「段落 P」改「標題 1」→ 儲存 → 更新',
+              '【Elementor】編輯該頁 → 找最大標題 widget（Heading 或 Hero 主標）→ 左側面板「內容」→ 「HTML 標籤（HTML Tag）」下拉改 H1 → 更新',
+              '【Divi】編輯該頁 → 點 Hero 主標模組 → 設定 → 內容 → Title 欄位下方「H 級別」改 H1 → 儲存',
+              '【Bricks】編輯該頁 → 點主標 element → 右側設定 → 「Tag」改 h1 → 儲存',
+              '【區塊編輯器（Gutenberg）】少見；一般文章/頁面標題欄位通常會自動輸出 H1。0 個代表主題 single.php / page.php 沒寫 the_title() → 需檢查主題或聯絡主題作者',
               '改完務必清快取（LiteSpeed Cache / WP Rocket / 主機商快取）再重新檢測',
             ],
             code: `<!-- 正確：頁面唯一一個 H1（建議是頁面主標題、含目標關鍵字） -->\n<h1>福斯急速熄火關閉記憶線組 | 金鉑汽車影音科技</h1>`,
