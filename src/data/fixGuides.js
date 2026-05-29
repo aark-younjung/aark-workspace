@@ -472,11 +472,11 @@ export const FIX_GUIDES = {
     platforms: {
       wordpress: {
         steps: [
-          '安裝「Yoast SEO」，它會自動生成 OG 標籤',
-          '進入頁面編輯 → Yoast SEO → 「社群」標籤',
-          '設定 Facebook/Twitter 分享用的標題、描述、圖片',
-          '建議圖片尺寸：1200×630px',
-          '儲存',
+          '安裝「Yoast SEO」或「Rank Math」其中一個（兩個都會自動產生 OG 標籤，二選一即可，台灣站近年 Rank Math 更主流）',
+          '【Yoast SEO】編輯頁面/文章 → 滾到下方 Yoast 區塊 → 「社群」分頁 → 分別設定 Facebook / X (Twitter) 標題、描述、圖片 → 更新',
+          '【Rank Math SEO】編輯頁面/文章 → 右上角點 Rank Math 圖示開側欄（或滾到下方 Rank Math 區塊）→ 切「Social」分頁 → Facebook 區塊填標題/描述/圖片，X (Twitter) 預設沿用 Facebook 可不填 → 更新',
+          '建議分享圖尺寸 1200×630px、檔案 <300KB（小於 1MB 才不會被 Facebook 縮圖快取截掉）',
+          '設好後用 Facebook 偵錯工具（developers.facebook.com/tools/debug/）貼上你的網址 → 「重新擷取」清快取，看到正確標題/圖才算成功',
         ],
         code: null,
       },
