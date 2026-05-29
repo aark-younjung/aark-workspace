@@ -13,7 +13,6 @@ import Showcase from './pages/Showcase'
 import Compare from './pages/Compare'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import GoogleAuthCallback from './pages/GoogleAuthCallback'
 import AdminSeed from './pages/AdminSeed'
 import Pricing from './pages/Pricing'
 import Account from './pages/Account'
@@ -22,8 +21,6 @@ import ContentAudit from './pages/ContentAudit'
 import WebsiteSummary from './pages/WebsiteSummary'
 import CrawlCheck from './pages/CrawlCheck'
 import SchemaCheck from './pages/SchemaCheck'
-import GA4Report from './pages/GA4Report'
-import GSCReport from './pages/GSCReport'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminWebsites from './pages/admin/AdminWebsites'
@@ -97,7 +94,6 @@ function AppInner() {
         <Route path="/aeo-audit/:id" element={<AEOAudit />} />
         <Route path="/geo-audit/:id" element={<GEOAudit />} />
         <Route path="/eeat-audit/:id" element={<EEATAudit />} />
-        <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
         <Route path="/admin/seed" element={<AdminSeed />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/account" element={<Account />} />
@@ -107,8 +103,6 @@ function AppInner() {
         <Route path="/content-audit" element={<ContentAudit />} />
         {/* 從 Dashboard 第 5 張卡點進來的 DB-backed 模式（綁定 website_id，吃 cached + 趨勢） */}
         <Route path="/content-audit/:id" element={<ContentAudit />} />
-        <Route path="/ga4-report/:id" element={<GA4Report />} />
-        <Route path="/gsc-report/:id" element={<GSCReport />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/websites" element={<AdminWebsites />} />

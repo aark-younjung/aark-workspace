@@ -6,6 +6,25 @@
 
 ---
 
+### 2026-05-26（GA4 / GSC 整合全套刪光 — 客戶實際採用率太低、佔 Vercel 函數額度）
+**用戶決定：之前 GA4 + GSC 整合做完但客戶實際用不起來（要自己去 Google 後台拿 Property ID / 驗證網站太繁瑣），常用功能就 3 個按鈕大家點不下去 → 整套下線清光，後續批次掃描功能改用 sitemap.xml 就好（同樣有意義不用客戶自助）：**
+
+- 🗑️ **刪 6 個檔**：
+  - `src/services/googleAuth.js` — OAuth flow
+  - `src/services/ga4Analyzer.js`、`src/services/gscAnalyzer.js` — 拉資料 service
+  - `src/pages/GA4Report.jsx`、`src/pages/GSCReport.jsx` — 詳情頁
+  - `src/pages/GoogleAuthCallback.jsx` — OAuth 回調頁
+- 🔧 **修 4 個檔**：
+  - [App.jsx](src/App.jsx) — 拿掉 4 個 import + 3 個 route
+  - [SEOAudit.jsx](src/pages/SEOAudit.jsx) — Roadmap P3 那條「持續追蹤 GSC」改成「每月重掃一次 — 看 SEO 分數趨勢 + AI 引用率變化（aivis 模組）」
+  - [legal/Privacy.jsx](src/pages/legal/Privacy.jsx) — Google LLC 第三方說明拿掉「或啟用 GA4 / GSC 整合」
+  - [Dashboard.jsx](src/pages/Dashboard.jsx) — 430 行 GA4/GSC 區塊（整個 traffic tab + Google 設定 modal + 連接按鈕 + state + handlers + imports）通通刪掉；sitemap 提示「提交 sitemap 至 GSC」改成「在網站根目錄放 sitemap.xml 並提交至 Google Search Console」
+- 📝 **CLAUDE.md 更新**：專案結構、路由表、待開發功能三段同步移除 GA4Report / GSCReport / ga4-data.js / gsc-data.js 提及；加上「2026-05-26 已下線、未來若要重新接需合併進 `api/google-data.js` 用 `?action=` 路由避免 Vercel 函數上限」標註
+- 💡 **背後動機**：GA4/GSC 一直佔我們前後端 2-3 個檔案的「殼」，後端 `api/gsc-data.js` 早就被砍（Vercel Hobby 12 函數限制），結果前端按鈕點下去 404。今天為了批次掃描評估要不要把 GSC 接回來時發現實際採用率 0、決定整套下線、改用 sitemap 做更穩的 batch scan
+- ⚠️ **CLAUDE.md 提示繞圈**：本地 npm run build 一直在 transforming 完後 silent exit code 9/127，多次重試（含清 .vite cache）都一樣，懷疑是 Windows + Vite v8 bundling 階段 memory 問題、跟 code 無關。已 grep 確認無 dangling import / 無 dead reference → push 讓 Vercel 驗
+
+---
+
 ### 2026-05-26（AEO Open Graph fix guide 補 Rank Math 步驟）
 **用戶實測客戶網站時發現 AEO Open Graph 修法只寫了 Yoast SEO 路徑，沒寫 Rank Math（台灣站近年 Rank Math 比 Yoast 更主流）：**
 

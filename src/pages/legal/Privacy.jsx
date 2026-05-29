@@ -95,7 +95,7 @@ export default function Privacy() {
         <li><strong>Vercel Inc.（美國）</strong>：網站託管、邊緣運算（已通過 SOC 2 Type II 認證）</li>
         <li><strong>藍新金流股份有限公司（台灣）</strong>：第三方金流服務（已通過 PCI DSS 認證）</li>
         <li><strong>Anthropic PBC（美國）</strong>：AI 模型 API 服務，僅傳送您主動建立之 prompt 內容</li>
-        <li><strong>Google LLC（美國）</strong>：若您選擇 Google OAuth 登入或啟用 GA4 / GSC 整合</li>
+        <li><strong>Google LLC（美國）</strong>：若您選擇 Google OAuth 登入</li>
         <li><strong>Cloudflare Inc.（美國）</strong>：Turnstile 人機驗證服務（防止 bot 註冊）</li>
       </ul>
       <p>

@@ -337,7 +337,7 @@ function RoadmapPanel({ checks, isPro }) {
           extras={[
             { name: '建立內部連結結構', description: '讓 Google 爬蟲快速理解網站層級' },
             { name: '搭配 AEO Schema', description: 'JSON-LD 結構化資料提升 AI 引用率' },
-            { name: '持續追蹤 GSC', description: '每月看一次關鍵字排名變化' },
+            { name: '每月重掃一次', description: '看 SEO 分數趨勢 + AI 引用率變化（aivis 模組）' },
           ]}
           fallback="" />
       </div>

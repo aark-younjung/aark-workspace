@@ -45,8 +45,6 @@ aark-workspace/
 │   ├── create-checkout-session.js
 │   ├── cancel-subscription.js
 │   ├── stripe-webhook.js
-│   ├── ga4-data.js
-│   ├── gsc-data.js
 │   ├── send-report-email.js
 │   └── cron-weekly-reports.js    # 每週一 09:00 自動執行
 ├── src/
@@ -76,9 +74,6 @@ aark-workspace/
 │   │   ├── aeoAnalyzer.js        # AEO 分析：JSON-LD、FAQ Schema、OG、Canonical 等
 │   │   ├── geoAnalyzer.js        # GEO 分析：llms.txt、品牌提及、結構化資料等
 │   │   ├── eeatAnalyzer.js       # E-E-A-T：作者、About、Contact、隱私、Schema
-│   │   ├── ga4Analyzer.js        # GA4（已串接，需用戶授權）
-│   │   ├── gscAnalyzer.js        # GSC（已串接，需用戶授權）
-│   │   ├── googleAuth.js         # Google OAuth for GA4/GSC
 │   │   └── pdfExport.js          # PDF 報告匯出
 │   ├── App.jsx                   # 路由設定
 │   └── main.jsx
@@ -136,8 +131,6 @@ aark-workspace/
 | `/faq` | FAQ | 常見問題 |
 | `/content-audit` | ContentAudit | 文章內容分析（任意 URL 模式，15 項檢測，Pro 解鎖修復建議）|
 | `/content-audit/:id` | ContentAudit | 內容品質詳情頁（DB-backed 模式，綁定 website_id，吃 cached + 趨勢迷你圖；2026-05-20 新增）|
-| `/ga4-report/:id` | GA4Report | GA4 詳細報告（趨勢/流量來源/熱門頁面/建議引擎）|
-| `/gsc-report/:id` | GSCReport | GSC 詳細報告（趨勢/關鍵字分析/機會/建議引擎）|
 | `/login` | Login | 登入 |
 | `/register` | Register | 註冊 |
 | `/account` | Account | 帳號設定 |
@@ -323,8 +316,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 - ~~**pilotoptical.com.tw 類 analyzer 失敗診斷**~~（2026-05-22 已查到並修復）：根因是 SSL 憑證鏈不完整（`UNABLE_TO_VERIFY_LEAF_SIGNATURE`），台灣很多小網站都這樣設定。已在 [api/fetch-url.js](api/fetch-url.js) 加 SSL 容錯 fallback（undici Agent 放寬驗證重試）。
 - **前端錯誤回報強化**（2026-05-22 加入待辦）：HomeDark.jsx analyzer 流程 try/catch 只有 `console.error`，掛了沒寫進 DB 也沒回報給用戶。建議加錯誤紀錄表 `error_logs` 寫進 supabase（user_id、url、step、error_code、created_at），方便客服日後查具體錯誤訊息。
 - ~~`/content-audit`~~：✅ 已完成。15 項檢測（內容結構/字數/Meta/AEO/E-E-A-T/可讀性），免費看分數+清單，Pro 解鎖修復建議
-- ~~`/ga4-report/:id`~~：✅ 已完成。GA4 詳細報告（KPI 卡片、健康指標條、5 分頁 Tabs、建議引擎）
-- ~~`/gsc-report/:id`~~：✅ 已完成。GSC 詳細報告（KPI 卡片、健康指標條、5 分頁 Tabs、機會關鍵字、建議引擎）
+- ~~`/ga4-report/:id` + `/gsc-report/:id`~~：**已下線（2026-05-26）** — 客戶實際使用率太低（要自己去 Google 後台拿 Property ID / 驗證網站太繁瑣），整套 GA4/GSC 整合（含 OAuth flow、Dashboard 區塊、報告詳情頁、3 個 service、6 個檔案）刪光光。未來若要重新接，需重建 service + OAuth + 後端 endpoint（會撞 Vercel 函數上限，需合併進 `api/google-data.js` 用 `?action=` 路由）
 - `/crawl-check`：爬蟲可達性專項檢測頁（含終端機日誌動畫），對標 washinmura.jp
 - Agency 方案升級流程
 - n8n 自動化排程（設計已完成，待串接）
