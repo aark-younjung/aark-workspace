@@ -343,6 +343,12 @@ export const FIX_GUIDES = {
     // 進階 schema（FAQPage / BreadcrumbList / Product / Article 等）仍 Pro 限定
     freeForAll: true,
     summary: '在 <head> 加入 Organization JSON-LD — 等於交「品牌報名表」給 Google / AI，告訴它你是誰、做什麼、聯絡方式。沒交的話 AI 可能把你跟同名競爭對手搞混。',
+    // 推薦自家工具區塊（綠色亮眼底色，IssueBoard 渲染在 summary 下方、troubleshooting 上方）
+    // 這頁本身（/aeo-audit）下方就掛著 OrgSchemaGenerator，所以指引用戶往下滑就能用
+    featured: {
+      title: '✨ 不想自己寫 code？用本頁下方產生器',
+      body: '滾到本頁最下方有「個人化 Organization Schema 產生器」(Pro 限定) — 填一次品牌資料永久存著、自動生 JSON-LD code、一鍵複製貼網站 head。免費版可看通用範本要自己填空。比裝 Schema Pro / Rank Math 簡單，所有平台都適用（WP / Shopify / Wix / 自架 HTML）。',
+    },
     platforms: {
       wordpress: {
         steps: [

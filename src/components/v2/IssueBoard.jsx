@@ -195,6 +195,22 @@ function IssueFixPanel({ check, lane }) {
         {guide?.summary || check.recommendation}
       </div>
 
+      {/* featured 推薦自家工具 — 比較吸睛的綠色底色，鼓勵用戶用內建工具取代複雜外掛流程 */}
+      {guide?.featured && (
+        <div style={{
+          fontSize: 12, color: T.textMid, lineHeight: 1.75,
+          padding: '10px 12px',
+          background: 'rgba(16,185,129,0.08)',      // 翠綠微底（呼應 GEO 主色但更淺）
+          border: '1px solid rgba(16,185,129,0.3)',
+          borderRadius: 8,
+        }}>
+          <div style={{ color: '#10b981', fontWeight: 700, marginBottom: 4 }}>
+            {guide.featured.title}
+          </div>
+          <div>{guide.featured.body}</div>
+        </div>
+      )}
+
       {/* 排查線索區塊 — 用戶若回報「我明明已經修好卻被判失敗」，提供 3 種常見假陰性情境 */}
       {guide?.troubleshooting && (
         <div style={{

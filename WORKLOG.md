@@ -19,6 +19,7 @@
   - meta_title / meta_desc：步驟通用（兩個外掛 metabox 欄位名稱接近），不拆
   - json_ld：列 Schema Pro / Rank Math（Yoast 免費版生 Organization 不好用）— **可以順手把我們新做的 OrgSchemaGenerator 工具列為選項**，待問用戶
   - faq_schema：只列 Rank Math（Yoast 免費版不支援 FAQ Schema 是事實）— OK
+- 🌟 **追加（同日）**：用戶確認要在 json_ld 推自家工具 → [fixGuides.js](src/data/fixGuides.js) json_ld 加 `featured` 欄位（title + body），[IssueBoard.jsx](src/components/v2/IssueBoard.jsx) FixPanel 渲染綠色亮眼底色區塊在 summary 下方、troubleshooting 上方。內容指引用戶滾本頁下方用 OrgSchemaGenerator，免裝外掛、四個平台都通。`featured` 是可重用結構，未來其他 fix guide 想推自家工具或關鍵 hint 都可用
 
 ---
 
