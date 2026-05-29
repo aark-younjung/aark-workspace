@@ -14,6 +14,11 @@
   - Rank Math：編輯文章 → 右上 Rank Math 側欄（或下方區塊）→ 「Social」分頁 → Facebook 區塊填標題/描述/圖，X 預設沿用 Facebook
 - 順手補：分享圖尺寸建議 1200x630px + <300KB、用 Facebook 偵錯工具「重新擷取」清快取驗證
 - ⚠️ **canonical fix guide 也有同樣問題**（line 435 只寫 Yoast），但用戶這次沒問 → 留下次再處理或主動問用戶是否要一併補
+- 🔄 **追加（同日，commit f3a781b）**：用戶確認要一起補。canonical fix guide 加 Rank Math 步驟（「進階」→「Canonical URL」欄位）+ 補一行說明「通常兩個外掛都自動加 canonical 不用手動設，要手動只發生在多語系互指或分頁/篩選頁要指回主頁兩種情境」
+- 🔍 **順手 audit 其餘 Yoast/Rank Math 提及**（[fixGuides.js](src/data/fixGuides.js)）：
+  - meta_title / meta_desc：步驟通用（兩個外掛 metabox 欄位名稱接近），不拆
+  - json_ld：列 Schema Pro / Rank Math（Yoast 免費版生 Organization 不好用）— **可以順手把我們新做的 OrgSchemaGenerator 工具列為選項**，待問用戶
+  - faq_schema：只列 Rank Math（Yoast 免費版不支援 FAQ Schema 是事實）— OK
 
 ---
 
