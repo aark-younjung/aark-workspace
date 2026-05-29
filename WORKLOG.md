@@ -6,6 +6,17 @@
 
 ---
 
+### 2026-05-26（AEO Open Graph fix guide 補 Rank Math 步驟）
+**用戶實測客戶網站時發現 AEO Open Graph 修法只寫了 Yoast SEO 路徑，沒寫 Rank Math（台灣站近年 Rank Math 比 Yoast 更主流）：**
+
+- [fixGuides.js open_graph wordpress](src/data/fixGuides.js) 改寫成「Yoast 或 Rank Math 二選一」並列：
+  - Yoast：編輯文章 → Yoast 區塊 → 「社群」分頁 → Facebook / X 標題/描述/圖
+  - Rank Math：編輯文章 → 右上 Rank Math 側欄（或下方區塊）→ 「Social」分頁 → Facebook 區塊填標題/描述/圖，X 預設沿用 Facebook
+- 順手補：分享圖尺寸建議 1200x630px + <300KB、用 Facebook 偵錯工具「重新擷取」清快取驗證
+- ⚠️ **canonical fix guide 也有同樣問題**（line 435 只寫 Yoast），但用戶這次沒問 → 留下次再處理或主動問用戶是否要一併補
+
+---
+
 ### 2026-05-26（H1 fix guide 加 WPBakery 步驟 — page builder 偵測別憑印象猜的教訓）
 **前一個 commit 拆 H1 fix guide 時，我憑印象寫了 Elementor / Divi / Bricks 步驟，但用戶 kimbo3899 客戶實際後台是 WPBakery（Visual Composer），被糾正：**
 
