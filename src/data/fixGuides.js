@@ -432,9 +432,10 @@ export const FIX_GUIDES = {
     platforms: {
       wordpress: {
         steps: [
-          '安裝「Yoast SEO」後預設會自動加入 canonical',
-          '若需手動設定，在 Yoast SEO 區塊 → 「進階」→ 指定 canonical URL',
-          '儲存',
+          '安裝「Yoast SEO」或「Rank Math」其中一個（兩個都會自動加入 canonical，二選一即可）',
+          '【Yoast SEO】若需手動指定，編輯頁面/文章 → 滾到下方 Yoast 區塊 → 「進階」分頁 → 「標準 URL」欄位填入正確網址 → 更新',
+          '【Rank Math SEO】若需手動指定，編輯頁面/文章 → 右上 Rank Math 圖示開側欄（或下方 Rank Math 區塊）→ 「進階（Advanced）」分頁 → 「Canonical URL」欄位填入 → 更新',
+          '一般情況下兩個外掛預設都會自動加上 canonical，不用手動設定。要手動指定通常只發生在：(1) 多語系版本互指 (2) 分頁/篩選頁要指回主頁',
         ],
         code: null,
       },
