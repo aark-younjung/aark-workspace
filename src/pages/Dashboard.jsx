@@ -1650,6 +1650,29 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
 
         {/* ── Tab: 優化工具 ── */}
         {activeTab === 'tools' && <>
+        {/* 批次文章掃描入口（2026-05-29 新增 Phase 1）— 放在優化工具卡上方更顯眼 */}
+        <Link to={`/bulk-scan/${id}`} style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
+          <div className="rounded-2xl p-5 transition-all hover:scale-[1.01]" style={{
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(168,85,247,0.10))',
+            border: '1px solid rgba(139,92,246,0.35)',
+          }}>
+            <div className="flex items-center gap-4">
+              <div style={{ fontSize: 32 }}>🔍</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 className="font-bold text-white">批次文章掃描</h3>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(168,85,247,0.3)', color: '#e9d5ff' }}>Pro</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.25)', color: '#86efac' }}>NEW</span>
+                </div>
+                <p className="text-sm text-white/70 leading-relaxed">
+                  一鍵掃描你網站全部文章（最多 200 篇）— 逐篇檢查 H1 / Meta / Schema / OG / 字數，找出哪些頁面有問題。不用一篇一篇手動點。
+                </p>
+              </div>
+              <div style={{ fontSize: 20, color: '#a855f7' }}>→</div>
+            </div>
+          </div>
+        </Link>
+
         {/* AI 優化工具 */}
         <GlassCard color={T.orange} style={{ padding: 0, overflow: 'hidden' }}>
           <div className="px-6 py-4 border-b border-white/10 flex items-center gap-3">

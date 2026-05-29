@@ -6,6 +6,34 @@
 
 ---
 
+### 2026-05-30（批次文章掃描 Phase 1 上線 — Pro 殺手鐧、改 sitemap 不靠 GSC）
+**用戶痛點：客戶網站有幾百篇文章，現在的單一 URL 掃描只能看首頁，要逐篇手動檢查太費工 → 做「一鍵掃全站文章」功能：**
+
+- 🆕 **新檔 `api/bulk-scan.js`**（單一 endpoint，action 路由：start / status / results / cancel）
+  - `?action=start` → 抓 sitemap.xml（順序試 /sitemap_index.xml → /wp-sitemap.xml → /sitemap.xml）→ 過濾雜訊 URL（/wp-admin、/tag/、/category/、/feed 等）→ 依 `<lastmod>` 倒序排 → 截 Pro 200 篇上限 → queue 進 bulk_scan_results 表
+  - Pro / Trial 守衛 + 用戶必須是 website owner
+  - 同 website 同時只允許 1 個 active job（防重複觸發）
+- 🆕 **新檔 `api/cron-bulk-scan.js`**（每分鐘觸發的 worker）
+  - 領 status='scanning' jobs，每 job 處理下 8 個 pending URL
+  - 平行 fetch + 7 項 regex 檢測（H1 / Meta title / Meta desc / OG / JSON-LD schema / 字數 / canonical）
+  - 沒 pending 了 → 算 aggregate（按 problem_type 分組 + top 10 offenders）→ 標 status='done'
+  - 60s timeout 內安全（fetch 12s × 8 並行 ≈ 8 秒，留 buffer）
+  - 200 URLs / 8 per tick = 25 ticks × 1 分鐘 = 約 25 分鐘掃完
+- 🗃️ **SQL migration**（`C:\tmp\bulk-scan-tables.sql` 待用戶跑）：
+  - `bulk_scan_jobs` 表（job 主表 + 狀態 + 進度 + aggregate JSONB）
+  - `bulk_scan_results` 表（per-URL 結果 + findings JSONB + 排隊狀態）
+  - RLS policy：用戶只能讀自己的 jobs / results
+- 🆕 **新檔 `src/pages/BulkScan.jsx`** 路由 `/bulk-scan/:id`
+  - Pro / Trial 守衛（免費版顯示 upsell card → /pricing）
+  - 開始按鈕 → 進度條（每 5 秒 poll status）→ 完成後顯示聚合 + Top 10 offenders + 全部結果列表
+  - 已掃結果有 cache：mount 時拉 website 最近 1 個 job 自動接續顯示
+- 🔗 **入口**：Dashboard.jsx「優化工具」tab 上方加紫色橫條 banner（含 Pro + NEW 標籤）連到 `/bulk-scan/:id`
+- 🔧 **vercel.json**：加 cron `/api/cron-bulk-scan` schedule `* * * * *`（每分鐘觸發）
+- 📦 **Vercel 函數計數調整**：因 12 函數上限，把 Stripe legacy（`create-checkout-session.js` + `stripe-webhook.js`）移到 `_legacy_api/` 資料夾（Vercel 不掃 → 不算函數），騰出空間給 bulk-scan + cron-bulk-scan。Stripe Phase 2 因 HK 帳號鎖死本來就在暫緩、前端沒呼叫，要復活時把檔案搬回 api/ 即可
+- 🎯 **設計理由（不接 GSC）**：原本 Phase 2 設計用 GSC 抓 Top 200 流量文章排序，但用戶決定 GA4/GSC 全套下線（客戶實際採用率 0），改用 sitemap `<lastmod>` 倒序 — 最近修改的文章先掃，符合「新文章更可能要修」實務需求
+
+---
+
 ### 2026-05-26（GA4 / GSC 整合全套刪光 — 客戶實際採用率太低、佔 Vercel 函數額度）
 **用戶決定：之前 GA4 + GSC 整合做完但客戶實際用不起來（要自己去 Google 後台拿 Property ID / 驗證網站太繁瑣），常用功能就 3 個按鈕大家點不下去 → 整套下線清光，後續批次掃描功能改用 sitemap.xml 就好（同樣有意義不用客戶自助）：**
 

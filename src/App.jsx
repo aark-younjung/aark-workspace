@@ -18,6 +18,7 @@ import Pricing from './pages/Pricing'
 import Account from './pages/Account'
 import FAQ from './pages/FAQ'
 import ContentAudit from './pages/ContentAudit'
+import BulkScan from './pages/BulkScan'
 import WebsiteSummary from './pages/WebsiteSummary'
 import CrawlCheck from './pages/CrawlCheck'
 import SchemaCheck from './pages/SchemaCheck'
@@ -103,6 +104,7 @@ function AppInner() {
         <Route path="/content-audit" element={<ContentAudit />} />
         {/* 從 Dashboard 第 5 張卡點進來的 DB-backed 模式（綁定 website_id，吃 cached + 趨勢） */}
         <Route path="/content-audit/:id" element={<ContentAudit />} />
+        <Route path="/bulk-scan/:id" element={<BulkScan />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/websites" element={<AdminWebsites />} />
