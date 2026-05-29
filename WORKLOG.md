@@ -30,7 +30,7 @@
 - ✅ **修法**：[fixGuides.js h1_structure missing](src/data/fixGuides.js) 加 WPBakery 步驟到第一順位（台灣 WP 老站 WPBakery 比例不低，舊主題很多綁這個外掛）
   - WPBakery Custom Heading 元素：Element tag 下拉改 h1
   - WPBakery Text Block 元素：段落 P 改標題 1
-- 🧠 **教訓記到 memory**：[feedback_builder_detection.md](C:\Users\ROG STRIX\.claude\projects\c--Users-ROG-STRIX-Desktop-Vibe-Coding-AI---\memory\feedback_builder_detection.md) — HTML fingerprint 多重 match 時不能憑印象猜，要列全或先問用戶。rendered HTML 留下的指紋可能是舊主題殘留、不代表用戶實際編輯時用什麼 builder
+- 🧠 **教訓記到 memory**：`feedback_builder_detection.md`（在 user 的 `~/.claude/projects/.../memory/`）— HTML fingerprint 多重 match 時不能憑印象猜，要列全或先問用戶。rendered HTML 留下的指紋可能是舊主題殘留、不代表用戶實際編輯時用什麼 builder
 
 ---
 
