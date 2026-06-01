@@ -10,3 +10,4 @@ export { AEOSignature, GEOSignature, EEATSignature, ContentSignature } from './M
 export { default as SerpAndVitals } from './SerpAndVitals'
 export { default as OrgSchemaGenerator } from './OrgSchemaGenerator'
 export { default as ArticleAnalysisTabs } from './ArticleAnalysisTabs'
+export { default as PlatformLogoWall } from './PlatformLogoWall'

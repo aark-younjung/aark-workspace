@@ -14,7 +14,7 @@ import { analyzeEEAT } from '../services/eeatAnalyzer'
 // v2 設計系統共用 tokens 與元件（與後續其他頁面同一份視覺語言）
 // Hero 排版維持原有橘紅 Tailwind 按鈕,所以暫不引入 Btn
 import { T } from '../styles/v2-tokens'
-import { GlassCard } from '../components/v2'
+import { GlassCard, PlatformLogoWall } from '../components/v2'
 
 const timeAgo = (d) => {
   if (!d) return ''
@@ -1114,6 +1114,9 @@ export default function HomeDark() {
             </GlassCard>
           </div>
         )}
+
+        {/* 平台 logo wall — 信任訊號 + 對標 GetAutoSEO/Surfer/Ahrefs 等首頁標準操作 */}
+        <PlatformLogoWall />
 
         {/* 本週 AI 能見度 TOP 8 — 真實掃描分數排名(不足時樣本補位) */}
         {topSites.length > 0 && (
