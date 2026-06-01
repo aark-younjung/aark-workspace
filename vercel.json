@@ -8,10 +8,6 @@
     {
       "path": "/api/cron-weekly-reports",
       "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron-bulk-scan",
-      "schedule": "0 * * * *"
     }
   ]
 }
