@@ -533,15 +533,36 @@ function UrlRow({ result }) {
       </div>
       {hasProblems && expanded && (
         <ul style={{
-          margin: '6px 0 4px 16px', padding: 0, listStyle: 'none',
+          margin: '8px 0 4px 16px', padding: 0, listStyle: 'none',
           fontSize: 11, color: T.textMid, lineHeight: 1.6,
         }}>
-          {probs.map((p, i) => (
-            <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <span>{SEVERITY_ICON[p.severity] || '⚪'}</span>
-              <span>{p.label || PROBLEM_LABELS[p.id] || p.id}</span>
-            </li>
-          ))}
+          {probs.map((p, i) => {
+            const tip = PROBLEM_FIX_TIPS[p.id]
+            return (
+              <li key={i} style={{
+                paddingBottom: 8,
+                marginBottom: 8,
+                borderBottom: i === probs.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.04)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <span>{SEVERITY_ICON[p.severity] || '⚪'}</span>
+                  <span style={{ fontWeight: 600, color: T.text }}>{p.label || PROBLEM_LABELS[p.id] || p.id}</span>
+                </div>
+                {tip && (
+                  <div style={{
+                    marginTop: 4, marginLeft: 20,
+                    fontSize: 11, color: T.textMid, lineHeight: 1.65,
+                    padding: '6px 10px',
+                    background: 'rgba(236,72,153,0.06)',          // 粉紅微底（呼應文章分析家族色）
+                    borderLeft: '2px solid rgba(236,72,153,0.4)',
+                    borderRadius: 4,
+                  }}>
+                    <strong style={{ color: '#f9a8d4' }}>💡 怎麼修：</strong>{tip}
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>
@@ -632,3 +653,44 @@ const PROBLEM_SEVERITY = {
   missing_canonical: 'low',
 }
 const SEVERITY_ICON = { high: '🔴', medium: '🟡', low: '⚪' }
+
+// 每個 problem 對應的「怎麼修」短提示 — 一兩句白話，不用看完整 fix guide 也能動手
+// 對應到 fixGuides.js 的完整修法，但這裡是濃縮版（UrlRow 展開時 inline 顯示）
+const PROBLEM_FIX_TIPS = {
+  missing_h1:
+    '用你的 page builder（Elementor / WPBakery / Divi）打開頁面 → 找最大標題那個 widget → 「HTML 標籤」改 H1 → 更新。Gutenberg 編輯器：標題用「標題 1」格式',
+  multiple_h1:
+    '進文章編輯 → 切「程式碼編輯器」→ 搜 <h1> → 多餘的改 <h2> 或 <h3> → 全頁只留 1 個 H1',
+
+  missing_meta_title:
+    '安裝 Yoast SEO 或 Rank Math 外掛 → 編輯文章 → 下方 SEO 區塊「SEO 標題」欄位填 30-60 字含主關鍵字',
+  short_meta_title:
+    '標題太短搜尋引擎判定資訊量不足。擴充到 30-60 字、含主關鍵字 + 品牌名',
+  long_meta_title:
+    'Google SERP 通常截斷 60 字後內容。壓縮到 30-60 字，重要關鍵字放前段',
+
+  missing_meta_desc:
+    'Yoast SEO / Rank Math → 編輯文章 → SEO 區塊「Meta 描述」欄位填 70-155 字，包含目標關鍵字 + 行動呼籲',
+  short_meta_desc:
+    'Meta 描述太短 Google 會自動補抓內容、不一定符合你的訴求。擴充到 70-155 字',
+  long_meta_desc:
+    'Google SERP 通常只顯示前 155 字。壓縮到 70-155 字，重要訊息放前段',
+
+  missing_og:
+    'Yoast SEO 或 Rank Math（二選一）→ 編輯文章 → 「社群」(Yoast) 或「Social」(Rank Math) 分頁 → 填 Facebook / X 標題、描述、圖片 1200×630px',
+  incomplete_og:
+    'OG 必要三要素：og:title / og:description / og:image。缺哪個用 Yoast / Rank Math 補上即可',
+
+  no_json_ld:
+    '最快：用 AI 雷達 Pro 的「個人化 Organization Schema 產生器」一鍵生 code（在 AEO 詳情頁下方）。或安裝 Rank Math / Schema Pro 外掛自動加',
+  no_article_schema:
+    'Rank Math 免費版有「Article Schema」設定 — 編輯文章 → 切「Schema」分頁 → 套用 Article 範本 → 自動補完作者、日期、圖片',
+
+  thin_content:
+    '文章太短 AI 跟 Google 都視為「薄內容」、引用機率低。擴充到 300+ 字，加入實例、數據、步驟說明',
+  short_content:
+    '建議擴充到 300+ 字，分段落 + 加案例 / 數據 / FAQ 區塊提升深度',
+
+  missing_canonical:
+    'Yoast SEO / Rank Math 預設會自動加 canonical — 安裝任一個即可。要手動只發生在多語言互指或分頁/篩選頁',
+}
