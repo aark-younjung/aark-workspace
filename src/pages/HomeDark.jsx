@@ -865,8 +865,13 @@ export default function HomeDark() {
               你的網站,<br />AI 看得見嗎?
             </h1>
 
-            <p className="text-xl md:text-2xl font-semibold text-white mb-8 leading-snug">
+            <p className="text-xl md:text-2xl font-semibold text-white mb-3 leading-snug">
               從 Google 到 ChatGPT<br />一次掌握你的 AI 能見度
+            </p>
+
+            {/* 「字母湯」訊號 — 對齊國際 SEO 圈共識術語、展現我們做的是整套不是只一個維度 */}
+            <p className="text-sm text-white/55 mb-6 tracking-wide">
+              SEO · AEO · GEO · LLMO · E-E-A-T <span className="text-white/40">— 五大維度一次到位</span>
             </p>
 
             <p className="text-base text-white/80 mb-4 max-w-lg">

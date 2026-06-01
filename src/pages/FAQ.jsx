@@ -28,12 +28,16 @@ const FAQ_ITEMS = [
         a: '生成式引擎最佳化（Generative Engine Optimization）是針對 ChatGPT、Claude、Perplexity、Gemini 等生成式 AI 的優化策略。重點在於讓 AI 在生成長篇回答時，能夠引用並推薦你的品牌，而不是競爭對手。'
       },
       {
-        q: '什麼是 E-E-A-T？',
-        a: 'E-E-A-T 代表「經驗（Experience）、專業（Expertise）、權威（Authoritativeness）、信任（Trustworthiness）」，是 Google 評估網站可信度的核心框架。具體體現在是否有作者資訊、關於我們頁面、聯絡方式、隱私權政策、以及 Organization Schema 等。E-E-A-T 分數高的網站更容易被 AI 視為可靠來源。'
+        q: '什麼是 LLMO？跟 GEO、AEO 差在哪？',
+        a: '大型語言模型最佳化（Large Language Model Optimization）是 GEO 的技術子集，聚焦「大型語言模型實際怎麼 retrieve、cite 你的內容」。簡單說：AEO 讓你被當答案、GEO 讓你被生成式 AI 引用、LLMO 是 GEO 裡更技術的那層 — 關注 llms.txt、Article Schema、E-E-A-T 訊號、跨 LLM 引用率量化。國際 SEO 圈把這群縮寫合稱「SEO alphabet soup（字母湯）」。AI 雷達同時做 SEO + AEO + GEO + LLMO 四種、不只其中一個。'
       },
       {
-        q: 'SEO、AEO、GEO、E-E-A-T 有什麼差別？',
-        a: '四者是互補的關係：SEO 是基礎，讓搜尋引擎找到你；AEO 讓 AI 直接引用你的答案；GEO 讓生成式 AI 在回答中推薦你；E-E-A-T 建立品牌的可信度，影響前三者的評分。一個完整的數位行銷策略需要四者並進。'
+        q: '什麼是 E-E-A-T？',
+        a: 'E-E-A-T 代表「經驗（Experience）、專業（Expertise）、權威（Authoritativeness）、信任（Trustworthiness）」，是 Google 評估網站可信度的核心框架。具體體現在是否有作者資訊、關於我們頁面、聯絡方式、隱私權政策、以及 Organization Schema 等。E-E-A-T 分數高的網站更容易被 AI 視為可靠來源。',
+      },
+      {
+        q: 'SEO、AEO、GEO、LLMO、E-E-A-T 到底差在哪？我需要哪個？',
+        a: '五者是「層層疊加」的關係，不是選一個就好：①SEO 是基礎，讓 Google 搜尋找到你；②AEO 進階層，讓你的內容被「答案類平台」引用（Google Featured Snippets、語音助理）；③GEO 再上一層，讓生成式 AI（ChatGPT、Perplexity）在長篇回答中推薦你；④LLMO 是 GEO 的技術子集，量化「LLM 實際引用你幾次、跟競品比佔比多少」；⑤E-E-A-T 是貫穿全部的可信度框架。完整數位行銷策略需要全部並進 — 這也是為什麼 AI 雷達把這 4+1 個維度全做了。'
       },
     ]
   },
