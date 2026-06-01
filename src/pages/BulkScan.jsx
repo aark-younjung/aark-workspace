@@ -468,11 +468,31 @@ function UrlRow({ result }) {
   )
 }
 
+// 共用暗色背景（與 ContentAudit / SEOAudit / HomeDark 同款青綠雙漸層 + 雜訊）
 function PageWrap({ children }) {
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: '#000' }}>
+      {/* 上方青綠漸層光暈 — 從頁首左上往中央漸隱至純黑 */}
+      <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '3000px',
+        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
+      }} />
+      {/* 下方青綠漸層光暈 — 從頁尾右下往左上擴散（335deg = 155deg 雙軸鏡像） */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
+        height: '4500px',
+        background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        mixBlendMode: 'lighten',
+      }} />
+      {/* 顆粒感疊層 */}
+      <div className="absolute inset-0 pointer-events-none z-0" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+        opacity: 0.12,
+        mixBlendMode: 'overlay',
+      }} />
+
       <SiteHeader />
-      <main style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '32px 24px 64px', fontFamily: T.font }}>
+      <main style={{ position: 'relative', zIndex: 10, maxWidth: 1180, margin: '0 auto', padding: '24px 24px 64px', fontFamily: T.font }}>
         {children}
       </main>
       <Footer dark />
