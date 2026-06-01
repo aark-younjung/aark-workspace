@@ -892,6 +892,11 @@ export default function HomeDark() {
               <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/15 border border-purple-400/30 text-purple-300 font-medium">
                 ✓ 不懂程式碼也能照著步驟修
               </span>
+              {/* 對標業界 push「Organization Schema 必要」趨勢（91app/awoo/YouTube 那批人都在講）
+                  — 我們的 OrgSchemaGenerator Pro 工具一鍵解、用戶搜「Organization Schema」會找到我們 */}
+              <span className="text-xs px-3 py-1.5 rounded-full bg-pink-500/15 border border-pink-400/30 text-pink-300 font-medium">
+                ✓ Organization Schema 一鍵自動產生
+              </span>
             </div>
 
             <form onSubmit={handleSubmit}>
