@@ -6,6 +6,20 @@
 
 ---
 
+### 2026-06-01（站內公告 banner 改走馬燈輪播）
+**用戶提議多則公告時用上下走馬燈切換取代垂直堆疊：**
+
+- [AnnouncementBanner.jsx](src/components/AnnouncementBanner.jsx) 改造：
+  - 多則時每 6 秒切換下一則（單則維持原本顯示）
+  - 切換動畫：淡入 + 從上方滑下（500ms ease-out）
+  - Hover 滑鼠停留時暫停輪播，移開繼續
+  - 多則時下方顯示小指示點（圓點 → 當前那則變細長橫條），可點擊跳特定則
+  - 指示點旁顯示「N / 總數」 + 「已暫停 · 移開繼續」提示
+- **可訪問性**：尊重 `prefers-reduced-motion` 偏好 — 系統設「減少動畫」時 fallback 成原本垂直堆疊（不輪播、無動畫）
+- 抽出 `AnnouncementCard` 子元件 — 輪播 + reduced-motion fallback 共用同一卡片渲染邏輯，避免重複代碼
+
+---
+
 ### 2026-06-01（批次掃描 Phase 2 — Free 試掃 3 篇 FOMO 流程）
 **用戶質疑「免費試一篇」FOMO 跟單篇模式重疊沒鉤子。改設計成：免費抓全 sitemap 顯示總篇數 + 真實掃 3 篇樣本 + 鎖剩下的：**
 
