@@ -104,16 +104,27 @@ export default function BulkScan() {
 
   function startPolling() {
     if (pollTimer.current) return
+    // 用戶在這頁時，每次 poll 順便戳一下 worker — 不依賴 Vercel cron（Hobby 只能每小時）
+    // worker idempotent：只處理 pending 工作；前端戳 + cron 保險 = 最快推進
     pollTimer.current = setInterval(async () => {
       if (!job?.id) return
       try {
         const session = (await supabase.auth.getSession()).data?.session
         if (!session) return
-        const r = await fetch(`/api/bulk-scan?action=status&jobId=${job.id}`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
-        const data = await r.json()
-        if (r.ok) setJob(data)
+
+        // 並行：poll status + 戳 worker（沒有先後依賴）
+        const [statusRes] = await Promise.allSettled([
+          fetch(`/api/bulk-scan?action=status&jobId=${job.id}`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }),
+          // 戳 worker — 不需要驗證 / 不需要等結果
+          fetch('/api/cron-bulk-scan').catch(() => {}),
+        ])
+
+        if (statusRes.status === 'fulfilled') {
+          const data = await statusRes.value.json()
+          if (statusRes.value.ok) setJob(data)
+        }
       } catch { /* ignore network blip */ }
     }, POLL_INTERVAL_MS)
   }
