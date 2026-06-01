@@ -858,7 +858,7 @@ export default function HomeDark() {
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500/15 rounded-full mb-8 border border-orange-500/30">
               <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
-              <span className="text-orange-300 text-sm font-medium">AI 搜尋優化新時代</span>
+              <span className="text-orange-300 text-sm font-medium">涵蓋 ChatGPT · Claude · Perplexity · Google</span>
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold mb-3 leading-tight text-white">
@@ -866,7 +866,7 @@ export default function HomeDark() {
             </h1>
 
             <p className="text-xl md:text-2xl font-semibold text-white mb-8 leading-snug">
-              掌握 AI 能見度<br />贏在搜尋未來
+              從 Google 到 ChatGPT<br />一次掌握你的 AI 能見度
             </p>
 
             <p className="text-base text-white/80 mb-4 max-w-lg">

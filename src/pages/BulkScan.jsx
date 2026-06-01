@@ -219,21 +219,27 @@ export default function BulkScan() {
             </button>
           </GlassCard>
         ) : (
-          /* Free 版：FOMO 試掃 3 篇 + 看完結果再升級 */
+          /* Free 版：FOMO 試掃 3 篇 + 看完結果再升級
+             文案聚焦「具體得到什麼」— 對標 GetAutoSEO「Get 3 Articles + 30-day Content Plan」這種具體承諾 */
           <GlassCard color={PAGE_ACCENT} style={{ padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text, margin: 0 }}>
-                免費試掃 3 篇樣本
+                免費掃出你最近 3 篇文章的 SEO 漏洞
               </h3>
               <span style={{
                 fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
                 background: 'rgba(168,85,247,0.25)', color: '#e9d5ff', letterSpacing: '.05em',
               }}>免費</span>
             </div>
-            <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
-              我們先抓你網站 sitemap、找出全部文章 URL，然後幫你免費掃 <strong style={{ color: T.text }}>3 篇最新文章</strong>當樣本 —
-              讓你親眼看到批次掃描能找出什麼問題。剩下的文章升 Pro 解鎖一鍵全掃。
+            <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 14 }}>
+              我們會抓你網站 sitemap、找出你網站的全部文章 → 挑最近發布的 3 篇免費跑完整檢測。
+              你會看到：
             </p>
+            <ul style={{ fontSize: 12, color: T.textMid, lineHeight: 1.8, marginBottom: 16, paddingLeft: 18 }}>
+              <li>📊 <strong style={{ color: T.text }}>你網站總共幾篇文章</strong>（sitemap 自動發現）</li>
+              <li>🔍 那 3 篇實際缺了哪些 SEO 要素（H1 / Meta / Schema / OG / 字數 / canonical）</li>
+              <li>🛠 每個問題對應的修法步驟 — 不論你用 WordPress / Shopify / Wix / 自架 HTML</li>
+            </ul>
             {job?.status === 'failed' && job?.error_message && (
               <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 12, color: '#fca5a5' }}>
                 上次失敗：{job.error_message}
@@ -241,14 +247,14 @@ export default function BulkScan() {
             )}
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <button onClick={() => handleStart('sample')} disabled={starting} style={primaryButtonStyle}>
-                {starting ? '啟動中...' : '🎁 免費試掃 3 篇'}
+                {starting ? '啟動中...' : '🎁 免費試跑 3 篇看結果'}
               </button>
               <Link to="/pricing" style={{
                 ...secondaryButtonStyle, textDecoration: 'none', display: 'inline-block',
               }}>升級 Pro 一次掃完全部 →</Link>
             </div>
             <p style={{ fontSize: 11, color: T.textLow, marginTop: 12 }}>
-              ℹ️ 每個網站僅可免費試掃 1 次。想再掃或看完整 200 篇結果請升級 Pro。
+              ℹ️ 每個網站僅可免費試跑 1 次。想看完整 200 篇結果請升級 Pro。
             </p>
           </GlassCard>
         )
