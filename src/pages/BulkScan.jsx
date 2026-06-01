@@ -19,7 +19,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
-import { GlassCard, ArticleAnalysisTabs } from '../components/v2'
+import { GlassCard, ArticleAnalysisTabs, ScoreHero } from '../components/v2'
 import { T } from '../styles/v2-tokens'
 
 const POLL_INTERVAL_MS = 5000  // 每 5 秒輪詢進度
@@ -280,54 +280,41 @@ function ResultsView({ job, results, onRescan, starting }) {
   const agg = job.aggregate || {}
   const byType = agg.problems_by_type || {}
   const offenders = agg.top_offenders || []
+  const totalScanned = agg.total_results || 0
+  const totalProblems = agg.total_with_problems || 0
+  const totalPassed = totalScanned - totalProblems
+  // 「全站文章通過率」分數 — 多少 % 篇文章 0 問題 = 分數
+  const score = totalScanned > 0 ? Math.round(totalPassed / totalScanned * 100) : 0
 
-  // sortedProblems：把 byType { id: count } 排序成陣列
+  // sortedProblems：依「受影響篇數」遞減排序
   const sortedProblems = Object.entries(byType)
     .map(([id, count]) => ({ id, count, label: PROBLEM_LABELS[id] || id, severity: PROBLEM_SEVERITY[id] || 'low' }))
     .sort((a, b) => b.count - a.count)
 
   return (
     <>
-      {/* 總結卡 */}
-      <GlassCard color={T.aeo} style={{ padding: 24, marginBottom: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 4 }}>✅ 掃描完成</h3>
-            <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
-              共掃描 <strong style={{ color: T.text }}>{agg.total_results || 0}</strong> 篇文章，
-              其中 <strong style={{ color: T.warn }}>{agg.total_with_problems || 0}</strong> 篇有問題、
-              <strong style={{ color: T.pass }}>{(agg.total_results || 0) - (agg.total_with_problems || 0)}</strong> 篇通過。
-              {job.capped > 0 && <span style={{ color: T.warn }}> （網站超過 200 篇，少 {job.capped} 篇沒掃）</span>}
-            </p>
-          </div>
-          <button onClick={onRescan} disabled={starting} style={secondaryButtonStyle}>
-            {starting ? '啟動中...' : '🔄 重新掃描'}
-          </button>
-        </div>
-      </GlassCard>
+      {/* 兩欄 Hero（左 ScoreHero + 右 問題分佈拆解）— 跟單篇模式視覺一致 */}
+      <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
+        <ScoreHero
+          face="批次掃描"
+          subChip={`${totalScanned} 篇`}
+          tagline={`全站文章通過率 — ${totalPassed} 篇 0 問題、${totalProblems} 篇待修${job.capped > 0 ? `（你網站超過 200 篇，少 ${job.capped} 篇沒掃）` : ''}`}
+          score={score}
+          passedCount={totalPassed}
+          failedCount={totalProblems}
+          total={totalScanned}
+          recentAudits={[]}
+          accent={T.aeo}
+        />
+        <ProblemBreakdown sortedProblems={sortedProblems} totalScanned={totalScanned} />
+      </div>
 
-      {/* 按 problem 分組 — 知道全站有幾篇是同一問題 */}
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 12, marginTop: 24 }}>📊 全站問題統計</h2>
-      <GlassCard color={T.aeo} style={{ padding: 20, marginBottom: 20 }}>
-        {sortedProblems.length === 0 ? (
-          <p style={{ fontSize: 14, color: T.pass, textAlign: 'center', padding: 12 }}>🎉 沒有發現問題！全站文章都通過 7 項檢測</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {sortedProblems.map(({ id, count, label, severity }) => (
-              <div key={id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 14px',
-                background: severity === 'high' ? 'rgba(239,68,68,0.08)' : severity === 'medium' ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.03)',
-                borderLeft: `3px solid ${severity === 'high' ? T.fail : severity === 'medium' ? T.warn : T.textLow}`,
-                borderRadius: 6,
-              }}>
-                <span style={{ fontSize: 13, color: T.text }}>{SEVERITY_ICON[severity]} {label}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{count} 篇</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </GlassCard>
+      {/* 重新掃描按鈕 — 放兩欄之間，獨立一行避免擠到 hero */}
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={onRescan} disabled={starting} style={secondaryButtonStyle}>
+          {starting ? '啟動中...' : '🔄 重新掃描全站'}
+        </button>
+      </div>
 
       {/* 最有問題的 10 篇 */}
       {offenders.length > 0 && (
@@ -364,6 +351,69 @@ function ResultsView({ job, results, onRescan, starting }) {
         </div>
       </GlassCard>
     </>
+  )
+}
+
+// 右欄：問題分佈拆解 — 視覺仿 ContentSignature「內容品質拆解」
+// 每條問題顯示：name + 受影響篇數 + 進度條（% 占 totalScanned）+ 嚴重度色
+function ProblemBreakdown({ sortedProblems, totalScanned }) {
+  return (
+    <div style={{
+      background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
+      borderRadius: T.rL, padding: 24,
+    }}>
+      <div style={{
+        fontSize: 10, color: T.textLow, letterSpacing: '.1em',
+        textTransform: 'uppercase', marginBottom: 14, fontWeight: 700,
+      }}>
+        問題分佈拆解
+      </div>
+      {sortedProblems.length === 0 ? (
+        <p style={{ fontSize: 14, color: T.pass, textAlign: 'center', padding: '20px 0' }}>
+          🎉 全站文章都通過 7 項檢測
+        </p>
+      ) : (
+        <div style={{
+          background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)',
+          borderRadius: 10, padding: '14px 18px',
+        }}>
+          {sortedProblems.map((p, i) => {
+            const pct = totalScanned > 0 ? Math.round(p.count / totalScanned * 100) : 0
+            const col = p.severity === 'high' ? '#ef4444' : p.severity === 'medium' ? '#f59e0b' : '#94a3b8'
+            return (
+              <div key={p.id} style={{
+                padding: '10px 0',
+                borderBottom: i === sortedProblems.length - 1 ? 'none' : '1px solid rgba(255,255,255,.04)',
+              }}>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'baseline', marginBottom: 5,
+                }}>
+                  <span style={{ fontSize: 11.5, color: T.text }}>{p.label}</span>
+                  <span style={{
+                    fontSize: 11, color: T.text, fontFamily: T.mono, fontWeight: 700,
+                  }}>{p.count} 篇</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <div style={{
+                    flex: 1, height: 3,
+                    background: 'rgba(255,255,255,.05)', borderRadius: 2,
+                  }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`, background: col,
+                      borderRadius: 2, boxShadow: `0 0 6px ${col}88`,
+                    }} />
+                  </div>
+                  <span style={{
+                    fontSize: 9.5, color: T.textLow, minWidth: 70, textAlign: 'right',
+                  }}>{pct}% 篇受影響</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 

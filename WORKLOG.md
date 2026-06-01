@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-06-01（批次掃描結果頁改 2 欄 Hero — 視覺跟單篇模式統一）
+**用戶實測 Phase 1.5 後回報想要結果頁長得跟單篇模式一樣（左 ScoreHero 分數圈 + 右拆解進度條）：**
+
+- [BulkScan.jsx ResultsView](src/pages/BulkScan.jsx) 改成 `v2-hero-grid` 兩欄佈局：
+  - **左**：用既有的 `ScoreHero` 元件（跟 SEO/AEO/GEO/EEAT/內容品質 同款）。score = 通過率 %（=「全站 0 問題的文章占比」），face="批次掃描"、subChip="N 篇"、tagline 寫 X 篇通過 Y 篇待修
+  - **右**：新加 `ProblemBreakdown` 元件 — 仿 `ContentSignature` 視覺，每條問題類型一個 row：label + 受影響 N 篇 + 進度條（受影響% / 總篇數）+ 嚴重度色（高=紅、中=橘、低=灰）
+- 「重新掃描」按鈕從卡片右上角搬出來、獨立一行右對齊
+- 視覺效果：跟單篇模式 100% 一致 — 用戶切 tab 不會有「咦怎麼版型不一樣」的違和感
+- 設計理由：保持 IA 一致性（[[ArticleAnalysisTabs](src/components/v2/ArticleAnalysisTabs.jsx)] 統一 tab + 同款 hero layout = 「文章分析」這個功能不論模式都是同個東西）
+
+---
+
 ### 2026-06-01（批次掃描 Phase 1.5 — aggregate bug 修 + UI 改進 + IA 統一到「文章分析」）
 **用戶實測 kimbo3899 批次掃描跑完 200 篇後回報 2 個問題 + 1 個 IA 變更要求：**
 
