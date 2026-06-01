@@ -24,6 +24,9 @@ import { T } from '../styles/v2-tokens'
 
 const POLL_INTERVAL_MS = 5000  // 每 5 秒輪詢進度
 
+// 主色 — 跟 /content-audit 同色（內容品質粉紅 #ec4899），統一「文章分析」家族視覺
+const PAGE_ACCENT = '#ec4899'
+
 export default function BulkScan() {
   const { id: websiteId } = useParams()
   const { user, isPro, isTrial } = useAuth()
@@ -197,7 +200,7 @@ export default function BulkScan() {
       {(!job || ['failed', 'cancelled'].includes(job.status)) && (
         isProUser ? (
           /* Pro 版：直接「開始掃描全站」按鈕 */
-          <GlassCard color={T.aeo} style={{ padding: 28 }}>
+          <GlassCard color={PAGE_ACCENT} style={{ padding: 28 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>
               {job ? '重新批次掃描' : '開始批次掃描'}
             </h3>
@@ -217,7 +220,7 @@ export default function BulkScan() {
           </GlassCard>
         ) : (
           /* Free 版：FOMO 試掃 3 篇 + 看完結果再升級 */
-          <GlassCard color={T.aeo} style={{ padding: 28 }}>
+          <GlassCard color={PAGE_ACCENT} style={{ padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text, margin: 0 }}>
                 免費試掃 3 篇樣本
@@ -253,7 +256,7 @@ export default function BulkScan() {
 
       {/* 進行中 → 進度條 */}
       {job && ['discovering', 'scanning'].includes(job.status) && (
-        <GlassCard color={T.aeo} style={{ padding: 28 }}>
+        <GlassCard color={PAGE_ACCENT} style={{ padding: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text }}>
               {job.status === 'discovering' ? '🔍 抓取 sitemap 中...' : '⏳ 掃描中'}
@@ -293,7 +296,7 @@ function ProgressBar({ scanned, failed, total }) {
     <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, overflow: 'hidden', height: 14 }}>
       <div style={{
         width: `${pct}%`, height: '100%',
-        background: `linear-gradient(90deg, ${T.aeo}, #a855f7)`,
+        background: `linear-gradient(90deg, ${PAGE_ACCENT}, #f472b6)`,
         transition: 'width 1s ease',
       }} />
     </div>
@@ -338,7 +341,7 @@ function ResultsView({ job, results, onRescan, starting }) {
           failedCount={totalProblems}
           total={totalScanned}
           recentAudits={[]}
-          accent={T.aeo}
+          accent={PAGE_ACCENT}
         />
         <ProblemBreakdown sortedProblems={sortedProblems} totalScanned={totalScanned} />
       </div>
@@ -356,7 +359,7 @@ function ResultsView({ job, results, onRescan, starting }) {
       {offenders.length > 0 && (
         <>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 12 }}>🔥 最需要修的 10 篇</h2>
-          <GlassCard color={T.aeo} style={{ padding: 16, marginBottom: 20 }}>
+          <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {offenders.map((o, i) => (
                 <a key={i} href={o.url} target="_blank" rel="noopener noreferrer" style={{
@@ -379,7 +382,7 @@ function ResultsView({ job, results, onRescan, starting }) {
 
       {/* 全部結果列表（簡單版 — 之後 Phase 3 加 filter / sort） */}
       <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 12, marginTop: 24 }}>📋 全部結果（{results.results?.length || 0}）</h2>
-      <GlassCard color={T.aeo} style={{ padding: 16, marginBottom: 20 }}>
+      <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 600, overflowY: 'auto' }}>
           {(results.results || []).map((r, i) => (
             <UrlRow key={i} result={r} />
@@ -448,7 +451,9 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
         }}>
           {sortedProblems.map((p, i) => {
             const pct = totalScanned > 0 ? Math.round(p.count / totalScanned * 100) : 0
-            const col = p.severity === 'high' ? '#ef4444' : p.severity === 'medium' ? '#f59e0b' : '#94a3b8'
+            // 顏色依「受影響 %」三階：< 30% 綠（小範圍、易修）/ 30-60 橘（中）/ > 60 紅（大範圍、急修）
+            // 跟單篇模式 ContentSignature 視覺一致 — 綠 = 好、紅 = 待急救
+            const col = pct < 30 ? '#10b981' : pct < 60 ? '#f59e0b' : '#ef4444'
             return (
               <div key={p.id} style={{
                 padding: '10px 0',
@@ -573,7 +578,7 @@ function PageWrap({ children }) {
 
 const primaryButtonStyle = {
   padding: '12px 28px', fontSize: 14, fontWeight: 700,
-  background: `linear-gradient(135deg, ${T.aeo}, #a855f7)`,
+  background: `linear-gradient(135deg, ${PAGE_ACCENT}, #f472b6)`,
   color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: T.font,
 }
 const secondaryButtonStyle = {

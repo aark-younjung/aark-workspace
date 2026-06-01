@@ -59,8 +59,8 @@ export default function ArticleAnalysisTabs({ active, websiteId }) {
           return (
             <Link key={t.id} to={t.to} style={{
               padding: '10px 18px', borderRadius: '6px 6px 0 0', textDecoration: 'none',
-              background: isActive ? `${T.aeo}18` : 'transparent',
-              borderBottom: isActive ? `2px solid ${T.aeo}` : '2px solid transparent',
+              background: isActive ? '#ec489918' : 'transparent',
+              borderBottom: isActive ? '2px solid #ec4899' : '2px solid transparent',
               transition: 'all .15s',
             }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? T.text : T.textMid }}>{t.label}</div>
