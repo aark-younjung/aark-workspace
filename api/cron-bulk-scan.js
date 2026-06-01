@@ -71,6 +71,18 @@ export default async function handler(req, res) {
 }
 
 async function processJobTick(supabase, job) {
+  // (a) Stale recovery：把 status='scanning' 超過 3 分鐘的 row 重設為 pending
+  //     避免前一個 worker timeout 沒寫回 → row 永遠卡 'scanning' 拿不下去
+  //     3 分鐘是「正常 8 並行 fetch 12s timeout × 安全係數 15」估算
+  const staleCutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString()
+  await supabase
+    .from('bulk_scan_results')
+    .update({ status: 'pending', error_message: 'recovered from stale scanning' })
+    .eq('job_id', job.id)
+    .eq('status', 'scanning')
+    .lt('scanned_at', staleCutoff)   // scanned_at = null 不會 match，沒問題的 row 不會被誤改
+
+  // (b) 領 pending
   const { data: pending, error: pendErr } = await supabase
     .from('bulk_scan_results')
     .select('id, url')
@@ -79,13 +91,28 @@ async function processJobTick(supabase, job) {
     .limit(URLS_PER_TICK)
   if (pendErr) return { jobId: job.id, error: pendErr.message }
 
+  // 沒 pending 不代表可以 finalize — 還可能有 'scanning' row 還在跑
+  // 只有「所有 row 都 done/failed」才該 finalize（檢查 scanning 數量）
   if (!pending || pending.length === 0) {
-    await finalizeJob(supabase, job.id)
-    return { jobId: job.id, finalized: true }
+    const { count: stillScanning } = await supabase
+      .from('bulk_scan_results')
+      .select('id', { count: 'exact', head: true })
+      .eq('job_id', job.id)
+      .eq('status', 'scanning')
+    if ((stillScanning || 0) === 0) {
+      await finalizeJob(supabase, job.id)
+      return { jobId: job.id, finalized: true }
+    }
+    // 還有 scanning row 在跑 → 下次再來看
+    return { jobId: job.id, waitingForScanning: stillScanning }
   }
 
   const ids = pending.map(p => p.id)
-  await supabase.from('bulk_scan_results').update({ status: 'scanning' }).in('id', ids)
+  // 同時設 scanned_at = now 用來給 stale recovery 判斷「卡多久」
+  await supabase.from('bulk_scan_results').update({
+    status: 'scanning',
+    scanned_at: new Date().toISOString(),
+  }).in('id', ids)
 
   const settled = await Promise.allSettled(pending.map(p => scanSingleUrl(p)))
 

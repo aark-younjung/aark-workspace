@@ -6,6 +6,31 @@
 
 ---
 
+### 2026-06-01（批次掃描 Phase 1.5 — aggregate bug 修 + UI 改進 + IA 統一到「文章分析」）
+**用戶實測 kimbo3899 批次掃描跑完 200 篇後回報 2 個問題 + 1 個 IA 變更要求：**
+
+**🐛 Bug #1 修：「全站問題統計」零問題、但每篇 URL 都顯示 2 問題 — 互相矛盾**
+- Root cause：worker 把 row 標 `'scanning'` 後跑、有些 row 超時或多 worker 同跑造成 row 卡在 `'scanning'` 沒寫回。`processJobTick` 查 `status='pending'` 看到 0 就 fire `finalizeJob`、但這時還有很多 row 是 `'scanning'`、`computeAggregate(status IN ['done','failed'])` 統計空集合。後來 row 慢慢完成 findings 都正確寫進去、但 aggregate 已經被算錯
+- 修法 [cron-bulk-scan.js](api/cron-bulk-scan.js)：
+  - (a) stale recovery：每個 tick 開始先把 `status='scanning'` 且 `scanned_at < now - 3min` 的 row 重設為 pending（前一個 worker timeout 沒寫回的補救）
+  - (b) finalize 守門：`pending=0` 還要額外查 `scanning count=0` 才 fire finalize；否則回 `waitingForScanning` 等下次再來
+  - (c) claim 步驟同時設 `scanned_at = now()` 給 stale recovery 判斷依據（之前是 null）
+- 修法 [bulk-scan.js handleResults](api/bulk-scan.js)：不信任 `job.aggregate` cached 值、每次 results 請求都 `computeAggregateFresh()` 重算當前 done/failed row → 永遠跟畫面一致
+
+**✨ Bug #2 修：UrlRow 只寫「⚠️ 2 問題」沒寫是哪 2 個**
+- [BulkScan.jsx UrlRow](src/pages/BulkScan.jsx) 改成可點擊展開、列出 problem labels（有問題的 row 才顯示 ▸ 展開符號 + 點 row 切換）
+- 用 `SEVERITY_ICON` 顯示 🔴🟡⚪ 嚴重度分級
+
+**🎨 IA 重組（用戶選項 B 中度方案）：「文章分析」統一頁面、tab 切換單篇 / 批次**
+- 新元件 [src/components/v2/ArticleAnalysisTabs.jsx](src/components/v2/ArticleAnalysisTabs.jsx) — 共用頂部 tab、顯示「文章分析」品牌 + 「📄 單篇模式」「🔍 批次模式（Pro）」兩 tab
+- ContentAudit.jsx DetailMode（有 websiteId） + AdHocMode（沒 id）都掛上 tab
+- BulkScan.jsx 也掛同款 tab
+- 沒 websiteId 時批次 tab 變灰 + tooltip「請從 Dashboard 選擇要分析的網站」
+- Dashboard.jsx「優化工具」tab 上方原本的紫色「🔍 批次文章掃描」banner 拿掉 — 入口統一由「內容品質」卡 → /content-audit/:id → tab 切換進去
+- **設計理由**：用戶心智裡「文章分析」是一件事不該分散兩頁面；tab 設計讓免費用戶切到批次模式時看到「Pro 限定」描述、觸發升級念頭
+
+---
+
 ### 2026-05-30（批次文章掃描 Phase 1 上線 — Pro 殺手鐧、改 sitemap 不靠 GSC）
 **用戶痛點：客戶網站有幾百篇文章，現在的單一 URL 掃描只能看首頁，要逐篇手動檢查太費工 → 做「一鍵掃全站文章」功能：**
 

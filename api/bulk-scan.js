@@ -189,9 +189,8 @@ async function handleResults(req, res, supabase, userId) {
   const jobId = req.query.jobId
   if (!jobId) return res.status(400).json({ error: 'jobId is required' })
 
-  // 先確認 job 是這個用戶的（避免別人猜 jobId 拉資料）
   const { data: job, error: jobErr } = await supabase
-    .from('bulk_scan_jobs').select('id, status, aggregate').eq('id', jobId).eq('user_id', userId).maybeSingle()
+    .from('bulk_scan_jobs').select('id, status, aggregate, capped, total_urls').eq('id', jobId).eq('user_id', userId).maybeSingle()
   if (jobErr) return res.status(500).json({ error: jobErr.message })
   if (!job) return res.status(404).json({ error: 'Job not found' })
 
@@ -203,7 +202,48 @@ async function handleResults(req, res, supabase, userId) {
     .limit(500)
   if (resErr) return res.status(500).json({ error: resErr.message })
 
-  return res.status(200).json({ job, results })
+  // ⚠️ 不要相信 job.aggregate（可能 finalize 時還有 row 在 'scanning' → 統計不準）
+  // 每次 results 請求都用「當前所有 done/failed row 即時重算」— 永遠跟畫面一致
+  const freshAggregate = computeAggregateFresh(results || [])
+  return res.status(200).json({
+    job: { ...job, aggregate: freshAggregate },
+    results,
+  })
+}
+
+// 重算 aggregate — 邏輯跟 cron-bulk-scan.js 的 computeAggregate 一致
+// 重複實作而非 import：避免 api/ 跨檔 import 麻煩，也讓 fix 可以 hot-reload
+function computeAggregateFresh(results) {
+  const byType = {}
+  const offenders = []
+  let doneCount = 0
+
+  for (const r of results) {
+    if (!r.findings) continue
+    doneCount++
+    const probs = r.findings.problems || []
+    for (const p of probs) {
+      byType[p.id] = (byType[p.id] || 0) + 1
+    }
+    if (probs.length > 0) {
+      const sevOrder = { high: 0, medium: 1, low: 2 }
+      const maxSev = probs.map(p => p.severity).sort((a, b) => sevOrder[a] - sevOrder[b])[0] || 'low'
+      offenders.push({ url: r.url, problemCount: probs.length, severity: maxSev })
+    }
+  }
+
+  offenders.sort((a, b) => {
+    const sevOrder = { high: 0, medium: 1, low: 2 }
+    if (sevOrder[a.severity] !== sevOrder[b.severity]) return sevOrder[a.severity] - sevOrder[b.severity]
+    return b.problemCount - a.problemCount
+  })
+
+  return {
+    problems_by_type: byType,
+    top_offenders: offenders.slice(0, 10),
+    total_results: doneCount,
+    total_with_problems: offenders.length,
+  }
 }
 
 // ─────────────── cancel: 用戶手動取消 ───────────────

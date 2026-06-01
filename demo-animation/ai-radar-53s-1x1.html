@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<title>AI 雷達 — 53 秒行銷動畫（1:1）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Google Fonts：Kosugi Maru（日系圓潤體，做為中文主字體；缺字 fallback 至 Noto Sans TC） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+<style>
+  /* ── 網站風格 token（沿用 HomeDark + Tailwind theme）── */
+  :root{
+    --teal:#18c590;
+    --teal-deep:#0d7a58;
+    --blue-deep:#084773;
+    --navy:#011520;
+    --orange:#fb923c;
+    --orange-deep:#f97316;
+    --amber:#fbbf24;
+    --red:#ef4444;
+    --txt:#ffffff;
+    --txt-mid:rgba(255,255,255,.72);
+    --txt-low:rgba(255,255,255,.48);
+    --card-bg:rgba(255,255,255,.04);
+    --card-border:rgba(255,255,255,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  /* 中文主字體：Kosugi Maru（日系圓潤體，給予柔和現代感）；缺字回退 Noto Sans TC / 系統字體 */
+  html,body{height:100%;background:#000;font-family:"Kosugi Maru","Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,sans-serif;color:var(--txt);overflow:hidden}
+
+  /* 英文與數字統一放大 + Inter 字型 + 黃色強調 — 全片重點規格 */
+  .en,
+  .num{
+    font-family:"Inter","SF Pro Display","Helvetica Neue",sans-serif;
+    font-weight:800;
+    font-size:1.32em;        /* 全片英文比中文大 32% */
+    letter-spacing:-.01em;
+    line-height:1;
+    display:inline-block;
+    vertical-align:baseline;
+    transform:translateY(.04em); /* 視覺對齊中文基線 */
+    color:#fbbf24;           /* 統一黃色（amber 400）強調 */
+    text-shadow:0 0 18px rgba(251,191,36,.35);
+  }
+  /* 內容品質 label 也視為英文等級的強調字，改黃 */
+  .yellow{color:#fbbf24}
+
+  /* 1:1 舞台 */
+  .stage-wrap{
+    width:100vw;height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at center,#0a0a0a 0%,#000 100%);
+  }
+  .stage{
+    width:min(100vh,100vw);
+    height:min(100vh,100vw);
+    aspect-ratio:1/1;
+    position:relative;
+    /* 兩層漸層：左上 155deg 主青綠 + 右下大範圍對角光暈（青綠核心 → 藍紫過渡 → 透明） */
+    background:
+      radial-gradient(ellipse at 88% 92%,
+        rgba(24,197,144,.65) 0%,
+        rgba(13,122,88,.48) 12%,
+        rgba(8,71,115,.30) 28%,
+        rgba(8,71,115,.14) 45%,
+        transparent 70%),
+      linear-gradient(155deg,#18c590 0%,#0d7a58 10%,#084773 15%,#011520 30%,#000 50%);
+    overflow:hidden;
+    border-radius:10px;
+    box-shadow:0 28px 70px rgba(0,0,0,.65);
+  }
+  /* 網站慣用 grain（baseFrequency 0.65 / numOctaves 4 / soft-light） */
+  .stage::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='n'><feTurbulence baseFrequency='0.65' numOctaves='4'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+    mix-blend-mode:soft-light;opacity:.18;
+    z-index:90;
+  }
+  /* 內容區 — 縮為畫面上半 60%，下方 40% 留給大字幕 */
+  .canvas{position:absolute;top:0;left:0;right:0;bottom:40%;}
+
+  /* Scene base — 全部文字置中 */
+  .scene{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;
+    opacity:0;
+    will-change:opacity,transform;
+  }
+
+  /* ── Scene 0 : 0–3s 你的網站首頁 mockup（新增） ── */
+  /* 自帶 3s 時間軸：fade in / hold / fade out 三段；不影響後續 scenes 1-9 的 50s 內部時間軸 */
+  .s0{animation:s0 3s linear forwards;z-index:5}
+  @keyframes s0{
+    0%{opacity:0;transform:scale(.97)}
+    15%{opacity:1;transform:scale(1)}
+    80%{opacity:1;transform:scale(1)}
+    100%{opacity:0;transform:scale(1.02)}
+  }
+  /* 瀏覽器外框（chrome） — 看起來像網站 screenshot */
+  .website-mockup{
+    width:88%;height:88%;
+    background:#f8fafc;
+    border-radius:16px;
+    box-shadow:0 30px 80px rgba(0,0,0,.55),0 8px 24px rgba(0,0,0,.4);
+    overflow:hidden;
+    display:flex;flex-direction:column;
+    border:1px solid rgba(255,255,255,.1);
+  }
+  .browser-chrome{
+    height:42px;
+    background:linear-gradient(180deg,#e5e7eb,#d1d5db);
+    display:flex;align-items:center;padding:0 16px;gap:14px;
+    border-bottom:1px solid #cbd5e1;
+  }
+  .browser-dots{display:flex;gap:8px}
+  .browser-dots span{width:14px;height:14px;border-radius:50%}
+  .browser-dots span:nth-child(1){background:#ef4444}
+  .browser-dots span:nth-child(2){background:#fbbf24}
+  .browser-dots span:nth-child(3){background:#10b981}
+  .browser-url{
+    flex:1;height:26px;background:#fff;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Inter";font-size:14px;color:#64748b;font-weight:500;
+    border:1px solid #cbd5e1;
+  }
+  .website-body{
+    flex:1;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#fff 0%,#f1f5f9 100%);
+  }
+  /* 導覽列 */
+  .web-nav{
+    height:62px;padding:0 36px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid #e2e8f0;background:#fff;
+  }
+  .web-logo{font-size:22px;font-weight:900;color:#0f172a;letter-spacing:.02em}
+  .web-menu{display:flex;gap:30px;font-size:16px;color:#475569;font-weight:500}
+  /* Hero 區 */
+  .web-hero{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:24px;text-align:center;gap:14px;
+  }
+  .web-h1{font-size:46px;font-weight:900;color:#0f172a;letter-spacing:-.01em;line-height:1.15}
+  .web-sub{font-size:20px;color:#475569;font-weight:500}
+  .web-cta{
+    margin-top:8px;padding:16px 40px;border-radius:999px;
+    background:linear-gradient(90deg,#18c590,#0d7a58);
+    color:#fff;font-size:18px;font-weight:700;
+    box-shadow:0 8px 20px rgba(24,197,144,.4);
+  }
+  /* 底部三張 feature card */
+  .web-cards{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+    padding:20px 36px 30px;
+  }
+  .web-card{
+    aspect-ratio:1.3/1;border-radius:14px;
+    background:linear-gradient(135deg,#e0f2fe,#dbeafe);
+    border:1px solid #cbd5e1;
+    position:relative;
+    overflow:hidden;
+  }
+  .web-card:nth-child(1){background:linear-gradient(135deg,#fef3c7,#fde68a)}
+  .web-card:nth-child(2){background:linear-gradient(135deg,#dcfce7,#bbf7d0)}
+  .web-card:nth-child(3){background:linear-gradient(135deg,#dbeafe,#bfdbfe)}
+  .web-card::after{
+    content:"";
+    position:absolute;bottom:14px;left:14px;right:14px;height:8px;
+    background:rgba(15,23,42,.15);border-radius:4px;
+  }
+
+  /* ── Scene 1 : 3–8s ChatGPT 提問（原 0–5s 全體 +3s 延後） ── */
+  .s1{animation:s1 50s 3s linear forwards}
+  @keyframes s1{
+    0%{opacity:0;transform:scale(.96)}
+    2%{opacity:1;transform:scale(1)}
+    9%{opacity:1}
+    11%{opacity:0}
+    100%{opacity:0}
+  }
+  /* 手機框寬度從 46% 提高至 60% 以容納 2x 字級 */
+  .phone{
+    width:60%;height:78%;
+    background:rgba(15,20,23,.92);
+    border:1.5px solid rgba(255,255,255,.14);
+    border-radius:44px;
+    padding:24px;display:flex;flex-direction:column;
+    box-shadow:0 16px 48px rgba(0,0,0,.55),inset 0 0 0 5px rgba(255,255,255,.04);
+    backdrop-filter:blur(12px);
+  }
+  /* 所有文字 2x：phone-bar / chat-title / bubble / cursor */
+  .phone-bar{height:32px;display:flex;justify-content:space-between;align-items:center;font-size:22px;color:rgba(255,255,255,.55)}
+  .phone-bar .clock{font-family:"Inter",sans-serif;font-weight:600}
+  .chat{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:18px 6px;gap:16px;text-align:center}
+  .chat-title{text-align:center;font-size:24px;color:var(--txt-low);margin-bottom:10px;letter-spacing:.04em}
+  .bubble{max-width:92%;padding:20px 28px;border-radius:26px;font-size:30px;line-height:1.55;text-align:center}
+  .bubble.ai{background:rgba(30,41,59,.85);color:#e2e8f0}
+  .bubble.user{background:linear-gradient(135deg,#10a37f,#0d8866);color:#fff;animation:typeIn 1.5s 3.2s both ease-out}
+  @keyframes typeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .cursor{display:inline-block;width:14px;height:26px;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* ── Scene 2 : 8–13s AI 答案漏掉你 ── */
+  .s2{animation:s2 50s 3s linear forwards}
+  @keyframes s2{
+    0%,9%{opacity:0;transform:scale(.96)}
+    11%{opacity:1;transform:scale(1)}
+    19%{opacity:1}
+    21%{opacity:0}
+    100%{opacity:0}
+  }
+  /* answer-card 寬度從 78% 提高至 88% 容納 2x 字級 */
+  .answer-card{
+    width:88%;
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--card-border);
+    border-radius:24px;padding:32px;
+    backdrop-filter:blur(14px);
+    box-shadow:0 12px 36px rgba(0,0,0,.4);
+  }
+  /* 所有文字 2x：ac-head h3 / dot / comp / b / pct / you-missing */
+  .ac-head{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:22px}
+  .ac-head .dot{width:14px;height:14px;background:var(--teal);border-radius:50%;animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .ac-head h3{color:var(--teal);font-size:26px;font-weight:600;letter-spacing:.02em}
+  .comp{display:flex;align-items:center;justify-content:center;gap:16px;padding:18px 22px;border-radius:16px;margin-top:14px;background:rgba(255,255,255,.04);font-size:28px;color:var(--txt)}
+  .comp .b{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-family:"Inter";font-weight:700}
+  .b1{background:#3b82f6}.b2{background:#8b5cf6}.b3{background:#f59e0b}
+  .pct{color:var(--txt-low);font-size:22px}
+  .you-missing{
+    margin-top:22px;padding:22px;border-radius:16px;
+    background:rgba(239,68,68,.12);border:2px dashed #ef4444;
+    color:#fca5a5;font-size:26px;text-align:center;font-weight:600;
+    opacity:0;animation:flashRed 1.2s 10s forwards;
+  }
+  @keyframes flashRed{
+    0%{opacity:0;box-shadow:0 0 0 rgba(239,68,68,0)}
+    50%{opacity:1;box-shadow:0 0 28px rgba(239,68,68,.5)}
+    100%{opacity:1;box-shadow:0 0 14px rgba(239,68,68,.3)}
+  }
+
+  /* ── Scene 3 : 13–18s 品牌淡出 ── */
+  .s3{animation:s3 50s 3s linear forwards;background:radial-gradient(circle at center,#000 0%,transparent 100%)}
+  @keyframes s3{
+    0%,19%{opacity:0}
+    21%{opacity:1}
+    29%{opacity:1}
+    31%{opacity:0}
+    100%{opacity:0}
+  }
+  .ghost-logo{
+    font-size:56px;font-weight:800;letter-spacing:.04em;color:#94a3b8;
+    animation:ghostOut 3s 13s forwards;
+  }
+  @keyframes ghostOut{
+    0%{opacity:1;filter:blur(0) grayscale(0)}
+    100%{opacity:0;filter:blur(14px) grayscale(1);transform:scale(.82)}
+  }
+
+  /* ── Scene 4 : 18–23s 雷達 + AI 雷達 logo ── */
+  .s4{animation:s4 50s 3s linear forwards}
+  @keyframes s4{
+    0%,29%{opacity:0}
+    31%{opacity:1}
+    39%{opacity:1}
+    41%{opacity:0}
+    100%{opacity:0}
+  }
+  .radar-wrap{position:relative;width:58%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;margin-top:-8%}
+  .radar-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(24,197,144,.35);box-shadow:inset 0 0 60px rgba(24,197,144,.15),0 0 80px rgba(24,197,144,.25)}
+  .radar-ring.r2{inset:14%;opacity:.6}
+  .radar-ring.r3{inset:28%;opacity:.4}
+  .radar-ring.r4{inset:42%;opacity:.25}
+  .radar-sweep{
+    position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 0deg,transparent 0deg,rgba(24,197,144,.55) 40deg,transparent 80deg);
+    animation:sweep 1.5s linear infinite;
+  }
+  @keyframes sweep{to{transform:rotate(360deg)}}
+  .radar-center{
+    width:14px;height:14px;border-radius:50%;background:var(--teal);
+    box-shadow:0 0 30px var(--teal),0 0 60px var(--teal);
+    z-index:2;
+  }
+  .radar-dot{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--teal);box-shadow:0 0 24px var(--teal);opacity:0;animation:dotPing 1.5s 19.7s infinite}
+  .radar-dot.d1{top:32%;left:38%}
+  .radar-dot.d2{top:58%;left:62%;animation-delay:20.5s}
+  .radar-dot.d3{top:48%;left:28%;animation-delay:21.3s}
+  @keyframes dotPing{0%{opacity:0;transform:scale(.3)}40%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1)}}
+  /* 五大 LLM 標籤：以 r=53% 環繞雷達中心，每 72deg 一個（pentagon 排列），依序 fade in；padding+border-radius 做 pill 徽章 */
+  .llm-label{
+    position:absolute;
+    font-family:"Inter","SF Pro Display",sans-serif;
+    font-size:22px;font-weight:800;color:#fff;letter-spacing:.02em;
+    background:rgba(24,197,144,.18);
+    border:1.5px solid rgba(24,197,144,.55);
+    padding:8px 18px;border-radius:999px;
+    text-shadow:0 0 12px rgba(24,197,144,.6),0 2px 6px rgba(0,0,0,.7);
+    backdrop-filter:blur(6px);
+    box-shadow:0 6px 18px rgba(0,0,0,.4),inset 0 0 12px rgba(24,197,144,.18);
+    white-space:nowrap;pointer-events:none;
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.6);
+  }
+  /* 5 個位置：top:左,左下,右下,右,上 — 0deg/72/144/216/288，r=53% */
+  .llm-label.l-a{top:-3%;left:50%;animation:llmIn .5s 19s forwards}             /*   0deg 正上 */
+  .llm-label.l-b{top:33.6%;left:100.4%;animation:llmIn .5s 19.4s forwards}       /*  72deg 右上 */
+  .llm-label.l-c{top:92.9%;left:81.2%;animation:llmIn .5s 19.8s forwards}        /* 144deg 右下 */
+  .llm-label.l-d{top:92.9%;left:18.8%;animation:llmIn .5s 20.2s forwards}        /* 216deg 左下 */
+  .llm-label.l-e{top:33.6%;left:-0.4%;animation:llmIn .5s 20.6s forwards}        /* 288deg 左上 */
+  @keyframes llmIn{
+    to{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  }
+  .brand-reveal{
+    position:absolute;bottom:6%;width:100%;text-align:center;
+    opacity:0;transform:translateY(20px);animation:brandIn 1s 21.3s forwards;
+  }
+  @keyframes brandIn{to{opacity:1;transform:translateY(0)}}
+  .brand-reveal .name{
+    font-size:72px;font-weight:900;letter-spacing:.06em;
+    color:#fff;
+    text-shadow:0 0 28px rgba(24,197,144,.55),0 4px 18px rgba(0,0,0,.5);
+  }
+  .brand-reveal .name .en{
+    color:#fbbf24;
+    -webkit-text-fill-color:#fbbf24;
+    text-shadow:0 0 32px rgba(251,191,36,.6);
+  }
+  .brand-reveal .tag{margin-top:8px;font-size:14px;color:var(--txt-mid);letter-spacing:.20em}
+
+  /* ── Scene 5 : 23–29.7s 五大面向卡 ── */
+  .s5{animation:s5 50s 3s linear forwards}
+  @keyframes s5{
+    0%,39%{opacity:0}
+    41%{opacity:1}
+    52%{opacity:1}
+    54%{opacity:0}
+    100%{opacity:0}
+  }
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:86%}
+  .gcard{
+    aspect-ratio:.7/1;border-radius:16px;padding:14px 6px;text-align:center;
+    background:var(--card-bg);border:1px solid var(--card-border);
+    backdrop-filter:blur(10px);
+    box-shadow:0 8px 24px rgba(0,0,0,.3);
+    opacity:0;transform:rotateY(90deg);transform-origin:center;
+  }
+  .gcard.c1{animation:cardFlip .6s 23.3s forwards;border-top:3px solid #3b82f6}
+  .gcard.c2{animation:cardFlip .6s 23.8s forwards;border-top:3px solid #8b5cf6}
+  .gcard.c3{animation:cardFlip .6s 24.3s forwards;border-top:3px solid #10b981}
+  .gcard.c4{animation:cardFlip .6s 24.8s forwards;border-top:3px solid #f59e0b}
+  .gcard.c5{animation:cardFlip .6s 25.3s forwards;border-top:3px solid #ec4899}
+  @keyframes cardFlip{to{opacity:1;transform:rotateY(0)}}
+  .gcard .label{font-size:11px;color:#fbbf24;letter-spacing:.02em;font-family:"Inter";font-weight:700}
+  /* 分數預設樣式（高分黃色）— 由 JS 動態切換 .cool（低分藍色）/ 移除 .cool（回到黃色）；2026-05-21 字級 36→72px 2x 放大 */
+  .gcard .score{
+    font-size:72px;font-weight:900;margin-top:14px;line-height:1;font-family:"Inter";
+    color:#fbbf24;text-shadow:0 0 32px rgba(251,191,36,.5);
+    transition:color .28s ease,text-shadow .28s ease;
+  }
+  /* 飆升中尚未過門檻（< 70）顯示藍色 */
+  .gcard .score.cool{
+    color:#60a5fa;
+    text-shadow:0 0 22px rgba(96,165,250,.55);
+  }
+  .gcard .sub{font-size:10px;color:var(--txt-low);margin-top:6px}
+  /* 分數飆破 80 後依序 pop 強調 — keyframes 必須明寫 opacity:1 + rotateY(0)，否則新 animation 蓋掉 cardFlip forwards 後，元素會掉回 .gcard base 的 opacity:0 / rotateY(90deg) 變透明加翻面 */
+  .gcard.pop{animation:cardPop .55s ease-out forwards}
+  @keyframes cardPop{
+    0%{opacity:1;transform:rotateY(0) scale(1)}
+    40%{opacity:1;transform:rotateY(0) scale(1.18);box-shadow:0 14px 40px rgba(251,191,36,.4),0 0 0 2px rgba(251,191,36,.5)}
+    100%{opacity:1;transform:rotateY(0) scale(1)}
+  }
+  .s5-title{position:absolute;top:13%;width:100%;text-align:center;font-size:24px;font-weight:700;letter-spacing:.04em;opacity:0;animation:fadeUp .6s 23s forwards}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── Scene 6 : 29.7–36.3s 三 LLM 監測 ── */
+  .s6{animation:s6 50s 3s linear forwards}
+  @keyframes s6{
+    0%,52%{opacity:0}
+    54%{opacity:1}
+    65%{opacity:1}
+    67%{opacity:0}
+    100%{opacity:0}
+  }
+  /* Scene 6 LLM 三大卡 2x 放大：寬 88%→96%、gap 18→28、padding/字級/icon/badge 全套加倍 */
+  .llm-wrap{display:flex;gap:28px;width:96%;justify-content:center;align-items:center}
+  .llm{
+    flex:1;aspect-ratio:1/1.15;border-radius:28px;padding:32px 18px;text-align:center;
+    background:var(--card-bg);border:1px solid var(--card-border);
+    backdrop-filter:blur(10px);
+    box-shadow:0 12px 36px rgba(0,0,0,.35);
+    display:flex;flex-direction:column;align-items:center;justify-content:space-around;
+    opacity:0;transform:translateY(20px);
+  }
+  .llm.l1{animation:fadeUp .6s 30s forwards}
+  .llm.l2{animation:fadeUp .6s 30.5s forwards}
+  .llm.l3{animation:fadeUp .6s 31s forwards}
+  .llm .ico{width:96px;height:96px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-family:"Inter";font-size:34px;font-weight:900;color:#fff}
+  .llm.l1 .ico{background:linear-gradient(135deg,#10a37f,#0d8866)}
+  .llm.l2 .ico{background:linear-gradient(135deg,#cc785c,#a85e44)}
+  .llm.l3 .ico{background:linear-gradient(135deg,#f59e0b,#d97706)}
+  .llm .name{font-size:26px;font-weight:700;color:var(--txt);font-family:"Inter"}
+  .llm .badge{
+    padding:12px 22px;border-radius:999px;font-size:22px;font-weight:700;
+    opacity:0;animation:fadeUp .4s 32.3s forwards;
+  }
+  .llm.l1 .badge{background:rgba(16,185,129,.18);color:#34d399;border:1px solid rgba(16,185,129,.5)}
+  .llm.l2 .badge{background:rgba(204,120,92,.20);color:#f4a487;border:1px solid rgba(204,120,92,.55);animation-delay:32.8s}
+  .llm.l3 .badge{background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.5);animation-delay:33.3s}
+  .s6-title{position:absolute;top:13%;width:100%;text-align:center;font-size:20px;font-weight:600;color:var(--txt-mid);opacity:0;animation:fadeUp .6s 29.7s forwards}
+
+  /* ── Scene 7 : 36.3–43s 修復碼 + 平台 ── */
+  .s7{animation:s7 50s 3s linear forwards}
+  @keyframes s7{
+    0%,65%{opacity:0}
+    67%{opacity:1}
+    79%{opacity:1}
+    81%{opacity:0}
+    100%{opacity:0}
+  }
+  .s7-inner{display:flex;flex-direction:column;align-items:center;gap:20px;width:84%}
+  /* 四大平台卡寬度與下方 code-box 對齊（max-width 同為 78%），flex:1 + aspect-ratio 1:1 讓每張卡等寬正方形 */
+  .platforms{display:flex;gap:14px;justify-content:center;width:100%;max-width:78%}
+  .plat{
+    flex:1;aspect-ratio:1/1;border-radius:20px;display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--card-border);font-family:"Inter";font-size:26px;font-weight:800;color:#fff;
+    opacity:0;transform:translateY(12px);
+    box-shadow:0 6px 18px rgba(0,0,0,.3);
+  }
+  .plat:nth-child(1){animation:fadeUp .4s 36.7s forwards;background:linear-gradient(135deg,#21759b,#1a5d7e)}
+  .plat:nth-child(2){animation:fadeUp .4s 37s forwards;background:linear-gradient(135deg,#96bf48,#7ba33c)}
+  .plat:nth-child(3){animation:fadeUp .4s 37.3s forwards;background:linear-gradient(135deg,#0c0c0c,#333)}
+  .plat:nth-child(4){animation:fadeUp .4s 37.7s forwards;background:linear-gradient(135deg,#e34c26,#c0392b)}
+  .code-box{
+    width:100%;max-width:78%;
+    background:rgba(10,16,20,.95);border:1px solid var(--card-border);border-radius:14px;padding:18px;
+    font-family:"SF Mono","JetBrains Mono","Consolas",monospace;font-size:13px;
+    color:#94a3b8;text-align:center;line-height:1.75;position:relative;
+    box-shadow:0 10px 28px rgba(0,0,0,.5);
+  }
+  .code-box .line{opacity:0}
+  .code-box .k{color:#a78bfa}
+  .code-box .s{color:#34d399}
+  .code-box .l1{animation:fadeUp .3s 38.3s forwards}
+  .code-box .l2{animation:fadeUp .3s 38.8s forwards}
+  .code-box .l3{animation:fadeUp .3s 39.3s forwards}
+  .copy-toast{
+    position:absolute;right:14px;top:14px;padding:6px 12px;border-radius:8px;
+    background:rgba(16,185,129,.18);border:1px solid rgba(16,185,129,.6);color:#34d399;font-size:11px;font-weight:700;
+    opacity:0;animation:toastIn .3s 40.7s forwards,toastOut .3s 42s forwards;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes toastOut{to{opacity:0}}
+
+  /* ── Scene 8（早鳥價頁）2026-05-21 第 14 輪移除 — 完整 CSS / HTML / 43-48s 字幕一併拿掉 ── */
+
+  /* ── Scene 9 : 43–53s 結尾 CTA（Scene 8 移除後，視窗從 48s 提前到 43s 接續 Scene 7 結束） ── */
+  .s9{animation:s9 50s 3s linear forwards}
+  /* Scene 9 keyframes：80% 開始 fade in（=40s 內部時間 = page time 43s），銜接 Scene 7 結束 */
+  @keyframes s9{0%,80%{opacity:0}82%{opacity:1}100%{opacity:1}}
+  .closing{display:flex;flex-direction:column;align-items:center;gap:20px;position:relative}
+  .closing .logo-fin{
+    font-size:76px;font-weight:900;letter-spacing:.08em;
+    color:#fff;
+    text-shadow:0 0 32px rgba(24,197,144,.6),0 4px 22px rgba(0,0,0,.5);
+    opacity:0;transform:translateY(20px);animation:fadeUp .6s 43.3s forwards;
+  }
+  .closing .logo-fin .en{
+    color:#fbbf24;
+    -webkit-text-fill-color:#fbbf24;
+    text-shadow:0 0 36px rgba(251,191,36,.65);
+  }
+  .closing .slogan{font-size:18px;color:var(--txt);font-weight:500;letter-spacing:.08em;opacity:0;animation:fadeUp .5s 44.3s forwards}
+  /* CTA 放大 2x：padding/font-size/border-radius/shadow 全部加倍 */
+  .closing .cta-btn{
+    margin-top:24px;padding:28px 76px;border-radius:999px;
+    background:linear-gradient(90deg,#18c590,#0d7a58);
+    color:#fff;font-size:32px;font-weight:700;letter-spacing:.04em;
+    box-shadow:0 14px 48px rgba(24,197,144,.5);
+    opacity:0;animation:fadeUp .5s 45.2s forwards,btnPulse 1.2s 46s infinite;
+  }
+  @keyframes btnPulse{0%,100%{box-shadow:0 8px 32px rgba(24,197,144,.45)}50%{box-shadow:0 8px 56px rgba(24,197,144,.75)}}
+
+  /* ─────── 結尾頁可愛老闆人偶（全幾何造型）— 2026-05-21 第 12 輪改版 ─────── */
+  /* 改動：圓臉 → 長臉橢圓、半圓頭髮 → 雅痞紳士帽（fedora 帽冠+帽簷+帽帶）、拿掉鬍子、身體 230→108 縮短、雙手從垂下擺改高舉慶祝、領帶底部六角→上寬下尖 */
+  /* 用 position:absolute + margin-left:-N 做水平置中；不在 head/body 設 z-index，靠 DOM 順序 + .boss-hair z-index 讓帽子蓋頭頂、手臂在最上層揮舞 */
+  .boss-char{
+    position:absolute;
+    left:50%;top:60%;
+    margin-left:-115px;
+    width:230px;height:320px;
+    z-index:85;
+    opacity:0;
+    pointer-events:none;
+    animation:fadeUp .6s 43.9s forwards, bossBob 2.4s 44.5s ease-in-out infinite;
+  }
+  /* 頭部 — 長膠囊（pill shape，跟身體一樣 border-radius:9999px），100×140 直立 */
+  .boss-head{
+    position:absolute;top:20px;left:50%;
+    width:100px;height:140px;
+    margin-left:-50px;
+    background:#fde8c0;
+    border-radius:9999px;
+    border:3px solid rgba(0,0,0,.18);
+    box-shadow:0 6px 14px rgba(0,0,0,.3);
+    transform-origin:bottom center;
+    animation:bossHeadTilt 3.4s 44.5s ease-in-out infinite;
+  }
+  /* 雅痞紳士帽（fedora）— .boss-hair 復用 class 名，CSS 重新定義為帽冠+::before 帽簷+::after 帽帶 */
+  .boss-hair{
+    /* 帽冠：圓頂矩形，蓋住頭頂三分之一 */
+    position:absolute;top:-30px;left:50%;
+    width:84px;height:50px;
+    margin-left:-42px;
+    background:#1f2937;
+    border-radius:38px 38px 6px 6px;
+    box-shadow:inset 0 -3px 6px rgba(0,0,0,.4);
+    z-index:3;
+  }
+  .boss-hair::before{
+    /* 帽簷：水平橢圓，比帽冠寬 50%，從帽冠底部向兩側延伸 */
+    content:"";
+    position:absolute;bottom:-4px;left:50%;
+    width:138px;height:20px;
+    margin-left:-69px;
+    background:#1f2937;
+    border-radius:50%;
+    box-shadow:0 3px 4px rgba(0,0,0,.4);
+  }
+  .boss-hair::after{
+    /* 帽帶：帽冠下緣金色窄帶（雅痞 fedora 經典款 ribbon） */
+    content:"";
+    position:absolute;bottom:14px;left:50%;
+    width:84px;height:6px;
+    margin-left:-42px;
+    background:#fbbf24;
+    box-shadow:0 0 4px rgba(251,191,36,.4);
+  }
+  /* 眼睛 — 兩顆黑點，間歇眨眼（位置依長臉重算） */
+  .boss-eye{
+    position:absolute;top:60px;
+    width:12px;height:12px;
+    background:#1f2937;
+    border-radius:50%;
+    animation:bossBlink 4.2s 45s ease-in-out infinite;
+  }
+  .boss-eye-l{left:24px}
+  .boss-eye-r{right:24px}
+  /* 鬍子已刪除（第 12 輪要求） */
+  /* 微笑嘴巴 — border-bottom-only 半圓（位置下移以配合長臉） */
+  .boss-mouth{
+    position:absolute;top:96px;left:50%;
+    width:28px;height:14px;
+    margin-left:-14px;
+    border:3px solid #1f2937;
+    border-top:0;
+    border-radius:0 0 28px 28px;
+    background:#ef4444;
+  }
+  /* 紅潤臉頰 — 兩顆半透明粉紅小圓（位置配合長臉） */
+  .boss-cheek{
+    position:absolute;top:88px;
+    width:16px;height:10px;
+    background:rgba(248,113,113,.55);
+    border-radius:50%;
+  }
+  .boss-cheek-l{left:6px}
+  .boss-cheek-r{right:6px}
+  /* 身體 — 加長膠囊（108→160，第 13 輪用戶要求再長一點），與頭底重疊 8px 做領子過渡 */
+  .boss-body{
+    position:absolute;top:152px;left:50%;
+    width:106px;height:160px;
+    margin-left:-53px;
+    background:linear-gradient(155deg,#18c590,#0d7a58);
+    border-radius:9999px;
+    border:3px solid rgba(255,255,255,.22);
+    box-shadow:0 10px 24px rgba(0,0,0,.4);
+  }
+  /* 領帶結頂點 — 倒三角（領圈下方小三角） */
+  .boss-body::before{
+    content:"";
+    position:absolute;top:14px;left:50%;
+    width:0;height:0;
+    margin-left:-10px;
+    border-top:9px solid #fbbf24;
+    border-left:10px solid transparent;
+    border-right:10px solid transparent;
+  }
+  /* 領帶身 — 上寬下尖（傳統領帶尾端尖角），clip-path polygon 中間底部收一個尖點 */
+  .boss-body::after{
+    content:"";
+    position:absolute;top:22px;left:50%;
+    width:22px;height:52px;
+    margin-left:-11px;
+    background:#fbbf24;
+    clip-path:polygon(50% 0%, 100% 14%, 95% 78%, 50% 100%, 5% 78%, 0 14%);
+  }
+  /* 雙手 — 第 13 輪：手臂加長 90→110、起點 top:-20→-60 從身體頂端向上突出更多、角度 ±30→±28 減少外擴 → 手掌升到臉部側面（眼/嘴高度） */
+  .boss-arm{
+    position:absolute;top:-60px;
+    width:22px;height:110px;
+    background:linear-gradient(155deg,#18c590,#0d7a58);
+    border-radius:14px;
+    border:2px solid rgba(255,255,255,.22);
+    transform-origin:bottom center;   /* 從手臂底部（接身體處）旋轉，模擬肩膀旋轉 */
+  }
+  /* 老闆右手（畫面左側）— 提到臉旁邊拿書 */
+  .boss-arm-l{left:6px;transform:rotate(-28deg);animation:bossArmL 1.6s 44.5s ease-in-out infinite}
+  /* 老闆左手（畫面右側）— 提到臉旁邊拿筆 */
+  .boss-arm-r{right:6px;transform:rotate(28deg);animation:bossArmR 1.6s 44.7s ease-in-out infinite}
+  /* 手掌 — 在手臂頂端（向上舉），改用 top 而非 bottom */
+  .boss-hand{
+    position:absolute;top:-12px;left:50%;
+    width:22px;height:22px;
+    margin-left:-11px;
+    background:#fde8c0;
+    border-radius:50%;
+    border:2px solid rgba(0,0,0,.18);
+  }
+  /* 書 — 緊貼手掌上方（縮短 -38→-25 配合手提到臉邊），加 +18deg 自身旋轉部分補償手臂 -28deg 傾角讓書看起來較直立 */
+  .boss-book{
+    position:absolute;top:-25px;left:50%;
+    width:38px;height:28px;
+    margin-left:-19px;
+    background:linear-gradient(135deg,#ef4444,#b91c1c);
+    border-radius:3px 6px 6px 3px;
+    border:2px solid rgba(0,0,0,.3);
+    box-shadow:inset -3px 0 0 rgba(0,0,0,.25);
+    transform:rotate(18deg);
+  }
+  /* 筆 — 緊貼手掌上方（縮短 -42→-28），加 -18deg 自身旋轉補償右手臂 +28deg，筆變較直立朝上 */
+  .boss-pen{
+    position:absolute;top:-28px;left:50%;
+    width:6px;height:42px;
+    margin-left:-3px;
+    background:linear-gradient(to top,#fbbf24 0%,#fbbf24 75%,#1f2937 75%,#1f2937 100%);
+    border-radius:1px 1px 3px 3px;
+    transform:rotate(-18deg);
+  }
+  /* 開心小特效 — 兩顆閃爍菱形挪到帽子兩側上方（呼應「歡呼慶祝」） */
+  .boss-spark{
+    position:absolute;
+    width:14px;height:14px;
+    background:#fbbf24;
+    border-radius:3px;
+    box-shadow:0 0 14px rgba(251,191,36,.85);
+    opacity:0;
+    animation:bossSpark 1.6s 45.4s ease-in-out infinite;
+    z-index:4;
+  }
+  .boss-spark-1{top:-10px;left:62px;animation-delay:45.4s}
+  .boss-spark-2{top:-4px;right:62px;animation-delay:45.9s}
+  /* keyframes — 整體上下浮（開心輕快），距離隨人偶放大同步加大 -7→-14 */
+  @keyframes bossBob{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-14px)}
+  }
+  /* 頭部左右搖（慢） */
+  @keyframes bossHeadTilt{
+    0%,100%{transform:rotate(-4deg)}
+    50%{transform:rotate(4deg)}
+  }
+  /* 老闆右手（畫面左側）— 圍繞 -28deg 基準上下擺動 ±10deg（手提到臉旁的小幅揮舞） */
+  @keyframes bossArmL{
+    0%,100%{transform:rotate(-28deg)}
+    50%{transform:rotate(-38deg)}
+  }
+  /* 老闆左手（畫面右側）— 圍繞 +28deg 基準擺動，跟左手 0.2s 錯開做交替揮舞 */
+  @keyframes bossArmR{
+    0%,100%{transform:rotate(28deg)}
+    50%{transform:rotate(38deg)}
+  }
+  /* 眨眼 — blink 動作在 cycle 早段（35-42%），確保 4.2s cycle + 50s delay 內第一次眨眼在 51.8s 出現（scene 9 視窗內） */
+  @keyframes bossBlink{
+    0%,32%,46%,100%{transform:scaleY(1)}
+    36%,42%{transform:scaleY(.1)}
+  }
+  /* 頭頂閃爍小星（菱形）— 旋轉+脈動 */
+  @keyframes bossSpark{
+    0%,100%{opacity:0;transform:rotate(45deg) scale(.4)}
+    50%{opacity:1;transform:rotate(225deg) scale(1)}
+  }
+
+  .ping{
+    position:absolute;width:120%;aspect-ratio:1/1;border-radius:50%;
+    border:2px solid var(--teal);opacity:0;animation:pingOut 1.8s 45.3s ease-out;pointer-events:none;
+  }
+  @keyframes pingOut{0%{opacity:.8;transform:scale(.2)}100%{opacity:0;transform:scale(1.3)}}
+
+  /* ─────── 字幕條（往上放至畫面 55% 處 + 字級 3x + 底部留 3% 給進度條，避免最後一行被切） ─────── */
+  .subtitle-bar{
+    position:absolute;left:0;right:0;
+    top:55%;height:42%;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 6%;
+    z-index:80;
+    pointer-events:none;
+    background:linear-gradient(to top,rgba(0,0,0,.55) 30%,rgba(0,0,0,0));
+  }
+  .subtitle{
+    width:100%;text-align:center;
+    color:#fff;
+    font-size:64px;font-weight:800;line-height:1.25;letter-spacing:.02em;
+    text-shadow:0 4px 28px rgba(0,0,0,.85),0 2px 8px rgba(0,0,0,.95);
+  }
+  .sub-line{display:none}
+  .sub-line.show{display:block;animation:subIn .3s ease-out}
+  @keyframes subIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .sub-line .small{font-size:.55em;color:rgba(255,255,255,.82);font-weight:600;display:block;margin-top:14px;letter-spacing:.04em}
+
+  /* 進度條 */
+  .progress{
+    position:absolute;bottom:0;left:0;height:3px;
+    background:linear-gradient(90deg,#18c590,#fbbf24);
+    width:0;animation:prog 53s linear forwards;
+    box-shadow:0 0 14px rgba(24,197,144,.7);
+    z-index:95;
+  }
+  @keyframes prog{to{width:100%}}
+
+  /* 重播 */
+  .replay{
+    position:absolute;top:14px;right:14px;z-index:99;
+    padding:8px 14px;border-radius:8px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#fff;
+    font-size:12px;cursor:pointer;backdrop-filter:blur(8px);
+    transition:all .2s;
+  }
+  .replay:hover{background:rgba(255,255,255,.18)}
+
+  /* 字幕字級在小視窗縮放 */
+  @media (max-width:680px){
+    .subtitle{font-size:42px}
+    .deal .new{font-size:84px}
+    .brand-reveal .name{font-size:48px}
+  }
+</style>
+</head>
+<body>
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <button class="replay" onclick="location.reload()">↻ 重播</button>
+
+    <div class="canvas">
+
+      <!-- Scene 0 : 0–3s 你的網站首頁 mockup（新增） -->
+      <div class="scene s0">
+        <div class="website-mockup">
+          <div class="browser-chrome">
+            <div class="browser-dots"><span></span><span></span><span></span></div>
+            <div class="browser-url">yourbrand.com</div>
+          </div>
+          <div class="website-body">
+            <div class="web-nav">
+              <div class="web-logo">你的品牌</div>
+              <div class="web-menu"><span>關於</span><span>服務</span><span>案例</span><span>聯絡</span></div>
+            </div>
+            <div class="web-hero">
+              <div class="web-h1">專業數位行銷服務</div>
+              <div class="web-sub"><span class="en">10</span> 年經驗・<span class="en">100+</span> 客戶信賴</div>
+              <div class="web-cta">立即諮詢</div>
+            </div>
+            <div class="web-cards">
+              <div class="web-card"></div>
+              <div class="web-card"></div>
+              <div class="web-card"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 1 : 3–8s -->
+      <div class="scene s1">
+        <div class="phone">
+          <div class="phone-bar"><span class="clock">9:41</span><span>● ● ●</span></div>
+          <div class="chat">
+            <div class="chat-title"><span class="en">ChatGPT</span> · GPT-4o</div>
+            <div class="bubble ai">你好，有什麼可以幫你的嗎？</div>
+            <div class="bubble user">台北哪家數位行銷公司值得找？<span class="cursor"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 2 : 8–13s -->
+      <div class="scene s2">
+        <div class="answer-card">
+          <div class="ac-head"><span class="dot"></span><h3><span class="en">AI</span> 答案・近期最常被提及</h3></div>
+          <div class="comp"><span class="b b1">A</span><span><span class="en">A</span> 行銷公司</span><span class="pct">提及率 <span class="en">38%</span></span></div>
+          <div class="comp"><span class="b b2">B</span><span><span class="en">B</span> 數位顧問</span><span class="pct">提及率 <span class="en">27%</span></span></div>
+          <div class="comp"><span class="b b3">C</span><span><span class="en">C</span> 廣告工作室</span><span class="pct">提及率 <span class="en">19%</span></span></div>
+          <div class="you-missing">⚠️ 你的品牌・未被列出</div>
+        </div>
+      </div>
+
+      <!-- Scene 3 : 13–18s -->
+      <div class="scene s3">
+        <div class="ghost-logo">你的品牌</div>
+      </div>
+
+      <!-- Scene 4 : 18–23s -->
+      <div class="scene s4">
+        <div class="radar-wrap">
+          <div class="radar-ring"></div>
+          <div class="radar-ring r2"></div>
+          <div class="radar-ring r3"></div>
+          <div class="radar-ring r4"></div>
+          <div class="radar-sweep"></div>
+          <div class="radar-center"></div>
+          <div class="radar-dot d1"></div>
+          <div class="radar-dot d2"></div>
+          <div class="radar-dot d3"></div>
+          <!-- 五大 LLM 標籤環繞雷達（19-21s 依序 fade in，搭配雷達掃描的「掃到」氛圍） -->
+          <div class="llm-label l-a">ChatGPT</div>
+          <div class="llm-label l-b">Claude</div>
+          <div class="llm-label l-c">Gemini</div>
+          <div class="llm-label l-d">Perplexity</div>
+          <div class="llm-label l-e">Copilot</div>
+        </div>
+        <div class="brand-reveal">
+          <div class="name"><span class="en">AI</span> 雷達</div>
+          <div class="tag"><span class="en">AI</span> 能見度監測平台</div>
+        </div>
+      </div>
+
+      <!-- Scene 5 : 23–29.7s -->
+      <div class="scene s5">
+        <div class="s5-title">五大面向・一次到位</div>
+        <div class="grid5">
+          <!-- 分數起始值低於 50（藍色），由 JS 飆升至 80+（轉黃色）並做 pop 強調 -->
+          <div class="gcard c1"><div class="label"><span class="en">SEO</span></div><div class="score cool" data-target="87">32</div><div class="sub">搜尋優化</div></div>
+          <div class="gcard c2"><div class="label"><span class="en">AEO</span></div><div class="score cool" data-target="84">28</div><div class="sub">答案引擎</div></div>
+          <div class="gcard c3"><div class="label"><span class="en">GEO</span></div><div class="score cool" data-target="81">41</div><div class="sub">生成引擎</div></div>
+          <div class="gcard c4"><div class="label"><span class="en">E-E-A-T</span></div><div class="score cool" data-target="88">35</div><div class="sub">權威度</div></div>
+          <div class="gcard c5"><div class="label yellow">內容品質</div><div class="score cool" data-target="86">39</div><div class="sub">可讀性</div></div>
+        </div>
+      </div>
+
+      <!-- Scene 6 : 29.7–36.3s -->
+      <div class="scene s6">
+        <div class="s6-title"><span class="en">24</span> 小時自動監測・三大 <span class="en">AI</span> 引擎</div>
+        <div class="llm-wrap">
+          <div class="llm l1">
+            <div class="ico">CG</div>
+            <div class="name"><span class="en">ChatGPT</span></div>
+            <div class="badge">提及率 <span class="en">+18%</span></div>
+          </div>
+          <div class="llm l2">
+            <div class="ico">Cl</div>
+            <div class="name"><span class="en">Claude</span></div>
+            <div class="badge">排名 <span class="en">#2</span></div>
+          </div>
+          <div class="llm l3">
+            <div class="ico">Gm</div>
+            <div class="name"><span class="en">Gemini</span></div>
+            <div class="badge">未被引用</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 7 : 36.3–43s -->
+      <div class="scene s7">
+        <div class="s7-inner">
+          <div class="platforms">
+            <div class="plat"><span class="en">WP</span></div>
+            <div class="plat"><span class="en">Shop</span></div>
+            <div class="plat"><span class="en">Wix</span></div>
+            <div class="plat"><span class="en">HTML</span></div>
+          </div>
+          <div class="code-box">
+            <div class="copy-toast">✓ 已複製</div>
+            <div class="line l1"><span class="k">&lt;script</span> type=<span class="s">"application/ld+json"</span><span class="k">&gt;</span></div>
+            <div class="line l2">  { "@context": "<span class="s">https://schema.org</span>",</div>
+            <div class="line l3">    "@type": <span class="s">"Organization"</span>, "name": <span class="s">"你的品牌"</span> }</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 8（早鳥價）已於 2026-05-21 第 14 輪移除 -->
+
+      <!-- Scene 9 : 43–53s -->
+      <div class="scene s9">
+        <div class="closing">
+          <div class="ping"></div>
+          <div class="logo-fin"><span class="en">AI</span> 雷達</div>
+          <div class="slogan"><span class="en">AI</span> 推薦你嗎？現在就讓 <span class="en">AI</span> 看見你的網站。</div>
+          <div class="cta-btn">立即免費分析</div>
+        </div>
+      </div>
+
+    </div><!-- /canvas -->
+
+    <!-- 戴鬍子老闆人偶（搬出 canvas、改絕對定位於 stage，視覺位置在原 45-50s 字幕區域）— 全幾何造型，膠囊身體 + 大臉，會微笑+晃身+揮手+眨眼 -->
+    <div class="boss-char" aria-hidden="true">
+      <div class="boss-head">
+        <div class="boss-hair"></div>
+        <div class="boss-eye boss-eye-l"></div>
+        <div class="boss-eye boss-eye-r"></div>
+        <div class="boss-cheek boss-cheek-l"></div>
+        <div class="boss-cheek boss-cheek-r"></div>
+        <div class="boss-mouth"></div>
+      </div>
+      <div class="boss-body">
+        <!-- 老闆右手（畫面左側）— 拿書 -->
+        <div class="boss-arm boss-arm-l">
+          <div class="boss-hand"></div>
+          <div class="boss-book"></div>
+        </div>
+        <!-- 老闆左手（畫面右側）— 拿筆 -->
+        <div class="boss-arm boss-arm-r">
+          <div class="boss-hand"></div>
+          <div class="boss-pen"></div>
+        </div>
+      </div>
+      <div class="boss-spark boss-spark-1"></div>
+      <div class="boss-spark boss-spark-2"></div>
+    </div>
+
+    <!-- 字幕條 -->
+    <div class="subtitle-bar">
+      <div class="subtitle">
+        <!-- Scene 0 (0-3s) 配對字幕，呼應網站首頁示意 -->
+        <div class="sub-line" data-from="0" data-to="3">你的網站，<span class="en">AI</span> 看得見嗎？</div>
+        <div class="sub-line" data-from="3" data-to="8">當客戶問 <span class="en">ChatGPT</span>⋯⋯</div>
+        <div class="sub-line" data-from="8" data-to="13">「該找哪一家？」<span class="small">— 你的品牌在答案裡嗎？</span></div>
+        <div class="sub-line" data-from="13" data-to="18">在 <span class="en">AI</span> 時代，網站沒被推薦，就等於不存在</div>
+        <div class="sub-line" data-from="18" data-to="23"><span class="en">AI</span> 雷達幫你掃描出看不見的盲點</div>
+        <div class="sub-line" data-from="23" data-to="29.7">五大面向一次到位<span class="small"><span class="en">SEO</span>・<span class="en">AEO</span>・<span class="en">GEO</span>・<span class="en">E-E-A-T</span>・<span class="yellow">內容品質</span></span></div>
+        <div class="sub-line" data-from="29.7" data-to="36.3"><span class="en">24</span> 小時監測 <span class="en">ChatGPT</span>、<span class="en">Claude</span>、<span class="en">Gemini</span><span class="small">推薦的是你還是對手？</span></div>
+        <div class="sub-line" data-from="36.3" data-to="43">修復碼一鍵複製・平台別指南<span class="small"><span class="en">WordPress</span> / <span class="en">Shopify</span> / <span class="en">Wix</span> / <span class="en">HTML</span> 都支援</span></div>
+        <!-- 2026-05-21 第 14 輪：43-48s 早鳥價字幕已刪除（連同 Scene 8 移除）；48-53s 字幕也已於前一輪移除（人偶搬到該位置取代） -->
+      </div>
+    </div>
+
+    <div class="progress"></div>
+  </div>
+</div>
+
+<script>
+  // 字幕同步：用 53 秒 timer 切換 show class（2026-05-21 從 50s 再延長 3s 為 scene 0 騰出空間）
+  const lines = document.querySelectorAll('.sub-line');
+  const start = performance.now();
+
+  // ── Scene 5 五大面向分數動畫（時間 +3s 配合新增的 scene 0）──
+  // 卡片進場時間 23.3 / 23.8 / 24.3 / 24.8 / 25.3s（cardFlip 0.6s）→ 末卡進場完成於 25.9s
+  // 飆升於 26.0–27.6s，越過 70 分時 .cool class 移除轉黃，到達目標後依序 pop（27.9s 起 stagger 0.1s）
+  const SCORE_TICK_START = 26.0;
+  const SCORE_TICK_DURATION = 1.6;
+  const SCORE_COLOR_THRESHOLD = 70;   // 數字 ≥ 70 即移除 .cool 轉回預設黃色
+  const SCORE_POP_START = 27.9;
+  const SCORE_POP_STAGGER = 0.10;
+  const scoreEls = Array.from(document.querySelectorAll('.gcard .score'));
+  const scoreCards = scoreEls.map(el => ({
+    el,
+    card: el.closest('.gcard'),
+    from: parseInt(el.textContent, 10),
+    to: parseInt(el.dataset.target, 10),
+    popped: false,
+  }));
+
+  function tick(){
+    const t = (performance.now() - start) / 1000;
+    if (t >= 53){ return; }  // 結束（重播按鈕會 reload 整頁）
+    lines.forEach(l => {
+      const a = +l.dataset.from, b = +l.dataset.to;
+      l.classList.toggle('show', t >= a && t < b);
+    });
+
+    // 分數插值：ease-out cubic（前快後緩，stop on number 感更明顯）
+    if (t >= SCORE_TICK_START){
+      const p = Math.min(1, (t - SCORE_TICK_START) / SCORE_TICK_DURATION);
+      const eased = 1 - Math.pow(1 - p, 3);
+      scoreCards.forEach(c => {
+        const v = Math.round(c.from + (c.to - c.from) * eased);
+        if (c.el.textContent !== String(v)) c.el.textContent = v;
+        // 跨過門檻就把藍色 .cool 拿掉，讓 CSS transition 平滑切到黃
+        if (v >= SCORE_COLOR_THRESHOLD) c.el.classList.remove('cool');
+        else c.el.classList.add('cool');
+      });
+    }
+
+    // 依序 pop：每張卡片到時機就加 .pop class，CSS keyframes 跑一次 scale 1→1.18→1
+    if (t >= SCORE_POP_START){
+      scoreCards.forEach((c, i) => {
+        if (!c.popped && t >= SCORE_POP_START + i * SCORE_POP_STAGGER){
+          c.popped = true;
+          c.card.classList.add('pop');
+        }
+      });
+    }
+
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+</script>
+</body>
+</html>

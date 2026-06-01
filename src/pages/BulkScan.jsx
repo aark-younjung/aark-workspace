@@ -19,7 +19,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
-import { GlassCard } from '../components/v2'
+import { GlassCard, ArticleAnalysisTabs } from '../components/v2'
 import { T } from '../styles/v2-tokens'
 
 const POLL_INTERVAL_MS = 5000  // 每 5 秒輪詢進度
@@ -187,6 +187,9 @@ export default function BulkScan() {
 
   return (
     <PageWrap>
+      {/* 文章分析統一 tab — 跟 /content-audit 用同一個元件，視覺一致 */}
+      <ArticleAnalysisTabs active="bulk" websiteId={websiteId} />
+
       {/* Hero — 網站資訊 + 主動作按鈕 */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
@@ -367,26 +370,50 @@ function ResultsView({ job, results, onRescan, starting }) {
 function UrlRow({ result }) {
   const probs = result.findings?.problems || []
   const isDone = result.status === 'done'
+  const hasProblems = isDone && probs.length > 0
+  const [expanded, setExpanded] = useState(false)
+
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '6px 10px',
       background: isDone && probs.length === 0 ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
       borderRadius: 4,
     }}>
-      <a href={result.url} target="_blank" rel="noopener noreferrer" style={{
-        fontSize: 11, color: T.textMid, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        textDecoration: 'none', marginRight: 8,
-      }}>{result.url}</a>
-      <span style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
-        {!isDone ? (
-          <span style={{ color: T.fail }}>❌ {result.error_message || '失敗'}</span>
-        ) : probs.length === 0 ? (
-          <span style={{ color: T.pass }}>✅ 通過</span>
-        ) : (
-          <span style={{ color: T.warn }}>⚠️ {probs.length} 問題</span>
-        )}
-      </span>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        cursor: hasProblems ? 'pointer' : 'default',
+      }}
+      onClick={() => hasProblems && setExpanded(v => !v)}>
+        <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{
+          fontSize: 11, color: T.textMid, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          textDecoration: 'none', marginRight: 8,
+        }}>{result.url}</a>
+        <span style={{ fontSize: 11, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+          {!isDone ? (
+            <span style={{ color: T.fail }}>❌ {result.error_message || '失敗'}</span>
+          ) : probs.length === 0 ? (
+            <span style={{ color: T.pass }}>✅ 通過</span>
+          ) : (
+            <>
+              <span style={{ color: T.warn }}>⚠️ {probs.length} 問題</span>
+              <span style={{ color: T.textLow, fontSize: 10 }}>{expanded ? '▾' : '▸'}</span>
+            </>
+          )}
+        </span>
+      </div>
+      {hasProblems && expanded && (
+        <ul style={{
+          margin: '6px 0 4px 16px', padding: 0, listStyle: 'none',
+          fontSize: 11, color: T.textMid, lineHeight: 1.6,
+        }}>
+          {probs.map((p, i) => (
+            <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+              <span>{SEVERITY_ICON[p.severity] || '⚪'}</span>
+              <span>{p.label || PROBLEM_LABELS[p.id] || p.id}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

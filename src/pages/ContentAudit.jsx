@@ -9,6 +9,7 @@ import { T } from '../styles/v2-tokens'
 import {
   AuditTopBar, ScoreHero, HeroSkeleton,
   IssueBoard, IssueBoardSkeleton, ContentSignature,
+  ArticleAnalysisTabs,
 } from '../components/v2'
 
 const CONTENT_ACCENT = '#ec4899' // 內容品質粉紅（與 Dashboard 第五分數一致）
@@ -318,6 +319,9 @@ function DetailMode({ websiteId }) {
             accent2={CONTENT_ACCENT2}
           />
 
+          {/* 文章分析統一 tab（B 方案 IA）— 讓「單篇」跟「批次」感覺是同個功能不同模式 */}
+          <ArticleAnalysisTabs active="single" websiteId={websiteId} />
+
           <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
             {loading ? (
               <>
@@ -424,6 +428,9 @@ function AdHocMode() {
       <SiteHeader />
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+        {/* 文章分析統一 tab — 沒 websiteId 時批次模式變灰並顯示提示 */}
+        <ArticleAnalysisTabs active="single" websiteId={null} />
+
         {/* Hero */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full text-sm font-medium mb-5">
