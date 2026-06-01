@@ -6,6 +6,32 @@
 
 ---
 
+### 2026-06-01（批次掃描 Phase 2 — Free 試掃 3 篇 FOMO 流程）
+**用戶質疑「免費試一篇」FOMO 跟單篇模式重疊沒鉤子。改設計成：免費抓全 sitemap 顯示總篇數 + 真實掃 3 篇樣本 + 鎖剩下的：**
+
+- 🗃️ **SQL migration**（用戶要跑）：
+  ```sql
+  ALTER TABLE bulk_scan_jobs
+    ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'full' CHECK (kind IN ('sample', 'full')),
+    ADD COLUMN IF NOT EXISTS discovered_count INTEGER DEFAULT 0;
+  ```
+- 🔧 **api/bulk-scan.js**：
+  - `?action=start` body 接 `mode: 'sample'|'full'` 參數
+  - Free 用戶**強制 sample**（後端守衛），Pro 用戶預設 full、可指定 sample（測試用）
+  - sample 取 sitemap 前 3 篇（依 lastmod 倒序，最新文章先掃）
+  - Free **每個網站只能跑 1 次 sample**（防刷）— 想再跑就升 Pro
+  - 寫入 `discovered_count` = sitemap 抓到的全站總篇數（給 UI「你網站有 N 篇」用）
+  - `kind`、`discovered_count` 也加進 status / results 回傳
+- 🎨 **BulkScan.jsx**：
+  - **Free 用戶**：拿掉 hard-lock upsell card，改成「🎁 免費試掃 3 篇」按鈕 + 旁邊「升級 Pro 一次掃完全部」CTA
+  - **Pro 用戶**：「🚀 開始掃描全站文章」（保持原設計）
+  - **結果頁**：新增 `SampleUpsellBanner` 大型 banner（紫色漸層 + 🔒），放 hero 上方第一眼看到。文案：「你網站總共 487 篇文章 — 還有 484 篇待解鎖」+「升級 Pro 解鎖全部」按鈕
+  - ScoreHero 文案區分模式：sample 顯示「試掃樣本 / 已掃 3 / 共 487 篇」，full 顯示「批次掃描 / 200 篇」
+  - sample mode 隱藏「重新掃描」按鈕（Free 不能再跑）
+- 🎯 **設計理由**：對比「你網站有 487 篇」vs「我們只掃了 3 篇」造成落差感、觸發升級念頭。比舊版「Pro 限定鎖卡」轉化率高很多（對標 Ahrefs/SEMrush 同套路）
+
+---
+
 ### 2026-06-01（批次掃描結果頁改 2 欄 Hero — 視覺跟單篇模式統一）
 **用戶實測 Phase 1.5 後回報想要結果頁長得跟單篇模式一樣（左 ScoreHero 分數圈 + 右拆解進度條）：**
 

@@ -76,7 +76,9 @@ export default function BulkScan() {
     }
   }
 
-  async function handleStart() {
+  // mode: 'sample' (Free 試掃 3 篇) / 'full' (Pro 200 篇全掃)
+  // 預設沒帶 mode = backend 自動依用戶身份決定（Free → sample / Pro → full）
+  async function handleStart(mode) {
     if (starting) return
     setStarting(true)
     setError(null)
@@ -86,11 +88,10 @@ export default function BulkScan() {
       const r = await fetch('/api/bulk-scan?action=start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ websiteId }),
+        body: JSON.stringify({ websiteId, mode }),
       })
       const data = await r.json()
       if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`)
-      // 立刻拉一次 job
       const { data: newJob } = await supabase
         .from('bulk_scan_jobs').select('*').eq('id', data.jobId).single()
       setJob(newJob)
@@ -169,21 +170,8 @@ export default function BulkScan() {
 
   if (loading) return <PageWrap>載入中...</PageWrap>
 
-  // Pro / Trial 守衛 — 未通過顯示 upsell card 引導到 /pricing
-  if (!isPro && !isTrial) {
-    return (
-      <PageWrap>
-        <GlassCard color={T.orange} style={{ padding: 32, textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🪪</div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: T.text, marginBottom: 8 }}>批次文章掃描（Pro 限定）</h2>
-          <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.75, marginBottom: 20, maxWidth: 480, margin: '0 auto 20px' }}>
-            一鍵掃描你網站全部文章（最多 200 篇），找出哪些頁面缺 H1、缺 schema、Meta 過短等問題 — 不用一篇一篇手動檢查。
-          </p>
-          <Link to="/pricing" style={proButtonStyle}>升級 Pro 解鎖 →</Link>
-        </GlassCard>
-      </PageWrap>
-    )
-  }
+  // 不再 hard-lock Pro — Free 可以跑「試掃 3 篇」sample。Pro 守衛留在 backend handleStart
+  const isProUser = isPro || isTrial
 
   return (
     <PageWrap>
@@ -205,26 +193,62 @@ export default function BulkScan() {
         </div>
       )}
 
-      {/* 沒 job 或上次失敗 / 取消 → 顯示開始按鈕 */}
+      {/* 沒 job 或上次失敗 / 取消 → 顯示開始按鈕（Pro / Free 不同 UX） */}
       {(!job || ['failed', 'cancelled'].includes(job.status)) && (
-        <GlassCard color={T.aeo} style={{ padding: 28 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>
-            {job ? '重新批次掃描' : '開始批次掃描'}
-          </h3>
-          <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
-            我們會抓你網站的 sitemap.xml，找出所有文章 URL（最多 200 篇，依 sitemap `&lt;lastmod&gt;` 倒序，最新先掃），
-            逐篇分析 7 項文章層級檢測：H1 / Meta 標題 / Meta 描述 / Open Graph / JSON-LD schema / 字數 / canonical。
-            預估時長 25-30 分鐘，過程中可關閉視窗，掃完回來看結果。
-          </p>
-          {job?.status === 'failed' && job?.error_message && (
-            <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 12, color: '#fca5a5' }}>
-              上次失敗：{job.error_message}
+        isProUser ? (
+          /* Pro 版：直接「開始掃描全站」按鈕 */
+          <GlassCard color={T.aeo} style={{ padding: 28 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>
+              {job ? '重新批次掃描' : '開始批次掃描'}
+            </h3>
+            <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
+              我們會抓你網站的 sitemap.xml，找出所有文章 URL（最多 200 篇，依 sitemap lastmod 倒序、最新先掃），
+              逐篇分析 7 項文章層級檢測：H1 / Meta 標題 / Meta 描述 / Open Graph / JSON-LD schema / 字數 / canonical。
+              預估時長 25-30 分鐘，過程中可關閉視窗，掃完回來看結果。
+            </p>
+            {job?.status === 'failed' && job?.error_message && (
+              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 12, color: '#fca5a5' }}>
+                上次失敗：{job.error_message}
+              </div>
+            )}
+            <button onClick={() => handleStart('full')} disabled={starting} style={primaryButtonStyle}>
+              {starting ? '啟動中...' : '🚀 開始掃描全站文章'}
+            </button>
+          </GlassCard>
+        ) : (
+          /* Free 版：FOMO 試掃 3 篇 + 看完結果再升級 */
+          <GlassCard color={T.aeo} style={{ padding: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text, margin: 0 }}>
+                免費試掃 3 篇樣本
+              </h3>
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+                background: 'rgba(168,85,247,0.25)', color: '#e9d5ff', letterSpacing: '.05em',
+              }}>免費</span>
             </div>
-          )}
-          <button onClick={handleStart} disabled={starting} style={primaryButtonStyle}>
-            {starting ? '啟動中...' : '🚀 開始掃描全站文章'}
-          </button>
-        </GlassCard>
+            <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
+              我們先抓你網站 sitemap、找出全部文章 URL，然後幫你免費掃 <strong style={{ color: T.text }}>3 篇最新文章</strong>當樣本 —
+              讓你親眼看到批次掃描能找出什麼問題。剩下的文章升 Pro 解鎖一鍵全掃。
+            </p>
+            {job?.status === 'failed' && job?.error_message && (
+              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 12, color: '#fca5a5' }}>
+                上次失敗：{job.error_message}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button onClick={() => handleStart('sample')} disabled={starting} style={primaryButtonStyle}>
+                {starting ? '啟動中...' : '🎁 免費試掃 3 篇'}
+              </button>
+              <Link to="/pricing" style={{
+                ...secondaryButtonStyle, textDecoration: 'none', display: 'inline-block',
+              }}>升級 Pro 一次掃完全部 →</Link>
+            </div>
+            <p style={{ fontSize: 11, color: T.textLow, marginTop: 12 }}>
+              ℹ️ 每個網站僅可免費試掃 1 次。想再掃或看完整 200 篇結果請升級 Pro。
+            </p>
+          </GlassCard>
+        )
       )}
 
       {/* 進行中 → 進度條 */}
@@ -286,6 +310,11 @@ function ResultsView({ job, results, onRescan, starting }) {
   // 「全站文章通過率」分數 — 多少 % 篇文章 0 問題 = 分數
   const score = totalScanned > 0 ? Math.round(totalPassed / totalScanned * 100) : 0
 
+  // Phase 2 — 區分 sample（Free 試掃 3 篇）vs full（Pro 完整掃）
+  const isSample = job.kind === 'sample'
+  const discoveredCount = job.discovered_count || totalScanned
+  const lockedCount = Math.max(0, discoveredCount - totalScanned)
+
   // sortedProblems：依「受影響篇數」遞減排序
   const sortedProblems = Object.entries(byType)
     .map(([id, count]) => ({ id, count, label: PROBLEM_LABELS[id] || id, severity: PROBLEM_SEVERITY[id] || 'low' }))
@@ -293,12 +322,17 @@ function ResultsView({ job, results, onRescan, starting }) {
 
   return (
     <>
+      {/* Sample mode 加大型升級 CTA — 放在 hero 上方最顯眼位置 */}
+      {isSample && lockedCount > 0 && <SampleUpsellBanner discoveredCount={discoveredCount} scanned={totalScanned} locked={lockedCount} />}
+
       {/* 兩欄 Hero（左 ScoreHero + 右 問題分佈拆解）— 跟單篇模式視覺一致 */}
       <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
         <ScoreHero
-          face="批次掃描"
-          subChip={`${totalScanned} 篇`}
-          tagline={`全站文章通過率 — ${totalPassed} 篇 0 問題、${totalProblems} 篇待修${job.capped > 0 ? `（你網站超過 200 篇，少 ${job.capped} 篇沒掃）` : ''}`}
+          face={isSample ? '試掃樣本' : '批次掃描'}
+          subChip={isSample ? `已掃 ${totalScanned} / 共 ${discoveredCount} 篇` : `${totalScanned} 篇`}
+          tagline={isSample
+            ? `這 ${totalScanned} 篇樣本的通過率 — ${totalPassed} 篇 0 問題、${totalProblems} 篇待修。剩下 ${lockedCount} 篇升 Pro 解鎖`
+            : `全站文章通過率 — ${totalPassed} 篇 0 問題、${totalProblems} 篇待修${job.capped > 0 ? `（你網站超過 200 篇，少 ${job.capped} 篇沒掃）` : ''}`}
           score={score}
           passedCount={totalPassed}
           failedCount={totalProblems}
@@ -309,12 +343,14 @@ function ResultsView({ job, results, onRescan, starting }) {
         <ProblemBreakdown sortedProblems={sortedProblems} totalScanned={totalScanned} />
       </div>
 
-      {/* 重新掃描按鈕 — 放兩欄之間，獨立一行避免擠到 hero */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'flex-end' }}>
-        <button onClick={onRescan} disabled={starting} style={secondaryButtonStyle}>
-          {starting ? '啟動中...' : '🔄 重新掃描全站'}
-        </button>
-      </div>
+      {/* 重新掃描按鈕 — 只 Pro 顯示（Free 用戶不能再 sample，要升級才能重掃） */}
+      {!isSample && (
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={onRescan} disabled={starting} style={secondaryButtonStyle}>
+            {starting ? '啟動中...' : '🔄 重新掃描全站'}
+          </button>
+        </div>
+      )}
 
       {/* 最有問題的 10 篇 */}
       {offenders.length > 0 && (
@@ -351,6 +387,39 @@ function ResultsView({ job, results, onRescan, starting }) {
         </div>
       </GlassCard>
     </>
+  )
+}
+
+// Sample 模式專屬：大型「N 篇待解鎖」升級 banner，放結果頁最上方第一眼看到
+// 設計重點：對比「你網站有 487 篇」vs「我們只掃了 3 篇」，落差感觸發升級
+function SampleUpsellBanner({ discoveredCount, scanned, locked }) {
+  return (
+    <div style={{
+      marginBottom: 24,
+      borderRadius: 14,
+      padding: '22px 24px',
+      background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(139,92,246,0.10) 50%, rgba(0,0,0,0.4))',
+      border: '1px solid rgba(168,85,247,0.5)',
+      boxShadow: '0 8px 32px rgba(168,85,247,0.15)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 36 }}>🔒</div>
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 4 }}>
+            你網站總共 <span style={{ color: '#c4b5fd' }}>{discoveredCount}</span> 篇文章 — 還有 <span style={{ color: '#fbbf24' }}>{locked}</span> 篇待解鎖
+          </div>
+          <div style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
+            目前你看到的是 <strong style={{ color: T.text }}>{scanned} 篇樣本</strong>的分析結果。升級 Pro 可一次掃描全部 {discoveredCount > 200 ? '200' : discoveredCount} 篇（{discoveredCount > 200 ? '上限' : '完整'}），找出每篇的具體問題 + 完整修法。
+          </div>
+        </div>
+        <Link to="/pricing" style={{
+          padding: '12px 22px', fontSize: 14, fontWeight: 700,
+          background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
+          color: 'white', borderRadius: 10, textDecoration: 'none', fontFamily: T.font,
+          whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(168,85,247,0.4)',
+        }}>升級 Pro 解鎖全部 →</Link>
+      </div>
+    </div>
   )
 }
 

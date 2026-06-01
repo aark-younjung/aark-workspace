@@ -21,6 +21,9 @@ import { createClient } from '@supabase/supabase-js'
 
 // Pro 單次掃描上限（避免單一用戶長時間佔 cron + Vercel function 配額）
 const MAX_URLS_PER_JOB = 200
+// Free 用戶 sample 模式可掃幾篇 — 數字夠小才有「升級就能解鎖全部」的鉤子
+// 3 篇足以讓用戶看到真實 problem 列表 + 跟 487 篇對比有強烈落差感
+const FREE_SAMPLE_SIZE = 3
 
 // 過濾 sitemap 抓到的 URL — 這些路徑通常不是「文章」而是 archive / admin / feed，掃了浪費
 const URL_BLACKLIST_PATTERNS = [
@@ -78,14 +81,17 @@ async function handleStart(req, res, supabase, userId) {
   const websiteId = req.body?.websiteId
   if (!websiteId) return res.status(400).json({ error: 'websiteId is required' })
 
-  // Pro / Trial 守衛 — 批次掃描是 Pro 殺手鐧、不開放免費用戶
+  // 模式：'sample'（Free 試掃 3 篇）/ 'full'（Pro 完整 200 篇）
+  // Free 強制 sample；Pro 預設 full、但也可指定 sample（沒意義但不擋）
+  const requestedMode = req.body?.mode === 'sample' ? 'sample' : 'full'
+
   const { data: profile } = await supabase
     .from('profiles').select('is_pro, is_trial').eq('id', userId).maybeSingle()
-  if (!profile?.is_pro && !profile?.is_trial) {
-    return res.status(403).json({ error: '批次文章掃描為 Pro 功能，請升級或啟用 7 天免費試用' })
-  }
+  const isProOrTrial = !!profile?.is_pro || !!profile?.is_trial
 
-  // 用戶只能掃自己的網站
+  // Free → 強制 sample；Pro 用 requested
+  const kind = isProOrTrial ? requestedMode : 'sample'
+
   const { data: website, error: webErr } = await supabase
     .from('websites').select('id, url, user_id').eq('id', websiteId).eq('user_id', userId).maybeSingle()
   if (webErr || !website) return res.status(404).json({ error: 'Website not found or not owned by user' })
@@ -100,14 +106,27 @@ async function handleStart(req, res, supabase, userId) {
     return res.status(409).json({ error: '此網站已有進行中的批次掃描', jobId: existing.id, status: existing.status })
   }
 
-  // 建 job（先標 discovering，discover 失敗就改 failed）
+  // Free 用戶限制：同一網站只能跑 1 次 sample（防刷 + 想試更多就升級）
+  // Pro 跳過此檢查（已 Pro 之後可以無限次 full scan）
+  if (kind === 'sample' && !isProOrTrial) {
+    const { data: prevSample } = await supabase
+      .from('bulk_scan_jobs').select('id').eq('website_id', websiteId).eq('kind', 'sample').limit(1).maybeSingle()
+    if (prevSample) {
+      return res.status(403).json({
+        error: 'sample_quota_exhausted',
+        message: '此網站的免費試掃已用過。想看更多文章 → 升級 Pro 解鎖全部',
+        previousJobId: prevSample.id,
+      })
+    }
+  }
+
+  // 建 job — 帶 kind 標記
   const { data: job, error: jobErr } = await supabase
     .from('bulk_scan_jobs')
-    .insert({ user_id: userId, website_id: websiteId, status: 'discovering' })
+    .insert({ user_id: userId, website_id: websiteId, status: 'discovering', kind })
     .select('id').single()
   if (jobErr) return res.status(500).json({ error: 'Failed to create job', detail: jobErr.message })
 
-  // sitemap discovery（同步跑，因為 user 等著看結果；通常 < 5 秒）
   let urls
   try {
     urls = await discoverSitemapUrls(website.url)
@@ -133,14 +152,15 @@ async function handleStart(req, res, supabase, userId) {
     })
   }
 
-  // 截掉 Pro 上限以上的、記下截掉幾筆
-  const totalUrls = urls.length
-  const cappedUrls = urls.slice(0, MAX_URLS_PER_JOB)
-  const capped = totalUrls - cappedUrls.length
+  // 依模式決定要 queue 幾篇
+  // sample：取 3 篇（先依 lastmod 倒序的前 3，這 3 篇通常是最近更新的、最值得修）
+  // full：取最多 200 篇
+  const cap = kind === 'sample' ? FREE_SAMPLE_SIZE : MAX_URLS_PER_JOB
+  const discoveredCount = urls.length
+  const queuedUrls = urls.slice(0, cap)
+  const capped = discoveredCount - queuedUrls.length
 
-  // queue 進 bulk_scan_results — 用 upsert + ignoreDuplicates 防 sitemap 重複 URL 撞 unique 索引
-  const rows = cappedUrls.map(u => ({ job_id: job.id, url: u, status: 'pending' }))
-  // Supabase 一次 insert 上限 1000，200 在範圍內
+  const rows = queuedUrls.map(u => ({ job_id: job.id, url: u, status: 'pending' }))
   const { error: insertErr } = await supabase.from('bulk_scan_results').insert(rows)
   if (insertErr) {
     await supabase.from('bulk_scan_jobs').update({
@@ -151,19 +171,21 @@ async function handleStart(req, res, supabase, userId) {
     return res.status(500).json({ error: 'Failed to queue URLs', detail: insertErr.message })
   }
 
-  // 切到 scanning，cron worker 下次觸發就會領 pending 來跑
   await supabase.from('bulk_scan_jobs').update({
     status: 'scanning',
-    total_urls: cappedUrls.length,
+    total_urls: queuedUrls.length,
+    discovered_count: discoveredCount,
     capped,
   }).eq('id', job.id)
 
   return res.status(200).json({
     success: true,
     jobId: job.id,
-    totalUrls: cappedUrls.length,
-    capped,                                  // 截掉幾筆（> 0 代表你網站文章超過 200，這次只掃前 200）
-    estimatedMinutes: Math.ceil(cappedUrls.length / 8),  // 每分鐘 8 篇
+    kind,
+    discoveredCount,
+    totalUrls: queuedUrls.length,
+    capped,
+    estimatedMinutes: Math.max(1, Math.ceil(queuedUrls.length / 8)),
   })
 }
 
@@ -175,7 +197,7 @@ async function handleStatus(req, res, supabase, userId) {
 
   const { data: job, error } = await supabase
     .from('bulk_scan_jobs')
-    .select('id, status, total_urls, scanned_count, failed_count, capped, started_at, finished_at, error_message')
+    .select('id, status, kind, total_urls, discovered_count, scanned_count, failed_count, capped, started_at, finished_at, error_message')
     .eq('id', jobId).eq('user_id', userId).maybeSingle()
   if (error) return res.status(500).json({ error: error.message })
   if (!job) return res.status(404).json({ error: 'Job not found' })
@@ -190,7 +212,7 @@ async function handleResults(req, res, supabase, userId) {
   if (!jobId) return res.status(400).json({ error: 'jobId is required' })
 
   const { data: job, error: jobErr } = await supabase
-    .from('bulk_scan_jobs').select('id, status, aggregate, capped, total_urls').eq('id', jobId).eq('user_id', userId).maybeSingle()
+    .from('bulk_scan_jobs').select('id, status, kind, aggregate, capped, total_urls, discovered_count, scanned_count, failed_count, started_at, finished_at').eq('id', jobId).eq('user_id', userId).maybeSingle()
   if (jobErr) return res.status(500).json({ error: jobErr.message })
   if (!job) return res.status(404).json({ error: 'Job not found' })
 
