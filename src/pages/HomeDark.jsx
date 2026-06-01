@@ -870,10 +870,10 @@ export default function HomeDark() {
             </p>
 
             <p className="text-base text-white/80 mb-4 max-w-lg">
-              輸入網址，60 秒內取得你的 AI 能見度完整報告——免費診斷你的網站
+              輸入網址，60 秒給你完整 AI 能見度報告 — 免費診斷 + 平台別修法步驟手把手帶你修
             </p>
 
-            {/* 差異化賣點 chip — 強調我們連別人不查的「anti-bot 擋 AI 爬蟲」都檢得出 */}
+            {/* 差異化賣點 chip — 4 條軸線：功能廣度 / 技術差異 / 競爭差異 / TA 友善度（對標 GetAutoSEO non-technical 訴求） */}
             <div className="flex flex-wrap gap-2 mb-10 max-w-lg">
               <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-medium">
                 ✓ 7 大檢測項一次到位
@@ -883,6 +883,9 @@ export default function HomeDark() {
               </span>
               <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-300 font-medium">
                 ✓ Ahrefs / SEMrush 不做這個
+              </span>
+              <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/15 border border-purple-400/30 text-purple-300 font-medium">
+                ✓ 不懂程式碼也能照著步驟修
               </span>
             </div>
 
