@@ -199,7 +199,9 @@ function AnnouncementCard({ a, onDismiss }) {
         <span className="text-lg leading-tight pt-0.5">{style.emoji}</span>
         <div className="flex-1 min-w-0">
           <p className={`font-semibold text-sm ${style.titleText}`}>{a.title}</p>
-          <p className={`text-xs mt-0.5 whitespace-pre-wrap ${style.text}`}>{a.content}</p>
+          {/* 改 whitespace-normal — admin 打的換行不會被當斷行，只在容器寬度滿時自然 wrap。
+              要強制換行讓 admin 在文案裡打 "\n"（後續若要支援可改 dangerouslySetInnerHTML + safe replace） */}
+          <p className={`text-xs mt-0.5 whitespace-normal ${style.text}`}>{a.content}</p>
         </div>
         {a.link_url && (
           <div className="flex-shrink-0">
