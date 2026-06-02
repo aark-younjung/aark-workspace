@@ -653,25 +653,41 @@ function H1DetailCard({ detail }) {
 // suggestion 結構：{ kind, current?, current_len?, suggested?, suggested_len?, code_snippet?, note? }
 function SuggestionBlock({ suggestion }) {
   const { current, current_len, suggested, suggested_len, code_snippet, note } = suggestion
-  const [copied, setCopied] = useState(false)
+  // 追蹤剛剛複製的是哪一個按鈕（'text' = 改後純文字 / 'code' = HTML tag），這樣每顆按鈕的 ✅ 提示獨立
+  const [copiedKey, setCopiedKey] = useState(null)
 
-  function handleCopy() {
-    if (!code_snippet) return
-    try {
-      navigator.clipboard.writeText(code_snippet)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    } catch {
-      // 老 browser 沒 clipboard API — 用 fallback
+  function handleCopy(key, value) {
+    if (!value) return
+    const fallback = () => {
       const ta = document.createElement('textarea')
-      ta.value = code_snippet
+      ta.value = value
       document.body.appendChild(ta)
       ta.select()
       try { document.execCommand('copy') } catch { /* ignore */ }
       document.body.removeChild(ta)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
     }
+    try {
+      navigator.clipboard.writeText(value).catch(fallback)
+    } catch { fallback() }
+    setCopiedKey(key)
+    setTimeout(() => setCopiedKey(prev => prev === key ? null : prev), 1800)
+  }
+
+  // 純文字複製鈕（給「改後」/「建議內容」用 — 給只能貼純文字的 SEO 外掛欄位）
+  function MiniCopyBtn({ value, copiedFlag }) {
+    return (
+      <button
+        onClick={() => handleCopy('text', value)}
+        style={{
+          padding: '1px 6px', fontSize: 9.5, fontWeight: 600,
+          background: copiedFlag ? 'rgba(16,185,129,0.25)' : 'rgba(16,185,129,0.12)',
+          color: copiedFlag ? '#86efac' : '#a7f3d0',
+          border: `1px solid ${copiedFlag ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.35)'}`,
+          borderRadius: 3, cursor: 'pointer', fontFamily: T.font,
+          marginLeft: 6, verticalAlign: 'middle',
+        }}
+      >{copiedFlag ? '✅' : '📋'} {copiedFlag ? '已複製' : '複製文字'}</button>
+    )
   }
 
   return (
@@ -699,7 +715,10 @@ function SuggestionBlock({ suggestion }) {
             }}>{current}</div>
           </div>
           <div>
-            <span style={{ color: '#86efac', fontSize: 10 }}>改後 {suggested_len ? `(${suggested_len} 字)` : ''}</span>
+            <span style={{ color: '#86efac', fontSize: 10 }}>
+              改後 {suggested_len ? `(${suggested_len} 字)` : ''}
+              <MiniCopyBtn value={suggested} copiedFlag={copiedKey === 'text'} />
+            </span>
             <div style={{
               padding: '3px 8px', borderRadius: 3,
               background: 'rgba(16,185,129,0.10)',
@@ -715,7 +734,10 @@ function SuggestionBlock({ suggestion }) {
       {/* 純建議（無 current 對照、例如 missing_meta_desc / missing_canonical） */}
       {!current && suggested && (
         <div style={{ marginBottom: 6 }}>
-          <span style={{ color: '#86efac', fontSize: 10 }}>建議內容 {suggested_len ? `(${suggested_len} 字)` : ''}</span>
+          <span style={{ color: '#86efac', fontSize: 10 }}>
+            建議內容 {suggested_len ? `(${suggested_len} 字)` : ''}
+            <MiniCopyBtn value={suggested} copiedFlag={copiedKey === 'text'} />
+          </span>
           <div style={{
             padding: '3px 8px', borderRadius: 3,
             background: 'rgba(16,185,129,0.10)',
@@ -733,18 +755,18 @@ function SuggestionBlock({ suggestion }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
             <span style={{ color: T.textLow, fontSize: 10 }}>{'複製這段貼到 <head>'}</span>
             <button
-              onClick={handleCopy}
+              onClick={() => handleCopy('code', code_snippet)}
               style={{
                 padding: '2px 8px', fontSize: 10, fontWeight: 600,
-                background: copied ? 'rgba(16,185,129,0.25)' : 'rgba(20,184,166,0.18)',
-                color: copied ? '#86efac' : '#5eead4',
-                border: `1px solid ${copied ? 'rgba(16,185,129,0.5)' : 'rgba(20,184,166,0.5)'}`,
+                background: copiedKey === 'code' ? 'rgba(16,185,129,0.25)' : 'rgba(20,184,166,0.18)',
+                color: copiedKey === 'code' ? '#86efac' : '#5eead4',
+                border: `1px solid ${copiedKey === 'code' ? 'rgba(16,185,129,0.5)' : 'rgba(20,184,166,0.5)'}`,
                 borderRadius: 3,
                 cursor: 'pointer',
                 fontFamily: T.font,
               }}
             >
-              {copied ? '✅ 已複製' : '📋 複製'}
+              {copiedKey === 'code' ? '✅ 已複製' : '📋 複製整段 HTML'}
             </button>
           </div>
           <div style={{
