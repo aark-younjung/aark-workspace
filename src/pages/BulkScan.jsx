@@ -564,6 +564,12 @@ function UrlRow({ result }) {
                     ))}
                   </div>
                 )}
+                {/* Stage 2: meta_title / meta_desc / canonical 等 finding 帶 suggestion 物件時、渲染建議區塊 */}
+                {p.suggestion && (
+                  <div style={{ marginTop: 6, marginLeft: 20 }}>
+                    <SuggestionBlock suggestion={p.suggestion} />
+                  </div>
+                )}
                 {tip && (
                   <div style={{
                     marginTop: 4, marginLeft: 20,
@@ -639,6 +645,120 @@ function H1DetailCard({ detail }) {
       )}
       {/* 原因說明 */}
       <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
+    </div>
+  )
+}
+
+// Stage 2: meta_title / meta_desc / canonical 等 finding 的建議區塊
+// suggestion 結構：{ kind, current?, current_len?, suggested?, suggested_len?, code_snippet?, note? }
+function SuggestionBlock({ suggestion }) {
+  const { current, current_len, suggested, suggested_len, code_snippet, note } = suggestion
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    if (!code_snippet) return
+    try {
+      navigator.clipboard.writeText(code_snippet)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // 老 browser 沒 clipboard API — 用 fallback
+      const ta = document.createElement('textarea')
+      ta.value = code_snippet
+      document.body.appendChild(ta)
+      ta.select()
+      try { document.execCommand('copy') } catch { /* ignore */ }
+      document.body.removeChild(ta)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    }
+  }
+
+  return (
+    <div style={{
+      padding: '8px 10px',
+      background: 'rgba(20,184,166,0.08)',           // 青綠微底（呼應主題色）
+      borderLeft: '2px solid rgba(20,184,166,0.4)',
+      borderRadius: 4,
+      fontSize: 11,
+      lineHeight: 1.6,
+    }}>
+      {/* 改前 / 改後對照（只有 current+suggested 都存在才顯示） */}
+      {current && suggested && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
+          <div>
+            <span style={{ color: T.textLow, fontSize: 10 }}>改前 {current_len ? `(${current_len} 字)` : ''}</span>
+            <div style={{
+              padding: '3px 8px', borderRadius: 3,
+              background: 'rgba(239,68,68,0.08)',
+              color: T.textMid,
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: 10.5,
+              marginTop: 2,
+              wordBreak: 'break-all',
+            }}>{current}</div>
+          </div>
+          <div>
+            <span style={{ color: '#86efac', fontSize: 10 }}>改後 {suggested_len ? `(${suggested_len} 字)` : ''}</span>
+            <div style={{
+              padding: '3px 8px', borderRadius: 3,
+              background: 'rgba(16,185,129,0.10)',
+              color: T.text,
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: 10.5,
+              marginTop: 2,
+              wordBreak: 'break-all',
+            }}>{suggested}</div>
+          </div>
+        </div>
+      )}
+      {/* 純建議（無 current 對照、例如 missing_meta_desc / missing_canonical） */}
+      {!current && suggested && (
+        <div style={{ marginBottom: 6 }}>
+          <span style={{ color: '#86efac', fontSize: 10 }}>建議內容 {suggested_len ? `(${suggested_len} 字)` : ''}</span>
+          <div style={{
+            padding: '3px 8px', borderRadius: 3,
+            background: 'rgba(16,185,129,0.10)',
+            color: T.text,
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontSize: 10.5,
+            marginTop: 2,
+            wordBreak: 'break-all',
+          }}>{suggested}</div>
+        </div>
+      )}
+      {/* 可複製的 code snippet — 顯示完整 HTML tag 給用戶貼回 */}
+      {code_snippet && (
+        <div style={{ marginBottom: note ? 6 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+            <span style={{ color: T.textLow, fontSize: 10 }}>可貼回 HTML</span>
+            <button
+              onClick={handleCopy}
+              style={{
+                padding: '2px 8px', fontSize: 10, fontWeight: 600,
+                background: copied ? 'rgba(16,185,129,0.25)' : 'rgba(20,184,166,0.18)',
+                color: copied ? '#86efac' : '#5eead4',
+                border: `1px solid ${copied ? 'rgba(16,185,129,0.5)' : 'rgba(20,184,166,0.5)'}`,
+                borderRadius: 3,
+                cursor: 'pointer',
+                fontFamily: T.font,
+              }}
+            >
+              {copied ? '✅ 已複製' : '📋 複製'}
+            </button>
+          </div>
+          <div style={{
+            padding: '4px 8px', borderRadius: 3,
+            background: 'rgba(0,0,0,0.35)',
+            color: '#a7f3d0',
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontSize: 10.5,
+            wordBreak: 'break-all',
+          }}>{code_snippet}</div>
+        </div>
+      )}
+      {/* 說明文字 */}
+      {note && <div style={{ color: T.textLow, fontSize: 10.5 }}>{note}</div>}
     </div>
   )
 }

@@ -263,18 +263,112 @@ function analyzeArticleHtml(html, url) {
   const metaTitle = titleMatch ? decodeEntities(titleMatch[1]).trim() : ''
   const metaTitleLen = metaTitle.length
   const hasMetaTitle = metaTitleLen > 0
-  if (!hasMetaTitle) problems.push({ id: 'missing_meta_title', severity: 'high', label: '缺 <title> 標題' })
-  else if (metaTitleLen < 20) problems.push({ id: 'short_meta_title', severity: 'medium', label: `標題只有 ${metaTitleLen} 字（建議 30-60）` })
-  else if (metaTitleLen > 70) problems.push({ id: 'long_meta_title', severity: 'low', label: `標題 ${metaTitleLen} 字過長（建議 30-60，Google SERP 會截斷）` })
+  // Stage 2: 抽品牌名（給 title / desc 建議用）— og:site_name 優先、否則從 title 末段倒推
+  const brandName = extractBrandName(html, metaTitle)
+  if (!hasMetaTitle) {
+    problems.push({
+      id: 'missing_meta_title',
+      severity: 'high',
+      label: '缺 <title> 標題',
+      suggestion: brandName ? {
+        kind: 'code',
+        note: `加在 <head> 區、品牌名「${brandName}」自動帶入`,
+        code_snippet: `<title>主關鍵字｜${brandName}</title>`,
+      } : null,
+    })
+  }
+  else if (metaTitleLen < 20) {
+    // 短標題建議：如果有品牌名、補成「{current}｜{brand}」；如果連品牌都沒有、純粹提示
+    const containsBrand = brandName && metaTitle.includes(brandName)
+    const suggested = brandName && !containsBrand ? `${metaTitle}｜${brandName}` : null
+    problems.push({
+      id: 'short_meta_title',
+      severity: 'medium',
+      label: `標題只有 ${metaTitleLen} 字（建議 30-60）`,
+      suggestion: {
+        kind: 'text',
+        current: metaTitle, current_len: metaTitleLen,
+        suggested, suggested_len: suggested ? suggested.length : null,
+        code_snippet: suggested ? `<title>${suggested}</title>` : null,
+        note: suggested
+          ? `偵測到品牌「${brandName}」，建議在標題後加「｜${brandName}」拉到 ${suggested.length} 字`
+          : '建議補主關鍵字 + 品牌名拉到 30-60 字（系統未偵測到品牌名、需手動補）',
+      },
+    })
+  }
+  else if (metaTitleLen > 70) {
+    // 過長截斷：智能在分隔符切，保留品牌名
+    const truncated = smartTruncate(metaTitle, 60)
+    problems.push({
+      id: 'long_meta_title',
+      severity: 'low',
+      label: `標題 ${metaTitleLen} 字過長（建議 30-60，Google SERP 會截斷）`,
+      suggestion: {
+        kind: 'text',
+        current: metaTitle, current_len: metaTitleLen,
+        suggested: truncated, suggested_len: truncated.length,
+        code_snippet: `<title>${truncated}</title>`,
+        note: 'Google SERP 顯示上限約 60 字，超過會被「...」截掉',
+      },
+    })
+  }
 
   const metaDescMatch = html.match(/<meta\s+[^>]*name\s*=\s*["']description["'][^>]*content\s*=\s*["']([^"']*)["']/i)
                      || html.match(/<meta\s+[^>]*content\s*=\s*["']([^"']*)["'][^>]*name\s*=\s*["']description["']/i)
   const metaDesc = metaDescMatch ? decodeEntities(metaDescMatch[1]).trim() : ''
   const metaDescLen = metaDesc.length
   const hasMetaDesc = metaDescLen > 0
-  if (!hasMetaDesc) problems.push({ id: 'missing_meta_desc', severity: 'high', label: '缺 Meta 描述' })
-  else if (metaDescLen < 50) problems.push({ id: 'short_meta_desc', severity: 'medium', label: `Meta 描述只有 ${metaDescLen} 字（建議 70-155）` })
-  else if (metaDescLen > 200) problems.push({ id: 'long_meta_desc', severity: 'low', label: `Meta 描述 ${metaDescLen} 字過長（建議 70-155）` })
+  // Stage 2: 抽內文摘要、給缺 / 短 desc 建議
+  const bodyExcerpt = extractBodyExcerpt(html, 155)
+  if (!hasMetaDesc) {
+    problems.push({
+      id: 'missing_meta_desc',
+      severity: 'high',
+      label: '缺 Meta 描述',
+      suggestion: bodyExcerpt ? {
+        kind: 'text',
+        suggested: bodyExcerpt, suggested_len: bodyExcerpt.length,
+        code_snippet: metaDescCode(bodyExcerpt),
+        note: '系統從文章內文自動抓的開頭摘要、可直接複製或微調後使用',
+      } : {
+        kind: 'text',
+        note: '文章內文太短抓不到摘要、請手動寫 70-155 字描述',
+      },
+    })
+  }
+  else if (metaDescLen < 50) {
+    // 短描述：建議用內文摘要取代或補長
+    const replacement = bodyExcerpt && bodyExcerpt.length > metaDescLen ? bodyExcerpt : null
+    problems.push({
+      id: 'short_meta_desc',
+      severity: 'medium',
+      label: `Meta 描述只有 ${metaDescLen} 字（建議 70-155）`,
+      suggestion: {
+        kind: 'text',
+        current: metaDesc, current_len: metaDescLen,
+        suggested: replacement, suggested_len: replacement ? replacement.length : null,
+        code_snippet: replacement ? metaDescCode(replacement) : null,
+        note: replacement
+          ? '系統從內文抓的較長版本、可取代或合併'
+          : '建議擴充到 70-155 字、含主關鍵字 + 賣點',
+      },
+    })
+  }
+  else if (metaDescLen > 200) {
+    const truncated = smartTruncate(metaDesc, 155)
+    problems.push({
+      id: 'long_meta_desc',
+      severity: 'low',
+      label: `Meta 描述 ${metaDescLen} 字過長（建議 70-155）`,
+      suggestion: {
+        kind: 'text',
+        current: metaDesc, current_len: metaDescLen,
+        suggested: truncated, suggested_len: truncated.length,
+        code_snippet: metaDescCode(truncated),
+        note: 'Google SERP 描述顯示上限約 155 字，超過會被截掉',
+      },
+    })
+  }
 
   const ogTitle = matchAttr(html, /<meta\s+[^>]*property\s*=\s*["']og:title["'][^>]*>/i)
   const ogImage = matchAttr(html, /<meta\s+[^>]*property\s*=\s*["']og:image["'][^>]*>/i)
@@ -312,7 +406,18 @@ function analyzeArticleHtml(html, url) {
 
   const canonical = matchAttr(html, /<link\s+[^>]*rel\s*=\s*["']canonical["'][^>]*>/i, 'href')
   const hasCanonical = !!canonical
-  if (!hasCanonical) problems.push({ id: 'missing_canonical', severity: 'low', label: '缺 canonical 標籤' })
+  if (!hasCanonical) {
+    problems.push({
+      id: 'missing_canonical',
+      severity: 'low',
+      label: '缺 canonical 標籤',
+      suggestion: {
+        kind: 'code',
+        note: '加在 <head> 區、告訴 Google 這頁的「正版」網址，避免被當重複內容',
+        code_snippet: `<link rel="canonical" href="${url}" />`,
+      },
+    })
+  }
 
   return {
     has_h1: hasH1, h1_count: h1Count, empty_h1_count: emptyH1Count,
@@ -374,6 +479,78 @@ function roughWordCount(html) {
 
 function decodeEntities(s) {
   return s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+}
+
+// 從 HTML 抽品牌名 — 用來建議「{title}｜{brand}」這種 SEO 標題模板
+// 優先序：og:site_name > 從 <title> 末段「｜brand」或「| brand」或「- brand」抓
+function extractBrandName(html, metaTitle) {
+  const siteName = matchAttr(html, /<meta\s+[^>]*property\s*=\s*["']og:site_name["'][^>]*>/i)
+  if (siteName && siteName.length <= 30) return siteName
+  // 從現有 title 倒推：「主標題｜品牌」「主標題 - 品牌」抓最後一段
+  if (metaTitle) {
+    const m = metaTitle.match(/[｜|\-–—]\s*([^｜|\-–—]{2,30})\s*$/)
+    if (m) return m[1].trim()
+  }
+  return null
+}
+
+// 抽文章內文摘要 — 用來建議 meta description
+// 策略：找 <article>/<main>/.entry-content/.post-content 區塊 → 抽 <p> → strip tag + 正規化空白
+// 找不到專屬區塊就 fallback 整頁所有 <p>（會混到 footer 但總比沒有好）
+function extractBodyExcerpt(html, maxLen = 155) {
+  const candidates = [
+    /<article\b[^>]*>([\s\S]*?)<\/article>/i,
+    /<main\b[^>]*>([\s\S]*?)<\/main>/i,
+    /<div\b[^>]*class\s*=\s*["'][^"']*entry-content[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    /<div\b[^>]*class\s*=\s*["'][^"']*post-content[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+  ]
+  let section = null
+  for (const re of candidates) {
+    const m = html.match(re)
+    if (m) { section = m[1]; break }
+  }
+  if (!section) section = html
+  // 抽 <p> 內文（跳過 nav/footer/script/style）
+  const cleaned = section
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+  const paragraphs = cleaned.match(/<p\b[^>]*>([\s\S]*?)<\/p>/gi) || []
+  let text = ''
+  for (const p of paragraphs) {
+    const inner = decodeEntities(p.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
+    if (inner.length < 10) continue
+    text += (text ? ' ' : '') + inner
+    if (text.length >= maxLen + 50) break
+  }
+  if (!text) return null
+  return smartTruncate(text, maxLen)
+}
+
+// 智能截斷：優先在句尾（。！？.!?）切，其次空白，最後硬切 + 加 …
+function smartTruncate(text, maxLen) {
+  if (text.length <= maxLen) return text
+  const window = text.slice(0, maxLen + 10)
+  // 先找句尾
+  const sentEnd = window.search(/[。！？.!?]\s*$/m)
+  if (sentEnd > maxLen * 0.6) return text.slice(0, sentEnd + 1).trim()
+  const lastSent = window.match(/[。！？.!?]/g)
+  if (lastSent) {
+    const idx = window.lastIndexOf(lastSent[lastSent.length - 1])
+    if (idx > maxLen * 0.6) return text.slice(0, idx + 1).trim()
+  }
+  // 找空白
+  const space = window.lastIndexOf(' ', maxLen)
+  if (space > maxLen * 0.6) return text.slice(0, space).trim() + '…'
+  return text.slice(0, maxLen).trim() + '…'
+}
+
+// 把 description 文字包成完整 meta tag code 供用戶複製
+function metaDescCode(desc) {
+  // 跳脫 " 避免 attribute 提前結束
+  const safe = desc.replace(/"/g, '&quot;')
+  return `<meta name="description" content="${safe}" />`
 }
 
 async function finalizeJob(supabase, jobId) {

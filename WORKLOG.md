@@ -6,6 +6,43 @@
 
 ---
 
+### 2026-06-02（Stage 2 — meta_title / meta_desc / canonical 也升級「智能建議 + 可貼回 HTML」）
+**Stage 1 H1 卡片上線後用戶秒回「A. Stage 2 同款升級擴大」— 直接把同一個 pattern 套到其他高頻 finding。**
+
+**後端** [api/cron-bulk-scan.js](api/cron-bulk-scan.js) 新增 3 個 helper + 升級 5 個 finding：
+
+- `extractBrandName(html, metaTitle)` — og:site_name 優先、否則從 title 末段「｜brand / | brand / - brand」倒推（≤30 字）
+- `extractBodyExcerpt(html, maxLen)` — 找 `<article>` / `<main>` / `.entry-content` / `.post-content` 區塊 → 抽 `<p>` → strip tag + 正規化空白 → `smartTruncate` 截到 maxLen
+- `smartTruncate(text, maxLen)` — 優先句尾（。！？.!?）切、其次空白、最後硬切 + …
+- `metaDescCode(desc)` — 跳脫 `"` 後包成完整 `<meta name="description" content="..." />` tag
+
+升級的 finding（都帶 `suggestion: { kind, current?, current_len?, suggested?, suggested_len?, code_snippet?, note? }`）：
+| Finding | 建議內容 |
+|---------|----------|
+| `missing_meta_title` | 偵測到品牌時、給 `<title>主關鍵字｜{brand}</title>` 模板 |
+| `short_meta_title` | 自動補 `{current}｜{brand}` 到目標字數、改前改後對照 |
+| `long_meta_title` | smartTruncate 到 60 字、改前改後對照 |
+| `missing_meta_desc` | 從內文抓 155 字摘要 + 完整 `<meta>` tag |
+| `short_meta_desc` | 改前 vs 內文較長版本對照 |
+| `long_meta_desc` | smartTruncate 到 155 字、改前改後對照 |
+| `missing_canonical` | 給 `<link rel="canonical" href="{url}" />` 完整 tag |
+
+**前端** [src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) 新增 `SuggestionBlock` 元件：
+- 改前（紅微底）/ 改後（綠微底）對照 — current + suggested 都存在時兩列
+- 純建議（綠微底）— 只 suggested 沒 current 時（如 missing_meta_desc）
+- 可貼回 HTML 區塊（黑底 monospace） + **「📋 複製」按鈕**（clipboard API + execCommand fallback）
+- note 說明
+- 整個 UrlRow 渲染順序：問題標題 → `h1_details`（Stage 1） → `suggestion`（Stage 2） → 通用 tip
+
+**設計重點：** suggestion 是**可選**欄位 — 沒有 suggestion 的 finding（如 missing_h1、thin_content）維持原本 tip-only 顯示、漸進式覆蓋不破壞舊邏輯。
+
+**Stage 3 待做：** 
+- 缺 OG / OG 不完整 → 給完整 OG block 模板
+- thin_content / short_content → 不適合自動建議（內容要創作）但可以給「補哪些段落」checklist
+- no_article_schema / no_product_schema → 給對應 schema JSON-LD 模板
+
+---
+
 ### 2026-06-02（多 H1 警告升級為「每個 H1 都列出來 + 建議動作」— Stage 1）
 **用戶痛點：** 我幫用戶人工逐篇分析 kimbo3899.com.tw 全站 H1 後（找到 5 篇有問題），用戶問：「我們分析之後給使用者的有辦法像你現在分析的這麼清楚嗎？」— 點出產品最大弱點：原本只說「有 N 個 H1」，沒說是哪幾個、內容是什麼、哪個該留哪個該改。
 
