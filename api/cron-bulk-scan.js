@@ -222,17 +222,41 @@ function analyzeArticleHtml(html, url) {
 
   const h1Matches = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi) || []
   const h1Count = h1Matches.length
-  // 統計空 H1（內文 strip 標籤後沒文字）— WPBakery 等 page builder 常留下這種殘留
-  const emptyH1Count = h1Matches.filter(tag => {
+  // 每個 H1 拆出純文字內文，做分類（empty / sentence / short）+ 給建議動作（keep / change_to_p / change_to_h2 / delete）
+  // 排序規則：第 1 個 H1 預設保留（多半是主題模板渲染的主標題或文章首個標題），後續才標建議修法
+  const h1Details = h1Matches.map((tag, idx) => {
     const inner = tag.replace(/<h1\b[^>]*>/i, '').replace(/<\/h1>/i, '')
-    return inner.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, '').trim().length === 0
-  }).length
+    const text = decodeEntities(inner.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ')).trim()
+    const len = text.length
+    let kind, suggestedAction, reason
+    if (len === 0) {
+      kind = 'empty'
+      suggestedAction = 'delete'
+      reason = '空 H1，多半是 page builder 殘留，直接整行刪'
+    } else if (len > 30) {
+      kind = 'sentence'
+      suggestedAction = idx === 0 ? 'keep' : 'change_to_p'
+      reason = idx === 0 ? '主要 H1（保留）' : '句子型內容，不是標題 → 改 <p>'
+    } else {
+      kind = 'short'
+      suggestedAction = idx === 0 ? 'keep' : 'change_to_h2'
+      reason = idx === 0 ? '主要 H1（保留）' : '短副標題 → 改 <h2>'
+    }
+    return { index: idx + 1, text: text.slice(0, 200), full_length: len, kind, suggested_action: suggestedAction, reason }
+  })
+  const emptyH1Count = h1Details.filter(d => d.kind === 'empty').length
   const hasH1 = h1Count > 0
   if (h1Count === 0) problems.push({ id: 'missing_h1', severity: 'high', label: '頁面沒有 H1 標題' })
   else if (h1Count > 1) {
     // 多 H1 時補上「其中 N 個是空 H1（page builder 殘留）」提示
     const suffix = emptyH1Count > 0 ? `，其中 ${emptyH1Count} 個是空 H1（page builder 殘留）` : ''
-    problems.push({ id: 'multiple_h1', severity: 'medium', label: `頁面有 ${h1Count} 個 H1（應只有 1 個）${suffix}`, empty_h1_count: emptyH1Count })
+    problems.push({
+      id: 'multiple_h1',
+      severity: 'medium',
+      label: `頁面有 ${h1Count} 個 H1（應只有 1 個）${suffix}`,
+      empty_h1_count: emptyH1Count,
+      h1_details: h1Details,  // 前端展開時顯示每個 H1 的內容卡片
+    })
   }
 
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)

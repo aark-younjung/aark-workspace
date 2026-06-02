@@ -556,6 +556,14 @@ function UrlRow({ result }) {
                   <span>{SEVERITY_ICON[p.severity] || '⚪'}</span>
                   <span style={{ fontWeight: 600, color: T.text }}>{p.label || PROBLEM_LABELS[p.id] || p.id}</span>
                 </div>
+                {/* multi_h1 — 顯示每個 H1 的內容卡片 + 建議動作（worker 已在 findings.problems[].h1_details 拆好） */}
+                {Array.isArray(p.h1_details) && p.h1_details.length > 0 && (
+                  <div style={{ marginTop: 6, marginLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {p.h1_details.map((d, di) => (
+                      <H1DetailCard key={di} detail={d} />
+                    ))}
+                  </div>
+                )}
                 {tip && (
                   <div style={{
                     marginTop: 4, marginLeft: 20,
@@ -573,6 +581,64 @@ function UrlRow({ result }) {
           })}
         </ul>
       )}
+    </div>
+  )
+}
+
+// multi_h1 警告展開時的每個 H1 詳情卡 — 顯示內容預覽 + 分類 chip + 建議動作說明
+// detail 結構：{ index, text, full_length, kind: 'empty'|'sentence'|'short', suggested_action: 'keep'|'change_to_p'|'change_to_h2'|'delete', reason }
+function H1DetailCard({ detail }) {
+  const { index, text, full_length, kind, suggested_action, reason } = detail
+  // 不同建議動作對應不同顏色：保留=綠、改 h2=藍、改 p=粉、刪除=橘
+  const actionStyle = {
+    keep:          { label: '✅ 保留',         color: '#86efac', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.35)' },
+    change_to_h2:  { label: '🔵 改成 <h2>',    color: '#93c5fd', bg: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.35)' },
+    change_to_p:   { label: '🔴 改成 <p>',     color: '#fca5a5', bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)' },
+    delete:        { label: '❌ 直接刪整行',    color: '#fdba74', bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)' },
+  }[suggested_action] || { label: suggested_action, color: T.textMid, bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)' }
+
+  // kind chip 顏色：empty 橘灰、sentence 粉、short 中性
+  const kindChip = {
+    empty:    { text: '空 H1',           bg: 'rgba(249,115,22,0.15)', color: '#fdba74' },
+    sentence: { text: `句子型 ${full_length} 字`, bg: 'rgba(236,72,153,0.15)', color: '#f9a8d4' },
+    short:    { text: `短標題 ${full_length} 字`,  bg: 'rgba(255,255,255,0.06)', color: T.textMid },
+  }[kind] || { text: kind, bg: 'rgba(255,255,255,0.06)', color: T.textMid }
+
+  return (
+    <div style={{
+      padding: '8px 10px',
+      background: actionStyle.bg,
+      borderLeft: `2px solid ${actionStyle.border}`,
+      borderRadius: 4,
+      fontSize: 11,
+      lineHeight: 1.6,
+    }}>
+      {/* 標頭：H1#N + 分類 chip + 建議動作 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 700, color: T.text }}>H1#{index}</span>
+        <span style={{
+          fontSize: 10, padding: '1px 6px', borderRadius: 3,
+          background: kindChip.bg, color: kindChip.color,
+        }}>{kindChip.text}</span>
+        <span style={{ fontWeight: 600, color: actionStyle.color, fontSize: 11 }}>{actionStyle.label}</span>
+      </div>
+      {/* 內容預覽（空 H1 不顯示）— 用 monospace 強調是原 HTML 的可辨識片段 */}
+      {kind !== 'empty' && (
+        <div style={{
+          padding: '4px 8px',
+          background: 'rgba(0,0,0,0.25)',
+          borderRadius: 3,
+          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+          color: T.textMid,
+          fontSize: 10.5,
+          marginBottom: 4,
+          wordBreak: 'break-all',
+        }}>
+          {text.length > 120 ? text.slice(0, 120) + '…' : text}
+        </div>
+      )}
+      {/* 原因說明 */}
+      <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
     </div>
   )
 }

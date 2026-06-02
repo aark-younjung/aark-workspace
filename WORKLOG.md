@@ -6,6 +6,28 @@
 
 ---
 
+### 2026-06-02（多 H1 警告升級為「每個 H1 都列出來 + 建議動作」— Stage 1）
+**用戶痛點：** 我幫用戶人工逐篇分析 kimbo3899.com.tw 全站 H1 後（找到 5 篇有問題），用戶問：「我們分析之後給使用者的有辦法像你現在分析的這麼清楚嗎？」— 點出產品最大弱點：原本只說「有 N 個 H1」，沒說是哪幾個、內容是什麼、哪個該留哪個該改。
+
+**這次的改動就是把人工分析的格式直接做進產品裡：**
+
+- **後端** [api/cron-bulk-scan.js](api/cron-bulk-scan.js) `analyzeArticleHtml` H1 偵測改寫：
+  - 把 `h1Matches` 拆解成 `h1Details` 陣列，每個元素 `{ index, text(剝光 tag 後純文字 ≤200 字), full_length, kind, suggested_action, reason }`
+  - **kind 分類**：`empty`（空 H1）/ `sentence`（>30 字、句子型）/ `short`（≤30 字、短標題）
+  - **suggested_action 規則**：第 1 個 H1 預設 `keep`、其餘的 sentence→`change_to_p`、short→`change_to_h2`、empty→`delete`
+  - `findings.problems[].h1_details` 帶回前端展開渲染
+- **前端** [src/pages/BulkScan.jsx](src/pages/BulkScan.jsx)：
+  - 新增 `H1DetailCard` 元件，按 `suggested_action` 給卡片 left-border 配色（綠/藍/粉/橘）+ kind chip + 動作標籤 + monospace 內容預覽 + reason 說明
+  - `UrlRow` 偵測 `p.h1_details` 存在時，在 tip 上方先渲染 detail 卡片列表
+
+**結果：** 用戶以後掃完看到「⚠️ 頁面有 3 個 H1」展開，會直接看到三張卡片：哪個保留、哪個改 `<h2>`、哪個改 `<p>` — 不用再回來問哪個是哪個。比這次的人工分析更可規模化（每篇文章自動跑、不用我每次手動 grep）。
+
+**Stage 2 待做（之後再規劃）：**
+- 「複製改好的 HTML」按鈕 — 把 `<h1 ...>原文</h1>` 直接產出 `<p>原文</p>` 給用戶複製貼回 WP
+- 其他 finding 同款升級：`missing_meta_desc` 從內文 auto-suggest 描述、`short_meta_title` 補品牌名建議完整標題
+
+---
+
 ### 2026-06-02（多 H1 警告補空 H1 細分 + 修復說明對齊主題自動加標題）
 **用戶回報：** kimbo3899.com.tw/audi-virtual-cockpit/ 被報「2 個 H1」，但用戶在 WP 程式碼編輯器 Ctrl+F 搜 `<h1>` 只找到 1 個 → 以為是工具誤判。
 
