@@ -151,7 +151,12 @@ export default function BulkScan() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       const data = await r.json()
-      if (r.ok) setResults(data)
+      if (r.ok) {
+        setResults(data)
+        // 同步把 API 回傳的 fresh aggregate 寫回外層 job state
+        // 避免 UI 卡在舊的 cached aggregate（例如重新掃描後外層 job 還是舊資料）
+        if (data?.job) setJob(prev => ({ ...prev, ...data.job }))
+      }
     } catch (e) {
       console.error(e)
     }

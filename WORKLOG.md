@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-06-02（修 BulkScan UI 卡在舊 cached aggregate bug）
+**症狀：** 用戶 SQL 重置 + 工人重跑完 200 篇後，UI 同時顯示「分數 0／已通過 0／待修 0」**和**「全站文章都通過 7 項檢測」— 明顯矛盾。
+
+**診斷：**
+- SQL 確認 `bulk_scan_results` 200 列全 `status=done`、200 列都有 `findings`、0 個 error → DB 端正常
+- 根因在前端 [src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) `fetchResults` — API 回傳的 `data.job`（含 freshAggregate）只寫進 `results` state，**沒有同步回外層 `job` state**
+- `ResultsView` 拿的是外層 `job.aggregate`，永遠是舊的（fetchInitialData 載入時的 snapshot，重置後是 NULL）
+- `agg.total_results` 從 NULL 變 0 → UI 整片歸零、但同時又因 `byType` 是空物件而顯示「全部通過」的慶祝訊息
+
+**修法：** `fetchResults` 成功後加一行 `setJob(prev => ({ ...prev, ...data.job }))`，把 API 帶回來的 fresh aggregate 合併回外層 job state。下次 SQL 重置 + rescan 不會再卡這個 UI 矛盾。
+
+**順手記錄的鄰近 bug（前次對話已修但這次受益）：**
+- `<button onClick={onRescan}>` 把 React SyntheticEvent 當成 `mode` 參數傳 → `JSON.stringify({mode: event})` 觸發 circular structure error，導致用戶之前每次按「重新掃描全站」其實都沒真正建 job
+- 改成 `onClick={() => onRescan('full')}` + handleStart 內 `typeof mode === 'string' ? mode : undefined` 雙保險
+
+---
+
 ### 2026-06-01（站內公告 banner 改走馬燈輪播）
 **用戶提議多則公告時用上下走馬燈切換取代垂直堆疊：**
 
