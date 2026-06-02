@@ -669,7 +669,7 @@ const PROBLEM_FIX_TIPS = {
   missing_h1:
     '用你的 page builder（Elementor / WPBakery / Divi）打開頁面 → 找最大標題那個 widget → 「HTML 標籤」改 H1 → 更新。Gutenberg 編輯器：標題用「標題 1」格式',
   multiple_h1:
-    '進文章編輯 → 切「程式碼編輯器」→ 搜 <h1> → 多餘的改 <h2> 或 <h3> → 全頁只留 1 個 H1',
+    '進文章編輯 → 切「程式碼編輯器」→ Ctrl+F 搜 <h1>。注意：WP 主題會自動加 1 個文章標題 H1（編輯器看不到），所以正確的剩 1 個 H1 = 編輯器裡 0 個。空 H1（<h1></h1>，page builder 殘留）直接整行刪；有文字的 H1 改成 <h2> 或 <h3>',
 
   missing_meta_title:
     '安裝 Yoast SEO 或 Rank Math 外掛 → 編輯文章 → 下方 SEO 區塊「SEO 標題」欄位填 30-60 字含主關鍵字',

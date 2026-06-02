@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-06-02（多 H1 警告補空 H1 細分 + 修復說明對齊主題自動加標題）
+**用戶回報：** kimbo3899.com.tw/audi-virtual-cockpit/ 被報「2 個 H1」，但用戶在 WP 程式碼編輯器 Ctrl+F 搜 `<h1>` 只找到 1 個 → 以為是工具誤判。
+
+**實際情況（curl 驗證）：**
+1. `<h1 class="single-entry-title">Audi 三線道...</h1>` — WP 主題模板自動加的文章標題（編輯器看不到）
+2. `<h1 data-path-to-node="11"></h1>` — WPBakery Page Builder 留下的空 H1 殘留（編輯器看得到）
+
+工具沒誤判、但說明文案沒幫用戶釐清「為什麼編輯器只看到 1 個」這個迷惑。
+
+**改了兩塊：**
+- [api/cron-bulk-scan.js](api/cron-bulk-scan.js) `analyzeArticleHtml` 多 H1 檢測加上空 H1 計數：strip tag + `&nbsp;` 後沒文字的算空 H1，問題 label 動態補「，其中 N 個是空 H1（page builder 殘留）」、`empty_h1_count` 也寫進 findings.metrics 給後續分析用
+- [src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) `PROBLEM_FIX_TIPS.multiple_h1` 改寫：解釋「WP 主題會自動加 1 個 H1（編輯器看不到），所以正確的剩 1 個 = 編輯器裡 0 個」、區分「空 H1 整行刪」vs「有文字的 H1 改成 h2/h3」
+
+**為什麼有效：** UrlRow 渲染 `{p.label || PROBLEM_LABELS[p.id]}` — 動態 label 優先、所以新後綴會直接顯示在每筆 URL 結果裡。
+
+---
+
 ### 2026-06-02（修 BulkScan UI 卡在舊 cached aggregate bug）
 **症狀：** 用戶 SQL 重置 + 工人重跑完 200 篇後，UI 同時顯示「分數 0／已通過 0／待修 0」**和**「全站文章都通過 7 項檢測」— 明顯矛盾。
 

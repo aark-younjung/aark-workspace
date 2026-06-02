@@ -222,9 +222,18 @@ function analyzeArticleHtml(html, url) {
 
   const h1Matches = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi) || []
   const h1Count = h1Matches.length
+  // 統計空 H1（內文 strip 標籤後沒文字）— WPBakery 等 page builder 常留下這種殘留
+  const emptyH1Count = h1Matches.filter(tag => {
+    const inner = tag.replace(/<h1\b[^>]*>/i, '').replace(/<\/h1>/i, '')
+    return inner.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, '').trim().length === 0
+  }).length
   const hasH1 = h1Count > 0
   if (h1Count === 0) problems.push({ id: 'missing_h1', severity: 'high', label: '頁面沒有 H1 標題' })
-  else if (h1Count > 1) problems.push({ id: 'multiple_h1', severity: 'medium', label: `頁面有 ${h1Count} 個 H1（應只有 1 個）` })
+  else if (h1Count > 1) {
+    // 多 H1 時補上「其中 N 個是空 H1（page builder 殘留）」提示
+    const suffix = emptyH1Count > 0 ? `，其中 ${emptyH1Count} 個是空 H1（page builder 殘留）` : ''
+    problems.push({ id: 'multiple_h1', severity: 'medium', label: `頁面有 ${h1Count} 個 H1（應只有 1 個）${suffix}`, empty_h1_count: emptyH1Count })
+  }
 
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
   const metaTitle = titleMatch ? decodeEntities(titleMatch[1]).trim() : ''
@@ -282,7 +291,7 @@ function analyzeArticleHtml(html, url) {
   if (!hasCanonical) problems.push({ id: 'missing_canonical', severity: 'low', label: '缺 canonical 標籤' })
 
   return {
-    has_h1: hasH1, h1_count: h1Count,
+    has_h1: hasH1, h1_count: h1Count, empty_h1_count: emptyH1Count,
     has_meta_title: hasMetaTitle, meta_title_len: metaTitleLen,
     has_meta_desc: hasMetaDesc, meta_desc_len: metaDescLen,
     has_og: !!(ogTitle || ogImage || ogDesc), og_complete: ogComplete,
