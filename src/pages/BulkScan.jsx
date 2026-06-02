@@ -783,6 +783,20 @@ function SuggestionBlock({ suggestion }) {
           }}>{code_snippet}</div>
         </div>
       )}
+      {/* 擇一提示 — 只有同時提供「純文字」+「HTML tag」兩種複製選項時才顯示，避免用戶兩個都做造成重複 tag */}
+      {suggested && code_snippet && (
+        <div style={{
+          marginBottom: note ? 6 : 0,
+          padding: '4px 8px',
+          background: 'rgba(251,191,36,0.10)',
+          borderRadius: 3,
+          color: '#fcd34d',
+          fontSize: 10,
+          lineHeight: 1.55,
+        }}>
+          💡 兩個複製按鈕<strong>擇一使用</strong>：用 SEO 外掛（Rank Math / Yoast）的話複製「文字」貼進外掛欄位；自己改主題 HTML 的話複製「整段 HTML」貼到 {'<head>'}。<strong>不要兩個都做</strong>會產生重複的 tag
+        </div>
+      )}
       {/* 說明文字 */}
       {note && <div style={{ color: T.textLow, fontSize: 10.5 }}>{note}</div>}
     </div>
