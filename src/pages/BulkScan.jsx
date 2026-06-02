@@ -731,7 +731,7 @@ function SuggestionBlock({ suggestion }) {
       {code_snippet && (
         <div style={{ marginBottom: note ? 6 : 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-            <span style={{ color: T.textLow, fontSize: 10 }}>可貼回 HTML</span>
+            <span style={{ color: T.textLow, fontSize: 10 }}>{'複製這段貼到 <head>'}</span>
             <button
               onClick={handleCopy}
               style={{
