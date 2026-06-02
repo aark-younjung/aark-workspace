@@ -6,6 +6,31 @@
 
 ---
 
+### 2026-06-02（Stage 3 — OG block + JSON-LD schema 模板也自動產出）
+**Stage 2 上線後用戶秒重掃驗證、看到 title 改前/改後 + canonical 程式碼正常 →「Stage 3 開始」。**
+
+**升級的 5 個 finding（都帶 suggestion.code_snippet）：**
+| Finding | 模板長相 |
+|---------|---------|
+| `missing_og` | 6 行完整 OG block — title/desc/image/url/type/site_name 自動帶入 |
+| `incomplete_og` | 只給缺的那幾行 OG meta tag、label 改成「OG 標籤不完整（缺 title / image）」具體標出缺哪些 |
+| `no_json_ld` | Organization + WebSite 兩塊基礎 schema（從 url origin 抓網域） |
+| `no_article_schema` | 完整 Article JSON-LD — headline/description/image/url/datePublished/author/publisher 都填好 |
+| `no_product_schema` | 完整 Product JSON-LD — name/desc/image/brand/offers 都填好（價格 placeholder） |
+
+**4 個新 helper：**
+- `extractFirstArticleImage(html, baseUrl)` — `<article>`/`<main>`/`.entry-content` 內第一張非 logo/icon/avatar/tracker/data-uri 的 `<img>`、自動補絕對路徑
+- `extractDatePublished(html)` — article:published_time > time[datetime] > 既有 JSON-LD datePublished
+- `buildOgBlock` / `buildOgMissingTag` — full vs incremental OG snippet 兩種
+- `buildArticleSchema` / `buildProductSchema` / `buildBaseSchema` — JSON-LD 模板，自動帶資料、抓不到的欄位用「【請填...】」中文 placeholder（用戶一眼知道哪邊要手動補）
+- `esc()` — `<>"&` 跳脫，避免 attribute 值打斷 tag
+
+**前端：** [src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) `SuggestionBlock` 的 code_snippet 區塊改用 `whiteSpace: pre-wrap` + `wordBreak: break-word` + `maxHeight: 280px overflowY: auto` — 多行 OG / schema 模板換行 + 縮排都正常顯示、超長 schema 不撐爆 row。
+
+**Stage 1+2+3 三段合計：** 12 個 finding 全升級成「告訴你哪裡壞 + 直接給你貼回 HTML」、剩 missing_h1 / thin_content / short_content 沒升級（前兩者本來就靠用戶手動補內容、自動建議價值有限；之後若接 GPT 補文章再說）。
+
+---
+
 ### 2026-06-02（Stage 2 — meta_title / meta_desc / canonical 也升級「智能建議 + 可貼回 HTML」）
 **Stage 1 H1 卡片上線後用戶秒回「A. Stage 2 同款升級擴大」— 直接把同一個 pattern 套到其他高頻 finding。**
 

@@ -748,12 +748,16 @@ function SuggestionBlock({ suggestion }) {
             </button>
           </div>
           <div style={{
-            padding: '4px 8px', borderRadius: 3,
+            padding: '6px 10px', borderRadius: 3,
             background: 'rgba(0,0,0,0.35)',
             color: '#a7f3d0',
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
             fontSize: 10.5,
-            wordBreak: 'break-all',
+            // 多行模板（OG / Schema）保留換行 + 縮排；單行短 tag 也能正常顯示
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            maxHeight: 280,
+            overflowY: 'auto',
           }}>{code_snippet}</div>
         </div>
       )}

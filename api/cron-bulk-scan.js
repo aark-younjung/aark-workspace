@@ -374,25 +374,101 @@ function analyzeArticleHtml(html, url) {
   const ogImage = matchAttr(html, /<meta\s+[^>]*property\s*=\s*["']og:image["'][^>]*>/i)
   const ogDesc = matchAttr(html, /<meta\s+[^>]*property\s*=\s*["']og:description["'][^>]*>/i)
   const ogComplete = !!(ogTitle && ogImage && ogDesc)
-  if (!ogTitle && !ogImage && !ogDesc) problems.push({ id: 'missing_og', severity: 'medium', label: '完全沒有 Open Graph 標籤' })
-  else if (!ogComplete) problems.push({ id: 'incomplete_og', severity: 'low', label: 'OG 標籤不完整（缺 title / image / description 其中一個）' })
+  // Stage 3: 抽首圖 + 品牌名給 OG 模板用（前面 metaTitle / metaDesc / bodyExcerpt / brandName 已算好）
+  const articleImage = extractFirstArticleImage(html, url)
+  if (!ogTitle && !ogImage && !ogDesc) {
+    // 完全沒 OG → 給完整 6 行模板
+    const ogTemplate = buildOgBlock({
+      title: metaTitle || null,
+      desc: metaDesc || bodyExcerpt || null,
+      image: articleImage,
+      url,
+      siteName: brandName,
+    })
+    problems.push({
+      id: 'missing_og',
+      severity: 'medium',
+      label: '完全沒有 Open Graph 標籤',
+      suggestion: {
+        kind: 'code',
+        code_snippet: ogTemplate,
+        note: `加在 <head> 區。OG 是 Facebook / LINE / Slack 分享預覽用的、沒設定的話分享連結會抓不到圖跟標題${articleImage ? '' : '（系統沒抓到文章首圖、image 行請手動補）'}`,
+      },
+    })
+  }
+  else if (!ogComplete) {
+    // 只缺其中幾個 → 只給缺的那幾行
+    const missing = []
+    if (!ogTitle) missing.push(buildOgMissingTag('og:title', metaTitle || '【請填頁面標題】'))
+    if (!ogDesc) missing.push(buildOgMissingTag('og:description', metaDesc || bodyExcerpt || '【請填頁面描述】'))
+    if (!ogImage) missing.push(buildOgMissingTag('og:image', articleImage || 'https://example.com/featured-image.jpg'))
+    const missingNames = []
+    if (!ogTitle) missingNames.push('title')
+    if (!ogDesc) missingNames.push('description')
+    if (!ogImage) missingNames.push('image')
+    problems.push({
+      id: 'incomplete_og',
+      severity: 'low',
+      label: `OG 標籤不完整（缺 ${missingNames.join(' / ')}）`,
+      suggestion: {
+        kind: 'code',
+        code_snippet: missing.join('\n'),
+        note: `補進 <head>。${!ogImage && !articleImage ? 'image 系統沒抓到首圖、請手動補圖片網址。' : ''}`,
+      },
+    })
+  }
 
   const schemaTypes = extractSchemaTypes(html)
   const hasArticleSchema = schemaTypes.includes('Article') || schemaTypes.includes('NewsArticle') || schemaTypes.includes('BlogPosting')
   const hasProductSchema = schemaTypes.includes('Product') || schemaTypes.includes('ProductGroup')
   const pageType = detectPageType(schemaTypes, url)
 
+  // Stage 3: 抓發佈日（給 Article schema 用）
+  const datePublished = extractDatePublished(html)
   // 完全沒任何 JSON-LD → 一律報（任何頁面都需要至少基本 Organization / WebSite schema）
   if (schemaTypes.length === 0) {
-    problems.push({ id: 'no_json_ld', severity: 'high', label: '完全沒有 JSON-LD 結構化資料' })
+    problems.push({
+      id: 'no_json_ld',
+      severity: 'high',
+      label: '完全沒有 JSON-LD 結構化資料',
+      suggestion: {
+        kind: 'code',
+        code_snippet: buildBaseSchema({ url, siteName: brandName }),
+        note: '加在 <head> 區。最基本的 Organization + WebSite schema、Google 認識你是哪家公司、是 SEO/AEO 的入場券',
+      },
+    })
   }
   // 有 schema 但缺主要內容類 schema — 按頁面類型給不同建議
   // 商品頁不該被報「缺 Article schema」(2026-06-02 修)
   else if (pageType === 'article' && !hasArticleSchema) {
-    problems.push({ id: 'no_article_schema', severity: 'medium', label: `文章頁缺 Article schema（已有：${schemaTypes.join(', ')}）` })
+    problems.push({
+      id: 'no_article_schema',
+      severity: 'medium',
+      label: `文章頁缺 Article schema（已有：${schemaTypes.join(', ')}）`,
+      suggestion: {
+        kind: 'code',
+        code_snippet: buildArticleSchema({
+          title: metaTitle, desc: metaDesc || bodyExcerpt,
+          image: articleImage, url, siteName: brandName, datePublished,
+        }),
+        note: `加在 <head> 區。${datePublished ? '系統有抓到發佈日、' : ''}${articleImage ? '首圖抓到了、' : '首圖沒抓到請手動補、'}author / publisher.logo 需要手動填`,
+      },
+    })
   }
   else if (pageType === 'product' && !hasProductSchema) {
-    problems.push({ id: 'no_product_schema', severity: 'medium', label: `商品頁缺 Product schema（已有：${schemaTypes.join(', ')}）` })
+    problems.push({
+      id: 'no_product_schema',
+      severity: 'medium',
+      label: `商品頁缺 Product schema（已有：${schemaTypes.join(', ')}）`,
+      suggestion: {
+        kind: 'code',
+        code_snippet: buildProductSchema({
+          title: metaTitle, desc: metaDesc || bodyExcerpt,
+          image: articleImage, url, siteName: brandName,
+        }),
+        note: '加在 <head> 區。價格 / 庫存狀態請從你的商店系統手動填 — 不填的話 Google Merchant 不收',
+      },
+    })
   }
   // pageType 是 product/service/local-business/homepage 且有對應 schema → 不報
   // pageType === 'unknown' 也不報「缺 Article schema」(免得誤判)
@@ -551,6 +627,135 @@ function metaDescCode(desc) {
   // 跳脫 " 避免 attribute 提前結束
   const safe = desc.replace(/"/g, '&quot;')
   return `<meta name="description" content="${safe}" />`
+}
+
+// 抽文章首圖 — 給 og:image / Article schema image 用
+// 策略：先找 <article>/<main>/.entry-content 區塊內第一張 <img>、否則整頁第一張非 logo/icon 的 <img>
+// 回傳絕對網址（相對路徑會用 baseUrl 補上）
+function extractFirstArticleImage(html, baseUrl) {
+  const sections = [
+    /<article\b[^>]*>([\s\S]*?)<\/article>/i,
+    /<main\b[^>]*>([\s\S]*?)<\/main>/i,
+    /<div\b[^>]*class\s*=\s*["'][^"']*entry-content[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+  ]
+  let scope = null
+  for (const re of sections) {
+    const m = html.match(re)
+    if (m) { scope = m[1]; break }
+  }
+  if (!scope) scope = html
+  const imgs = scope.match(/<img\b[^>]*>/gi) || []
+  for (const tag of imgs) {
+    const src = (tag.match(/\bsrc\s*=\s*["']([^"']+)["']/i) || [])[1]
+    if (!src) continue
+    // 跳過明顯不是文章主圖的：logo / icon / avatar / 1x1 tracker / data-uri
+    if (/logo|icon|avatar|spacer|tracking|pixel\.gif|1x1/i.test(src)) continue
+    if (src.startsWith('data:')) continue
+    // 轉絕對路徑
+    try {
+      return new URL(src, baseUrl).href
+    } catch { continue }
+  }
+  return null
+}
+
+// 從 HTML 抽發佈日期 — 給 Article schema datePublished 用
+// 來源優先：article:published_time meta > time[datetime] > 既有 JSON-LD 的 datePublished
+function extractDatePublished(html) {
+  const ogTime = matchAttr(html, /<meta\s+[^>]*property\s*=\s*["']article:published_time["'][^>]*>/i)
+  if (ogTime) return ogTime
+  const timeTag = html.match(/<time\b[^>]*\bdatetime\s*=\s*["']([^"']+)["']/i)
+  if (timeTag) return timeTag[1]
+  // 從現有 JSON-LD 找
+  const dateMatch = html.match(/"datePublished"\s*:\s*"([^"]+)"/i)
+  if (dateMatch) return dateMatch[1]
+  return null
+}
+
+// 建 OG block 模板 — 給 missing_og 完整補齊用
+// 傳入既有資料（metaTitle / metaDesc / imageUrl / url / siteName），缺的部分留 placeholder
+function buildOgBlock({ title, desc, image, url, siteName }) {
+  const lines = []
+  if (title)    lines.push(`<meta property="og:title" content="${esc(title)}" />`)
+  if (desc)     lines.push(`<meta property="og:description" content="${esc(desc)}" />`)
+  if (image)    lines.push(`<meta property="og:image" content="${esc(image)}" />`)
+  if (url)      lines.push(`<meta property="og:url" content="${esc(url)}" />`)
+  lines.push(`<meta property="og:type" content="article" />`)
+  if (siteName) lines.push(`<meta property="og:site_name" content="${esc(siteName)}" />`)
+  return lines.join('\n')
+}
+
+// 建單一缺少的 OG meta tag — 給 incomplete_og 用
+function buildOgMissingTag(prop, value) {
+  return `<meta property="${prop}" content="${esc(value)}" />`
+}
+
+// 建 Article JSON-LD schema 模板 — 給 no_article_schema 用
+// title / desc / image / url 自動帶入；author / datePublished 抓不到就放 placeholder
+function buildArticleSchema({ title, desc, image, url, siteName, datePublished }) {
+  const node = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: title || '【請填文章標題】',
+    description: desc || '【請填文章描述】',
+    image: image || 'https://example.com/featured-image.jpg',
+    url: url || 'https://example.com/article-url/',
+    datePublished: datePublished || '2026-01-01T00:00:00+08:00',
+    author: { '@type': 'Person', name: '【請填作者名】' },
+    publisher: {
+      '@type': 'Organization',
+      name: siteName || '【請填網站名】',
+      logo: { '@type': 'ImageObject', url: 'https://example.com/logo.png' },
+    },
+  }
+  return `<script type="application/ld+json">\n${JSON.stringify(node, null, 2)}\n</script>`
+}
+
+// 建 Product JSON-LD schema 模板 — 給 no_product_schema 用
+function buildProductSchema({ title, desc, image, url, siteName }) {
+  const node = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: title || '【請填商品名】',
+    description: desc || '【請填商品描述】',
+    image: image || 'https://example.com/product-image.jpg',
+    url: url || 'https://example.com/product/',
+    brand: { '@type': 'Brand', name: siteName || '【請填品牌名】' },
+    offers: {
+      '@type': 'Offer',
+      url: url || 'https://example.com/product/',
+      priceCurrency: 'TWD',
+      price: '0',
+      availability: 'https://schema.org/InStock',
+    },
+  }
+  return `<script type="application/ld+json">\n${JSON.stringify(node, null, 2)}\n</script>`
+}
+
+// 建基本 Organization + WebSite schema — 給 no_json_ld（完全沒 schema）用
+function buildBaseSchema({ url, siteName }) {
+  const origin = (() => { try { return new URL(url).origin } catch { return 'https://example.com' } })()
+  const nodes = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: siteName || '【請填網站名】',
+      url: origin,
+      logo: `${origin}/logo.png`,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: siteName || '【請填網站名】',
+      url: origin,
+    },
+  ]
+  return nodes.map(n => `<script type="application/ld+json">\n${JSON.stringify(n, null, 2)}\n</script>`).join('\n')
+}
+
+// HTML attribute 值的跳脫 — 避免 " & < > 把 tag 打斷
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 async function finalizeJob(supabase, jobId) {
