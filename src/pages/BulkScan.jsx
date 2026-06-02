@@ -85,13 +85,16 @@ export default function BulkScan() {
     if (starting) return
     setStarting(true)
     setError(null)
+    // 防呆：若被當成 onClick handler 直接綁、第一個參數會是 React event 物件
+    // → JSON.stringify(event) 會撞循環結構炸掉。強制只接 string 型別 mode
+    const safeMode = typeof mode === 'string' ? mode : undefined
     try {
       const session = (await supabase.auth.getSession()).data?.session
       if (!session) throw new Error('未登入')
       const r = await fetch('/api/bulk-scan?action=start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ websiteId, mode }),
+        body: JSON.stringify({ websiteId, mode: safeMode }),
       })
       const data = await r.json()
       if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`)
@@ -355,7 +358,7 @@ function ResultsView({ job, results, onRescan, starting }) {
       {/* 重新掃描按鈕 — 只 Pro 顯示（Free 用戶不能再 sample，要升級才能重掃） */}
       {!isSample && (
         <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={onRescan} disabled={starting} style={secondaryButtonStyle}>
+          <button onClick={() => onRescan('full')} disabled={starting} style={secondaryButtonStyle}>
             {starting ? '啟動中...' : '🔄 重新掃描全站'}
           </button>
         </div>
