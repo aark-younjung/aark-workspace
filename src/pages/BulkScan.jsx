@@ -638,7 +638,8 @@ const PROBLEM_LABELS = {
   missing_og: '完全沒有 Open Graph 標籤',
   incomplete_og: 'Open Graph 不完整',
   no_json_ld: '完全沒有 JSON-LD 結構化資料',
-  no_article_schema: '缺 Article schema',
+  no_article_schema: '文章頁缺 Article schema',
+  no_product_schema: '商品頁缺 Product schema',
   thin_content: '文章內容過少（< 200 字）',
   short_content: '文章較短（< 300 字）',
   missing_canonical: '缺 canonical 標籤',
@@ -648,7 +649,7 @@ const PROBLEM_SEVERITY = {
   missing_meta_title: 'high', short_meta_title: 'medium', long_meta_title: 'low',
   missing_meta_desc: 'high', short_meta_desc: 'medium', long_meta_desc: 'low',
   missing_og: 'medium', incomplete_og: 'low',
-  no_json_ld: 'high', no_article_schema: 'medium',
+  no_json_ld: 'high', no_article_schema: 'medium', no_product_schema: 'medium',
   thin_content: 'high', short_content: 'low',
   missing_canonical: 'low',
 }
@@ -685,6 +686,8 @@ const PROBLEM_FIX_TIPS = {
     '最快：用 AI 雷達 Pro 的「個人化 Organization Schema 產生器」一鍵生 code（在 AEO 詳情頁下方）。或安裝 Rank Math / Schema Pro 外掛自動加',
   no_article_schema:
     'Rank Math 免費版有「Article Schema」設定 — 編輯文章 → 切「Schema」分頁 → 套用 Article 範本 → 自動補完作者、日期、圖片',
+  no_product_schema:
+    'WooCommerce / Shopify 預設會自動產 Product schema。若沒有：Rank Math 「Schema」分頁套 Product 範本、或用 Yoast Local SEO（付費）。確認價格、庫存、評論欄位都有填。',
 
   thin_content:
     '文章太短 AI 跟 Google 都視為「薄內容」、引用機率低。擴充到 300+ 字，加入實例、數據、步驟說明',

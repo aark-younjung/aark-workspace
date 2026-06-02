@@ -177,7 +177,7 @@ async function scanSingleUrl({ url }) {
       return { success: false, httpStatus: r.status, error: '回應內容過短', findings: null }
     }
 
-    const findings = analyzeArticleHtml(html)
+    const findings = analyzeArticleHtml(html, url)
     return { success: true, httpStatus: r.status, error: null, findings }
   } catch (err) {
     return {
@@ -189,8 +189,35 @@ async function scanSingleUrl({ url }) {
   }
 }
 
+// 偵測頁面類型 — 用 schema + URL 兩種訊號交叉判斷
+// 'product' / 'article' / 'service' / 'local-business' / 'homepage' / 'unknown'
+// 為了避免「商品頁被報缺 Article schema」這種誤判
+function detectPageType(schemaTypes, url) {
+  const urlLower = (url || '').toLowerCase()
+
+  // URL pattern matching（最強訊號）
+  if (/\/(product|products|shop|store|item|goods)\//i.test(urlLower)) return 'product'
+  if (/\/(blog|article|news|post|posts)\//i.test(urlLower)) return 'article'
+  // 首頁判斷：URL 路徑空或只有 /
+  try {
+    const u = new URL(url)
+    if (u.pathname === '/' || u.pathname === '') return 'homepage'
+  } catch { /* invalid url */ }
+
+  // Schema-based fallback（URL 沒線索時）
+  if (schemaTypes.includes('Product') || schemaTypes.includes('ProductGroup')) return 'product'
+  if (schemaTypes.includes('Article') || schemaTypes.includes('BlogPosting') || schemaTypes.includes('NewsArticle')) return 'article'
+  if (schemaTypes.includes('Service')) return 'service'
+  // LocalBusiness 在「沒其他內容類 schema」時才當主要類型
+  // （很多店家在所有頁面都掛 LocalBusiness、不能當判斷依據）
+  const hasContentSchema = schemaTypes.some(t => ['Product', 'Article', 'BlogPosting', 'NewsArticle', 'Service', 'Event', 'Course', 'JobPosting', 'Recipe'].includes(t))
+  if (!hasContentSchema && (schemaTypes.includes('LocalBusiness') || schemaTypes.includes('AutomotiveBusiness'))) return 'local-business'
+
+  return 'unknown'
+}
+
 // 從 raw HTML 跑 7 項文章層級檢測（regex 為主，避免裝 cheerio 拖慢冷啟動）
-function analyzeArticleHtml(html) {
+function analyzeArticleHtml(html, url) {
   const problems = []
 
   const h1Matches = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi) || []
@@ -225,12 +252,30 @@ function analyzeArticleHtml(html) {
 
   const schemaTypes = extractSchemaTypes(html)
   const hasArticleSchema = schemaTypes.includes('Article') || schemaTypes.includes('NewsArticle') || schemaTypes.includes('BlogPosting')
-  if (schemaTypes.length === 0) problems.push({ id: 'no_json_ld', severity: 'high', label: '完全沒有 JSON-LD 結構化資料' })
-  else if (!hasArticleSchema) problems.push({ id: 'no_article_schema', severity: 'medium', label: `有其他 schema (${schemaTypes.join(', ')}) 但缺 Article schema` })
+  const hasProductSchema = schemaTypes.includes('Product') || schemaTypes.includes('ProductGroup')
+  const pageType = detectPageType(schemaTypes, url)
+
+  // 完全沒任何 JSON-LD → 一律報（任何頁面都需要至少基本 Organization / WebSite schema）
+  if (schemaTypes.length === 0) {
+    problems.push({ id: 'no_json_ld', severity: 'high', label: '完全沒有 JSON-LD 結構化資料' })
+  }
+  // 有 schema 但缺主要內容類 schema — 按頁面類型給不同建議
+  // 商品頁不該被報「缺 Article schema」(2026-06-02 修)
+  else if (pageType === 'article' && !hasArticleSchema) {
+    problems.push({ id: 'no_article_schema', severity: 'medium', label: `文章頁缺 Article schema（已有：${schemaTypes.join(', ')}）` })
+  }
+  else if (pageType === 'product' && !hasProductSchema) {
+    problems.push({ id: 'no_product_schema', severity: 'medium', label: `商品頁缺 Product schema（已有：${schemaTypes.join(', ')}）` })
+  }
+  // pageType 是 product/service/local-business/homepage 且有對應 schema → 不報
+  // pageType === 'unknown' 也不報「缺 Article schema」(免得誤判)
 
   const wordCount = roughWordCount(html)
-  if (wordCount < 200) problems.push({ id: 'thin_content', severity: 'high', label: `文章內容過少（約 ${wordCount} 字，建議 >300）` })
-  else if (wordCount < 300) problems.push({ id: 'short_content', severity: 'low', label: `文章較短（約 ${wordCount} 字，建議 >300）` })
+  // 文章類頁面才嚴格要求字數；商品頁/首頁字數短是正常的
+  if (pageType === 'article' || pageType === 'unknown') {
+    if (wordCount < 200) problems.push({ id: 'thin_content', severity: 'high', label: `文章內容過少（約 ${wordCount} 字，建議 >300）` })
+    else if (wordCount < 300) problems.push({ id: 'short_content', severity: 'low', label: `文章較短（約 ${wordCount} 字，建議 >300）` })
+  }
 
   const canonical = matchAttr(html, /<link\s+[^>]*rel\s*=\s*["']canonical["'][^>]*>/i, 'href')
   const hasCanonical = !!canonical
@@ -243,6 +288,8 @@ function analyzeArticleHtml(html) {
     has_og: !!(ogTitle || ogImage || ogDesc), og_complete: ogComplete,
     schema_types: schemaTypes,
     has_article_schema: hasArticleSchema,
+    has_product_schema: hasProductSchema,
+    page_type: pageType,    // article / product / service / local-business / homepage / unknown
     word_count: wordCount,
     has_canonical: hasCanonical,
     problems,
