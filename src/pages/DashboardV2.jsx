@@ -217,7 +217,7 @@ export default function DashboardV2() {
             <div className="text-sm text-white">
               ⏰ <span className="font-bold">Pro 試用</span> 還剩 <span className="font-mono text-amber-300 font-bold">{trialDaysRemaining}</span> 天
             </div>
-            <Link to="/pricing" className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-lg hover:opacity-90">
+            <Link to="/pricing" className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold rounded-lg hover:opacity-90">
               升級正式版
             </Link>
           </div>
@@ -254,6 +254,9 @@ export default function DashboardV2() {
           eeatAudit={eeatAudit}
           isPro={isPro}
         />
+
+        {/* ─── 修復工具箱（合併版單一入口） ─── */}
+        <ToolBox websiteId={website.id} />
 
         {/* ─── 30 天進步曲線 ─── */}
         {trendData.length > 1 && <TrendChart trendData={trendData} />}
@@ -309,7 +312,7 @@ function TopBar({ website, navigate }) {
         </button>
         <div className="flex flex-col min-w-0">
           <h1 className="text-base sm:text-xl font-bold text-white truncate">{website.name || website.url}</h1>
-          <a href={website.url} target="_blank" rel="noopener noreferrer" className="text-xs text-white/50 hover:text-white/70 truncate font-mono">
+          <a href={website.url} target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white/70 truncate font-mono">
             {website.url}
           </a>
         </div>
@@ -317,18 +320,18 @@ function TopBar({ website, navigate }) {
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={() => navigate(`/dashboard/${website.id}`)}
-          className="px-3 py-1.5 text-xs text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
+          className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
           title="切回舊版 Dashboard"
         >
           ← v1
         </button>
         <button
-          className="px-3 py-1.5 text-xs text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
+          className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
         >
           🔄 重新檢測
         </button>
         <button
-          className="px-3 py-1.5 text-xs text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
+          className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
         >
           📄 匯出 PDF
         </button>
@@ -337,7 +340,8 @@ function TopBar({ website, navigate }) {
   )
 }
 
-// aivis Hero — 主視覺左大區（暫用 placeholder + 升級 CTA、真資料 B2 補）
+// aivis Hero — 主視覺左大區（B1：mock 本月引用次數 + 30 天 sparkline、真資料 B2 補）
+// 對齊 prototype-2b 第 1300-1340 行 aivis-spotlight 設計
 function AivisHero({ isPro, websiteName, overallScore }) {
   return (
     <div className="relative overflow-hidden rounded-2xl p-6 sm:p-7" style={{
@@ -352,14 +356,63 @@ function AivisHero({ isPro, websiteName, overallScore }) {
 
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-1">
+        <div className="flex items-center gap-3 mb-2">
           <span className="text-3xl">🎯</span>
-          <h2 className="text-xl font-bold text-white">AI 曝光監測 <span className="text-orange-300 text-sm font-normal">(aivis)</span></h2>
-          <span className="ml-auto text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-orange-500/25 border border-orange-400/50 text-orange-200 font-bold">
+          <h2 className="text-2xl font-bold text-white">AI 曝光監測 <span className="text-orange-300 text-lg font-normal">(aivis)</span></h2>
+          <span className="ml-auto text-sm uppercase tracking-wider px-3 py-1 rounded-full bg-orange-500/25 border border-orange-400/50 text-orange-200 font-bold">
             Pro 核心
           </span>
         </div>
-        <p className="text-sm text-white/60 mb-5">{websiteName} 在 5 個 AI 引擎的真實提及率</p>
+        <p className="text-base text-white/65 mb-5">{websiteName} 在 5 個 AI 引擎的真實提及率</p>
+
+        {/* ─── 本月引用次數 + 30 天 sparkline（aivis-spotlight from prototype-2b） ─── */}
+        <div className="grid sm:grid-cols-2 gap-5 mb-5">
+          {/* 大數字 */}
+          <div className="rounded-xl p-4" style={{
+            background: 'rgba(0,0,0,0.25)',
+            border: '1px solid rgba(249,115,22,0.18)',
+          }}>
+            <div className="text-sm text-white/55 mb-1">本月引用次數</div>
+            <div className="flex items-baseline gap-3 mb-1">
+              <span className="text-5xl font-black font-mono text-white leading-none">{isPro ? '47' : '?'}</span>
+              {isPro && <span className="text-sm font-bold text-emerald-300">▲ +12 次 vs 上月</span>}
+            </div>
+            <div className="text-sm text-white/45">{isPro ? '勝過 73% 同行品牌' : '升 Pro 看完整數據'}</div>
+          </div>
+
+          {/* 30 天 sparkline */}
+          <div className="rounded-xl p-4" style={{
+            background: 'rgba(0,0,0,0.25)',
+            border: '1px solid rgba(249,115,22,0.18)',
+          }}>
+            <div className="text-sm text-white/55 mb-2">📈 30 天引用曲線</div>
+            <svg viewBox="0 0 300 80" preserveAspectRatio="none" className="w-full" style={{ height: 60 }}>
+              <defs>
+                <linearGradient id="aivisGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f97316" stopOpacity="0.5"/>
+                  <stop offset="100%" stopColor="#f97316" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              {/* Grid */}
+              <line x1="0" y1="20" x2="300" y2="20" stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+              <line x1="0" y1="40" x2="300" y2="40" stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+              <line x1="0" y1="60" x2="300" y2="60" stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+              {/* Area */}
+              <path d="M 0,68 L 12,66 L 24,62 L 36,60 L 48,58 L 60,55 L 72,52 L 84,48 L 96,46 L 108,43 L 120,40 L 132,38 L 144,35 L 156,32 L 168,30 L 180,28 L 192,26 L 204,22 L 216,20 L 228,16 L 240,14 L 252,12 L 264,10 L 276,8 L 288,6 L 300,4 L 300,80 L 0,80 Z" fill="url(#aivisGrad)"/>
+              {/* Line */}
+              <path d="M 0,68 L 12,66 L 24,62 L 36,60 L 48,58 L 60,55 L 72,52 L 84,48 L 96,46 L 108,43 L 120,40 L 132,38 L 144,35 L 156,32 L 168,30 L 180,28 L 192,26 L 204,22 L 216,20 L 228,16 L 240,14 L 252,12 L 264,10 L 276,8 L 288,6 L 300,4" fill="none" stroke="#f97316" strokeWidth="2.5"/>
+              {/* End point glow */}
+              <circle cx="300" cy="4" r="4" fill="#f97316">
+                <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+            <div className="flex justify-between text-sm text-white/40 mt-1">
+              <span>30 天前 · 3 次</span>
+              <span>本週 · 14 次</span>
+              <span>今天</span>
+            </div>
+          </div>
+        </div>
 
         {/* 5 AI 引擎 chips */}
         <div className="grid grid-cols-5 gap-2 mb-5">
@@ -374,9 +427,9 @@ function AivisHero({ isPro, websiteName, overallScore }) {
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}>
-              <div className="text-xl mb-1">{e.emoji}</div>
-              <div className="text-[10px] text-white/50">{e.name}</div>
-              <div className="text-xs font-bold text-orange-300 font-mono">{isPro ? `${e.pct}%` : '🔒'}</div>
+              <div className="text-2xl mb-1">{e.emoji}</div>
+              <div className="text-sm text-white/55">{e.name}</div>
+              <div className="text-sm font-bold text-orange-300 font-mono">{isPro ? `${e.pct}%` : '🔒'}</div>
             </div>
           ))}
         </div>
@@ -384,16 +437,16 @@ function AivisHero({ isPro, websiteName, overallScore }) {
         {/* 平均提及率 + CTA */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-[11px] text-white/50 mb-1">平均提及率（30 天）</div>
+            <div className="text-sm text-white/55 mb-1">平均提及率（30 天）</div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-white font-mono">{isPro ? '11.6' : '?'}</span>
-              <span className="text-base text-white/40 font-mono">%</span>
-              {isPro && <span className="text-xs font-bold text-emerald-300">▲ +2.3</span>}
+              <span className="text-4xl font-black text-white font-mono">{isPro ? '11.6' : '?'}</span>
+              <span className="text-xl text-white/40 font-mono">%</span>
+              {isPro && <span className="text-sm font-bold text-emerald-300">▲ +2.3</span>}
             </div>
           </div>
           <Link
             to="/ai-visibility"
-            className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
+            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
           >
             {isPro ? '看完整監測 →' : '升 Pro 解鎖 →'}
           </Link>
@@ -421,12 +474,12 @@ function GamifyRail({ gamify }) {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white">{gamify.levelName}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold" style={{
+                <span className="text-sm px-2 py-0.5 rounded-full font-mono font-bold" style={{
                   background: 'rgba(205,127,50,0.2)',
                   color: '#e0a16a',
                 }}>Lv.{gamify.level}</span>
               </div>
-              <div className="text-[10px] text-white/45 mt-0.5">下一級還差 {gamify.xpToNext} 分</div>
+              <div className="text-sm text-white/45 mt-0.5">下一級還差 {gamify.xpToNext} 分</div>
             </div>
           </div>
           {/* 進度條 */}
@@ -439,7 +492,7 @@ function GamifyRail({ gamify }) {
               }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-white/45 font-mono">
+          <div className="flex justify-between text-sm text-white/45 font-mono">
             <span>{gamify.xp}/{gamify.totalXp}</span>
             <span className="text-white font-bold">{gamify.xp}%</span>
           </div>
@@ -455,9 +508,9 @@ function GamifyRail({ gamify }) {
         <div className="flex-1">
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-black font-mono text-orange-400 leading-none">{gamify.streak}</span>
-            <span className="text-xs text-white/55">天</span>
+            <span className="text-sm text-white/55">天</span>
           </div>
-          <div className="text-[10px] text-white/55">連續進步</div>
+          <div className="text-sm text-white/55">連續進步</div>
         </div>
       </div>
 
@@ -467,8 +520,8 @@ function GamifyRail({ gamify }) {
         border: '1px solid rgba(255,255,255,0.1)',
       }}>
         <div className="flex justify-between items-center mb-2">
-          <span className="text-[10px] uppercase tracking-widest text-white/45 font-bold">徽章</span>
-          <span className="text-[10px] text-white/55 font-mono">
+          <span className="text-sm uppercase tracking-widest text-white/45 font-bold">徽章</span>
+          <span className="text-sm text-white/55 font-mono">
             {gamify.badges.filter(b => b.unlocked).length} / {gamify.badges.length}
           </span>
         </div>
@@ -487,7 +540,7 @@ function GamifyRail({ gamify }) {
             >
               {b.emoji}
               {!b.unlocked && (
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white/25 bg-black/30 rounded-lg">🔒</span>
+                <span className="absolute inset-0 flex items-center justify-center text-sm text-white/25 bg-black/30 rounded-lg">🔒</span>
               )}
             </div>
           ))}
@@ -502,7 +555,7 @@ function NoticeStrip() {
   const [dismissed, setDismissed] = useState(false)
   if (dismissed) return null
   return (
-    <div className="mb-4 px-4 py-2.5 rounded-xl flex items-center gap-3 text-xs" style={{
+    <div className="mb-4 px-4 py-2.5 rounded-xl flex items-center gap-3 text-sm" style={{
       background: 'rgba(24,197,144,0.1)',
       border: '1px solid rgba(24,197,144,0.3)',
     }}>
@@ -524,10 +577,10 @@ function QuestSection({ quests }) {
       border: '1px solid rgba(255,255,255,0.1)',
     }}>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h3 className="text-base font-bold text-white flex items-center gap-2">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
           ⚡ 今日任務
         </h3>
-        <div className="text-xs text-white/50">
+        <div className="text-sm text-white/50">
           完成可拿 <strong className="text-emerald-300 font-mono">+{totalEst} 分</strong>
         </div>
       </div>
@@ -542,16 +595,16 @@ function QuestSection({ quests }) {
               <span className="text-xl flex-shrink-0">{q.icon}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-sm font-bold text-white">{q.done ? '✅ ' : ''}{q.title}</span>
+                  <span className="text-base font-bold text-white">{q.done ? '✅ ' : ''}{q.title}</span>
                 </div>
-                <p className="text-[11px] text-white/55 leading-relaxed">{q.desc}</p>
-                <div className="flex items-center justify-between mt-2 text-[10px]">
+                <p className="text-sm text-white/55 leading-relaxed">{q.desc}</p>
+                <div className="flex items-center justify-between mt-2 text-sm">
                   <div className="flex items-center gap-3">
                     <span className="text-emerald-300 font-bold font-mono">+{q.est}分</span>
                     <span className="text-white/40">~{q.mins} 分鐘</span>
                   </div>
                   {!q.done && (
-                    <button className="px-2 py-1 rounded text-[10px] font-bold transition" style={{
+                    <button className="px-2 py-1 rounded text-sm font-bold transition" style={{
                       background: `${FACE_BG[q.face]}`,
                       color: FACE_COLORS[q.face],
                       border: `1px solid ${FACE_BORDER[q.face]}`,
@@ -569,7 +622,8 @@ function QuestSection({ quests }) {
   )
 }
 
-// 站點體檢 5 Tab wrapper
+// 站點體檢 5 Tab wrapper — 對齊 prototype-2b 第 1493 行 audit-unified 設計
+// 含：站點體檢總分（大數字）+ 五角雷達 mini + 5 Tab nav + Tab body
 function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, aeoAudit, geoAudit, eeatAudit, isPro }) {
   const tabs = [
     { key: 'seo',     label: 'SEO',     score: scores.seo },
@@ -578,6 +632,8 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
     { key: 'eeat',    label: 'E-E-A-T', score: scores.eeat },
     { key: 'content', label: '內容品質', score: scores.content },
   ]
+  // 站點體檢總分 = 5 個 face 平均
+  const overallScore = Math.round((scores.seo + scores.aeo + scores.geo + scores.eeat + scores.content) / 5)
   return (
     <section className="mb-6 relative overflow-hidden rounded-2xl p-5 sm:p-6" style={{
       background: 'rgba(255,255,255,0.04)',
@@ -589,9 +645,34 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
 
       <div className="relative z-10">
         {/* Section head */}
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">📊 站點體檢</h2>
-          <span className="text-[11px] text-white/45 font-mono">{website.url}</span>
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">📊 站點體檢</h2>
+          <span className="text-sm text-white/45 font-mono">{website.url}</span>
+        </div>
+
+        {/* ─── 站點體檢總分 + 五角雷達 mini（對齊 prototype-2b 1493-1521） ─── */}
+        <div className="flex items-center gap-5 mb-6 flex-wrap p-5 rounded-xl" style={{
+          background: 'rgba(0,0,0,0.25)',
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}>
+          {/* 左：大數字 + 副標 */}
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className="text-6xl font-black font-mono text-white leading-none" style={{
+              background: 'linear-gradient(135deg, #18c590, #10b981)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}>
+              {overallScore}
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">站點體檢總分</h3>
+              <div className="text-sm text-white/55 mb-1">5 大面向綜合 · 站點層級</div>
+              <div className="text-sm text-emerald-300 font-bold">↑ 比上週 +5 分</div>
+            </div>
+          </div>
+          {/* 右：五角雷達 mini SVG */}
+          <PentaRadar scores={scores} size={140} />
         </div>
 
         {/* Tab nav — 5 個 face 切換 */}
@@ -603,15 +684,15 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
             <button
               key={tab.key}
               onClick={() => setActiveFace(tab.key)}
-              className="flex-1 min-w-[100px] py-2 px-3 rounded-lg transition flex flex-col items-center gap-0.5"
+              className="flex-1 min-w-[120px] py-3 px-4 rounded-lg transition flex flex-col items-center gap-1"
               style={{
                 background: activeFace === tab.key ? FACE_BG[tab.key] : 'transparent',
-                color: activeFace === tab.key ? '#fff' : 'rgba(255,255,255,0.55)',
+                color: activeFace === tab.key ? '#fff' : 'rgba(255,255,255,0.6)',
                 boxShadow: activeFace === tab.key ? `0 0 0 1px ${FACE_BORDER[tab.key]}` : 'none',
               }}
             >
-              <span className="text-xs font-semibold whitespace-nowrap">{tab.label}</span>
-              <span className="text-[10px] font-mono" style={{
+              <span className="text-sm font-semibold whitespace-nowrap">{tab.label}</span>
+              <span className="text-sm font-mono font-bold" style={{
                 color: activeFace === tab.key ? FACE_COLORS[tab.key] : 'rgba(255,255,255,0.4)',
               }}>{tab.score || 0}</span>
             </button>
@@ -631,6 +712,62 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
         />
       </div>
     </section>
+  )
+}
+
+// 五角雷達 mini — 從 5 個分數計算 5 個 polygon 頂點
+// 5 個頂點分別在 12, 84, 156, 228, 300 度（順時針從 12 點開始）
+function PentaRadar({ scores, size = 140 }) {
+  const center = size / 2
+  const maxR = size * 0.42
+  // 5 face order: SEO(頂) AEO(右上) GEO(右下) EEAT(左下) Content(左上)
+  const faces = [
+    { score: scores.seo,     color: FACE_COLORS.seo,     angle: -90 },
+    { score: scores.aeo,     color: FACE_COLORS.aeo,     angle: -18 },
+    { score: scores.geo,     color: FACE_COLORS.geo,     angle: 54 },
+    { score: scores.eeat,    color: FACE_COLORS.eeat,    angle: 126 },
+    { score: scores.content, color: FACE_COLORS.content, angle: 198 },
+  ]
+  const points = faces.map(f => {
+    const rad = f.angle * Math.PI / 180
+    const r = (f.score / 100) * maxR
+    return {
+      x: center + Math.cos(rad) * r,
+      y: center + Math.sin(rad) * r,
+      color: f.color,
+    }
+  })
+  const polyPoints = points.map(p => `${p.x},${p.y}`).join(' ')
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} style={{ width: size, height: size, flexShrink: 0 }}>
+      {/* 同心圓參考線 */}
+      <circle cx={center} cy={center} r={maxR}        fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
+      <circle cx={center} cy={center} r={maxR * 0.7}  fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
+      <circle cx={center} cy={center} r={maxR * 0.4}  fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
+      {/* 5 軸放射線 */}
+      {faces.map((f, i) => {
+        const rad = f.angle * Math.PI / 180
+        return (
+          <line key={`axis-${i}`}
+            x1={center} y1={center}
+            x2={center + Math.cos(rad) * maxR}
+            y2={center + Math.sin(rad) * maxR}
+            stroke="rgba(255,255,255,0.05)" strokeWidth="1"
+          />
+        )
+      })}
+      {/* 資料 polygon */}
+      <polygon points={polyPoints}
+        fill="rgba(24,197,144,0.18)"
+        stroke="#18c590" strokeWidth="2"
+      />
+      {/* 5 個 face 色點 */}
+      {points.map((p, i) => (
+        <circle key={`pt-${i}`} cx={p.x} cy={p.y} r="4" fill={p.color}
+          style={{ filter: `drop-shadow(0 0 4px ${p.color})` }}
+        />
+      ))}
+    </svg>
   )
 }
 
@@ -677,20 +814,20 @@ function AuditTabBody({ face, scores, website, seoAudit, aeoAudit, geoAudit, eea
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-3xl font-black text-white font-mono leading-none">{score}</span>
-            <span className="text-[10px] text-white/45 mt-1">/ 100</span>
+            <span className="text-sm text-white/45 mt-1">/ 100</span>
           </div>
         </div>
-        <span className="text-xs font-bold" style={{ color: verdictColor }}>{verdict}</span>
+        <span className="text-sm font-bold" style={{ color: verdictColor }}>{verdict}</span>
       </div>
 
       {/* 中：說明 + 主要指標 */}
       <div>
-        <h3 className="text-base font-bold text-white flex items-center gap-2 mb-1">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1">
           <span>{faceMeta.icon}</span>
           {faceMeta.name}
         </h3>
-        <p className="text-xs text-white/55 mb-3 leading-relaxed">{faceMeta.desc}</p>
-        <div className="text-[11px] text-white/45 space-y-1">
+        <p className="text-sm text-white/55 mb-3 leading-relaxed">{faceMeta.desc}</p>
+        <div className="text-sm text-white/45 space-y-1">
           <p>📅 上次掃描：{(seoAudit || aeoAudit || geoAudit || eeatAudit)?.created_at ? new Date((seoAudit || aeoAudit || geoAudit || eeatAudit).created_at).toLocaleDateString('zh-TW') : '尚無資料'}</p>
           <p>📊 主要拖分項：請進詳細頁看完整 14 項檢測</p>
         </div>
@@ -706,8 +843,8 @@ function AuditTabBody({ face, scores, website, seoAudit, aeoAudit, geoAudit, eea
             border: `1px solid ${FACE_BORDER[face]}`,
           }}
         >
-          <div className="text-xs text-white/55 mb-1">點開查看</div>
-          <div className="text-sm font-bold text-white">完整 {faceMeta.name} 報告 →</div>
+          <div className="text-sm text-white/55 mb-1">點開查看</div>
+          <div className="text-base font-bold text-white">完整 {faceMeta.name} 報告 →</div>
         </Link>
         {face === 'content' && (
           <Link
@@ -718,13 +855,57 @@ function AuditTabBody({ face, scores, website, seoAudit, aeoAudit, geoAudit, eea
               border: '1px solid rgba(249,115,22,0.3)',
             }}
           >
-            <div className="text-[11px] text-orange-200">
+            <div className="text-sm text-orange-200">
               📂 {isPro ? '批次掃描全站 200 篇' : 'Pro 解鎖批次掃描'}
             </div>
           </Link>
         )}
       </div>
     </div>
+  )
+}
+
+// 修復工具箱 — 合併單一入口（對齊 prototype-2b 第 1613-1641）
+// 4 個產生器：Organization Schema / FAQ Schema / llms.txt / Article Schema
+// B1 用靜態卡片、B2 phase 接真的「點開 → 模態 → 填表 → 產出 code」流程
+function ToolBox({ websiteId }) {
+  const tools = [
+    { emoji: '🪪', name: 'Organization Schema', desc: '品牌報名表、永久儲存',     to: '/schema-check' },
+    { emoji: '📋', name: 'FAQ Schema',          desc: '問答結構化資料',           to: '/schema-check' },
+    { emoji: '📄', name: 'llms.txt',            desc: 'AI 爬蟲索引引導',          to: '/crawl-check' },
+    { emoji: '📰', name: 'Article Schema',      desc: '文章結構化',               to: `/bulk-scan/${websiteId}` },
+  ]
+  return (
+    <section className="mb-6 rounded-2xl p-5 sm:p-6" style={{
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.1)',
+    }}>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          🛠 修復工具箱 <span className="text-sm font-normal text-white/55">· 合併單一入口</span>
+        </h3>
+        <Link to={`/bulk-scan/${websiteId}`} className="text-sm text-white/55 hover:text-white">
+          查看所有工具 →
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {tools.map((t, i) => (
+          <Link
+            key={i}
+            to={t.to}
+            className="rounded-xl p-4 transition hover:scale-[1.02] block"
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <div className="text-3xl mb-2">{t.emoji}</div>
+            <div className="text-base font-bold text-white mb-1">{t.name}</div>
+            <div className="text-sm text-white/55 leading-relaxed">{t.desc}</div>
+          </Link>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -735,7 +916,7 @@ function TrendChart({ trendData }) {
       background: 'rgba(255,255,255,0.04)',
       border: '1px solid rgba(255,255,255,0.1)',
     }}>
-      <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
         📈 過去 30 天進步軌跡
       </h3>
       <div style={{ width: '100%', height: 260 }}>
