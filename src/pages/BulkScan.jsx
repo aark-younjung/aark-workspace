@@ -297,7 +297,7 @@ export default function BulkScan() {
 
       {/* 完成 → 聚合結果 + 列表 */}
       {job?.status === 'done' && results && (
-        <ResultsView job={job} results={results} onRescan={handleStart} starting={starting} />
+        <ResultsView job={job} results={results} onRescan={handleStart} starting={starting} websiteId={websiteId} userId={user?.id} />
       )}
     </PageWrap>
   )
@@ -318,7 +318,7 @@ function ProgressBar({ scanned, failed, total }) {
   )
 }
 
-function ResultsView({ job, results, onRescan, starting }) {
+function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
   const agg = job.aggregate || {}
   const byType = agg.problems_by_type || {}
   const offenders = agg.top_offenders || []
