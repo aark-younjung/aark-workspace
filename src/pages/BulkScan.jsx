@@ -361,7 +361,12 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
         <ProblemBreakdown sortedProblems={sortedProblems} totalScanned={totalScanned} />
       </div>
 
-      {/* 重新掃描按鈕 — 只 Pro 顯示（Free 用戶不能再 sample，要升級才能重掃） */}
+      {/* 「快照時效」提示 banner — 用戶常常在 WP 改完後困惑「為什麼掃描結果還是舊的」
+          這條 banner 明確告訴他們：results 是快照、線上可能已不同、要重掃才知道 */}
+      <StaleSnapshotBanner finishedAt={job.finished_at} onRescan={onRescan} starting={starting} isSample={isSample} />
+
+      {/* 重新掃描按鈕 — 只 Pro 顯示（Free 用戶不能再 sample，要升級才能重掃）
+          注：banner 內也已有「重新掃描」按鈕、這顆作為次要備援（右上角習慣性位置） */}
       {!isSample && (
         <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'flex-end' }}>
           <button onClick={() => onRescan('full')} disabled={starting} style={secondaryButtonStyle}>
@@ -683,6 +688,59 @@ function H1DetailCard({ detail }) {
       )}
       {/* 原因說明 */}
       <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
+    </div>
+  )
+}
+
+// 快照時效提示 banner — 告訴用戶「這次掃描的結果是快照、線上可能已不同」
+// 解決重複痛點：用戶在 WP 改完後回來看 BulkScan 結果頁、誤以為「修了沒生效」
+// （實際上是 findings JSONB 不會自動 re-compute、要重掃才會更新）
+function StaleSnapshotBanner({ finishedAt, onRescan, starting, isSample }) {
+  if (!finishedAt) return null
+  const minsAgo = Math.floor((Date.now() - new Date(finishedAt)) / 60000)
+  // 5 分鐘內視為新鮮、不顯示提示（避免用戶剛掃完就被嚇到）
+  if (minsAgo < 5) return null
+
+  const ago = minsAgo < 60 ? `${minsAgo} 分鐘前` : minsAgo < 60 * 24 ? `${Math.floor(minsAgo / 60)} 小時前` : `${Math.floor(minsAgo / (60 * 24))} 天前`
+
+  return (
+    <div style={{
+      marginBottom: 18,
+      padding: '12px 16px',
+      background: 'rgba(251,191,36,0.08)',
+      border: '1px solid rgba(251,191,36,0.3)',
+      borderRadius: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 14,
+      flexWrap: 'wrap',
+    }}>
+      <span style={{ fontSize: 18 }}>📸</span>
+      <div style={{ flex: 1, minWidth: 240, fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
+        這是 <strong style={{ color: T.text }}>{ago}</strong> 跑的掃描快照、可能與你網站上的<strong style={{ color: T.text }}>當前狀態不一致</strong>。
+        如果你已經修了某些 finding、按右邊重新掃描才能確認修復生效。
+      </div>
+      {!isSample && (
+        <button
+          onClick={() => onRescan('full')}
+          disabled={starting}
+          style={{
+            padding: '8px 14px',
+            fontSize: 12,
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+            color: '#000',
+            border: 'none',
+            borderRadius: 7,
+            cursor: starting ? 'not-allowed' : 'pointer',
+            opacity: starting ? 0.5 : 1,
+            fontFamily: T.font,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {starting ? '啟動中...' : '🔄 立刻重掃確認'}
+        </button>
+      )}
     </div>
   )
 }
