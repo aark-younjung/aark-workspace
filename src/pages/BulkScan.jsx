@@ -21,6 +21,7 @@ import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 import { GlassCard, ArticleAnalysisTabs, ScoreHero } from '../components/v2'
 import { T } from '../styles/v2-tokens'
+import { recordFixEvent } from '../lib/fixEvents'
 
 const POLL_INTERVAL_MS = 5000  // 每 5 秒輪詢進度
 
@@ -399,7 +400,7 @@ function ResultsView({ job, results, onRescan, starting }) {
       <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 600, overflowY: 'auto' }}>
           {(results.results || []).map((r, i) => (
-            <UrlRow key={i} result={r} />
+            <UrlRow key={i} result={r} websiteId={websiteId} userId={user?.id} />
           ))}
         </div>
       </GlassCard>
@@ -505,11 +506,16 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
   )
 }
 
-function UrlRow({ result }) {
+function UrlRow({ result, websiteId, userId }) {
   const probs = result.findings?.problems || []
   const isDone = result.status === 'done'
   const hasProblems = isDone && probs.length > 0
   const [expanded, setExpanded] = useState(false)
+  // B5: 追蹤這個 URL 內哪些 finding 已被用戶按過「我已修好」
+  //     用 Set 存 finding 的 problem.id（同 URL 多個同 id finding 共用一個 fixed 狀態，這個 case 罕見）
+  const [fixedSet, setFixedSet] = useState(new Set())
+  const [fixingId, setFixingId] = useState(null) // 哪個 finding 正在 insert（防重複點）
+  const [scorePopAt, setScorePopAt] = useState(null) // finding id of last successful fix — 給 +5 XP 動畫
 
   return (
     <div style={{
@@ -582,6 +588,38 @@ function UrlRow({ result }) {
                     <strong style={{ color: '#f9a8d4' }}>💡 怎麼修：</strong>{tip}
                   </div>
                 )}
+                {/* B5: 我已修好按鈕 — 寫 fix_event 進 DB、給 +5 XP（gamification 累計、可能觸發升等 / 徽章解鎖）*/}
+                <FixDoneButton
+                  isFixed={fixedSet.has(`${i}-${p.id}`)}
+                  isFixing={fixingId === `${i}-${p.id}`}
+                  showPop={scorePopAt === `${i}-${p.id}`}
+                  onClick={async () => {
+                    const key = `${i}-${p.id}`
+                    if (fixedSet.has(key) || fixingId) return
+                    if (!userId) {
+                      alert('請先登入才能記錄修復')
+                      return
+                    }
+                    setFixingId(key)
+                    try {
+                      await recordFixEvent({
+                        userId,
+                        websiteId,
+                        findingId: p.id,
+                        url: result.url,
+                        source: 'bulk_scan',
+                      })
+                      setFixedSet(prev => new Set(prev).add(key))
+                      setScorePopAt(key)
+                      setTimeout(() => setScorePopAt(prev => prev === key ? null : prev), 1600)
+                    } catch (err) {
+                      console.error('recordFixEvent error:', err)
+                      alert('記錄失敗 — 可能是 fix_events 表還沒建。請聯絡客服或檢查 Supabase Dashboard')
+                    } finally {
+                      setFixingId(null)
+                    }
+                  }}
+                />
               </li>
             )
           })}
@@ -645,6 +683,64 @@ function H1DetailCard({ detail }) {
       )}
       {/* 原因說明 */}
       <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
+    </div>
+  )
+}
+
+// B5: 我已修好按鈕 — 三狀態（待修 / 修復中 / 已修復）+ 浮起 +5 XP 動畫
+// isFixed：DB 已寫入完成、按鈕變綠色「已記錄修復 +5 XP」
+// isFixing：點完還在 await insert、按鈕變 disable + 文字「記錄中...」
+// showPop：剛剛 insert 成功、播放 1.6s 的 +5 XP 浮起動畫
+function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
+  return (
+    <div style={{ marginTop: 6, marginLeft: 20, position: 'relative' }}>
+      <button
+        onClick={onClick}
+        disabled={isFixed || isFixing}
+        style={{
+          padding: '6px 14px',
+          fontSize: 11,
+          fontWeight: 700,
+          background: isFixed
+            ? 'rgba(34,197,94,0.18)'
+            : isFixing
+              ? 'rgba(255,255,255,0.08)'
+              : 'linear-gradient(135deg, rgba(20,184,166,0.18), rgba(20,184,166,0.08))',
+          color: isFixed ? '#86efac' : isFixing ? T.textMid : '#5eead4',
+          border: `1px solid ${isFixed ? 'rgba(34,197,94,0.5)' : 'rgba(20,184,166,0.4)'}`,
+          borderRadius: 6,
+          cursor: (isFixed || isFixing) ? 'default' : 'pointer',
+          fontFamily: T.font,
+        }}
+      >
+        {isFixed
+          ? '✅ 已記錄修復 +5 XP'
+          : isFixing
+            ? '⏳ 記錄中...'
+            : '✓ 我已修好 → 記錄修復'}
+      </button>
+      {/* +5 XP 浮起動畫 */}
+      {showPop && (
+        <span style={{
+          position: 'absolute',
+          left: 110, top: 0,
+          fontSize: 14,
+          fontWeight: 900,
+          color: '#86efac',
+          textShadow: '0 0 8px rgba(34,197,94,0.6)',
+          pointerEvents: 'none',
+          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+          animation: 'bulkscan-score-pop 1.6s cubic-bezier(0.16,1,0.3,1) forwards',
+        }}>+5 XP</span>
+      )}
+      <style>{`
+        @keyframes bulkscan-score-pop {
+          0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+          15%  { transform: translateY(-6px) scale(1.2); opacity: 1; }
+          60%  { transform: translateY(-30px) scale(1.3); opacity: 1; }
+          100% { transform: translateY(-60px) scale(1); opacity: 0; }
+        }
+      `}</style>
     </div>
   )
 }

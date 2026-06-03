@@ -6,6 +6,57 @@
 
 ---
 
+### 2026-06-03（B5 — 修復事件追蹤 + 「我已修好」按鈕 + ScorePop 動畫）
+**用戶體感問題：「我在修復工具箱修了東西、有分數嗎？目前看起來沒有納入遊戲機制」**
+
+**設計缺口：**
+B2 的 XP 公式（audits × 10 + websites × 50 + 日期 × 5）**沒把「用戶修復」算進去** —
+- 點工具不獎勵（會被刷分）
+- 分數變高才獎勵（但 UI 上不可見、用戶感覺不到努力被認可）
+- 結果：用戶不知道修復跟 gamification 的關係
+
+**B5 解法：顯式宣告 fix_event + 立即可見的 +5 XP 動畫**
+
+新增：
+- [src/lib/fixEvents.js](src/lib/fixEvents.js) — `recordFixEvent()` 寫一筆 fix_event；`listFixEvents()` 查全部
+- [src/hooks/useGamification.js](src/hooks/useGamification.js) 加 fix_events 計分：
+  - XP 公式：`totalAudits×10 + websiteCount×50 + distinctActiveDays×5 + fixEventCount×5`
+  - 🔧 「初次修復」徽章從「totalAudits >= 5 代理」改成「真實 fixEventCount >= 1」
+- [src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) `UrlRow` 每個 finding 加「✓ 我已修好 → 記錄修復」按鈕：
+  - 3 狀態：待修（青綠膠囊）/ 記錄中⏳ / 已修復✅+5XP（綠膠囊）
+  - 點下去：`recordFixEvent` 寫 DB + 觸發 `+5 XP` 浮起動畫（1.6s cubic-bezier、translateY -60px、opacity 0→1→0）
+  - 用 `fixedSet`（Set of `${i}-${p.id}`）追蹤同一個 row 內哪些 finding 已修復
+  - 反作弊：純前端 disable 重複點；DB 層沒擋（用戶可手動戳 API 刷分，但成本高、忽略）
+
+**需要 SQL（用戶側 Supabase Dashboard 跑）：**
+```sql
+CREATE TABLE IF NOT EXISTS fix_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  website_id UUID REFERENCES websites(id) ON DELETE SET NULL,
+  finding_id TEXT NOT NULL,
+  url TEXT,
+  source TEXT,  -- 'bulk_scan' / 'toolbox' / 'audit_detail'
+  xp_awarded INT DEFAULT 5,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_fix_events_user ON fix_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_fix_events_website ON fix_events(website_id);
+
+ALTER TABLE fix_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can read own fix events" ON fix_events
+  FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own fix events" ON fix_events
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+```
+
+**沒做完的 / B5b 後續：**
+- Dashboard ToolBox 4 個工具卡點下去開 modal + 「我已修好」 — 比 BulkScan 少了「貼回」這層、留給之後做
+- BulkScan「我已修好」目前不真的重跑 audit 驗證、只信用戶誠實打卡（reasonable 起手）
+- prototype-3 的 level up overlay / badge unlock 動畫沒接（B6 全頁慶祝動畫）
+
+---
+
 ### 2026-06-03（B2 — gamification 接 Supabase 真資料）
 **B1 視覺方向確認 OK → 進 B2 把 mock level/streak/badges 換成從 audits 反推的真資料。**
 

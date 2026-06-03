@@ -8,6 +8,7 @@
  *   +10 XP × 每次 audit（4 大面向 + 1 內容、跨所有 websites 累加）
  *   +50 XP × 每個 website
  *   +5  XP × 每個有 audit 的日期（distinct days）
+ *   +5  XP × 每筆 fix_event（用戶顯式宣告「我已修好」— B5）
  *
  * 等級分層（總 XP）：
  *   青銅 Lv.1-5    0-499      （每級 100 XP）
@@ -22,7 +23,7 @@
  *   🚀 首次掃描          至少 1 次 audit
  *   🔥 7 日連續登入       streak >= 7
  *   🩺 完成站點體檢       至少 1 個 website 5 個面向都有分數
- *   🔧 初次修復           總 audit 次數 >= 5（暫時代理；B5 phase 接真正的「修復後重掃」事件）
+ *   🔧 初次修復           至少 1 筆 fix_event（B5：用戶按過「我已修好」）
  *   ✨ 改進 +10 分        任一面向歷史 max - min >= 10
  *   🎯 所有 5 面向 ≥80    至少 1 個 website 全綠
  *   📈 連續 30 天進步     streak >= 30
@@ -30,6 +31,7 @@
  */
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { listFixEvents } from '../lib/fixEvents'
 
 // ── 等級表 ─────────────────────────────────────────
 const TIER_CONFIG = [
@@ -100,7 +102,7 @@ const BADGE_DEFS = [
   { key: 'first_scan',    emoji: '🚀', label: '首次掃描',         test: (s) => s.totalAudits >= 1 },
   { key: 'streak_7',      emoji: '🔥', label: '7 日連續登入',      test: (s) => s.streak >= 7 },
   { key: 'full_audit',    emoji: '🩺', label: '完成站點體檢',      test: (s) => s.hasFullAudit },
-  { key: 'first_fix',     emoji: '🔧', label: '初次修復',          test: (s) => s.totalAudits >= 5 },
+  { key: 'first_fix',     emoji: '🔧', label: '初次修復',          test: (s) => s.fixEventCount >= 1 },
   { key: 'improve_10',    emoji: '✨', label: '改進 +10 分',       test: (s) => s.maxImprove >= 10 },
   { key: 'all_green',     emoji: '🎯', label: '所有 5 面向 ≥80',   test: (s) => s.allGreen },
   { key: 'streak_30',    emoji: '📈', label: '連續 30 天進步',     test: (s) => s.streak >= 30 },
@@ -137,13 +139,14 @@ export function useGamification(userId) {
           return
         }
 
-        // 2. 平行抓 4 大 audit + content_audits
-        const [seo, aeo, geo, eeat, content] = await Promise.all([
+        // 2. 平行抓 4 大 audit + content_audits + fix_events
+        const [seo, aeo, geo, eeat, content, fixEvents] = await Promise.all([
           supabase.from('seo_audits').select('website_id, score, created_at').in('website_id', websiteIds),
           supabase.from('aeo_audits').select('website_id, score, created_at').in('website_id', websiteIds),
           supabase.from('geo_audits').select('website_id, score, created_at').in('website_id', websiteIds),
           supabase.from('eeat_audits').select('website_id, score, created_at').in('website_id', websiteIds),
           supabase.from('content_audits').select('website_id, score, created_at').in('website_id', websiteIds),
+          listFixEvents(userId),
         ])
         if (cancelled) return
 
@@ -156,6 +159,7 @@ export function useGamification(userId) {
         ]
 
         const totalAudits = allAudits.length
+        const fixEventCount = (fixEvents || []).length
 
         // 3. 計算 distinct days
         const dates = new Set()
@@ -167,8 +171,8 @@ export function useGamification(userId) {
         })
         const distinctActiveDays = dates.size
 
-        // 4. 算 XP
-        const totalXp = totalAudits * 10 + websiteCount * 50 + distinctActiveDays * 5
+        // 4. 算 XP（含 B5 的 fix_events 加分）
+        const totalXp = totalAudits * 10 + websiteCount * 50 + distinctActiveDays * 5 + fixEventCount * 5
 
         // 5. 算等級
         const levelInfo = computeLevelInfo(totalXp)
@@ -216,7 +220,7 @@ export function useGamification(userId) {
 
         // 9. 結算徽章
         const stats = {
-          totalAudits, websiteCount, distinctActiveDays,
+          totalAudits, websiteCount, distinctActiveDays, fixEventCount,
           streak,
           hasFullAudit, allGreen, maxImprove,
           level: levelInfo.level,
@@ -240,7 +244,7 @@ export function useGamification(userId) {
             progressPct: levelInfo.progressPct,
             streak,
             badges,
-            totalAudits, websiteCount, distinctActiveDays,
+            totalAudits, websiteCount, distinctActiveDays, fixEventCount,
           })
         }
       } catch (e) {
