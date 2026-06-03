@@ -167,7 +167,7 @@ export default function Compare() {
             <div className="grid sm:grid-cols-2 gap-4 mb-6">
               {urls.map((url, i) => (
                 <div key={i} className="flex gap-2 items-center">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-bold">
                     {i + 1}
                   </div>
                   <input
@@ -191,7 +191,7 @@ export default function Compare() {
             {/* 我的網站快速選擇 */}
             {myWebsites.length > 0 && (
               <div className="mb-5 pb-5 border-b border-white/10">
-                <p className="text-xs text-white/50 mb-2">📂 快速填入我的網站</p>
+                <p className="text-sm text-white/50 mb-2">📂 快速填入我的網站</p>
                 <div className="flex flex-wrap gap-2">
                   {myWebsites.map((site) => (
                     <button
@@ -203,7 +203,7 @@ export default function Compare() {
                         const targetIdx = emptyIdx !== -1 ? emptyIdx : 0
                         setUrls(prev => prev.map((u, idx) => idx === targetIdx ? site.url : u))
                       }}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all disabled:opacity-40 ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all disabled:opacity-40 ${
                         urls.includes(site.url)
                           ? 'bg-orange-500/20 border-orange-400/40 text-orange-300'
                           : 'bg-white/5 border-white/10 text-white/60 hover:border-orange-400/40 hover:text-orange-300'
@@ -255,7 +255,7 @@ export default function Compare() {
                     {state === '完成' && '✓'}
                     {state === '失敗' && '✗'}
                     <span>{urls[i] ? getHostname(cleanUrl(urls[i])) : `網站 ${i + 1}`}</span>
-                    <span className="text-xs opacity-60">{state}</span>
+                    <span className="text-sm opacity-60">{state}</span>
                   </div>
                 ))}
               </div>
@@ -276,9 +276,9 @@ export default function Compare() {
                       <div className="p-5">
                         {/* 名稱 + 名次 */}
                         <div className="flex items-center gap-2 mb-3">
-                          <span className={`flex-shrink-0 w-6 h-6 rounded-full ${c.badge} text-white text-xs font-bold flex items-center justify-center`}>{i + 1}</span>
-                          <span className="text-white/70 text-xs font-medium truncate">{r.hostname}</span>
-                          {totalWinners[i] && <span className="ml-auto text-xs">🏆</span>}
+                          <span className={`flex-shrink-0 w-6 h-6 rounded-full ${c.badge} text-white text-sm font-bold flex items-center justify-center`}>{i + 1}</span>
+                          <span className="text-white/70 text-sm font-medium truncate">{r.hostname}</span>
+                          {totalWinners[i] && <span className="ml-auto text-sm">🏆</span>}
                         </div>
 
                         {/* 大總分 */}
@@ -302,10 +302,10 @@ export default function Compare() {
                           ].map(([label, score, winner]) => (
                             <div key={label}>
                               <div className="flex items-center justify-between mb-1">
-                                <span className={`text-xs font-medium ${winner ? c.text : 'text-white/50'}`}>
+                                <span className={`text-sm font-medium ${winner ? c.text : 'text-white/50'}`}>
                                   {label} {winner ? '↑' : ''}
                                 </span>
-                                <span className={`text-xs font-bold ${scoreColor(score)}`}>{score}</span>
+                                <span className={`text-sm font-bold ${scoreColor(score)}`}>{score}</span>
                               </div>
                               <div className="w-full bg-white/10 rounded-full h-1.5">
                                 <div className={`h-1.5 rounded-full ${winner ? c.bar : scoreBar(score)}`} style={{ width: `${score}%` }} />
@@ -330,7 +330,7 @@ export default function Compare() {
                   <h2 className="text-xl font-bold text-white mb-4">{title}</h2>
                   <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden">
                     {/* 表頭 */}
-                    <div className={`grid gap-2 px-6 py-3 border-b border-white/10 text-xs font-medium`}
+                    <div className={`grid gap-2 px-6 py-3 border-b border-white/10 text-sm font-medium`}
                       style={{ gridTemplateColumns: `1fr ${results.map(() => '1fr').join(' ')}` }}>
                       <div className="text-white/40">檢測項目</div>
                       {results.map((r, i) => {
@@ -379,7 +379,7 @@ export default function Compare() {
                     return (
                       <div key={i} className={`p-5 rounded-xl border ${totalWinners[i] ? 'border-yellow-400/40 bg-yellow-500/5' : 'border-white/10 bg-white/[0.02]'}`}>
                         <div className="text-white font-medium mb-1 truncate">{r.hostname}</div>
-                        <div className="text-white/40 text-xs mb-4">通過 {passCount} / {totalCount} 項</div>
+                        <div className="text-white/40 text-sm mb-4">通過 {passCount} / {totalCount} 項</div>
                         <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                           <div className={`h-2 rounded-full ${passCount / totalCount >= 0.7 ? 'bg-green-400' : passCount / totalCount >= 0.4 ? 'bg-yellow-400' : 'bg-red-400'}`}
                             style={{ width: `${(passCount / totalCount) * 100}%` }} />

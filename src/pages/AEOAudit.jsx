@@ -259,7 +259,7 @@ export default function AEOAudit() {
                 <h3 className="text-xl font-bold" style={{ color: T.text }}>🚀 AI 搜尋優化建議</h3>
                 {!isPro && (
                   <span
-                    className="text-xs px-2 py-1 rounded-full font-semibold"
+                    className="text-sm px-2 py-1 rounded-full font-semibold"
                     style={{ background: T.orange + '26', color: '#fdba74' }}
                   >Pro 功能</span>
                 )}

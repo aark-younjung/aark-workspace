@@ -218,7 +218,7 @@ export default function EEATAudit() {
               <GlassCard key={label} style={{ padding: 16, textAlign: 'center' }}>
                 <div className="text-2xl mb-2">{icon}</div>
                 <div className="text-sm font-semibold" style={{ color: T.text }}>{label}</div>
-                <div className="text-xs mt-1" style={{ color: T.textMid }}>{desc}</div>
+                <div className="text-sm mt-1" style={{ color: T.textMid }}>{desc}</div>
               </GlassCard>
             ))}
           </div>
@@ -245,7 +245,7 @@ export default function EEATAudit() {
                   <p className="text-white/80 text-sm mt-1">依影響力排序的具體修復步驟與時程規劃</p>
                 </div>
                 {!isPro && (
-                  <span className="px-3 py-1 bg-white/20 rounded-full text-white text-xs font-semibold border border-white/30 backdrop-blur-sm">
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-white text-sm font-semibold border border-white/30 backdrop-blur-sm">
                     🔒 Pro 功能
                   </span>
                 )}
@@ -318,7 +318,7 @@ export default function EEATAudit() {
                       >
                         查看方案 →
                       </Link>
-                      <p className="text-xs mt-3" style={{ color: T.textLow }}>月繳 NT$1,490 · 年繳 NT$13,900（省 22%）</p>
+                      <p className="text-sm mt-3" style={{ color: T.textLow }}>月繳 NT$1,490 · 年繳 NT$13,900（省 22%）</p>
                     </div>
                   </div>
                 </div>

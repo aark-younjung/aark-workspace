@@ -186,7 +186,7 @@ function DarkScanningOverlay({ logs, targetUrl }) {
             </div>
             <div ref={logRef} className="flex-1 overflow-y-auto space-y-1 scrollbar-hide">
               {logs.map((log) => (
-                <div key={log.key} className="text-xs flex items-start gap-2">
+                <div key={log.key} className="text-sm flex items-start gap-2">
                   <span className="text-white/40 flex-shrink-0">{log.time}</span>
                   <span style={{ color: botColorMap[log.bot] || '#94a3b8' }} className="flex-shrink-0 font-medium">{log.bot}</span>
                   <span className={`flex-1 ${log.status === 'pass' ? 'text-green-400' : log.status === 'fail' ? 'text-red-400' : 'text-orange-400'}`}>
@@ -795,21 +795,21 @@ export default function HomeDark() {
               {user ? (
                 <>
                   {!isPro && (
-                    <Link to="/pricing" className="hidden sm:block px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded-lg transition-colors font-medium">升級 Pro</Link>
+                    <Link to="/pricing" className="hidden sm:block px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
                   )}
                   <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0">
                     {user?.user_metadata?.avatar_url ? (
                       <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">
+                      <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-sm font-bold">
                         {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
                       </div>
                     )}
                   </Link>
-                  <button onClick={signOut} className="text-white/70 hover:text-white text-xs sm:text-sm transition-colors">登出</button>
+                  <button onClick={signOut} className="text-white/70 hover:text-white text-sm sm:text-sm transition-colors">登出</button>
                 </>
               ) : (
-                <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
+                <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
               )}
             </div>
           </div>
@@ -820,7 +820,7 @@ export default function HomeDark() {
               ['/showcase', '排行榜'], ['/compare', '競品比較'],
               ['/pricing', '定價'], ['/content-audit', '文章分析'], ['/faq', 'FAQ'],
             ].map(([to, label]) => (
-              <Link key={to} to={to} className="flex-shrink-0 px-3 py-1 text-xs text-white hover:text-orange-300 hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap">{label}</Link>
+              <Link key={to} to={to} className="flex-shrink-0 px-3 py-1 text-sm text-white hover:text-orange-300 hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap">{label}</Link>
             ))}
           </div>
         </div>
@@ -880,21 +880,21 @@ export default function HomeDark() {
 
             {/* 差異化賣點 chip — 4 條軸線：功能廣度 / 技術差異 / 競爭差異 / TA 友善度（對標 GetAutoSEO non-technical 訴求） */}
             <div className="flex flex-wrap gap-2 mb-10 max-w-lg">
-              <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-medium">
+              <span className="text-sm px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-medium">
                 ✓ 7 大檢測項一次到位
               </span>
-              <span className="text-xs px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 font-medium">
+              <span className="text-sm px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 font-medium">
                 ✓ 連 Cloudflare 擋 ChatGPT 都檢得出
               </span>
-              <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-300 font-medium">
+              <span className="text-sm px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-300 font-medium">
                 ✓ Ahrefs / SEMrush 不做這個
               </span>
-              <span className="text-xs px-3 py-1.5 rounded-full bg-purple-500/15 border border-purple-400/30 text-purple-300 font-medium">
+              <span className="text-sm px-3 py-1.5 rounded-full bg-purple-500/15 border border-purple-400/30 text-purple-300 font-medium">
                 ✓ 不懂程式碼也能照著步驟修
               </span>
               {/* 對標業界 push「Organization Schema 必要」趨勢（91app/awoo/YouTube 那批人都在講）
                   — 我們的 OrgSchemaGenerator Pro 工具一鍵解、用戶搜「Organization Schema」會找到我們 */}
-              <span className="text-xs px-3 py-1.5 rounded-full bg-pink-500/15 border border-pink-400/30 text-pink-300 font-medium">
+              <span className="text-sm px-3 py-1.5 rounded-full bg-pink-500/15 border border-pink-400/30 text-pink-300 font-medium">
                 ✓ Organization Schema 一鍵自動產生
               </span>
             </div>
@@ -935,7 +935,7 @@ export default function HomeDark() {
               </div>
               {status && <p className="mt-3 text-white/80 text-sm">{status}</p>}
               {!user && (
-                <p className="mt-3 text-white/50 text-xs">
+                <p className="mt-3 text-white/50 text-sm">
                   <Link to="/login" className="text-orange-400 hover:text-orange-300 underline font-medium">登入</Link> 或 <Link to="/register" className="text-orange-400 hover:text-orange-300 underline font-medium">免費註冊</Link> 後即可開始分析
                 </p>
               )}
@@ -951,7 +951,7 @@ export default function HomeDark() {
                       <div className="text-white/70 leading-relaxed">
                         <span className="text-amber-300 font-medium">建議行動：</span>{errorInfo.action}
                       </div>
-                      <details className="mt-3 text-white/45 text-xs">
+                      <details className="mt-3 text-white/45 text-sm">
                         <summary className="cursor-pointer hover:text-white/70 select-none">技術細節（給客服用）</summary>
                         <div className="mt-1.5 font-mono break-all">
                           {errorInfo.code}{errorInfo.status ? ` · ${errorInfo.status}` : ''}
@@ -1033,7 +1033,7 @@ export default function HomeDark() {
                     background: 'rgba(255,255,255,0.15)',
                     border: `1px solid ${color}66`,
                   }}>
-                    <span className="text-xs font-semibold" style={{ color }}>{label}</span>
+                    <span className="text-sm font-semibold" style={{ color }}>{label}</span>
                   </div>
                 </div>
               ))}
@@ -1048,9 +1048,9 @@ export default function HomeDark() {
               <div className="flex items-center gap-2">
                 <span className="text-lg">📂</span>
                 <h2 className="text-base font-bold text-white">我的網站</h2>
-                <span className="text-xs text-white/60 font-normal">{myWebsites.length} / {WEBSITE_LIMIT} 個</span>
+                <span className="text-sm text-white/60 font-normal">{myWebsites.length} / {WEBSITE_LIMIT} 個</span>
               </div>
-              {!isPro && <Link to="/pricing" className="text-xs text-orange-400 hover:text-orange-300 transition-colors">升級解鎖更多 →</Link>}
+              {!isPro && <Link to="/pricing" className="text-sm text-orange-400 hover:text-orange-300 transition-colors">升級解鎖更多 →</Link>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {myWebsites.map(site => {
@@ -1066,7 +1066,7 @@ export default function HomeDark() {
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="min-w-0">
                           <p className="font-semibold text-sm truncate group-hover:text-orange-400 transition-colors" style={{ color: T.text }}>{site.name}</p>
-                          <p className="text-xs truncate mt-0.5" style={{ color: T.textMid }}>{site.url}</p>
+                          <p className="text-sm truncate mt-0.5" style={{ color: T.textMid }}>{site.url}</p>
                         </div>
                         {total !== null && <span className="flex-shrink-0 text-xl font-bold" style={{ color: scoreColor(total) }}>{total}</span>}
                       </div>
@@ -1074,18 +1074,18 @@ export default function HomeDark() {
                         <div className="space-y-1.5">
                           {[['SEO', site.seo], ['AEO', site.aeo], ['GEO', site.geo]].map(([label, score]) => score !== null && (
                             <div key={label} className="flex items-center gap-2">
-                              <span className="text-xs w-7" style={{ color: T.textMid }}>{label}</span>
+                              <span className="text-sm w-7" style={{ color: T.textMid }}>{label}</span>
                               <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
                                 <div className="h-1.5 rounded-full" style={{ width: `${score}%`, background: scoreColor(score) }} />
                               </div>
-                              <span className="text-xs font-bold w-6 text-right" style={{ color: scoreColor(score) }}>{score}</span>
+                              <span className="text-sm font-bold w-6 text-right" style={{ color: scoreColor(score) }}>{score}</span>
                             </div>
                           ))}
                         </div>
-                      ) : <p className="text-xs" style={{ color: T.textMid }}>尚未分析</p>}
+                      ) : <p className="text-sm" style={{ color: T.textMid }}>尚未分析</p>}
                       <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                        <span className="text-xs" style={{ color: T.textMid }}>🤖 {timeAgo(site.last_scanned_at)}</span>
-                        <span className="text-xs font-medium group-hover:underline" style={{ color: T.orange }}>查看報告 →</span>
+                        <span className="text-sm" style={{ color: T.textMid }}>🤖 {timeAgo(site.last_scanned_at)}</span>
+                        <span className="text-sm font-medium group-hover:underline" style={{ color: T.orange }}>查看報告 →</span>
                       </div>
                     </GlassCard>
                   </Link>
@@ -1099,7 +1099,7 @@ export default function HomeDark() {
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = T.textMid }}
                 >
                   <span className="text-2xl">＋</span>
-                  <span className="text-xs font-medium">新增網站</span>
+                  <span className="text-sm font-medium">新增網站</span>
                 </button>
               )}
             </div>
@@ -1111,7 +1111,7 @@ export default function HomeDark() {
           <div className="mt-10">
             <div className="flex items-center gap-2 mb-2 justify-center">
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.aivis }}></span>
-              <span className="text-xs tracking-widest uppercase" style={{ color: T.textMid }}>AI 即時讀取動態</span>
+              <span className="text-sm tracking-widest uppercase" style={{ color: T.textMid }}>AI 即時讀取動態</span>
             </div>
             <GlassCard style={{ padding: '12px 0', overflow: 'hidden' }}>
               <div className="flex whitespace-nowrap" style={{ animation: 'tickerScroll 25s linear infinite' }}>
@@ -1119,7 +1119,7 @@ export default function HomeDark() {
                   <span key={i} className="inline-flex items-center gap-2 px-6 text-sm">
                     <span className="text-base" style={{ color: T.aivis }}>🤖</span>
                     <span className="font-medium" style={{ color: T.text }}>{item.name}</span>
-                    <span className="text-xs" style={{ color: T.textLow }}>{timeAgo(item.scanned_at)}</span>
+                    <span className="text-sm" style={{ color: T.textLow }}>{timeAgo(item.scanned_at)}</span>
                     <span className="mx-3" style={{ color: T.textLow }}>·</span>
                   </span>
                 ))}
@@ -1141,7 +1141,7 @@ export default function HomeDark() {
                   border: `1px solid ${T.aivis}55`,
                 }}>
                   <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.aivis }} />
-                  <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>本週榜單</span>
+                  <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>本週榜單</span>
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold" style={{ color: T.text, letterSpacing: '-0.02em' }}>
                   AI 能見度 TOP 8
@@ -1174,17 +1174,17 @@ export default function HomeDark() {
                         <div className="font-semibold text-sm truncate flex items-center gap-2" style={{ color: T.text }}>
                           {site.name}
                           {site.isSample && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded font-normal" style={{
+                            <span className="text-sm px-1.5 py-0.5 rounded font-normal" style={{
                               color: T.textLow,
                               background: 'rgba(255,255,255,0.06)',
                             }}>樣本</span>
                           )}
                         </div>
-                        <div className="text-xs truncate" style={{ color: T.textMid }}>{site.url}</div>
+                        <div className="text-sm truncate" style={{ color: T.textMid }}>{site.url}</div>
                       </div>
                       <div className="flex-shrink-0 text-right">
                         <div className="text-2xl font-bold leading-none" style={{ color: scoreColor(site.total) }}>{site.total}</div>
-                        <div className="text-[10px] mt-1" style={{ color: T.textLow }}>
+                        <div className="text-sm mt-1" style={{ color: T.textLow }}>
                           SEO {site.seo} · AEO {site.aeo} · GEO {site.geo}
                         </div>
                       </div>
@@ -1210,7 +1210,7 @@ export default function HomeDark() {
               border: `1px solid ${T.aivis}55`,
             }}>
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: T.aivis }} />
-              <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>How it Works</span>
+              <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>How it Works</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: T.text, letterSpacing: '-0.02em' }}>
               三大 AI 能見度檢測面向
@@ -1255,7 +1255,7 @@ export default function HomeDark() {
                 {/* 階段編號 + tag */}
                 <div className="flex items-center justify-between mb-5">
                   <span className="font-mono text-3xl font-bold" style={{ color: item.color, opacity: 0.85 }}>{item.stage}</span>
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{
+                  <span className="text-sm font-medium px-2.5 py-1 rounded-full" style={{
                     color: item.color,
                     background: item.color + '1a',
                     border: `1px solid ${item.color}40`,
@@ -1267,7 +1267,7 @@ export default function HomeDark() {
                 {/* 檢測項目清單 */}
                 <ul className="space-y-2 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                   {item.items.map((it, j) => (
-                    <li key={j} className="flex items-start gap-2 text-xs" style={{ color: T.textMid }}>
+                    <li key={j} className="flex items-start gap-2 text-sm" style={{ color: T.textMid }}>
                       <span className="flex-shrink-0 mt-0.5" style={{ color: item.color }}>✓</span>
                       <span>{it}</span>
                     </li>

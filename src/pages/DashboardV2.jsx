@@ -26,7 +26,10 @@ import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+} from 'recharts'
 
 // ─── 5 大面向色 token ───────────────────────────────────
 const FACE_COLORS = {
@@ -672,7 +675,7 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
             </div>
           </div>
           {/* 右：五角雷達 mini SVG */}
-          <PentaRadar scores={scores} size={140} />
+          <PentaRadar scores={scores} size={220} />
         </div>
 
         {/* Tab nav — 5 個 face 切換 */}
@@ -715,59 +718,64 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
   )
 }
 
-// 五角雷達 mini — 從 5 個分數計算 5 個 polygon 頂點
-// 5 個頂點分別在 12, 84, 156, 228, 300 度（順時針從 12 點開始）
-function PentaRadar({ scores, size = 140 }) {
-  const center = size / 2
-  const maxR = size * 0.42
-  // 5 face order: SEO(頂) AEO(右上) GEO(右下) EEAT(左下) Content(左上)
-  const faces = [
-    { score: scores.seo,     color: FACE_COLORS.seo,     angle: -90 },
-    { score: scores.aeo,     color: FACE_COLORS.aeo,     angle: -18 },
-    { score: scores.geo,     color: FACE_COLORS.geo,     angle: 54 },
-    { score: scores.eeat,    color: FACE_COLORS.eeat,    angle: 126 },
-    { score: scores.content, color: FACE_COLORS.content, angle: 198 },
+// 5 軸雷達 — 對齊正式版 Dashboard.jsx 1023-1095 的 Recharts RadarChart 設定
+// 含三層：100 分滿分外框 / 80 分合格虛線基準 / 本站表現實心翠綠
+function PentaRadar({ scores, size = 220 }) {
+  const radarData = [
+    { subject: 'SEO',     score: scores.seo,     target: 80, fullMark: 100 },
+    { subject: 'AEO',     score: scores.aeo,     target: 80, fullMark: 100 },
+    { subject: 'GEO',     score: scores.geo,     target: 80, fullMark: 100 },
+    { subject: 'E-E-A-T', score: scores.eeat,    target: 80, fullMark: 100 },
+    { subject: '內容',     score: scores.content, target: 80, fullMark: 100 },
   ]
-  const points = faces.map(f => {
-    const rad = f.angle * Math.PI / 180
-    const r = (f.score / 100) * maxR
-    return {
-      x: center + Math.cos(rad) * r,
-      y: center + Math.sin(rad) * r,
-      color: f.color,
-    }
-  })
-  const polyPoints = points.map(p => `${p.x},${p.y}`).join(' ')
+  // 軸標籤的顏色 lookup（中文 subject → face color）
+  const subjectColor = {
+    'SEO': FACE_COLORS.seo, 'AEO': FACE_COLORS.aeo, 'GEO': FACE_COLORS.geo,
+    'E-E-A-T': FACE_COLORS.eeat, '內容': FACE_COLORS.content,
+  }
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} style={{ width: size, height: size, flexShrink: 0 }}>
-      {/* 同心圓參考線 */}
-      <circle cx={center} cy={center} r={maxR}        fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1"/>
-      <circle cx={center} cy={center} r={maxR * 0.7}  fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
-      <circle cx={center} cy={center} r={maxR * 0.4}  fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
-      {/* 5 軸放射線 */}
-      {faces.map((f, i) => {
-        const rad = f.angle * Math.PI / 180
-        return (
-          <line key={`axis-${i}`}
-            x1={center} y1={center}
-            x2={center + Math.cos(rad) * maxR}
-            y2={center + Math.sin(rad) * maxR}
-            stroke="rgba(255,255,255,0.05)" strokeWidth="1"
+    <div style={{ width: size, height: size, flexShrink: 0 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart data={radarData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+          <PolarGrid stroke="rgba(255,255,255,0.1)" />
+          <PolarAngleAxis
+            dataKey="subject"
+            tick={(props) => {
+              const { payload, x, y, textAnchor } = props
+              const color = subjectColor[payload.value] || '#fff'
+              return (
+                <text x={x} y={y} textAnchor={textAnchor} fill={color} fontSize={12} fontWeight={700}>
+                  {payload.value}
+                </text>
+              )
+            }}
           />
-        )
-      })}
-      {/* 資料 polygon */}
-      <polygon points={polyPoints}
-        fill="rgba(24,197,144,0.18)"
-        stroke="#18c590" strokeWidth="2"
-      />
-      {/* 5 個 face 色點 */}
-      {points.map((p, i) => (
-        <circle key={`pt-${i}`} cx={p.x} cy={p.y} r="4" fill={p.color}
-          style={{ filter: `drop-shadow(0 0 4px ${p.color})` }}
-        />
-      ))}
-    </svg>
+          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }} />
+          {/* 100 分外框 — 顯式外圈、把雷達圖視覺框起來 */}
+          <Radar name="100 分滿分線" dataKey="fullMark"
+            stroke="rgba(255,255,255,0.5)" fill="none" strokeWidth={1} dot={false} isAnimationActive={false}
+          />
+          {/* 80 分合格基準虛線 */}
+          <Radar name="合格基準（80 分）" dataKey="target"
+            stroke="rgba(255,255,255,0.55)" fill="rgba(255,255,255,0.04)"
+            strokeDasharray="5 4" strokeWidth={1.25} dot={false} isAnimationActive={false}
+          />
+          {/* 本站表現 — 翠綠實心 + 5 個 face 色點 */}
+          <Radar name="本站表現" dataKey="score"
+            stroke="#10b981" fill="#10b981" fillOpacity={0.18} strokeWidth={2}
+            dot={(props) => {
+              const { cx, cy, payload } = props
+              const color = subjectColor[payload.subject] || '#10b981'
+              return <circle cx={cx} cy={cy} r={5} fill={color} stroke="#0a0e14" strokeWidth={2} />
+            }}
+          />
+          <Tooltip
+            contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 12, color: '#fff' }}
+            formatter={(v) => [`${v} 分`, '得分']}
+          />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
   )
 }
 

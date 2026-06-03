@@ -250,23 +250,23 @@ export default function FAQ() {
             {user ? (
               <>
                 {!isPro && (
-                  <Link to="/pricing" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
+                  <Link to="/pricing" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm sm:text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
                 )}
                 <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title={userName || user.email}>
                   {user?.user_metadata?.avatar_url ? (
                     <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">
+                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-sm font-bold">
                       {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
                     </div>
                   )}
                 </Link>
-                <button onClick={signOut} className={`text-xs sm:text-sm transition-colors ${
+                <button onClick={signOut} className={`text-sm sm:text-sm transition-colors ${
                   isDark ? 'text-white/50 hover:text-white/85' : 'text-slate-400 hover:text-slate-700'
                 }`}>登出</button>
               </>
             ) : (
-              <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
+              <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
             )}
           </nav>
         </div>

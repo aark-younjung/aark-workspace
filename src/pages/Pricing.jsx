@@ -67,7 +67,7 @@ function PricingFAQ({ items, isDark }) {
               <div className="flex-1">
                 {item.tag && (
                   <span
-                    className="inline-block mb-2 px-2 py-0.5 text-xs rounded-full font-medium"
+                    className="inline-block mb-2 px-2 py-0.5 text-sm rounded-full font-medium"
                     style={{ background: item.tagColor + '26', color: item.tagColor, border: `1px solid ${item.tagColor}40` }}
                   >
                     {item.tag}
@@ -91,7 +91,7 @@ function PricingFAQ({ items, isDark }) {
             <div className="flex-1">
               {item.tag && (
                 <span
-                  className="inline-block mb-2 px-2 py-0.5 text-xs rounded-full font-medium"
+                  className="inline-block mb-2 px-2 py-0.5 text-sm rounded-full font-medium"
                   style={{ background: item.tagColor + '20', color: item.tagColor, border: `1px solid ${item.tagColor}40` }}
                 >
                   {item.tag}
@@ -407,12 +407,12 @@ export default function Pricing() {
             <span className="text-base">🐣</span>
             <span className="font-semibold">早鳥首年 NT$990／月</span>
             <span className="hidden sm:inline opacity-90">・首 4 週限定 / 前 100 名</span>
-            <span className="sm:hidden opacity-90 text-xs">・剩 {earlybirdSlotsTotal - earlybirdSlotsTaken} 名</span>
+            <span className="sm:hidden opacity-90 text-sm">・剩 {earlybirdSlotsTotal - earlybirdSlotsTaken} 名</span>
           </div>
           <button
             onClick={() => handleUpgrade('earlybird')}
             disabled={upgrading}
-            className="flex-shrink-0 px-3 py-1 bg-white text-orange-600 font-semibold rounded-md hover:bg-orange-50 transition-all text-xs whitespace-nowrap disabled:opacity-50"
+            className="flex-shrink-0 px-3 py-1 bg-white text-orange-600 font-semibold rounded-md hover:bg-orange-50 transition-all text-sm whitespace-nowrap disabled:opacity-50"
           >
             搶名額 →
           </button>
@@ -499,25 +499,25 @@ export default function Pricing() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               <div className="text-center">
                 <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.orange }}>{fmt(stats.brands)}</div>
-                <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                <div className="text-sm" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
                   個品牌正在監測
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.aeo }}>{fmt(stats.reports)}</div>
-                <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                <div className="text-sm" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
                   份 AI 能見度報告
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: '#18c590' }}>{fmt(stats.mentions)}</div>
-                <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                <div className="text-sm" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
                   次品牌被 AI 主動提及
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-2xl md:text-3xl font-bold mb-1" style={{ color: T.pass }}>{fmt(stats.scans)}</div>
-                <div className="text-xs" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+                <div className="text-sm" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
                   次累積 AI 掃描
                 </div>
               </div>
@@ -576,11 +576,11 @@ export default function Pricing() {
             </div>
             <ul className="text-sm space-y-2 leading-relaxed" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
               <li>
-                <span className="text-xs" style={{ color: T.textLow }}>Ahrefs 回答：</span>
+                <span className="text-sm" style={{ color: T.textLow }}>Ahrefs 回答：</span>
                 <br />「你的網站排第幾名」
               </li>
               <li>
-                <span className="text-xs" style={{ color: '#86efac' }}>AI 雷達回答：</span>
+                <span className="text-sm" style={{ color: '#86efac' }}>AI 雷達回答：</span>
                 <br /><span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>「AI 推薦的是你，還是你的對手」</span>
               </li>
             </ul>
@@ -611,7 +611,7 @@ export default function Pricing() {
             >
               年繳
               <span
-                className="px-1.5 py-0.5 text-[10px] rounded-full"
+                className="px-1.5 py-0.5 text-sm rounded-full"
                 style={isYearly
                   ? { background: 'rgba(255,255,255,0.25)', color: '#ffffff' }
                   : { background: T.warn + '33', color: T.warn, border: `1px solid ${T.warn}55` }
@@ -640,7 +640,7 @@ export default function Pricing() {
           <div className="flex flex-col">
             <div className="flex justify-center mb-2">
               <span
-                className="px-4 py-1 text-xs font-bold rounded-full"
+                className="px-4 py-1 text-sm font-bold rounded-full"
                 style={isDark
                   ? { background: 'rgba(255,255,255,0.06)', border: `1px solid ${T.cardBorder}`, color: T.textMid }
                   : { background: '#ffedd5', border: '1px solid #fed7aa', color: '#64748b' }
@@ -661,7 +661,7 @@ export default function Pricing() {
           {/* Pro 版 — 主推, 用 T.aeo (#8b5cf6 紫) 邊框強調 */}
           <div className="flex flex-col">
             <div className="flex justify-center mb-2">
-              <span className="px-4 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold rounded-full shadow-lg shadow-purple-500/30">最多人選擇</span>
+              <span className="px-4 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold rounded-full shadow-lg shadow-purple-500/30">最多人選擇</span>
             </div>
             {isDark ? (
               <GlassCard color={T.aeo} hover style={{ padding: 32, display: 'flex', flexDirection: 'column', flex: 1, borderWidth: 2, borderColor: T.aeo + '55' }}>
@@ -718,7 +718,7 @@ export default function Pricing() {
           <div className="flex flex-col">
             <div className="flex justify-center mb-2">
               <span
-                className="px-4 py-1 text-xs font-bold rounded-full"
+                className="px-4 py-1 text-sm font-bold rounded-full"
                 style={isDark
                   ? { background: 'rgba(255,255,255,0.06)', border: `1px solid ${T.cardBorder}`, color: T.textLow }
                   : { background: '#ffedd5', border: '1px solid #fed7aa', color: '#64748b' }
@@ -751,7 +751,7 @@ export default function Pricing() {
                 <span className="text-2xl">🎯</span>
                 <span className="font-bold text-lg" style={{ color: '#18c590' }}>AI 曝光監測（aivis）已含在 Pro 中</span>
                 <span
-                  className="px-2 py-0.5 text-xs rounded-full border"
+                  className="px-2 py-0.5 text-sm rounded-full border"
                   style={{ background: 'rgba(24,197,144,0.18)', color: '#86efac', borderColor: 'rgba(24,197,144,0.4)' }}
                 >每月 {aivisIncludedPerMonth} 次</span>
               </div>
@@ -780,10 +780,10 @@ export default function Pricing() {
             >
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 <span
-                  className="px-2 py-0.5 text-xs rounded-full"
+                  className="px-2 py-0.5 text-sm rounded-full"
                   style={{ background: '#3b82f6' + '26', color: '#93c5fd', border: '1px solid ' + '#3b82f6' + '40' }}
                 >Perplexity 實測</span>
-                <span className="text-xs" style={{ color: T.textLow }}>查詢：「台北推薦的數位行銷公司」</span>
+                <span className="text-sm" style={{ color: T.textLow }}>查詢：「台北推薦的數位行銷公司」</span>
               </div>
               <div
                 className="p-4 rounded-lg text-sm leading-relaxed"
@@ -798,7 +798,7 @@ export default function Pricing() {
                   style={{ background: '#18c590' + '33', color: '#18c590' }}
                 >優勢方舟數位行銷</span>
                 （專注 AI 能見度監測）、A 公司、B 公司⋯⋯
-                <span className="inline-block mt-2 text-xs" style={{ color: T.textLow }}>
+                <span className="inline-block mt-2 text-sm" style={{ color: T.textLow }}>
                   — 這就是 aivis 每天幫你監測的「真實 AI 答案」
                 </span>
               </div>
@@ -894,7 +894,7 @@ export default function Pricing() {
               }
             >
               <div className="text-3xl mb-3">🏢</div>
-              <div className="text-xs font-semibold mb-2" style={{ color: T.orange, letterSpacing: '0.08em' }}>
+              <div className="text-sm font-semibold mb-2" style={{ color: T.orange, letterSpacing: '0.08em' }}>
                 品牌主・自己經營
               </div>
               <h3 className="text-xl font-bold mb-2" style={isDark ? { color: T.text } : { color: '#1e293b' }}>
@@ -919,7 +919,7 @@ export default function Pricing() {
               }
             >
               <div className="text-3xl mb-3">🤝</div>
-              <div className="text-xs font-semibold mb-2" style={{ color: T.aeo, letterSpacing: '0.08em' }}>
+              <div className="text-sm font-semibold mb-2" style={{ color: T.aeo, letterSpacing: '0.08em' }}>
                 顧問／行銷代理商
               </div>
               <h3 className="text-xl font-bold mb-2" style={isDark ? { color: T.text } : { color: '#1e293b' }}>
@@ -970,7 +970,7 @@ export default function Pricing() {
                   ? '搶早鳥首年 NT$990／月'
                   : `立即升級 · NT$${isYearly ? proYearlyPerMonth.toLocaleString() : proMonthly.toLocaleString()}／月`}
           </button>
-          <p className="text-xs text-center mt-1" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
+          <p className="text-sm text-center mt-1" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
             ↩ 隨時取消
           </p>
         </div>
@@ -1096,7 +1096,7 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
           <span className="text-sm font-medium" style={{ color: T.aeo }}>Pro 方案</span>
           {isYearly && earlybirdAvailable && (
             <span
-              className="px-2 py-0.5 text-xs font-semibold rounded-full inline-flex items-center gap-1"
+              className="px-2 py-0.5 text-sm font-semibold rounded-full inline-flex items-center gap-1"
               style={{ background: T.warn + '33', color: T.warn, border: `1px solid ${T.warn}55` }}
             >🐣 早鳥首年限定・前 {earlybirdSlotsTotal} 名</span>
           )}
@@ -1124,7 +1124,7 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
               {' '}<span style={{ textDecoration: 'line-through', opacity: 0.7, color: isDark ? T.text : '#1e293b' }}>原價 NT${proYearly.toLocaleString()}</span>
             </p>
             <p
-              className="text-xs mt-1"
+              className="text-sm mt-1"
               style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
             >首年限定，次年續訂自動恢復一般年費 NT${proYearlyPerMonth.toLocaleString()}／月</p>
           </>
@@ -1167,14 +1167,14 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
         {/* 7 天免費試用 + 退款保證 雙膠囊 */}
         <div className="flex flex-wrap gap-2 mt-3">
           <span
-            className="px-2.5 py-1 text-xs rounded-full inline-flex items-center gap-1.5"
+            className="px-2.5 py-1 text-sm rounded-full inline-flex items-center gap-1.5"
             style={{ background: T.pass + '26', color: T.pass, border: `1px solid ${T.pass}40` }}
           >
             ✨ 7 天免費試用
           </span>
           {isYearly && (
             <span
-              className="px-2.5 py-1 text-xs rounded-full inline-flex items-center gap-1.5"
+              className="px-2.5 py-1 text-sm rounded-full inline-flex items-center gap-1.5"
               style={{ background: T.seo + '26', color: '#93c5fd', border: `1px solid ${T.seo}40` }}
             >
               🛡 14 天無條件退款
@@ -1185,7 +1185,7 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
         {/* 早鳥進度條 — 100 名 progress bar，吃 earlybirdSlotsTaken；月繳切換時隱藏（早鳥僅限年繳） */}
         {isYearly && earlybirdAvailable && (
           <div className="mt-4">
-            <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: isDark ? T.textMid : '#64748b' }}>
+            <div className="flex items-center justify-between text-sm mb-1.5" style={{ color: isDark ? T.textMid : '#64748b' }}>
               <span>早鳥名額</span>
               <span style={{ fontWeight: 600 }}>{earlybirdSlotsTaken} / {earlybirdSlotsTotal} 名</span>
             </div>
@@ -1235,30 +1235,30 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
           : { background: 'rgba(255,255,255,0.5)', borderColor: 'rgba(0,0,0,0.08)' }
         }
       >
-        <div className="text-xs font-semibold mb-2" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
+        <div className="text-sm font-semibold mb-2" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
           AI 曝光監測支援平台
         </div>
         <div className="flex flex-wrap gap-1.5">
           <span
-            className="px-2 py-0.5 text-xs rounded inline-flex items-center gap-1"
+            className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
             style={{ background: T.pass + '26', color: T.pass, border: `1px solid ${T.pass}40` }}
           >✓ Claude</span>
           <span
-            className="px-2 py-0.5 text-xs rounded inline-flex items-center gap-1"
+            className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
             style={isDark
               ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
               : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
             }
           >ChatGPT・即將推出</span>
           <span
-            className="px-2 py-0.5 text-xs rounded inline-flex items-center gap-1"
+            className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
             style={isDark
               ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
               : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
             }
           >Perplexity・即將推出</span>
           <span
-            className="px-2 py-0.5 text-xs rounded inline-flex items-center gap-1"
+            className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
             style={isDark
               ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
               : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
@@ -1278,7 +1278,7 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
           </div>
           <Link
             to="/account"
-            className="block w-full py-2 text-center text-xs transition-colors"
+            className="block w-full py-2 text-center text-sm transition-colors"
             style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
           >
             管理訂閱 →
@@ -1294,7 +1294,7 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
           </div>
           <Link
             to="/account"
-            className="block w-full py-2 text-center text-xs transition-colors"
+            className="block w-full py-2 text-center text-sm transition-colors"
             style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}
           >
             管理訂閱 →
@@ -1324,12 +1324,12 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
                   : `立即升級 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`}
           </button>
           {/* A7+C8: 信任兩件組 + 退款情緒承諾（原「🔒 不收信用卡」已下線 — NewebPay 上線後我們有收信用卡） */}
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
             <span className="inline-flex items-center gap-1">⚡ 60 秒開通</span>
             <span className="inline-flex items-center gap-1">↩ 隨時取消</span>
           </div>
           <p
-            className="text-xs text-center font-medium"
+            className="text-sm text-center font-medium"
             style={{ color: T.pass }}
           >
             🛡 不滿意，一毛都不用付

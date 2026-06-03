@@ -461,7 +461,7 @@ function AdHocMode() {
             </button>
           </div>
           {error && <p className="mt-3 text-red-400 text-sm">{error}</p>}
-          <p className="mt-3 text-xs text-white/40">支援部落格文章、產品頁、服務介紹頁等任意公開網址・分析約需 10–20 秒</p>
+          <p className="mt-3 text-sm text-white/40">支援部落格文章、產品頁、服務介紹頁等任意公開網址・分析約需 10–20 秒</p>
         </form>
 
         {/* 載入動畫 */}
