@@ -375,30 +375,30 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
         </div>
       )}
 
-      {/* 最有問題的 10 篇 */}
-      {offenders.length > 0 && (
-        <>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 12 }}>🔥 最需要修的 10 篇</h2>
-          <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {offenders.map((o, i) => (
-                <a key={i} href={o.url} target="_blank" rel="noopener noreferrer" style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '8px 12px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${T.cardBorder}`,
-                  borderRadius: 6, textDecoration: 'none',
-                }}>
-                  <span style={{ fontSize: 12, color: T.textMid, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 12 }}>{o.url}</span>
-                  <span style={{ fontSize: 11, color: T.fail, whiteSpace: 'nowrap' }}>
-                    {SEVERITY_ICON[o.severity]} {o.problemCount} 個問題
-                  </span>
-                </a>
-              ))}
-            </div>
-          </GlassCard>
-        </>
-      )}
+      {/* 最有問題的 10 篇 — 用 UrlRow 渲染（跟底下列表同款、可展開看完整 finding + 修復建議 + 「我已修好」按鈕）
+          這樣用戶不用再滑到底下找這 10 篇的修復方法 */}
+      {offenders.length > 0 && (() => {
+        // offenders 只有 {url, problemCount, severity}、用 url 對回 results.results 拿完整 finding 細節
+        const offenderResults = offenders
+          .map(o => (results.results || []).find(r => r.url === o.url))
+          .filter(Boolean)
+        if (offenderResults.length === 0) return null
+        return (
+          <>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>🔥 最需要修的 10 篇</h2>
+            <p style={{ fontSize: 12, color: T.textLow, marginBottom: 12 }}>
+              點開每一列展開 finding 詳細 + 修復建議 + 一鍵複製 HTML，修完按「✓ 我已修好」記錄 +5 XP
+            </p>
+            <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {offenderResults.map((r, i) => (
+                  <UrlRow key={i} result={r} websiteId={websiteId} userId={userId} />
+                ))}
+              </div>
+            </GlassCard>
+          </>
+        )
+      })()}
 
       {/* 全部結果列表（簡單版 — 之後 Phase 3 加 filter / sort） */}
       <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 12, marginTop: 24 }}>📋 全部結果（{results.results?.length || 0}）</h2>
