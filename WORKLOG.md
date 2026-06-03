@@ -6,6 +6,49 @@
 
 ---
 
+### 2026-06-03（B3 — DashboardV2 內容品質 Tab 換 prototype-4 完整版）
+**B1/B2/B5/C 動畫套件完成、用戶說「繼續進度」→ 進 B3 把內容品質 Tab 從簡化版升級到 prototype-4 設計。**
+
+**新增** `ContentTabPanel` 元件（取代 AuditTabBody 的 content 分支）— 完整實作 prototype-4 設計：
+
+1. **Hero strip**（3 欄 grid）：
+   - 左：100×100px 圓環顯示 score/100（粉紅 stroke + glow drop-shadow）
+   - 中：30 天 sparkline、從真實 `contentHistory` 算出 normalize 後的 SVG path（資料點 < 2 顯示 empty state）
+   - 右：本月已分析筆數 + 通過/待修 split
+   - 月增幅 `monthlyDelta`：本月後半（最近 15 天）平均 - 本月前半平均、含 ▲/▼ 箭頭
+
+2. **兩個入口卡**：
+   - 📄 單篇文章分析 → `/content-audit/<websiteId>`、chip「免費版可用」
+   - 📂 批次掃描全站 → `/bulk-scan/<websiteId>`、Free 用戶卡片轉灰 + chip「Pro 鎖」
+   - 兩張卡都有角落 radial-gradient 光暈（粉紅 / 橘）
+
+3. **15 項檢測 grid**（5 分類 × 3 項）：
+   - 🏗️ 結構（H1 唯一性 / 標題層級 / 字數充足）
+   - 🏷️ Meta（Title 長度 / Description 字數 / Canonical）
+   - 🤖 AEO（FAQ Schema / OG 完整 / Article Schema）
+   - ⭐ E-E-A-T（作者署名 / 圖片 alt / 外部引用）
+   - 🎬 多媒體（圖片數量 / 影片嵌入 / 可讀性）
+   - 每分類通過率 chip 三色階（綠 ≥80 / 黃 ≥60 / 紅 < 60）
+   - `buildCheckCategories(contentLatest, overallScore)` 從 content_audits JSONB 欄位推每項狀態；資料缺失時用整體 score offset 估算
+
+4. **底部 CTA bar**（青綠光暈）：
+   - 動態文案：有待修 → 「本期 N 筆待修...」；全綠 → 「全部通過！」
+   - 兩顆 CTA：「📂 看待修清單」+「🚀 重新批次掃描」
+
+**資料抓取升級** [src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx):
+- `fetchData` 內 content_audits 改抓近 30 天全部（含 heading/word_count/meta/aeo/author/images/links/outbound/multimedia/readability 全部 JSONB）+ 完整 row 給 ContentTabPanel
+- 沒 cached 時跑 `analyzeContent` 並把全部欄位寫進去（之前只寫 score）
+
+**`AuditSection` 條件渲染**：
+```jsx
+{activeFace === 'content' ? <ContentTabPanel ... /> : <AuditTabBody ... />}
+```
+
+**設計妥協 / B3b 後續：**
+- 15 項狀態用「欄位存在 + score 估算」混合判斷、不是 100% 精確（因 analyzeContent JSONB 各個 field 結構不同）。之後可以重整 schema 讓每個 field 都有 `passed` boolean、就能 1:1 對應
+
+---
+
 ### 2026-06-03（B5 — 修復事件追蹤 + 「我已修好」按鈕 + ScorePop 動畫）
 **用戶體感問題：「我在修復工具箱修了東西、有分數嗎？目前看起來沒有納入遊戲機制」**
 

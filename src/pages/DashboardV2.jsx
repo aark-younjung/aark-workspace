@@ -85,6 +85,9 @@ export default function DashboardV2() {
   const [geoHistory, setGeoHistory] = useState([])
   const [eeatHistory, setEeatHistory] = useState([])
   const [contentScore, setContentScore] = useState(null)
+  // B3: content tab 用的詳細資料
+  const [contentLatest, setContentLatest] = useState(null)   // 最新一筆 content_audits 完整 row（含 heading/meta/aeo/eeat/multimedia JSONB）
+  const [contentHistory, setContentHistory] = useState([])   // 30 天內所有 content_audits（給 sparkline + 月 stats）
   const [loading, setLoading] = useState(true)
 
   // 5 Tab nav active
@@ -115,22 +118,47 @@ export default function DashboardV2() {
         if (geo.data?.length) { setGeoAudit(geo.data[0]); setGeoHistory(geo.data.slice(0, 10).reverse()) }
         if (eeat.data?.length){ setEeatAudit(eeat.data[0]); setEeatHistory(eeat.data.slice(0, 10).reverse()) }
 
-        // 內容分數 — 跟舊 Dashboard 一樣讀 cached
-        const { data: cached } = await supabase
-          .from('content_audits').select('score').eq('website_id', id)
-          .order('created_at', { ascending: false }).limit(1).maybeSingle()
-        if (!cancelled) {
-          if (cached?.score != null) setContentScore(cached.score)
-          else {
-            // 沒 cached 就跑一次 + 寫進去
-            try {
-              const r = await analyzeContent(w.url)
-              if (r?.score != null && !cancelled) {
-                await supabase.from('content_audits').insert([{ website_id: id, score: r.score }])
-                setContentScore(r.score)
+        // 內容分數 — B3：抓最近 30 天歷史 + 最新一筆完整 row（含 JSONB）
+        const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        const { data: hist } = await supabase
+          .from('content_audits')
+          .select('id, score, heading, word_count, meta, aeo, author, images, links, outbound, multimedia, readability, created_at')
+          .eq('website_id', id)
+          .gte('created_at', since)
+          .order('created_at', { ascending: true })
+        if (cancelled) return
+
+        if (hist && hist.length > 0) {
+          const latest = hist[hist.length - 1]
+          setContentLatest(latest)
+          setContentHistory(hist)
+          setContentScore(latest.score)
+        } else {
+          // 沒 cached 就跑一次 + 寫進去
+          try {
+            const r = await analyzeContent(w.url)
+            if (r?.score != null && !cancelled) {
+              const { data: inserted } = await supabase.from('content_audits').insert([{
+                website_id: id,
+                score: r.score,
+                heading: r.heading,
+                word_count: r.wordCount,
+                meta: r.meta,
+                aeo: r.aeo,
+                author: r.author,
+                images: r.images,
+                links: r.links,
+                outbound: r.outbound,
+                multimedia: r.multimedia,
+                readability: r.readability,
+              }]).select().single()
+              setContentScore(r.score)
+              if (inserted) {
+                setContentLatest(inserted)
+                setContentHistory([inserted])
               }
-            } catch { /* swallow */ }
-          }
+            }
+          } catch { /* swallow */ }
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -242,6 +270,8 @@ export default function DashboardV2() {
           aeoAudit={aeoAudit}
           geoAudit={geoAudit}
           eeatAudit={eeatAudit}
+          contentLatest={contentLatest}
+          contentHistory={contentHistory}
           isPro={isPro}
         />
 
@@ -919,7 +949,7 @@ function QuestSection({ quests }) {
 
 // 站點體檢 5 Tab wrapper — 對齊 prototype-2b 第 1493 行 audit-unified 設計
 // 含：站點體檢總分（大數字）+ 五角雷達 mini + 5 Tab nav + Tab body
-function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, aeoAudit, geoAudit, eeatAudit, isPro }) {
+function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, aeoAudit, geoAudit, eeatAudit, contentLatest, contentHistory, isPro }) {
   const tabs = [
     { key: 'seo',     label: 'SEO',     score: scores.seo },
     { key: 'aeo',     label: 'AEO',     score: scores.aeo },
@@ -994,17 +1024,27 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
           ))}
         </div>
 
-        {/* Tab body — B1 簡化版：分數圓 + 結論 + drill-down */}
-        <AuditTabBody
-          face={activeFace}
-          scores={scores}
-          website={website}
-          seoAudit={seoAudit}
-          aeoAudit={aeoAudit}
-          geoAudit={geoAudit}
-          eeatAudit={eeatAudit}
-          isPro={isPro}
-        />
+        {/* Tab body — 4 個 audit face 走 AuditTabBody 簡化版；content face 走 ContentTabPanel 完整版（prototype-4 對齊） */}
+        {activeFace === 'content' ? (
+          <ContentTabPanel
+            score={scores.content}
+            website={website}
+            contentLatest={contentLatest}
+            contentHistory={contentHistory}
+            isPro={isPro}
+          />
+        ) : (
+          <AuditTabBody
+            face={activeFace}
+            scores={scores}
+            website={website}
+            seoAudit={seoAudit}
+            aeoAudit={aeoAudit}
+            geoAudit={geoAudit}
+            eeatAudit={eeatAudit}
+            isPro={isPro}
+          />
+        )}
       </div>
     </section>
   )
@@ -1163,6 +1203,328 @@ function AuditTabBody({ face, scores, website, seoAudit, aeoAudit, geoAudit, eea
       </div>
     </div>
   )
+}
+
+// ─── B3: 內容品質 Tab 完整 panel（對齊 prototype-4） ─────────
+// 結構：
+//   1. Hero strip — 圓環分數 + 30 天 sparkline + 月 stats
+//   2. 2 個入口卡 — 📄 單篇文章分析 / 📂 批次掃描全站
+//   3. 15 項檢測 breakdown grid（5 分類 × 3 項）
+//   4. 底部 CTA bar
+function ContentTabPanel({ score, website, contentLatest, contentHistory, isPro }) {
+  const CONTENT_COLOR = FACE_COLORS.content   // pink #ec4899
+  const safeScore = score || 0
+  const ringPct = (safeScore / 100) * 100
+
+  // ── Hero strip：sparkline 從 contentHistory 即時算 ──
+  // 至少需要 2 個點才畫線；少於 2 點時用空狀態
+  const sparkPoints = useMemo(() => {
+    if (!contentHistory || contentHistory.length < 1) return []
+    // 把分數陣列 normalize 到 SVG viewBox (0-300 x, 0-60 y)
+    const xs = contentHistory.map((h, i) => (i / Math.max(1, contentHistory.length - 1)) * 300)
+    const minS = Math.min(...contentHistory.map(h => h.score), 0)
+    const maxS = Math.max(...contentHistory.map(h => h.score), 100)
+    const range = Math.max(1, maxS - minS)
+    const ys = contentHistory.map(h => 60 - ((h.score - minS) / range) * 50 - 5)  // 留 5px margin
+    return contentHistory.map((_, i) => ({ x: xs[i], y: ys[i] }))
+  }, [contentHistory])
+
+  const sparkPath = sparkPoints.length >= 2
+    ? sparkPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
+    : null
+  const sparkAreaPath = sparkPath
+    ? `${sparkPath} L ${sparkPoints[sparkPoints.length - 1].x},60 L 0,60 Z`
+    : null
+
+  // 月增幅：本月平均 vs 上月平均
+  const monthlyDelta = useMemo(() => {
+    if (!contentHistory || contentHistory.length < 2) return null
+    const now = Date.now()
+    const cutoff = now - 30 * 24 * 60 * 60 * 1000  // 30 天前
+    const lastMonth = contentHistory.filter(h => new Date(h.created_at).getTime() > cutoff && new Date(h.created_at).getTime() < cutoff + 15 * 24 * 60 * 60 * 1000)
+    const thisMonth = contentHistory.filter(h => new Date(h.created_at).getTime() >= cutoff + 15 * 24 * 60 * 60 * 1000)
+    if (!lastMonth.length || !thisMonth.length) return null
+    const lastAvg = lastMonth.reduce((s, h) => s + (h.score || 0), 0) / lastMonth.length
+    const thisAvg = thisMonth.reduce((s, h) => s + (h.score || 0), 0) / thisMonth.length
+    return Math.round(thisAvg - lastAvg)
+  }, [contentHistory])
+
+  const monthAnalyzedCount = contentHistory?.length || 0
+  const passedCount = (contentHistory || []).filter(h => (h.score || 0) >= 80).length
+  const needFixCount = monthAnalyzedCount - passedCount
+
+  // ── 15 項檢測 — 從 contentLatest 的 JSONB 欄位推狀態 ──
+  // 因 JSONB 結構不一定每個 field 都有 score/passed flag，這裡用「欄位存在 + score >=80」當 pass 估算
+  // B3b（之後）可以對 analyzeContent 輸出 schema 做更精確的解析
+  const categories = useMemo(() => buildCheckCategories(contentLatest, safeScore), [contentLatest, safeScore])
+
+  return (
+    <div className="flex flex-col gap-5">
+
+      {/* ── Hero strip：圓環 + sparkline + 月 stats ── */}
+      <div className="rounded-xl p-5 grid sm:grid-cols-[auto_1fr_auto] gap-6 items-center" style={{
+        background: 'linear-gradient(135deg, rgba(236,72,153,0.10), rgba(236,72,153,0.02))',
+        border: '1px solid rgba(236,72,153,0.25)',
+      }}>
+        {/* 左：圓環分數 */}
+        <div className="flex flex-col items-center min-w-[130px]">
+          <div className="relative w-[100px] h-[100px]">
+            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke={CONTENT_COLOR} strokeWidth="8"
+                strokeDasharray={`${(ringPct / 100) * 264} 264`}
+                strokeLinecap="round"
+                style={{ filter: `drop-shadow(0 0 8px ${CONTENT_COLOR}80)` }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-black text-white font-mono leading-none">{safeScore}</span>
+              <span className="text-sm text-white/45 mt-1">/ 100</span>
+            </div>
+          </div>
+          <div className="text-sm text-white/55 mt-2 tracking-wider">內容品質得分</div>
+        </div>
+
+        {/* 中：30 天 sparkline */}
+        <div>
+          <div className="flex justify-between items-baseline mb-2">
+            <span className="text-sm text-white/55">過去 30 天分數變化</span>
+            {monthlyDelta != null && (
+              <span className="text-sm font-bold font-mono" style={{
+                color: monthlyDelta >= 0 ? '#86efac' : '#fca5a5',
+              }}>
+                {monthlyDelta >= 0 ? '▲' : '▼'} {monthlyDelta >= 0 ? '+' : ''}{monthlyDelta} vs 上半月
+              </span>
+            )}
+          </div>
+          {sparkPath ? (
+            <svg viewBox="0 0 300 60" preserveAspectRatio="none" className="w-full" style={{ height: 60 }}>
+              <defs>
+                <linearGradient id="contentSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={CONTENT_COLOR} stopOpacity="0.4"/>
+                  <stop offset="100%" stopColor={CONTENT_COLOR} stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d={sparkAreaPath} fill="url(#contentSparkGrad)" />
+              <path d={sparkPath} fill="none" stroke={CONTENT_COLOR} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx={sparkPoints[sparkPoints.length - 1].x} cy={sparkPoints[sparkPoints.length - 1].y} r="3.5" fill={CONTENT_COLOR} stroke="white" strokeWidth="1.5"/>
+            </svg>
+          ) : (
+            <div className="h-[60px] flex items-center justify-center text-sm text-white/40">
+              還沒有歷史資料 — 跑幾次內容分析就會出現曲線
+            </div>
+          )}
+        </div>
+
+        {/* 右：月 stats */}
+        <div className="text-right border-l border-white/10 pl-5">
+          <div className="text-sm text-white/55 mb-1">本月已分析</div>
+          <div className="font-mono font-black text-2xl leading-none text-white">
+            {monthAnalyzedCount} <span className="text-base text-white/60 font-bold">筆</span>
+          </div>
+          <div className="text-sm text-white/45 mt-1">{passedCount} 通過 · {needFixCount} 待修</div>
+        </div>
+      </div>
+
+      {/* ── 兩個入口卡 ── */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        {/* 單篇 */}
+        <Link to={`/content-audit/${website.id}`} className="block rounded-xl p-5 transition hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden" style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.1)',
+        }}>
+          <div className="absolute -top-12 -right-8 w-48 h-48 pointer-events-none opacity-70" style={{
+            background: 'radial-gradient(circle, rgba(236,72,153,0.18), transparent 60%)',
+          }} />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-3xl">📄</span>
+              <span className="text-sm font-bold px-2 py-1 rounded-full" style={{
+                background: 'rgba(236,72,153,0.18)', color: '#f9a8d4',
+              }}>免費版可用</span>
+            </div>
+            <div className="text-base font-bold text-white mb-1">單篇文章分析</div>
+            <div className="text-sm text-white/60 leading-relaxed mb-3">貼一個 URL、跑 15 項檢測。適合一篇一篇優化重點文章。</div>
+            <div className="flex items-center justify-between text-sm text-white/45 pt-3 border-t border-white/10">
+              <span>最近分析：<strong className="text-white font-mono">{monthAnalyzedCount}</strong> 筆</span>
+              <span className="text-sm font-bold" style={{ color: '#f9a8d4' }}>立即分析 →</span>
+            </div>
+          </div>
+        </Link>
+
+        {/* 批次 */}
+        <Link to={`/bulk-scan/${website.id}`} className="block rounded-xl p-5 transition hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden" style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: `1px solid ${isPro ? 'rgba(249,115,22,0.3)' : 'rgba(255,255,255,0.1)'}`,
+          opacity: isPro ? 1 : 0.7,
+        }}>
+          <div className="absolute -top-12 -right-8 w-48 h-48 pointer-events-none opacity-70" style={{
+            background: 'radial-gradient(circle, rgba(249,115,22,0.18), transparent 60%)',
+          }} />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-3xl">📂</span>
+              <span className="text-sm font-bold px-2 py-1 rounded-full" style={{
+                background: isPro ? 'rgba(249,115,22,0.18)' : 'rgba(184,197,208,0.15)',
+                color: isPro ? '#fdba74' : 'rgba(255,255,255,0.6)',
+              }}>{isPro ? 'Pro 專屬' : 'Pro 鎖'}</span>
+            </div>
+            <div className="text-base font-bold text-white mb-1">批次掃描全站</div>
+            <div className="text-sm text-white/60 leading-relaxed mb-3">sitemap 一次掃 200 篇、每篇都有「複製貼回」修復建議。盤整大規模文章站。</div>
+            <div className="flex items-center justify-between text-sm text-white/45 pt-3 border-t border-white/10">
+              <span>{isPro ? '上次掃描：見頁面內' : '升級 Pro 解鎖'}</span>
+              <span className="text-sm font-bold" style={{ color: isPro ? '#fdba74' : 'rgba(255,255,255,0.45)' }}>看完整報告 →</span>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* ── 15 項檢測 breakdown grid ── */}
+      <div>
+        <div className="flex justify-between items-baseline mb-3">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">🔍 本站近期 15 項檢測通過率</h3>
+          <span className="text-sm text-white/55">
+            <strong className="text-pink-300 font-mono font-black">{Math.round((safeScore / 100) * 100)}%</strong> 通過率
+          </span>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {categories.map((cat) => (
+            <div key={cat.key} className="rounded-lg p-3" style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-bold text-white flex items-center gap-1.5">
+                  <span className="text-base">{cat.emoji}</span>{cat.name}
+                </span>
+                <span className="text-sm font-bold font-mono px-2 py-0.5 rounded-full" style={{
+                  background: cat.tone === 'pass' ? 'rgba(34,197,94,0.15)' : cat.tone === 'warn' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
+                  color: cat.tone === 'pass' ? '#86efac' : cat.tone === 'warn' ? '#fcd34d' : '#fca5a5',
+                }}>{cat.rate}%</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {cat.items.map((it, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm" style={{
+                    color: it.status === 'pass' ? '#86efac' : it.status === 'warn' ? '#fcd34d' : '#fca5a5',
+                  }}>
+                    <span className="text-white/70">{it.name}</span>
+                    <span>{it.status === 'pass' ? '✓' : it.status === 'warn' ? '⚠' : '✗'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 底部 CTA bar ── */}
+      <div className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap" style={{
+        background: 'linear-gradient(135deg, rgba(24,197,144,0.08), rgba(24,197,144,0.02))',
+        border: '1px solid rgba(24,197,144,0.25)',
+      }}>
+        <div className="text-sm text-white/65 flex-1 min-w-[200px]">
+          💡 {needFixCount > 0
+            ? <>本期有 <strong className="text-white">{needFixCount} 筆</strong>待修內容、批次掃描可以一次看到所有問題</>
+            : <>本期所有分析都通過！繼續維持高品質內容</>}
+        </div>
+        <div className="flex gap-2">
+          <Link to={`/bulk-scan/${website.id}`} className="px-3 py-1.5 text-sm font-bold rounded-md whitespace-nowrap" style={{
+            background: 'rgba(255,255,255,0.05)',
+            color: 'rgba(255,255,255,0.7)',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}>📂 看待修清單</Link>
+          <Link to={`/bulk-scan/${website.id}`} className="px-3 py-1.5 text-sm font-bold rounded-md text-white whitespace-nowrap" style={{
+            background: 'linear-gradient(135deg, #18c590, #0d7a58)',
+            boxShadow: '0 4px 12px rgba(24,197,144,0.3)',
+          }}>🚀 重新批次掃描</Link>
+        </div>
+      </div>
+
+    </div>
+  )
+}
+
+// 從 content_audits 最新一筆 row 推 15 項分組狀態
+// 邏輯：每個 category 看對應 JSONB 欄位是否「夠」、產出 pass/warn/fail tone + per-item status
+// 沒資料時走「估算」— 用 overallScore 推每個 category 的通過率
+function buildCheckCategories(contentLatest, overallScore) {
+  // 把 JSONB 欄位 → 3 個 item 的狀態
+  // 約定：對應 field 存在且看起來 OK → pass；無資料 → 用 score 估算
+  const hasData = !!contentLatest
+
+  // 用 score 估算 fallback：score 越高、pass 越多
+  const estimate = (offset = 0) => {
+    const s = (overallScore || 0) + offset
+    if (s >= 80) return 'pass'
+    if (s >= 60) return 'warn'
+    return 'fail'
+  }
+
+  function tone(items) {
+    const passCount = items.filter(it => it.status === 'pass').length
+    const rate = Math.round((passCount / items.length) * 100)
+    return {
+      rate,
+      tone: rate >= 80 ? 'pass' : rate >= 60 ? 'warn' : 'fail',
+    }
+  }
+
+  // 結構（heading / word_count / readability）
+  const heading = hasData ? contentLatest.heading : null
+  const wc = hasData ? contentLatest.word_count : null
+  const structItems = [
+    { name: 'H1 唯一性',  status: heading?.h1_count === 1 ? 'pass' : heading?.h1_count > 1 ? 'fail' : estimate() },
+    { name: '標題層級',   status: heading?.proper_hierarchy ? 'pass' : estimate(-5) },
+    { name: '字數充足',   status: typeof wc === 'number' ? (wc >= 300 ? 'pass' : wc >= 200 ? 'warn' : 'fail') : estimate() },
+  ]
+  const structTone = tone(structItems)
+
+  // Meta（title / desc / canonical）
+  const meta = hasData ? contentLatest.meta : null
+  const metaItems = [
+    { name: 'Title 長度',       status: meta?.title_ok ? 'pass' : estimate() },
+    { name: 'Description 字數', status: meta?.desc_ok ? 'pass' : estimate(-5) },
+    { name: 'Canonical',        status: meta?.has_canonical ? 'pass' : estimate(10) },
+  ]
+  const metaTone = tone(metaItems)
+
+  // AEO
+  const aeo = hasData ? contentLatest.aeo : null
+  const aeoItems = [
+    { name: 'FAQ Schema',     status: aeo?.has_faq_schema ? 'pass' : 'fail' },
+    { name: 'OG 完整',         status: aeo?.has_og ? 'pass' : estimate() },
+    { name: 'Article Schema',  status: aeo?.has_article_schema ? 'pass' : estimate(-10) },
+  ]
+  const aeoTone = tone(aeoItems)
+
+  // E-E-A-T
+  const author = hasData ? contentLatest.author : null
+  const images = hasData ? contentLatest.images : null
+  const outbound = hasData ? contentLatest.outbound : null
+  const eeatItems = [
+    { name: '作者署名',    status: author?.has_byline ? 'pass' : estimate(-5) },
+    { name: '圖片 alt',     status: images?.alt_rate >= 0.8 ? 'pass' : images?.alt_rate >= 0.5 ? 'warn' : estimate() },
+    { name: '外部引用',    status: outbound?.count > 0 ? 'pass' : estimate(5) },
+  ]
+  const eeatTone = tone(eeatItems)
+
+  // 多媒體
+  const multimedia = hasData ? contentLatest.multimedia : null
+  const readability = hasData ? contentLatest.readability : null
+  const mediaItems = [
+    { name: '圖片數量',    status: images?.count >= 3 ? 'pass' : images?.count >= 1 ? 'warn' : 'fail' },
+    { name: '影片嵌入',    status: multimedia?.has_video ? 'pass' : estimate(-5) },
+    { name: '可讀性',      status: readability?.score >= 60 ? 'pass' : readability?.score >= 40 ? 'warn' : estimate() },
+  ]
+  const mediaTone = tone(mediaItems)
+
+  return [
+    { key: 'structure', emoji: '🏗️', name: '結構',  items: structItems, ...structTone },
+    { key: 'meta',      emoji: '🏷️', name: 'Meta',  items: metaItems,   ...metaTone },
+    { key: 'aeo',       emoji: '🤖', name: 'AEO',   items: aeoItems,    ...aeoTone },
+    { key: 'eeat',      emoji: '⭐', name: 'E-E-A-T', items: eeatItems, ...eeatTone },
+    { key: 'media',     emoji: '🎬', name: '多媒體', items: mediaItems, ...mediaTone },
+  ]
 }
 
 // 修復工具箱 — 合併單一入口（對齊 prototype-2b 第 1613-1641）
