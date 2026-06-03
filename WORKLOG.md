@@ -6,6 +6,35 @@
 
 ---
 
+### 2026-06-03（B2 — gamification 接 Supabase 真資料）
+**B1 視覺方向確認 OK → 進 B2 把 mock level/streak/badges 換成從 audits 反推的真資料。**
+
+**設計決策：不加 DB 欄位、純前端推算**
+- 避免 SQL migration 的成本（CLAUDE.md `feedback_no_sql_archive`）
+- 直接從現有 `seo_audits / aeo_audits / geo_audits / eeat_audits / content_audits` 反推
+- 之後若需要持久化（例如 badges 解鎖時點），可加欄位
+
+**新增 [src/hooks/useGamification.js](src/hooks/useGamification.js)（256 行）：**
+- 平行抓 5 個 audit 表的 `website_id, score, created_at`（filter user 的 websites）
+- 計算：
+  - **totalXp = totalAudits × 10 + websiteCount × 50 + distinctActiveDays × 5**
+  - **5-tier 等級**：青銅 Lv.1-5（每級 100 XP）/ 白銀 6-10（200 XP）/ 黃金 11-15（400 XP）/ 鉑金 16-20（800 XP）/ 鑽石 21+（1500 XP）
+  - **Streak**：從今天往前算連續有 audit 的天數（容許今天還沒掃、從昨天算）
+  - **8 個徽章**：first_scan / streak_7 / full_audit / first_fix / improve_10 / all_green / streak_30 / diamond_tier
+- 回傳 `{ loading, level, levelName, emoji, xp, xpToNext, totalXp, progressPct, streak, badges[], totalAudits, websiteCount, distinctActiveDays }`
+
+**[src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx)：**
+- 刪除 `MOCK_GAMIFY` 常數
+- 加 `const gamify = useGamification(user?.id)`、`<GamifyRail gamify={gamify} />` 直接接 hook 回傳
+- 修進度條 width：原本 `${gamify.xp}%` 對白銀以上 tier 會失準（xp 不等於 progressPct），改用 `gamify.progressPct`
+- 進度條下方數字加 `XP` 單位（從 `65/100` 變 `65/100 XP`）讓資料來源更清楚
+
+**Stage 1 後續沒做完的：**
+- 🔧「初次修復」徽章目前用「totalAudits >= 5」當代理（沒有真正的「修復後重掃」事件可追蹤）— 等 B5 phase 接 prototype-3 動畫時補真實事件
+- Quest section 還是 mock（B3 phase 會接「從 audits 找出缺項」自動產 quest）
+
+---
+
 ### 2026-06-03（B1 — DashboardV2 prototype-2b 設計實作上線預覽）
 **5 個 prototype 設計都通過 → 用戶選 B（實作 prototype-2b 進 React）。B 拆成 5 phase、B1 是 UI 骨架。**
 

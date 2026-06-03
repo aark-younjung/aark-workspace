@@ -26,6 +26,7 @@ import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
+import { useGamification } from '../hooks/useGamification'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -54,26 +55,7 @@ const FACE_BORDER = {
   content: 'rgba(236,72,153,0.4)',
 }
 
-// ─── B1 假資料：gamification（B2 phase 會接 Supabase 真資料）───
-const MOCK_GAMIFY = {
-  level: 5,
-  levelName: '青銅',
-  emoji: '🥉',
-  // xp = 距離下一級還差的進度（0-100）
-  xp: 65, xpToNext: 35, totalXp: 100,
-  streak: 5,
-  // 4 解鎖 / 4 鎖定（先用 emoji + label 表達）
-  badges: [
-    { emoji: '🚀', label: '首次掃描', unlocked: true },
-    { emoji: '🔥', label: '7 日連續登入', unlocked: true },
-    { emoji: '🩺', label: '完成站點體檢', unlocked: true },
-    { emoji: '🔧', label: '初次修復', unlocked: true },
-    { emoji: '✨', label: '改進 +10 分', unlocked: false },
-    { emoji: '🎯', label: '所有 5 面向 ≥80', unlocked: false },
-    { emoji: '📈', label: '連續 30 天進步', unlocked: false },
-    { emoji: '💎', label: '達到鑽石級', unlocked: false },
-  ],
-}
+// B2 上線後 gamification 從 useGamification hook 即時計算、不再用 MOCK
 
 // ─── B1 假資料：今日任務（B2 phase 會接修復建議引擎產出真實 quest）───
 const MOCK_QUESTS = [
@@ -87,6 +69,8 @@ export default function DashboardV2() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, isPro, isTrial, trialDaysRemaining } = useAuth()
+  // B2: gamification 真資料 — 從用戶的 audits 反推 level/xp/streak/badges
+  const gamify = useGamification(user?.id)
 
   const [website, setWebsite] = useState(null)
   const [seoAudit, setSeoAudit] = useState(null)
@@ -235,7 +219,7 @@ export default function DashboardV2() {
             <AivisHero isPro={isPro} websiteName={website.name} overallScore={overallScore} />
           </div>
           <div className="lg:col-span-4">
-            <GamifyRail gamify={MOCK_GAMIFY} />
+            <GamifyRail gamify={gamify} />
           </div>
         </section>
 
@@ -485,19 +469,19 @@ function GamifyRail({ gamify }) {
               <div className="text-sm text-white/45 mt-0.5">下一級還差 {gamify.xpToNext} 分</div>
             </div>
           </div>
-          {/* 進度條 */}
+          {/* 進度條 — 用 progressPct 而非 xp（白銀以上 tier 的 xp ≠ progressPct）*/}
           <div className="h-1.5 bg-white/8 rounded-full overflow-hidden mb-1">
             <div className="h-full rounded-full transition-all duration-500"
               style={{
-                width: `${gamify.xp}%`,
+                width: `${gamify.progressPct ?? 0}%`,
                 background: 'linear-gradient(90deg, #cd7f32, #e0a16a)',
                 boxShadow: '0 0 8px rgba(205,127,50,0.4)',
               }}
             />
           </div>
           <div className="flex justify-between text-sm text-white/45 font-mono">
-            <span>{gamify.xp}/{gamify.totalXp}</span>
-            <span className="text-white font-bold">{gamify.xp}%</span>
+            <span>{gamify.xp}/{gamify.totalXp} XP</span>
+            <span className="text-white font-bold">{gamify.progressPct ?? 0}%</span>
           </div>
         </div>
       </div>
