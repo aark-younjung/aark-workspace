@@ -294,6 +294,23 @@ async function handleCancel(req, res, supabase, userId) {
  * 如果抓到的是「sitemap index」（含 <sitemapindex>），遞迴抓所有子 sitemap
  * 最後過濾雜訊 URL + 依 <lastmod> 倒序排（沒 lastmod 就維持 sitemap 順序）
  */
+// 模擬完整 Chrome 瀏覽器 headers — 對付 mod_security / Cloudflare / WAF
+// 之前用 'AIRadarBot/1.0' 簡單 UA 會被 kimbo3899 那類 mod_security 站擋 406
+// 同款設定參考 api/fetch-url.js 的 CHROME_HEADERS
+const SITEMAP_FETCH_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/xml,application/xml,text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Sec-Ch-Ua': '"Chromium";v="120", "Not(A:Brand";v="24", "Google Chrome";v="120"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Upgrade-Insecure-Requests': '1',
+}
+
 async function discoverSitemapUrls(siteUrl) {
   const origin = new URL(siteUrl).origin   // e.g. https://kimbo3899.com.tw
   const candidates = ['/sitemap_index.xml', '/wp-sitemap.xml', '/sitemap.xml']
@@ -303,7 +320,7 @@ async function discoverSitemapUrls(siteUrl) {
   for (const path of candidates) {
     try {
       const r = await fetch(origin + path, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AIRadarBot/1.0; +https://aark-workspace.vercel.app)' },
+        headers: SITEMAP_FETCH_HEADERS,
         signal: AbortSignal.timeout(15000),
       })
       if (r.ok) {
@@ -319,7 +336,7 @@ async function discoverSitemapUrls(siteUrl) {
   }
 
   if (!xml) {
-    throw new Error('在 /sitemap_index.xml、/wp-sitemap.xml、/sitemap.xml 都找不到有效 sitemap')
+    throw new Error('在 /sitemap_index.xml、/wp-sitemap.xml、/sitemap.xml 都找不到有效 sitemap（可能被 anti-bot 擋、或網站沒裝 SEO 外掛產 sitemap）')
   }
 
   // 如果是 sitemap index → 抓所有子 sitemap 的 URL 集合 union
@@ -334,7 +351,7 @@ async function discoverSitemapUrls(siteUrl) {
     for (const batch of batches) {
       const results = await Promise.allSettled(batch.map(async (url) => {
         const r = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AIRadarBot/1.0)' },
+          headers: SITEMAP_FETCH_HEADERS,
           signal: AbortSignal.timeout(15000),
         })
         if (!r.ok) return []
