@@ -18,7 +18,7 @@
  *   - 砍永久早鳥 banner、砍走馬燈（這頁不引入）
  *   - 路由：/dashboard-v2/:id（舊版 /dashboard/:id 不影響）
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -71,6 +71,9 @@ export default function DashboardV2() {
   const { user, isPro, isTrial, trialDaysRemaining } = useAuth()
   // B2: gamification 真資料 — 從用戶的 audits 反推 level/xp/streak/badges
   const gamify = useGamification(user?.id)
+  // C2-C4: 比對 localStorage 上次看到的狀態、偵測 level up / 新解鎖徽章 / XP 增加
+  //        delta 結果驅動 LevelUpOverlay + BadgeUnlockEffect 動畫
+  const delta = useGamificationDelta(user?.id, gamify)
 
   const [website, setWebsite] = useState(null)
   const [seoAudit, setSeoAudit] = useState(null)
@@ -251,7 +254,312 @@ export default function DashboardV2() {
       </main>
 
       <Footer dark />
+
+      {/* C3/C4: 升等 + 徽章解鎖動畫覆蓋層（觸發後 auto-dismiss） */}
+      {delta.showLevelUp && (
+        <LevelUpOverlay
+          newLevel={delta.newLevel}
+          newLevelName={delta.newLevelName}
+          newEmoji={delta.newEmoji}
+          onDone={delta.dismissLevelUp}
+        />
+      )}
+      {delta.showBadgeUnlock && (
+        <BadgeUnlockOverlay
+          badges={delta.unlockedBadges}
+          onDone={delta.dismissBadgeUnlock}
+        />
+      )}
     </PageBg>
+  )
+}
+
+// ─── C2: useGamificationDelta hook ───────────────────────
+// 用 localStorage 記錄「上次看到的 level / badges / XP」、本次載入時與當前 gamify 比對
+// 偵測到 level 提升 → 觸發 LevelUpOverlay
+// 偵測到有新解鎖徽章 → 觸發 BadgeUnlockOverlay
+// 第一次造訪（lastSeen 不存在）不播動畫、只把當前狀態存下來當 baseline
+function useGamificationDelta(userId, gamify) {
+  const [showLevelUp, setShowLevelUp] = useState(false)
+  const [showBadgeUnlock, setShowBadgeUnlock] = useState(false)
+  const [unlockedBadges, setUnlockedBadges] = useState([])
+  const [newLevel, setNewLevel] = useState(null)
+  const [newLevelName, setNewLevelName] = useState(null)
+  const [newEmoji, setNewEmoji] = useState(null)
+  const processedRef = useRef(false) // 避免每次 re-render 都重新偵測 → 只在 gamify loading→loaded 那次做
+
+  useEffect(() => {
+    if (!userId) return
+    if (gamify.loading) return
+    if (processedRef.current) return
+    processedRef.current = true
+
+    const key = `aark-gamify-lastSeen-${userId}`
+    let lastSeen = null
+    try {
+      const raw = localStorage.getItem(key)
+      if (raw) lastSeen = JSON.parse(raw)
+    } catch { /* ignore */ }
+
+    if (!lastSeen) {
+      // 首次造訪、不播動畫，只 baseline
+      saveCurrent(key, gamify)
+      return
+    }
+
+    // 偵測 level 提升
+    if (gamify.level > lastSeen.level) {
+      setNewLevel(gamify.level)
+      setNewLevelName(gamify.levelName)
+      setNewEmoji(gamify.emoji)
+      setShowLevelUp(true)
+    }
+
+    // 偵測新解鎖徽章 — 對比 unlocked 狀態
+    const oldUnlockedKeys = new Set((lastSeen.badges || []).filter(b => b.unlocked).map(b => b.key))
+    const newlyUnlocked = (gamify.badges || []).filter(b => b.unlocked && !oldUnlockedKeys.has(b.key))
+    if (newlyUnlocked.length > 0) {
+      setUnlockedBadges(newlyUnlocked)
+      // 先 level up 再 badge unlock — 沒升等就立刻播徽章
+      if (!(gamify.level > lastSeen.level)) {
+        setShowBadgeUnlock(true)
+      }
+    }
+
+    // 不論有沒有播、都把當前存進 baseline（這次播完下次不再播相同事件）
+    saveCurrent(key, gamify)
+  }, [userId, gamify.loading, gamify.level, gamify.totalXp])
+
+  const dismissLevelUp = () => {
+    setShowLevelUp(false)
+    // level up 收完、如果有 badge 等著、現在播
+    if (unlockedBadges.length > 0) setShowBadgeUnlock(true)
+  }
+  const dismissBadgeUnlock = () => setShowBadgeUnlock(false)
+
+  return {
+    showLevelUp, newLevel, newLevelName, newEmoji,
+    showBadgeUnlock, unlockedBadges,
+    dismissLevelUp, dismissBadgeUnlock,
+  }
+}
+
+function saveCurrent(key, gamify) {
+  try {
+    localStorage.setItem(key, JSON.stringify({
+      level: gamify.level,
+      totalXp: gamify.totalXp,
+      badges: (gamify.badges || []).map(b => ({ key: b.key, unlocked: b.unlocked })),
+      savedAt: new Date().toISOString(),
+    }))
+  } catch { /* ignore quota */ }
+}
+
+// ─── C3: LevelUpOverlay ─────────────────────────────────
+// 對齊 prototype-3-repair-flow.html 第 568-625 行 .levelup-overlay 設計
+// 全螢黑遮罩 + 中央 emoji 翻轉 360° + 銀色光環炸開 + LEVEL UP 大字
+// 3 秒後自動 fade out 並呼叫 onDone
+function LevelUpOverlay({ newLevel, newLevelName, newEmoji, onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3000)
+    return () => clearTimeout(t)
+  }, [onDone])
+
+  return (
+    <div
+      onClick={onDone}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.85)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+        animation: 'levelup-fade 3s ease-out forwards',
+      }}
+    >
+      {/* 光環炸開 */}
+      <div style={{
+        position: 'absolute',
+        width: 800, height: 800,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(184,197,208,0.4), transparent 60%)',
+        animation: 'levelup-burst 2s ease-out forwards',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Emoji 翻轉 */}
+      <div style={{
+        fontSize: 140,
+        filter: 'drop-shadow(0 8px 40px rgba(184,197,208,0.7))',
+        marginBottom: 16,
+        zIndex: 2,
+        animation: 'levelup-emoji-flip 1.4s cubic-bezier(0.22,1,0.36,1) forwards',
+      }}>{newEmoji}</div>
+
+      {/* LEVEL UP 大字 */}
+      <div style={{ zIndex: 2, textAlign: 'center' }}>
+        <div style={{
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 48,
+          fontWeight: 900,
+          letterSpacing: '-0.03em',
+          background: 'linear-gradient(135deg, #b8c5d0, white, #b8c5d0)',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+          marginBottom: 6,
+        }}>LEVEL UP!</div>
+        <div style={{ fontSize: 18, color: '#b8c5d0', fontWeight: 700, letterSpacing: '0.05em' }}>
+          {newLevelName} · Lv.{newLevel}
+        </div>
+        <div style={{
+          fontSize: 13, color: 'rgba(255,255,255,0.6)',
+          marginTop: 14,
+          background: 'rgba(255,255,255,0.05)',
+          padding: '8px 16px',
+          borderRadius: 20,
+          display: 'inline-block',
+        }}>
+          點任何地方關閉
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes levelup-fade {
+          0% { opacity: 0; }
+          10% { opacity: 1; }
+          85% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes levelup-burst {
+          0% { transform: scale(0); opacity: 0; }
+          30% { transform: scale(1); opacity: 0.8; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+        @keyframes levelup-emoji-flip {
+          0%   { transform: rotateY(0deg) scale(0); opacity: 0; }
+          20%  { transform: rotateY(0deg) scale(1.2); opacity: 1; }
+          50%  { transform: rotateY(180deg) scale(1.2); opacity: 1; }
+          60%  { transform: rotateY(360deg) scale(1.4); }
+          100% { transform: rotateY(360deg) scale(1); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// ─── C4: BadgeUnlockOverlay ─────────────────────────────
+// 對齊 prototype-3 第 397-455 行的 badge unlock 動畫
+// 顯示一個或多個解鎖徽章、emoji bounce in + 16 顆彩色粒子放射、3 秒後 dismiss
+function BadgeUnlockOverlay({ badges, onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 4000)
+    return () => clearTimeout(t)
+  }, [onDone])
+
+  const COLORS = ['#22c55e', '#fbbf24', '#3b82f6', '#ec4899', '#a78bfa']
+  return (
+    <div
+      onClick={onDone}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.85)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+        animation: 'badge-fade 4s ease-out forwards',
+        padding: 32,
+      }}
+    >
+      <div style={{
+        fontSize: 18, color: '#fcd34d',
+        letterSpacing: '0.05em', fontWeight: 700,
+        marginBottom: 24,
+      }}>🎉 解鎖新徽章！</div>
+
+      <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {badges.map((b, i) => (
+          <div key={b.key} style={{ position: 'relative', textAlign: 'center' }}>
+            {/* 徽章本體 */}
+            <div style={{
+              width: 120, height: 120,
+              borderRadius: 24,
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05))',
+              border: '2px solid rgba(34,197,94,0.5)',
+              boxShadow: '0 0 40px rgba(34,197,94,0.4)',
+              display: 'grid', placeItems: 'center',
+              fontSize: 64,
+              animation: `badge-reveal 0.9s cubic-bezier(0.16,1.4,0.3,1) ${i * 200}ms forwards`,
+              opacity: 0,
+            }}>{b.emoji}</div>
+            <div style={{
+              marginTop: 12,
+              fontSize: 15, fontWeight: 700,
+              color: 'white',
+              opacity: 0,
+              animation: `badge-label-fade 0.6s ease-out ${i * 200 + 500}ms forwards`,
+            }}>{b.label}</div>
+            {/* 16 顆五彩粒子 */}
+            {Array.from({ length: 16 }, (_, idx) => {
+              const angle = (idx / 16) * Math.PI * 2
+              const dist = 70 + Math.random() * 30
+              return (
+                <span
+                  key={idx}
+                  style={{
+                    position: 'absolute',
+                    left: 60, top: 60,
+                    width: 7, height: 7,
+                    borderRadius: '50%',
+                    background: COLORS[idx % COLORS.length],
+                    boxShadow: `0 0 8px ${COLORS[idx % COLORS.length]}`,
+                    opacity: 0,
+                    '--cx': `${Math.cos(angle) * dist}px`,
+                    '--cy': `${Math.sin(angle) * dist}px`,
+                    animation: `badge-confetti 1.2s cubic-bezier(0.16,1,0.3,1) ${i * 200 + 100}ms forwards`,
+                    pointerEvents: 'none',
+                  }}
+                />
+              )
+            })}
+          </div>
+        ))}
+      </div>
+
+      <div style={{
+        marginTop: 36,
+        fontSize: 13, color: 'rgba(255,255,255,0.6)',
+        background: 'rgba(255,255,255,0.05)',
+        padding: '8px 16px',
+        borderRadius: 20,
+      }}>點任何地方關閉</div>
+
+      <style>{`
+        @keyframes badge-fade {
+          0% { opacity: 0; }
+          6% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes badge-reveal {
+          0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+          60%  { transform: scale(1.3) rotate(10deg); opacity: 1; }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes badge-label-fade {
+          to { opacity: 1; }
+        }
+        @keyframes badge-confetti {
+          0%   { transform: translate(0,0) scale(0); opacity: 0; }
+          20%  { transform: translate(0,0) scale(1.5); opacity: 1; }
+          100% { transform: translate(var(--cx), var(--cy)) scale(0); opacity: 0; }
+        }
+      `}</style>
+    </div>
   )
 }
 

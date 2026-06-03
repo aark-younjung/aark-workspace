@@ -745,11 +745,22 @@ function StaleSnapshotBanner({ finishedAt, onRescan, starting, isSample }) {
   )
 }
 
-// B5: 我已修好按鈕 — 三狀態（待修 / 修復中 / 已修復）+ 浮起 +5 XP 動畫
+// B5: 我已修好按鈕 — 三狀態（待修 / 修復中 / 已修復）+ 浮起 +5 XP 動畫 + 粒子放射
 // isFixed：DB 已寫入完成、按鈕變綠色「已記錄修復 +5 XP」
 // isFixing：點完還在 await insert、按鈕變 disable + 文字「記錄中...」
-// showPop：剛剛 insert 成功、播放 1.6s 的 +5 XP 浮起動畫
+// showPop：剛剛 insert 成功、播放 1.6s 的 +5 XP 浮起動畫 + 同步 12 顆粒子四散
 function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
+  // C1: 粒子配置 — 12 顆、隨機散開、不同角度與距離增加自然感
+  // 用 useMemo 避免每次重 render 重算（不過 popup 一次性、影響小）
+  const particles = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i / 12) * Math.PI * 2 + (Math.PI / 24) // 略偏離正軸
+    const dist = 38 + Math.random() * 22
+    return {
+      tx: Math.cos(angle) * dist,
+      ty: Math.sin(angle) * dist,
+      delay: Math.random() * 80,
+    }
+  })
   return (
     <div style={{ marginTop: 6, marginLeft: 20, position: 'relative' }}>
       <button
@@ -777,26 +788,60 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
             ? '⏳ 記錄中...'
             : '✓ 我已修好 → 記錄修復'}
       </button>
-      {/* +5 XP 浮起動畫 */}
+      {/* +5 XP 浮起動畫 + 12 顆綠粒子放射（C1） */}
       {showPop && (
-        <span style={{
-          position: 'absolute',
-          left: 110, top: 0,
-          fontSize: 14,
-          fontWeight: 900,
-          color: '#86efac',
-          textShadow: '0 0 8px rgba(34,197,94,0.6)',
-          pointerEvents: 'none',
-          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-          animation: 'bulkscan-score-pop 1.6s cubic-bezier(0.16,1,0.3,1) forwards',
-        }}>+5 XP</span>
+        <>
+          <span style={{
+            position: 'absolute',
+            left: 110, top: 0,
+            fontSize: 16,
+            fontWeight: 900,
+            color: '#86efac',
+            textShadow: '0 0 12px rgba(34,197,94,0.8)',
+            pointerEvents: 'none',
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            animation: 'bulkscan-score-pop 1.6s cubic-bezier(0.16,1,0.3,1) forwards',
+            zIndex: 2,
+          }}>+5 XP</span>
+          {/* 粒子層 — 從按鈕中央放射 */}
+          <div style={{
+            position: 'absolute',
+            left: 130, top: 12,
+            width: 0, height: 0,
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}>
+            {particles.map((p, idx) => (
+              <span
+                key={idx}
+                style={{
+                  position: 'absolute',
+                  left: 0, top: 0,
+                  width: 5, height: 5,
+                  borderRadius: '50%',
+                  background: '#22c55e',
+                  boxShadow: '0 0 6px rgba(34,197,94,0.8)',
+                  opacity: 0,
+                  '--tx': `${p.tx}px`,
+                  '--ty': `${p.ty}px`,
+                  animation: `bulkscan-particle-fly 1.2s cubic-bezier(0.16,1,0.3,1) ${p.delay}ms forwards`,
+                }}
+              />
+            ))}
+          </div>
+        </>
       )}
       <style>{`
         @keyframes bulkscan-score-pop {
           0%   { transform: translateY(0) scale(0.5); opacity: 0; }
-          15%  { transform: translateY(-6px) scale(1.2); opacity: 1; }
-          60%  { transform: translateY(-30px) scale(1.3); opacity: 1; }
-          100% { transform: translateY(-60px) scale(1); opacity: 0; }
+          15%  { transform: translateY(-6px) scale(1.3); opacity: 1; }
+          60%  { transform: translateY(-32px) scale(1.4); opacity: 1; }
+          100% { transform: translateY(-70px) scale(1); opacity: 0; }
+        }
+        @keyframes bulkscan-particle-fly {
+          0%   { transform: translate(0, 0) scale(0); opacity: 0; }
+          20%  { transform: translate(0, 0) scale(1.4); opacity: 1; }
+          100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
         }
       `}</style>
     </div>
