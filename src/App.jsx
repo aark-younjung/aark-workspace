@@ -5,6 +5,7 @@ import { ThemeProvider, useTheme } from './context/ThemeContext'
 // 暗黑版為現行主視覺；橘白版 Home 已移至 src/pages/_legacy/Home.jsx 保留備查
 import HomeDark from './pages/HomeDark'
 import Dashboard from './pages/Dashboard'
+import DashboardV2 from './pages/DashboardV2'
 import SEOAudit from './pages/SEOAudit'
 import AEOAudit from './pages/AEOAudit'
 import GEOAudit from './pages/GEOAudit'
@@ -89,6 +90,8 @@ function AppInner() {
         <Route path="/showcase" element={<Showcase />} />
         <Route path="/compare" element={<Compare />} />
         <Route path="/dashboard/:id" element={<Dashboard />} />
+        {/* prototype-2b 設計實作預覽 — B1 phase，舊版仍掛在 /dashboard/:id 不影響 */}
+        <Route path="/dashboard-v2/:id" element={<DashboardV2 />} />
         {/* 公開摘要頁（TOP 8 點擊進來）— 只顯示分數總覽，不公開具體缺陷 */}
         <Route path="/website-summary/:id" element={<WebsiteSummary />} />
         <Route path="/seo-audit/:id" element={<SEOAudit />} />

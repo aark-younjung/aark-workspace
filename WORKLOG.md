@@ -6,6 +6,39 @@
 
 ---
 
+### 2026-06-03（B1 — DashboardV2 prototype-2b 設計實作上線預覽）
+**5 個 prototype 設計都通過 → 用戶選 B（實作 prototype-2b 進 React）。B 拆成 5 phase、B1 是 UI 骨架。**
+
+**策略：side-by-side 預覽、不破壞現有 /dashboard/:id**
+- 新增 [src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx)（590 行）
+- [src/App.jsx](src/App.jsx) 加路由 `/dashboard-v2/:id` → DashboardV2、舊版仍掛在 `/dashboard/:id`
+- 用戶可以在同個 website 切兩邊看（V2 頁右上有「← v1」按鈕回舊版）
+
+**DashboardV2 結構（對齊 prototype-2b）：**
+1. **SiteHeader**（共用）
+2. **TopBar**：返回 + 網站名 + 「← v1 / 重新檢測 / 匯出 PDF」（後兩個 B2 phase 接 handler）
+3. **aivis Hero**（8:4 grid）— 左 5 引擎 chip 矩陣 + 平均提及率 + CTA；Free 用戶 chip 數字 + 平均率變 🔒，CTA 變「升 Pro 解鎖 →」
+4. **Gamify Rail**（右側 3 張卡）：青銅 Lv.5 / 65% 進度條 + 🔥 5 天 streak + 8 格徽章 grid（4 解鎖 / 4 鎖定）— B1 用 mock 資料、B2 接 Supabase
+5. **Notice strip**：取代走馬燈、可關閉的單行通知欄
+6. **Quest Section**（今日任務）：3 個 mock quest，含 face 色標、+N 分預估、~N 分鐘預估、「去修 →」按鈕
+7. **站點體檢 5 Tab wrapper**：tab nav active 用對應 face 色（藍/紫/綠/琥/粉），tab body 顯示分數圓環 + 結論 + drill-down link 到對應 audit 頁。內容品質 tab 多一個批次掃描入口
+8. **30 天進步曲線**：4 條線（SEO/AEO/GEO/EEAT）— 重用 seoHistory/aeoHistory 等舊 Dashboard 已有的 history 資料
+9. **Footer**（共用）
+
+**砍 / 收斂：**
+- ❌ 永久早鳥 banner（EarlybirdBanner 不引入）
+- ❌ 走馬燈版 AnnouncementBanner（改 Notice strip 一格通知欄）
+- ❌ 4+1 散落 score 卡（整合進 5 Tab）
+- ✅ 試用倒數 banner 保留（簡化樣式）
+
+**B2-B5 後續：**
+- **B2**：profiles 加 level/xp/streak/badges 欄位 + 算法、接真資料
+- **B3**：5 Tab 內容品質 panel 換成 prototype-4 完整版（圓環 + sparkline + 兩入口 + 15 項 grid + CTA）
+- **B4**：/showcase 整段塞進 HomeDark 滾下來的區塊
+- **B5**（可選）：BulkScan「修復這個」flow 接 prototype-3 動畫
+
+---
+
 ### 2026-06-02（Stage 3 — OG block + JSON-LD schema 模板也自動產出）
 **Stage 2 上線後用戶秒重掃驗證、看到 title 改前/改後 + canonical 程式碼正常 →「Stage 3 開始」。**
 
