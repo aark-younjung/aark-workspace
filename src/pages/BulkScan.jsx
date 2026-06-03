@@ -400,7 +400,7 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
       <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 600, overflowY: 'auto' }}>
           {(results.results || []).map((r, i) => (
-            <UrlRow key={i} result={r} websiteId={websiteId} userId={user?.id} />
+            <UrlRow key={i} result={r} websiteId={websiteId} userId={userId} />
           ))}
         </div>
       </GlassCard>
