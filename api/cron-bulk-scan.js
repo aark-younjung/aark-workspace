@@ -460,8 +460,21 @@ function analyzeArticleHtml(html, url) {
   }
   else if (metaTitleLen < 20) {
     // 短標題建議：如果有品牌名、補成「{current}｜{brand}」；如果連品牌都沒有、純粹提示
+    // 重要：補完品牌名後可能還是 < 30 字、要主動告訴用戶仍需手動延伸（不能讓用戶以為「照建議改了就解決」）
     const containsBrand = brandName && metaTitle.includes(brandName)
     const suggested = brandName && !containsBrand ? `${metaTitle}｜${brandName}` : null
+    const suggestedLen = suggested ? suggested.length : null
+    const stillTooShort = suggestedLen != null && suggestedLen < 30
+    let note
+    if (suggested && !stillTooShort) {
+      note = `偵測到品牌「${brandName}」，建議在標題後加「｜${brandName}」拉到 ${suggestedLen} 字`
+    } else if (suggested && stillTooShort) {
+      // 補完品牌名仍 < 30 字、要明確告訴用戶這不夠、需要手動延伸主關鍵字 / 描述
+      const need = 30 - suggestedLen
+      note = `自動補品牌名只拉到 ${suggestedLen} 字、還差 ${need} 字才到建議下限 30。請手動延伸：在標題前段加主關鍵字描述（例如「2025 最新 」「實測 」「指南：」等定語）、或加副標再接品牌`
+    } else {
+      note = '建議補主關鍵字 + 品牌名拉到 30-60 字（系統未偵測到品牌名、需手動補）'
+    }
     problems.push({
       id: 'short_meta_title',
       severity: 'medium',
@@ -469,11 +482,10 @@ function analyzeArticleHtml(html, url) {
       suggestion: {
         kind: 'text',
         current: metaTitle, current_len: metaTitleLen,
-        suggested, suggested_len: suggested ? suggested.length : null,
+        suggested, suggested_len: suggestedLen,
         code_snippet: suggested ? `<title>${suggested}</title>` : null,
-        note: suggested
-          ? `偵測到品牌「${brandName}」，建議在標題後加「｜${brandName}」拉到 ${suggested.length} 字`
-          : '建議補主關鍵字 + 品牌名拉到 30-60 字（系統未偵測到品牌名、需手動補）',
+        still_too_short: stillTooShort,   // 前端可用這個 flag 顯示警告 chip
+        note,
       },
     })
   }

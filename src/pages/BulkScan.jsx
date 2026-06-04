@@ -1574,7 +1574,7 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
 // Stage 2: meta_title / meta_desc / canonical 等 finding 的建議區塊
 // suggestion 結構：{ kind, current?, current_len?, suggested?, suggested_len?, code_snippet?, note? }
 function SuggestionBlock({ suggestion }) {
-  const { current, current_len, suggested, suggested_len, code_snippet, note } = suggestion
+  const { current, current_len, suggested, suggested_len, code_snippet, note, still_too_short } = suggestion
   // 追蹤剛剛複製的是哪一個按鈕（'text' = 改後純文字 / 'code' = HTML tag），這樣每顆按鈕的 ✅ 提示獨立
   const [copiedKey, setCopiedKey] = useState(null)
 
@@ -1639,16 +1639,30 @@ function SuggestionBlock({ suggestion }) {
           <div>
             <span style={{ color: '#86efac', fontSize: 10 }}>
               改後 {suggested_len ? `(${suggested_len} 字)` : ''}
+              {/* 自動建議仍低於下限時、顯示橘色「仍嫌短」警告 chip — 提醒用戶需手動再延伸 */}
+              {still_too_short && (
+                <span style={{
+                  marginLeft: 6,
+                  padding: '1px 6px',
+                  fontSize: 9,
+                  background: 'rgba(251,191,36,0.18)',
+                  color: '#fcd34d',
+                  border: '1px solid rgba(251,191,36,0.4)',
+                  borderRadius: 999,
+                  fontWeight: 700,
+                }}>⚠ 仍嫌短、需再延伸</span>
+              )}
               <MiniCopyBtn value={suggested} copiedFlag={copiedKey === 'text'} />
             </span>
             <div style={{
               padding: '3px 8px', borderRadius: 3,
-              background: 'rgba(16,185,129,0.10)',
+              background: still_too_short ? 'rgba(251,191,36,0.08)' : 'rgba(16,185,129,0.10)',
               color: T.text,
               fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
               fontSize: 10.5,
               marginTop: 2,
               wordBreak: 'break-all',
+              border: still_too_short ? '1px dashed rgba(251,191,36,0.3)' : 'none',
             }}>{suggested}</div>
           </div>
         </div>
