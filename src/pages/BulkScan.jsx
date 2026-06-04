@@ -648,7 +648,7 @@ function UrlRow({ result, websiteId, userId }) {
 // multi_h1 警告展開時的每個 H1 詳情卡 — 顯示內容預覽 + 分類 chip + 建議動作說明
 // detail 結構：{ index, text, full_length, kind: 'empty'|'sentence'|'short', suggested_action: 'keep'|'change_to_p'|'change_to_h2'|'delete', reason }
 function H1DetailCard({ detail }) {
-  const { index, text, full_length, kind, suggested_action, reason, is_duplicate } = detail
+  const { index, text, full_length, kind, suggested_action, reason, is_duplicate, parent_class, cross_container_duplicate } = detail
   // 不同建議動作對應不同顏色：保留=綠、改 h2=藍、改 p=粉、刪除=橘
   const actionStyle = {
     keep:          { label: '✅ 保留',         color: '#86efac', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.35)' },
@@ -683,9 +683,10 @@ function H1DetailCard({ detail }) {
         {is_duplicate && (
           <span style={{
             fontSize: 10, padding: '1px 6px', borderRadius: 3,
-            background: 'rgba(251,191,36,0.18)', color: '#fcd34d',
+            background: cross_container_duplicate ? 'rgba(239,68,68,0.20)' : 'rgba(251,191,36,0.18)',
+            color: cross_container_duplicate ? '#fca5a5' : '#fcd34d',
             fontWeight: 700,
-          }}>🔁 內容重複</span>
+          }}>{cross_container_duplicate ? '🔴 主題級重複' : '🔁 內容重複'}</span>
         )}
         <span style={{ fontWeight: 600, color: actionStyle.color, fontSize: 11 }}>{actionStyle.label}</span>
       </div>
@@ -702,6 +703,15 @@ function H1DetailCard({ detail }) {
           wordBreak: 'break-all',
         }}>
           {text.length > 120 ? text.slice(0, 120) + '…' : text}
+        </div>
+      )}
+      {/* 父容器 class — 給用戶定位這個 H1 在 HTML 哪一段（debug + 主題級問題追蹤用）*/}
+      {parent_class && (
+        <div style={{
+          fontSize: 10, color: T.textLow, marginBottom: 4,
+          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+        }}>
+          父容器 class：<code style={{ color: '#a7f3d0' }}>{parent_class.length > 80 ? parent_class.slice(0, 80) + '…' : parent_class}</code>
         </div>
       )}
       {/* 原因說明 */}
@@ -956,6 +966,11 @@ function CommonMisunderstandingsPanel() {
       symptom: '我 WP 後台找不到對應的編輯位置（如 /shop/、/locations.kml）',
       cause: '/shop/ 是 WooCommerce archive、不是普通 page；/locations.kml 是 Rank Math Local SEO 外掛產的 XML、不是給編輯的',
       verify: '每個 URL 展開時上方藍色「🗺️ WP 後台位置」banner 會告訴你具體去哪改',
+    },
+    {
+      symptom: '我把 H1 改成 H2 + 清完 WP Rocket 快取、但掃描還是說有重複 H1',
+      cause: '可能是「主題級雙渲染」— 你的主題在多個位置渲染同一份描述內容（如自訂的 `pr-content` 區塊 + 標準 WooCommerce 描述 tab）。商品說明改 H1→H2 只影響其中一處、另一處仍是 H1。\n這種狀況我們的工具會在 H1 卡片標「🔴 主題級重複」紅色 chip + 顯示「父容器 class」',
+      verify: '展開 multiple_h1 finding、看 H1 卡片的「父容器 class」— 如果出現非標準的 class 名（如 `pr-content`、`custom-section`、`wpb_text_column` 等）、就是主題層問題。需要修主題 PHP、用 Code Snippets 外掛 remove_action、或請主題開發者處理',
     },
   ]
   return (

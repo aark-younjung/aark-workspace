@@ -246,6 +246,17 @@ function detectPageType(schemaTypes, url) {
   return 'unknown'
 }
 
+// 在 HTML 內找指定 byte 位置之前最近的 class="..." 屬性
+// 用於 H1 父容器 class 偵測（heuristic、不需 100% 準、抓到視覺上最接近的就好）
+// 看前 2000 字、回傳最後一個 class 屬性值（最接近的 class）
+function findNearestParentClass(html, position) {
+  if (typeof position !== 'number' || position < 0) return null
+  const before = html.substring(Math.max(0, position - 2000), position)
+  const matches = [...before.matchAll(/class="([^"]+)"/gi)]
+  if (matches.length === 0) return null
+  return matches[matches.length - 1][1].trim()
+}
+
 // 給 agency 用：每個 finding 標「誰能修」、讓代理商一眼看出哪些自己能解、哪些要請客戶幫忙
 // - 'seo_plugin' = Rank Math / Yoast 後台可改、agency 通常有這個帳號
 // - 'wp_admin'   = 要進 WordPress 編輯器改文章 / 商品 / 頁面、可能需要客戶權限
@@ -281,12 +292,20 @@ function analyzeArticleHtml(html, url) {
 
   const h1Matches = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi) || []
   const h1Count = h1Matches.length
+  // 為了偵測「主題級重複渲染」（不同 container class 但內容相同）— 紀錄每個 H1 的 byte 位置 + 最近的父容器 class
+  const h1Positions = []
+  const re = /<h1\b[^>]*>([\s\S]*?)<\/h1>/gi
+  let m
+  while ((m = re.exec(html)) !== null) h1Positions.push(m.index)
+
   // 每個 H1 拆出純文字內文，做分類（empty / sentence / short）+ 給建議動作（keep / change_to_p / change_to_h2 / delete）
   // 排序規則：第 1 個 H1 預設保留（多半是主題模板渲染的主標題或文章首個標題），後續才標建議修法
   const h1Details = h1Matches.map((tag, idx) => {
     const inner = tag.replace(/<h1\b[^>]*>/i, '').replace(/<\/h1>/i, '')
     const text = decodeEntities(inner.replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ')).trim()
     const len = text.length
+    // 找這個 H1 最近的父容器 class（往前 2000 字找最後一個 class="..." 屬性）
+    const parentClass = findNearestParentClass(html, h1Positions[idx])
     let kind, suggestedAction, reason
     if (len === 0) {
       kind = 'empty'
@@ -301,7 +320,15 @@ function analyzeArticleHtml(html, url) {
       suggestedAction = idx === 0 ? 'keep' : 'change_to_h2'
       reason = idx === 0 ? '主要 H1（保留）' : '短副標題 → 改 <h2>'
     }
-    return { index: idx + 1, text: text.slice(0, 200), full_length: len, kind, suggested_action: suggestedAction, reason }
+    return {
+      index: idx + 1,
+      text: text.slice(0, 200),
+      full_length: len,
+      kind,
+      suggested_action: suggestedAction,
+      reason,
+      parent_class: parentClass,
+    }
   })
   const emptyH1Count = h1Details.filter(d => d.kind === 'empty').length
 
@@ -322,16 +349,44 @@ function analyzeArticleHtml(html, url) {
   // 標記每個 detail 是否為「重複組」的成員、供前端顯示重複 chip + 給對應的建議
   if (duplicateH1Groups.length > 0) {
     const dupIndices = new Set(duplicateH1Groups.flatMap(g => g.indices))
+
+    // 進一步偵測：每組重複 H1 的 parent_class 是否「跨容器」（不同 container 渲染同內容 → 主題級雙渲染問題）
+    // 這跟「同一 container 內重複」（如 page builder 響應式變體）是不同根因、修法也不同
+    duplicateH1Groups.forEach(g => {
+      const classes = g.indices.map(idx => h1Details[idx - 1]?.parent_class).filter(Boolean)
+      const uniqClasses = [...new Set(classes)]
+      // 標準 WooCommerce 描述容器、表示其中一份是合法位置
+      const STD_WC_CLASSES = ['woocommerce-Tabs-panel--description', 'entry-content', 'wc-tab', 'tab-content']
+      const hasStdWc = uniqClasses.some(c => STD_WC_CLASSES.some(s => c.includes(s)))
+      // 不同 parent class → 主題級多處渲染（最難解）
+      g.cross_container = uniqClasses.length > 1
+      g.parent_classes = uniqClasses
+      g.has_standard_wc = hasStdWc
+    })
+
     h1Details.forEach(d => {
       if (dupIndices.has(d.index)) {
         d.is_duplicate = true
+        // 標記是否屬於跨容器重複（給前端顯示更精準的 reason）
+        const group = duplicateH1Groups.find(g => g.indices.includes(d.index))
+        d.cross_container_duplicate = !!group?.cross_container
         // 重複的 H1 第一個保留、其他改 <p> 或刪（不要保留多份相同文字）
-        if (d.index !== duplicateH1Groups.find(g => g.indices.includes(d.index)).indices[0]) {
+        if (d.index !== group.indices[0]) {
           d.suggested_action = 'change_to_p'
-          // 商品頁 vs 一般頁有不同最常見原因
-          d.reason = url && /\/product\//i.test(url)
-            ? '跟其他 H1 內容相同 → 通常是 WooCommerce「商品簡述」+「商品說明」兩個欄位都貼了同內容、清空商品簡述即可'
-            : '跟其他 H1 內容相同 → 可能是 WPBakery 響應式雙版本、或主題模板把同份內容渲染兩次'
+          // 三層 reason：跨容器（主題級、最棘手）/ 商品頁雙描述 / 一般頁響應式
+          if (group.cross_container) {
+            // 找出非標準 WC 的那個 class 名 — 多半就是「主題自訂渲染區塊」的元兇
+            const stdSet = new Set()
+            ;['woocommerce-Tabs-panel--description', 'entry-content', 'wc-tab', 'tab-content'].forEach(s => stdSet.add(s))
+            const customClass = group.parent_classes.find(c => !['woocommerce-Tabs-panel--description', 'entry-content', 'wc-tab', 'tab-content'].some(s => c.includes(s)))
+            d.reason = customClass
+              ? `主題自訂區塊「${customClass.slice(0, 60)}」把描述渲染了 2 次（不是商品簡述問題）— 需要主題開發者改 PHP 或用 Code Snippets 外掛 remove_action`
+              : '主題在多個位置渲染了同份內容 — 需要主題層修復、不是後台欄位能解決'
+          } else if (url && /\/product\//i.test(url)) {
+            d.reason = '跟其他 H1 內容相同 → 通常是 WooCommerce「商品簡述」+「商品說明」兩個欄位都貼了同內容、清空商品簡述即可'
+          } else {
+            d.reason = '跟其他 H1 內容相同 → 可能是 WPBakery 響應式雙版本、或主題模板把同份內容渲染兩次'
+          }
         }
       }
     })

@@ -6,6 +6,42 @@
 
 ---
 
+### 2026-06-04（主題級 H1 重複偵測 — parent_class + cross_container）
+**用戶 case：kimbo3899 skoda-mib-chinese 商品頁、改 H1→H2、清完快取、線上還是 3 個 H1。**
+
+我抓 live HTML 看每個 H1 的父容器 class、發現真凶：
+- H1#1 在 `summary entry-summary`（WC 主題模板的商品標題）
+- H1#2 在 `pr-content`（**自訂主題的區塊**、把描述渲染了一次）
+- H1#3 在 `woocommerce-Tabs-panel--description`（標準 WC 描述 tab、用戶編輯的內容）
+
+→ 不是「商品簡述」問題、是**主題在多個位置渲染同一份內容**、改後台改不掉、要修主題 PHP。
+
+**改動：**
+
+- **[api/cron-bulk-scan.js](api/cron-bulk-scan.js) `analyzeArticleHtml`：**
+  - 新增 `findNearestParentClass(html, position)` helper（往前 2000 字找最後 class 屬性）
+  - h1Details 加 `parent_class` 欄位
+  - `duplicateH1Groups` 加偵測 `cross_container`（同組 H1 parent_class 不同 → 主題級雙渲染）+ `parent_classes` + `has_standard_wc`
+  - 重複 H1 的 reason 三層判斷：
+    1. cross_container=true → 主題級、顯示「自訂區塊 `xxx` 把描述渲染了 2 次、需要主題開發者改 PHP」
+    2. /product/ URL → WooCommerce 雙描述
+    3. 其他 → 響應式雙版本
+  - h1Details 個別 detail 加 `cross_container_duplicate: boolean`
+- **[src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) `H1DetailCard`：**
+  - 重複 chip 改成兩種：
+    - 🔁 內容重複（一般、琥珀色）
+    - 🔴 主題級重複（cross_container_duplicate、紅色）
+  - 顯示父容器 class（monospace、青綠色）— 給用戶 / agency debug 定位用
+  - 「父容器 class：`woocommerce-Tabs-panel--description...`」一行
+- **`CommonMisunderstandingsPanel` 加 case 6：**
+  - 症狀：改 H1→H2 + 清完 WP Rocket 快取後、掃描還是說有重複
+  - 原因：主題級雙渲染（自訂 `pr-content` 等區塊 + 標準描述 tab）
+  - 驗證：看 H1 卡片父容器 class、非標準 class（如 `pr-content`、`custom-section`、`wpb_text_column`）就是兇手
+
+**效果：** 用戶 / agency 一眼看出「這個重複是後台能修 vs 要修主題 PHP」、不再以為清商品簡述就能解。
+
+---
+
 ### 2026-06-04（Agency mode 起手：權限標籤 + 客戶報告匯出 + 藍圖文件）
 **用戶（行銷 agency）糾正了我之前給 SQL 動客戶 DB 的建議：「應該為我們的掃描方式去做修改、而不是去更動客戶端的東西」。產品定位重整成「agency 工具」、不是「直接修網站」。**
 
