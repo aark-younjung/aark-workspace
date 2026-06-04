@@ -262,7 +262,7 @@ function computeAggregateFresh(results) {
 
   return {
     problems_by_type: byType,
-    top_offenders: offenders.slice(0, 10),
+    top_offenders: offenders.slice(0, 20),
     total_results: doneCount,
     total_with_problems: offenders.length,
   }

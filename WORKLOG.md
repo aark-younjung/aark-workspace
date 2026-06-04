@@ -6,6 +6,32 @@
 
 ---
 
+### 2026-06-04（Q2 — BulkScan「先聚焦 Top 20、修完再下一輪」工作流）
+**用戶觀察：200 篇文章一次給用戶看會把他壓垮、根本修不完。Top 10 文字現在 sticky 看得到 fix 但全部結果也是長串。**
+
+**用戶要的工作流：**
+1. 預設只看 Top 20 該修哪幾篇（不是 Top 10、給多一點）
+2. 全部 200 篇 list 預設折疊、要看再展開
+3. 修完一輪 → 主動提示「修了 N 個、重掃看下一輪 Top 20」
+
+**改動：**
+
+- **[api/cron-bulk-scan.js](api/cron-bulk-scan.js) + [api/bulk-scan.js](api/bulk-scan.js)**：`top_offenders.slice(0, 10)` → `slice(0, 20)`、聚合裡多塞 10 筆
+- **[src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) ResultsView**：
+  - heading 從 hardcode「最需要修的 10 篇」改成動態 `最需要修的 {offenderResults.length} 篇`
+  - 新增 `FullResultsList` 元件：預設折疊、heading 旁邊「▾ 展開看全部 N 篇」按鈕、折疊狀態下顯示提示「先聚焦上面的 Top 20、修完按重新掃描會顯示下一輪 Top 20」
+  - 新增 `RescanHintBanner` 元件：偵測 `fix_events.created_at > job.finished_at` 該 website + user 累積 ≥3 筆 → 顯示綠色 banner「你已經修了 N 個 finding！重新掃描確認效果、看下一輪 Top 20」+ 立即重掃 CTA
+
+**設計考量：**
+- 預設折疊 200 篇 → 跟「Top 20」訊息一致、不混淆
+- ≥3 fix_event 才觸發提示（少於 3 不嘮叨）
+- Sample 模式（Free 試掃）不顯示提示（避免誤導 Free 用戶以為能重掃）
+
+**Q1 結果：** 5 Tab 不對稱（內容品質完整 / 其他 4 個簡化）→ 用戶選 C 維持現狀
+**Q3 結果：** XP 加分仍走 A（按「我已修好」立即 +5 XP）
+
+---
+
 ### 2026-06-04（B4 — /showcase 變首頁區塊）
 **之前 HomeDark 只有一個小 GlassCard 按鈕「查看 AI 能見度排行榜」、要點才能看到內容 → 社會證明完全藏在 1 hop 後。**
 

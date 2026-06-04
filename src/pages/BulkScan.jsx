@@ -365,6 +365,13 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
           這條 banner 明確告訴他們：results 是快照、線上可能已不同、要重掃才知道 */}
       <StaleSnapshotBanner finishedAt={job.finished_at} onRescan={onRescan} starting={starting} isSample={isSample} />
 
+      {/* Q2d: 累積 ≥3 個 fix_event 後、顯示「重掃看下一輪 Top 20」綠色 banner */}
+      <RescanHintBanner
+        websiteId={websiteId} userId={userId}
+        finishedAt={job.finished_at}
+        onRescan={onRescan} starting={starting} isSample={isSample}
+      />
+
       {/* 重新掃描按鈕 — 只 Pro 顯示（Free 用戶不能再 sample，要升級才能重掃）
           注：banner 內也已有「重新掃描」按鈕、這顆作為次要備援（右上角習慣性位置） */}
       {!isSample && (
@@ -385,7 +392,7 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
         if (offenderResults.length === 0) return null
         return (
           <>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>🔥 最需要修的 10 篇</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>🔥 最需要修的 {offenderResults.length} 篇</h2>
             <p style={{ fontSize: 12, color: T.textLow, marginBottom: 12 }}>
               點開每一列展開 finding 詳細 + 修復建議 + 一鍵複製 HTML，修完按「✓ 我已修好」記錄 +5 XP
             </p>
@@ -400,15 +407,8 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
         )
       })()}
 
-      {/* 全部結果列表（簡單版 — 之後 Phase 3 加 filter / sort） */}
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 12, marginTop: 24 }}>📋 全部結果（{results.results?.length || 0}）</h2>
-      <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 600, overflowY: 'auto' }}>
-          {(results.results || []).map((r, i) => (
-            <UrlRow key={i} result={r} websiteId={websiteId} userId={userId} />
-          ))}
-        </div>
-      </GlassCard>
+      {/* 全部結果列表 — Q2 預設折疊（用戶要求：先聚焦 Top 20、避免被 200 篇壓力嚇到）*/}
+      <FullResultsList results={results} websiteId={websiteId} userId={userId} />
     </>
   )
 }
@@ -688,6 +688,115 @@ function H1DetailCard({ detail }) {
       )}
       {/* 原因說明 */}
       <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
+    </div>
+  )
+}
+
+// Q2: 全部結果列表 — 預設折疊（指數降低用戶面對 200 篇的壓力）、按鈕展開才顯示全部
+// 設計取捨：保留資料可訪問性、但 default 收起來讓用戶聚焦 Top 20
+function FullResultsList({ results, websiteId, userId }) {
+  const [expanded, setExpanded] = useState(false)
+  const total = results.results?.length || 0
+  if (total === 0) return null
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, margin: 0 }}>📋 全部結果（{total}）</h2>
+        <button
+          onClick={() => setExpanded(v => !v)}
+          style={{
+            padding: '6px 14px',
+            fontSize: 12,
+            fontWeight: 600,
+            background: 'rgba(255,255,255,0.05)',
+            color: T.textMid,
+            border: `1px solid ${T.cardBorder}`,
+            borderRadius: 6,
+            cursor: 'pointer',
+            fontFamily: T.font,
+          }}
+        >
+          {expanded ? '▴ 收起全部' : `▾ 展開看全部 ${total} 篇`}
+        </button>
+      </div>
+      {expanded ? (
+        <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 600, overflowY: 'auto' }}>
+            {(results.results || []).map((r, i) => (
+              <UrlRow key={i} result={r} websiteId={websiteId} userId={userId} />
+            ))}
+          </div>
+        </GlassCard>
+      ) : (
+        <p style={{ fontSize: 12, color: T.textLow, marginBottom: 20, padding: '12px 14px', background: 'rgba(255,255,255,0.02)', border: `1px dashed ${T.cardBorder}`, borderRadius: 8 }}>
+          💡 先聚焦上面的 Top 20、修完按「重新掃描」會顯示下一輪 Top 20。要看全部 {total} 篇按右上「展開」
+        </p>
+      )}
+    </>
+  )
+}
+
+// Q2d: 「修了 N 個 finding、重掃看下一輪 Top 20」banner
+// 條件：當前 job 完成後、用戶針對這個 website 累積了 fix_events、提示重掃看新狀態
+function RescanHintBanner({ websiteId, userId, finishedAt, onRescan, starting, isSample }) {
+  const [recentFixCount, setRecentFixCount] = useState(0)
+
+  useEffect(() => {
+    if (!websiteId || !userId || !finishedAt) return
+    let cancelled = false
+    async function check() {
+      const { data } = await supabase
+        .from('fix_events')
+        .select('id', { count: 'exact' })
+        .eq('website_id', websiteId)
+        .eq('user_id', userId)
+        .gt('created_at', finishedAt)
+      if (!cancelled) setRecentFixCount(data?.length || 0)
+    }
+    check()
+    return () => { cancelled = true }
+  }, [websiteId, userId, finishedAt])
+
+  // 至少 3 個 fix_event 才顯示（避免一兩個就嘮叨）
+  if (recentFixCount < 3 || isSample) return null
+
+  return (
+    <div style={{
+      marginBottom: 18,
+      padding: '14px 18px',
+      background: 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(16,185,129,0.04))',
+      border: '1px solid rgba(34,197,94,0.4)',
+      borderRadius: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 14,
+      flexWrap: 'wrap',
+    }}>
+      <span style={{ fontSize: 22 }}>🎉</span>
+      <div style={{ flex: 1, minWidth: 240, fontSize: 13, color: T.text, lineHeight: 1.6 }}>
+        你已經修了 <strong style={{ color: '#86efac' }}>{recentFixCount} 個 finding</strong>！
+        <strong style={{ color: T.text }}>重新掃描</strong>確認效果、並看下一輪 Top 20 該修什麼。
+      </div>
+      <button
+        onClick={() => onRescan('full')}
+        disabled={starting}
+        style={{
+          padding: '8px 16px',
+          fontSize: 12,
+          fontWeight: 700,
+          background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 7,
+          cursor: starting ? 'not-allowed' : 'pointer',
+          opacity: starting ? 0.5 : 1,
+          fontFamily: T.font,
+          whiteSpace: 'nowrap',
+          boxShadow: '0 4px 12px rgba(34,197,94,0.3)',
+        }}
+      >
+        {starting ? '啟動中...' : '🔄 立刻重新掃描'}
+      </button>
     </div>
   )
 }

@@ -797,7 +797,7 @@ function computeAggregate(results) {
 
   return {
     problems_by_type: byType,
-    top_offenders: offenders.slice(0, 10),
+    top_offenders: offenders.slice(0, 20),
     total_results: results.length,
     total_with_problems: offenders.length,
   }
