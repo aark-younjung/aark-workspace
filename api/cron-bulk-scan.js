@@ -246,6 +246,35 @@ function detectPageType(schemaTypes, url) {
   return 'unknown'
 }
 
+// 給 agency 用：每個 finding 標「誰能修」、讓代理商一眼看出哪些自己能解、哪些要請客戶幫忙
+// - 'seo_plugin' = Rank Math / Yoast 後台可改、agency 通常有這個帳號
+// - 'wp_admin'   = 要進 WordPress 編輯器改文章 / 商品 / 頁面、可能需要客戶權限
+// - 'content_writer' = 需要實際撰寫內容（不是設定問題）
+function getFixOwner(findingId) {
+  const map = {
+    // H1 結構 — 要編輯文章 body
+    missing_h1: 'wp_admin', multiple_h1: 'wp_admin',
+    // Meta title / desc — SEO 外掛欄位
+    missing_meta_title: 'seo_plugin', short_meta_title: 'seo_plugin', long_meta_title: 'seo_plugin',
+    missing_meta_desc: 'seo_plugin', short_meta_desc: 'seo_plugin', long_meta_desc: 'seo_plugin',
+    // Open Graph — Rank Math 自動帶 + 個別覆寫
+    missing_og: 'seo_plugin', incomplete_og: 'seo_plugin',
+    // Schema — Rank Math 自帶 Organization/WebSite/Article/Product schema 設定
+    no_json_ld: 'seo_plugin', no_article_schema: 'seo_plugin', no_product_schema: 'seo_plugin',
+    // Canonical — Rank Math 自動處理
+    missing_canonical: 'seo_plugin',
+    // 內容字數 — 真的要寫東西
+    thin_content: 'content_writer', short_content: 'content_writer',
+  }
+  return map[findingId] || 'wp_admin'  // 未知 finding 預設 wp_admin（保守、提醒要小心）
+}
+
+// helper：給 problems push 後統一塞 fix_owner（保持下面 push 邏輯乾淨）
+function tagFixOwners(problems) {
+  problems.forEach(p => { p.fix_owner = getFixOwner(p.id) })
+  return problems
+}
+
 // 從 raw HTML 跑 7 項文章層級檢測（regex 為主，避免裝 cheerio 拖慢冷啟動）
 function analyzeArticleHtml(html, url) {
   const problems = []
@@ -578,7 +607,7 @@ function analyzeArticleHtml(html, url) {
     has_canonical: hasCanonical,
     // 給用戶「這個 URL 在 WP 後台哪裡編輯」的具體指引（如 /shop/ vs /product/ vs /locations.kml 不同）
     wp_admin_hint: detectWpAdminHint(url, pageType),
-    problems,
+    problems: tagFixOwners(problems),  // 每個 problem 標 fix_owner（給 agency 區分權限）
   }
 }
 

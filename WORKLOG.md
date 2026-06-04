@@ -6,6 +6,36 @@
 
 ---
 
+### 2026-06-04（Agency mode 起手：權限標籤 + 客戶報告匯出 + 藍圖文件）
+**用戶（行銷 agency）糾正了我之前給 SQL 動客戶 DB 的建議：「應該為我們的掃描方式去做修改、而不是去更動客戶端的東西」。產品定位重整成「agency 工具」、不是「直接修網站」。**
+
+**今天做了 3 件事：**
+
+#### 1️⃣ Finding 權限標籤（#1）
+- [api/cron-bulk-scan.js](api/cron-bulk-scan.js) 加 `getFixOwner(findingId)` 表 + `tagFixOwners()` 統一塞 fix_owner
+- 3 種權限類別：
+  - 🛠️ `seo_plugin` — Rank Math/Yoast 後台可改、agency 自己搞定（meta/og/schema/canonical）
+  - 🔑 `wp_admin` — 要進 WP 編輯器、可能要找客戶（H1 改 H2、清商品簡述）
+  - ✍️ `content_writer` — 要實際寫文字（字數不夠）
+- 前端 [src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) 加 `FixOwnerChip` 元件、每個 finding label 旁有 chip + hover title 解釋
+
+#### 2️⃣ 給客戶報告匯出（#2）
+- 新增 [src/lib/clientReport.js](src/lib/clientReport.js)：
+  - `buildClientReport()` 把 findings 整理成 markdown
+  - 分 3 段：「需要您 WP 後台處理」「需要寫內容」「我們已用 SEO 外掛處理」
+  - 把 wp_admin_hint 的 steps 整合進客戶報告
+  - Helpers：`copyToClipboard()` + `downloadMarkdown()`
+- 前端 `ClientReportButton` 元件：紫色「📤 給客戶報告」按鈕、開 modal 預覽 + 兩顆 CTA（複製 / 下載 .md）
+- 自動以「優勢方舟數位行銷」當 agency 名稱 footer 簽名
+
+#### 3️⃣ Agency mode 藍圖（#3、純規劃文件）
+- 新增 [AGENCY_MODE_ROADMAP.md](AGENCY_MODE_ROADMAP.md)
+- 5 個 phase 拆解（A 多客戶切換 → B 客戶訪客 → C 白標 PDF → D 客戶端打勾 → E agency 聚合）
+- 估時 8-12 小時、跨 3-4 session
+- 商業層級對應 CLAUDE.md「Agency 版 NT$4,990/月起」
+
+---
+
 ### 2026-06-04（H1 重複偵測升級 + 常見誤解 FAQ panel）
 **用戶觀察：「我反覆把這幾類狀況當成 bug 回報、實際上是 WP/主題/外掛行為」。要把這些特殊狀況主動列出來、不要讓用戶以為是我們搜尋分析錯誤。**
 

@@ -22,6 +22,7 @@ import Footer from '../components/Footer'
 import { GlassCard, ArticleAnalysisTabs, ScoreHero } from '../components/v2'
 import { T } from '../styles/v2-tokens'
 import { recordFixEvent } from '../lib/fixEvents'
+import { buildClientReport, copyToClipboard, downloadMarkdown } from '../lib/clientReport'
 
 const POLL_INTERVAL_MS = 5000  // 每 5 秒輪詢進度
 
@@ -297,7 +298,7 @@ export default function BulkScan() {
 
       {/* 完成 → 聚合結果 + 列表 */}
       {job?.status === 'done' && results && (
-        <ResultsView job={job} results={results} onRescan={handleStart} starting={starting} websiteId={websiteId} userId={user?.id} />
+        <ResultsView job={job} results={results} onRescan={handleStart} starting={starting} websiteId={websiteId} userId={user?.id} website={website} />
       )}
     </PageWrap>
   )
@@ -318,7 +319,7 @@ function ProgressBar({ scanned, failed, total }) {
   )
 }
 
-function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
+function ResultsView({ job, results, onRescan, starting, websiteId, userId, website }) {
   const agg = job.aggregate || {}
   const byType = agg.problems_by_type || {}
   const offenders = agg.top_offenders || []
@@ -378,7 +379,9 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
       {/* 重新掃描按鈕 — 只 Pro 顯示（Free 用戶不能再 sample，要升級才能重掃）
           注：banner 內也已有「重新掃描」按鈕、這顆作為次要備援（右上角習慣性位置） */}
       {!isSample && (
-        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+          {/* Agency #2: 給客戶報告匯出 — 把 finding 整理成可寄給客戶的 markdown */}
+          <ClientReportButton website={website} results={results} job={job} />
           <button onClick={() => onRescan('full')} disabled={starting} style={secondaryButtonStyle}>
             {starting ? '啟動中...' : '🔄 重新掃描全站'}
           </button>
@@ -570,9 +573,10 @@ function UrlRow({ result, websiteId, userId }) {
                 marginBottom: 8,
                 borderBottom: i === probs.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.04)',
               }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <span>{SEVERITY_ICON[p.severity] || '⚪'}</span>
                   <span style={{ fontWeight: 600, color: T.text }}>{p.label || PROBLEM_LABELS[p.id] || p.id}</span>
+                  {p.fix_owner && <FixOwnerChip owner={p.fix_owner} />}
                 </div>
                 {/* multi_h1 — 顯示每個 H1 的內容卡片 + 建議動作（worker 已在 findings.problems[].h1_details 拆好） */}
                 {Array.isArray(p.h1_details) && p.h1_details.length > 0 && (
@@ -703,6 +707,178 @@ function H1DetailCard({ detail }) {
       {/* 原因說明 */}
       <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
     </div>
+  )
+}
+
+// Agency #2: 給客戶報告按鈕 + modal — 把 finding 整理成 markdown、可一鍵複製或下載
+// 點按鈕 → 跳 modal → 預覽 markdown + 兩顆 CTA（複製到剪貼簿 / 下載 .md 檔）
+function ClientReportButton({ website, results, job }) {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  if (!website || !results) return null
+
+  const md = buildClientReport({
+    websiteUrl: website.url,
+    websiteName: website.name,
+    results: results.results || [],
+    scanDate: job?.finished_at,
+    agencyName: '優勢方舟數位行銷',
+  })
+
+  const handleCopy = async () => {
+    await copyToClipboard(md)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  const handleDownload = () => {
+    const safeName = (website.name || 'site').replace(/[^\w一-龥]+/g, '-')
+    const date = new Date().toISOString().slice(0, 10)
+    downloadMarkdown(`AI雷達報告-${safeName}-${date}.md`, md)
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          padding: '10px 20px',
+          fontSize: 13,
+          fontWeight: 700,
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(124,58,237,0.10))',
+          color: '#c4b5fd',
+          border: '1px solid rgba(139,92,246,0.4)',
+          borderRadius: 8,
+          cursor: 'pointer',
+          fontFamily: T.font,
+        }}
+      >
+        📤 給客戶報告
+      </button>
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 760,
+              maxHeight: '85vh',
+              background: 'linear-gradient(135deg, rgba(8,71,115,0.95), rgba(0,0,0,0.95))',
+              border: '1px solid rgba(139,92,246,0.4)',
+              borderRadius: 14,
+              padding: 24,
+              display: 'flex', flexDirection: 'column',
+              fontFamily: T.font,
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>📤 給客戶報告</h2>
+              <button onClick={() => setOpen(false)} style={{
+                background: 'transparent', border: 'none',
+                color: T.textMid, fontSize: 22, cursor: 'pointer',
+              }}>×</button>
+            </div>
+            {/* 說明 */}
+            <p style={{ fontSize: 12, color: T.textMid, marginBottom: 12, lineHeight: 1.6 }}>
+              把這次掃描結果整理成<strong style={{ color: 'white' }}>客戶能讀懂的 markdown 報告</strong>。
+              已自動分類「客戶要 WP 後台處理」「需寫內容」「我們已用 SEO 外掛處理」三段、不需技術背景就能看。
+            </p>
+            {/* Preview */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '12px 14px',
+              background: 'rgba(0,0,0,0.4)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8,
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+              fontSize: 11.5,
+              lineHeight: 1.7,
+              color: '#e2e8f0',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              marginBottom: 14,
+            }}>{md}</div>
+            {/* CTA buttons */}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleDownload}
+                style={{
+                  padding: '10px 16px',
+                  fontSize: 13, fontWeight: 700,
+                  background: 'rgba(255,255,255,0.05)',
+                  color: T.text,
+                  border: `1px solid ${T.cardBorder}`,
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontFamily: T.font,
+                }}
+              >📥 下載 .md 檔</button>
+              <button
+                onClick={handleCopy}
+                style={{
+                  padding: '10px 18px',
+                  fontSize: 13, fontWeight: 700,
+                  background: copied
+                    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                    : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontFamily: T.font,
+                  boxShadow: '0 4px 14px rgba(139,92,246,0.4)',
+                }}
+              >{copied ? '✅ 已複製' : '📋 複製到剪貼簿'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// Agency #1: 修復者權限 chip — 給 agency 一眼分辨「自己用 SEO 外掛就能解」vs「要請客戶開 WP 後台幫忙」
+// fix_owner 是後端 tagFixOwners 標的、跟 PROBLEM_FIX_TIPS 互補
+const FIX_OWNER_META = {
+  seo_plugin: {
+    label: '🛠️ SEO 外掛可解',
+    bg: 'rgba(16,185,129,0.15)', color: '#86efac', border: 'rgba(16,185,129,0.4)',
+    title: '你 / 客戶的 Rank Math 或 Yoast 帳號就能改、不用動 WP 後台',
+  },
+  wp_admin: {
+    label: '🔑 需 WP 後台',
+    bg: 'rgba(251,191,36,0.15)', color: '#fcd34d', border: 'rgba(251,191,36,0.4)',
+    title: '需要 WP 編輯器改文章 / 商品 / 頁面內容 — 如果你是 agency 沒 admin 權、得請客戶處理或要授權',
+  },
+  content_writer: {
+    label: '✍️ 需要寫內容',
+    bg: 'rgba(236,72,153,0.15)', color: '#f9a8d4', border: 'rgba(236,72,153,0.4)',
+    title: '不是設定問題、是要實際撰寫文字（字數不夠等）— 通常請客戶或文案人員處理',
+  },
+}
+function FixOwnerChip({ owner }) {
+  const meta = FIX_OWNER_META[owner]
+  if (!meta) return null
+  return (
+    <span
+      title={meta.title}
+      style={{
+        fontSize: 10, padding: '2px 8px', borderRadius: 999,
+        background: meta.bg, color: meta.color,
+        border: `1px solid ${meta.border}`,
+        fontWeight: 600,
+        cursor: 'help',
+      }}
+    >{meta.label}</span>
   )
 }
 
