@@ -6,6 +6,32 @@
 
 ---
 
+### 2026-06-04（B4 — /showcase 變首頁區塊）
+**之前 HomeDark 只有一個小 GlassCard 按鈕「查看 AI 能見度排行榜」、要點才能看到內容 → 社會證明完全藏在 1 hop 後。**
+
+**B4 改成首頁直接嵌一個完整 showcase 區塊**、降低用戶探索門檻。
+
+新增 [src/components/v2/HomeShowcaseSection.jsx](src/components/v2/HomeShowcaseSection.jsx)：
+- 自己抓 websites + 3 audit tables（同 Showcase.jsx 邏輯但限定 limit 200 + 抓完計算 stats）
+- 顯示 Top 5 AI 友善度排行（含 SEO/AEO/GEO 三欄分數 + 總分大數字 + 🥇🥈🥉 名次）
+- 右側 Top 3 進步之星卡片（綠光底、`+N 分` chip）
+- 底部「查看完整排行榜」CTA 連到 /showcase 完整頁
+- Empty state：沒資料時顯示「還沒有公開排行的資料」
+
+[src/pages/HomeDark.jsx](src/pages/HomeDark.jsx)：
+- 刪除原本 1281-1290 的「排行榜入口」GlassCard 薄按鈕
+- 換成 `<HomeShowcaseSection />`
+- 加 `import HomeShowcaseSection from '../components/v2/HomeShowcaseSection'`
+
+**保留 /showcase 獨立路由**：作為「看完整排行」深入點 — 完整 5 個分頁、進步之星輪播、成功案例、全部目錄。首頁區塊是 teaser、完整版在 /showcase。
+
+**設計取捨：**
+- ❌ 不在首頁塞「全部目錄分頁表」— 太長、會壓制 FAQ 區塊
+- ❌ 不在首頁塞「進步之星輪播」— 改成靜態 Top 3 卡片、不搶 hero 視覺
+- ✅ 兩塊主視覺：Top 5 排行（左 3/5）+ 進步之星（右 2/5）
+
+---
+
 ### 2026-06-03（B3 — DashboardV2 內容品質 Tab 換 prototype-4 完整版）
 **B1/B2/B5/C 動畫套件完成、用戶說「繼續進度」→ 進 B3 把內容品質 Tab 從簡化版升級到 prototype-4 設計。**
 

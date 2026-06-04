@@ -15,6 +15,7 @@ import { analyzeEEAT } from '../services/eeatAnalyzer'
 // Hero 排版維持原有橘紅 Tailwind 按鈕,所以暫不引入 Btn
 import { T } from '../styles/v2-tokens'
 import { GlassCard, PlatformLogoWall } from '../components/v2'
+import HomeShowcaseSection from '../components/v2/HomeShowcaseSection'
 
 const timeAgo = (d) => {
   if (!d) return ''
@@ -1278,16 +1279,9 @@ export default function HomeDark() {
           </div>
         </div>
 
-        {/* 排行榜入口 — 用 GlassCard 包,內部按鈕保留藍紫漸層作為差異化視覺 */}
-        <GlassCard style={{ marginTop: 64, padding: 32, textAlign: 'center' }}>
-          <div className="text-3xl mb-3">🏆</div>
-          <h2 className="text-xl font-bold mb-2" style={{ color: T.text }}>想知道其他網站的 AI 能見度表現?</h2>
-          <p className="mb-6 text-sm" style={{ color: T.textMid }}>查看進步之星、排行榜與成功案例,了解優化前後的差異</p>
-          <Link to="/showcase"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-900/40">
-            查看 AI 能見度排行榜 →
-          </Link>
-        </GlassCard>
+        {/* B4: 首頁內嵌 Showcase 區塊（Top 5 排行 + 進步之星 + 完整 showcase CTA）
+            取代原本「排行榜入口」薄按鈕、降低用戶探索門檻、直接看到社會證明 */}
+        <HomeShowcaseSection />
 
         {/* FAQ */}
         <div className="mt-16">
