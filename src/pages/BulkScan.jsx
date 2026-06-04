@@ -867,18 +867,62 @@ const FIX_OWNER_META = {
 }
 function FixOwnerChip({ owner }) {
   const meta = FIX_OWNER_META[owner]
+  const [open, setOpen] = useState(false)
   if (!meta) return null
   return (
-    <span
-      title={meta.title}
-      style={{
-        fontSize: 10, padding: '2px 8px', borderRadius: 999,
-        background: meta.bg, color: meta.color,
-        border: `1px solid ${meta.border}`,
-        fontWeight: 600,
-        cursor: 'help',
-      }}
-    >{meta.label}</span>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, position: 'relative' }}>
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(v => !v) }}
+        style={{
+          fontSize: 10, padding: '2px 8px', borderRadius: 999,
+          background: meta.bg, color: meta.color,
+          border: `1px solid ${meta.border}`,
+          fontWeight: 600,
+          cursor: 'pointer',
+          fontFamily: T.font,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+        }}
+      >
+        {meta.label}
+        <span style={{ fontSize: 9, opacity: 0.7 }}>{open ? '▴' : '▾'}</span>
+      </button>
+      {/* 點開後的浮動說明小框 — absolutely positioned 避免擠壓行內排版 */}
+      {open && (
+        <span
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            minWidth: 280, maxWidth: 360,
+            padding: '8px 12px',
+            background: 'rgba(0,0,0,0.95)',
+            border: `1px solid ${meta.border}`,
+            borderRadius: 8,
+            fontSize: 11,
+            color: T.text,
+            lineHeight: 1.6,
+            zIndex: 50,
+            fontWeight: 400,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+          }}
+        >
+          <div style={{ fontWeight: 700, color: meta.color, marginBottom: 4 }}>
+            {meta.label}
+          </div>
+          {meta.title}
+          <button
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'absolute', top: 4, right: 6,
+              background: 'transparent', border: 'none',
+              color: T.textMid, fontSize: 14, cursor: 'pointer',
+              padding: 0, lineHeight: 1,
+            }}
+          >×</button>
+        </span>
+      )}
+    </span>
   )
 }
 
