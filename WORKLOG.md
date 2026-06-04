@@ -6,6 +6,21 @@
 
 ---
 
+### 2026-06-05（Dashboard 內容品質「重新檢測」不會重算的 bug 修復）
+
+**用戶回報：** 在 Dashboard 按「重新檢測」後，SEO/AEO/GEO/EEAT 四個分數都會更新，但第 5 張卡「內容品質」分數永遠卡在第一次跑出來的值（用戶實際遇到的是 35 分一直不動）。
+
+**根因：** [Dashboard.jsx:126](src/pages/Dashboard.jsx#L126) `loadContentScore` 設計成「先讀 cached、有就直接 return」。第一次跑時 cached=null 會 insert 一筆，之後**所有**呼叫都會讀到 cached 直接 return — 包括 handleReanalyze 觸發的那次。`handleReanalyze` 雖然有呼叫 `loadContentScore(id, website.url)`（[Dashboard.jsx:427](src/pages/Dashboard.jsx#L427)），但 cached 攔在前面，從來不會走到 `analyzeContent(url)`。
+
+**修法：**
+- `loadContentScore` 加 `forceRefresh = false` 第三參數；handleReanalyze 呼叫時傳 `true`，跳過 cached 直接重跑 analyzeContent → insert 新筆。
+- `fetchData` 加 `{ skipContentScore }` 選項；handleReanalyze 呼叫 fetchData 時傳 `true`，避免 fetchData 內的 loadContentScore（cached 路徑）跟外層 forceRefresh 重算 race（cached 較快、會覆蓋掉新分數）。
+- 初始 useEffect 呼叫 fetchData() 不傳參數、走預設 cached 路徑（首次載入仍從 cache 拿、不會多打一次 fetch）。
+
+**影響面：** 純前端、無 DB schema 變動。Push 後 Vercel 部署 ~2 分鐘生效。歷史已存的 cached row 不會自動失效，用戶按「重新檢測」會 insert 新一筆覆蓋顯示。
+
+---
+
 ### 2026-06-04（Rank Math 教學：inline 微教學 + /help/rank-math 速查頁）
 **用戶痛點：「告訴用戶該去 Rank Math 改 XX、但沒教 Rank Math 怎麼用」 → agency / 客戶斷層。**
 

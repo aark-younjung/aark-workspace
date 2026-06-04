@@ -120,23 +120,25 @@ export default function Dashboard() {
 
   // 第 5 張卡（內容品質）的分數：DB 為單一資料來源
   //   1. 先讀 content_audits 最新一筆 cached score（跟 SEO/AEO/GEO/EEAT 一致）
-  //   2. 沒 cached → 跑 analyzeContent + insert 一筆 → setContentScore
-  // 這樣 Dashboard 卡分數 跟 /content-audit/:id 詳情頁顯示分數會一致（單一資料來源），
-  // 不會因為「Dashboard 每次重跑、詳情頁讀 cached」造成兩邊兜不上。
-  const loadContentScore = async (websiteId, url) => {
+  //   2. 沒 cached、或 forceRefresh=true → 跑 analyzeContent + insert 一筆 → setContentScore
+  // forceRefresh：handleReanalyze 觸發的「重新檢測」必須走重跑路徑（2026-06-05 bugfix），
+  // 否則 cached 永遠擋下重算、用戶按了重新檢測但內容品質卡分數不會變
+  const loadContentScore = async (websiteId, url, forceRefresh = false) => {
     if (!websiteId || !url) return
     setContentLoading(true)
     try {
-      const { data: cached } = await supabase
-        .from('content_audits')
-        .select('score')
-        .eq('website_id', websiteId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      if (cached?.score != null) {
-        setContentScore(cached.score)
-        return
+      if (!forceRefresh) {
+        const { data: cached } = await supabase
+          .from('content_audits')
+          .select('score')
+          .eq('website_id', websiteId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (cached?.score != null) {
+          setContentScore(cached.score)
+          return
+        }
       }
       const result = await analyzeContent(url)
       if (result?.score != null) {
@@ -166,7 +168,9 @@ export default function Dashboard() {
     }
   }
 
-  const fetchData = async () => {
+  // skipContentScore：handleReanalyze 自己會用 forceRefresh=true 重算內容品質，
+  // 避免這裡 cached 讀取與外層重算 race（cached 較快、覆蓋掉新分數，2026-06-05 bugfix）
+  const fetchData = async ({ skipContentScore = false } = {}) => {
     try {
       // 獲取網站資料
       const { data: websiteData } = await supabase
@@ -177,7 +181,7 @@ export default function Dashboard() {
 
       if (websiteData) {
         setWebsite(websiteData)
-        loadContentScore(id, websiteData.url)
+        if (!skipContentScore) loadContentScore(id, websiteData.url)
 
         // 獲取 SEO 審計
         const { data: seoData } = await supabase
@@ -423,8 +427,8 @@ export default function Dashboard() {
         }])
       ])
 
-      fetchData()
-      loadContentScore(id, website.url)
+      fetchData({ skipContentScore: true })
+      loadContentScore(id, website.url, true)
     } catch (error) {
       console.error('Error reanalyzing:', error)
       alert('檢測失敗，請稍後再試')
