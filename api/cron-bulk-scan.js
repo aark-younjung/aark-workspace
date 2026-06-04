@@ -804,27 +804,32 @@ function detectWpAdminHint(url, pageType) {
 
   // 5. 文章頁 / blog post
   if (pathname.includes('/blog/') || pathname.includes('/news/') || pageType === 'article') {
+    const slug = pathname.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
     return {
       where: 'WordPress 文章（Post）',
       plugin: 'Rank Math SEO',
       steps: [
-        'WordPress 後台 → 文章 → 全部文章 → 找到這篇 → 編輯',
-        '滑到下方 Rank Math 區塊（在內容編輯器底下）',
-        '改 SEO 標題 / 描述 / Schema',
+        '🔥 最快：先登入 WP、再開這篇文章前台網址 → 螢幕上方黑色 admin bar 會出現「編輯文章」連結、點下去直達編輯頁',
+        '備案 A：WordPress 後台 → 文章 → 全部文章 → 右上「搜尋」框貼這篇的 slug 「' + slug + '」',
+        '備案 B：在 WP 後台網址列直接打：你的網域/wp-admin/edit.php?post_type=post&s=' + slug,
+        '進到編輯頁後 → 滑到下方 Rank Math 區塊（在內容編輯器底下）→ 改 SEO 標題 / 描述 / Schema',
       ],
+      note: '如果文章列表也搜尋不到、可能這篇其實是「頁面（Page）」而不是「文章（Post）」— 改到「頁面 → 全部頁面」一樣搜 slug',
     }
   }
 
   // 6. 預設：普通 page
+  const slug = pathname.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
   return {
     where: 'WordPress 頁面（Page）或文章',
     plugin: 'Rank Math SEO',
     steps: [
-      'WordPress 後台 → 頁面（或文章）→ 找到對應這個 URL 的項目 → 編輯',
-      '滑到下方 Rank Math 區塊',
-      '改 SEO 標題 / 描述',
+      '🔥 最快：先登入 WP、再開這個 URL 前台網址 → 螢幕上方黑色 admin bar 會出現「編輯文章 / 編輯頁面」連結、點下去直達',
+      '備案 A：WordPress 後台 → 頁面 → 全部頁面 → 搜「' + slug + '」slug；找不到再到文章搜',
+      '備案 B：在 WP 後台網址列直接打：你的網域/wp-admin/edit.php?post_type=page&s=' + slug,
+      '進到編輯頁後 → 滑到下方 Rank Math 區塊 → 改 SEO 標題 / 描述',
     ],
-    note: '找不到的話、看 WP 後台網址列；複製這個 URL 的最後一段 slug 去搜尋',
+    note: 'admin bar 是「黑色長條、登入後出現在頁面最上方」— 如果沒看到、確認你 WP 後台「個人資料」設定有打開「顯示工具列」',
   }
 }
 
