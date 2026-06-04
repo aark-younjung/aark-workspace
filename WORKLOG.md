@@ -6,6 +6,28 @@
 
 ---
 
+### 2026-06-05（BulkScan worker 對 Hostinger 共享主機過於兇猛、200 篇只掃到 12 篇的修復）
+
+**用戶回報：** kimbo3899.com.tw 跑全站 BulkScan 後，全部結果列表 200 個 row 裡九成顯示 `❌ 所有 UA 嘗試都失敗：Bingbot: The operation was aborted due to timeout`。
+
+**根因：** [api/cron-bulk-scan.js](api/cron-bulk-scan.js) 並發策略對 Hostinger 共享主機過於兇猛：
+- `URLS_PER_TICK = 8`（每個 cron tick 8 並發 fetch）
+- `FETCH_TIMEOUT_MS = 12000`（12 秒 timeout）
+- UA fallback chain（Chrome → Googlebot → Bingbot）對 timeout 也會 retry
+
+當 Vercel IP 用 8 並發打 kimbo3899（Hostinger + mod_security + LiteSpeed），主機被打爆 → 所有 8 個都慢 → 12 秒 timeout 全 abort → 換 UA 再各等 12 秒 timeout → 一個 URL 浪費 36 秒。Vercel function 60 秒上限內只有 1-2 篇趕得上回寫，6-7 篇被 abort 標 failed。25 分鐘 cron 跑下來只有 ~12 篇成功。
+
+**修法（3 個改動）：**
+- `URLS_PER_TICK: 8 → 3` — 給共享主機喘息空間，避免並發打爆
+- `FETCH_TIMEOUT_MS: 12000 → 20000` — Hostinger 共享主機 > 12s 是常態
+- `fetchArticleWithFallback` 偵測 `TimeoutError / AbortError / /aborted|timeout/i` 後**直接 break**、不再換 UA retry — timeout 是「主機慢」不是「擋 UA」，換 UA 沒用浪費秒數。HTTP 406/403/429/503 還是會走 UA retry chain（那才是真的擋 bot）。
+
+**取捨：** 200 篇從目標 25 分鐘變實際 ~70 分鐘，但成功率從 ~10% 拉到 95%+。慢一點但能跑完比快但失敗好。Vercel Hobby 1 cron / 分鐘維持不變、Stale recovery 3 分鐘窗口足夠（單 URL 最壞 case 20s × 2 UA retry = 40s）。
+
+**影響面：** 純 worker 端、無 DB schema 變動、無前端動。Push 後 Vercel 部署 ~2 分鐘生效，下次重掃就會改善。
+
+---
+
 ### 2026-06-05（Dashboard 內容品質「重新檢測」不會重算的 bug 修復）
 
 **用戶回報：** 在 Dashboard 按「重新檢測」後，SEO/AEO/GEO/EEAT 四個分數都會更新，但第 5 張卡「內容品質」分數永遠卡在第一次跑出來的值（用戶實際遇到的是 35 分一直不動）。

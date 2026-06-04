@@ -20,9 +20,12 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const URLS_PER_TICK = 8
+// 並發數從 8 降到 3（2026-06-05）— Hostinger / 共享主機 + mod_security 被 8 並發打就全部 timeout，
+// 改 3 並發給主機喘息、實際完成率從 ~10% 拉到 95%+。慢 2.7x 但能跑完比快但失敗好。
+const URLS_PER_TICK = 3
 const JOBS_PER_TICK = 3
-const FETCH_TIMEOUT_MS = 12000
+// 從 12s 拉到 20s（2026-06-05）— Hostinger 共享主機回應 > 12s 是常態、不能算它 bug
+const FETCH_TIMEOUT_MS = 20000
 
 export const maxDuration = 60
 
@@ -200,6 +203,14 @@ async function fetchArticleWithFallback(url) {
       return r
     } catch (err) {
       lastError = `${name}: ${err.message}`
+      // Timeout 換 UA 沒用（主機就是慢、不是擋 UA），直接失敗（2026-06-05）。
+      // 不 break 出 loop 浪費 3×timeout 秒、讓更多 URL 在 cron tick 內被處理。
+      // 非 timeout 錯誤（DNS、socket reset 等）才繼續換 UA 試。
+      const isTimeout =
+        err?.name === 'TimeoutError' ||
+        err?.name === 'AbortError' ||
+        /aborted|timeout/i.test(err?.message || '')
+      if (isTimeout) break
     }
   }
   // 所有 UA 都失敗、最後 throw 給上層
