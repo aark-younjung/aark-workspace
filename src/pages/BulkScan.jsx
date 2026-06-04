@@ -579,13 +579,24 @@ function UrlRow({ result, websiteId, userId }) {
                   {p.fix_owner && <FixOwnerChip owner={p.fix_owner} />}
                 </div>
                 {/* multi_h1 — 顯示每個 H1 的內容卡片 + 建議動作（worker 已在 findings.problems[].h1_details 拆好） */}
-                {Array.isArray(p.h1_details) && p.h1_details.length > 0 && (
-                  <div style={{ marginTop: 6, marginLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {p.h1_details.map((d, di) => (
-                      <H1DetailCard key={di} detail={d} />
-                    ))}
-                  </div>
-                )}
+                {Array.isArray(p.h1_details) && p.h1_details.length > 0 && (() => {
+                  // 多個 H1 共用同一個 fix_guide 時、只在最上面顯示一次、避免重複（之前每個 H1 都展開「如何處理」很煩）
+                  // 取第一個有 fix_guide 的 H1、把它的 fix_guide 提到 finding 層級顯示
+                  const firstWithGuide = p.h1_details.find(d => d.fix_guide)
+                  return (
+                    <div style={{ marginTop: 6, marginLeft: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {firstWithGuide && (
+                        <SharedFixGuideBanner
+                          guide={firstWithGuide.fix_guide}
+                          affectedCount={p.h1_details.filter(d => d.cross_container_duplicate).length}
+                        />
+                      )}
+                      {p.h1_details.map((d, di) => (
+                        <H1DetailCard key={di} detail={d} hideGuide={!!firstWithGuide} />
+                      ))}
+                    </div>
+                  )
+                })()}
                 {/* Stage 2: meta_title / meta_desc / canonical 等 finding 帶 suggestion 物件時、渲染建議區塊 */}
                 {p.suggestion && (
                   <div style={{ marginTop: 6, marginLeft: 20 }}>
@@ -647,10 +658,116 @@ function UrlRow({ result, websiteId, userId }) {
 
 // multi_h1 警告展開時的每個 H1 詳情卡 — 顯示內容預覽 + 分類 chip + 建議動作說明
 // detail 結構：{ index, text, full_length, kind: 'empty'|'sentence'|'short', suggested_action: 'keep'|'change_to_p'|'change_to_h2'|'delete', reason }
-function H1DetailCard({ detail }) {
+// 多個 H1 共用同一個 fix_guide 時、把 guide 提到 H1 列表上方統一顯示一次
+// affectedCount：受這個主題級重複影響的 H1 個數
+function SharedFixGuideBanner({ guide, affectedCount }) {
+  const [open, setOpen] = useState(false)
+  const [ticketCopied, setTicketCopied] = useState(false)
+  return (
+    <div style={{
+      marginBottom: 6,
+      padding: '10px 12px',
+      background: 'rgba(239,68,68,0.08)',
+      border: '1px solid rgba(239,68,68,0.35)',
+      borderRadius: 6,
+    }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between',
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          fontFamily: T.font,
+        }}
+      >
+        <span style={{ flex: 1, textAlign: 'left' }}>
+          <strong style={{ color: '#fca5a5', fontSize: 12 }}>🔴 偵測到主題級重複問題</strong>
+          <span style={{ marginLeft: 8, color: T.textMid, fontSize: 11 }}>
+            {affectedCount} 個 H1 受影響、來源相同
+          </span>
+        </span>
+        <span style={{ color: T.textLow, fontSize: 11 }}>{open ? '▴ 收起如何處理' : '▾ 展開如何處理'}</span>
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 8, fontSize: 11, color: T.textMid, lineHeight: 1.65 }}>
+          {/* 1. 症狀 */}
+          <div style={{ marginBottom: 8 }}>
+            <strong style={{ color: '#fca5a5' }}>📝 症狀說明：</strong>
+            <div style={{ marginTop: 2 }}>{guide.symptom_human}</div>
+          </div>
+
+          {/* 2. 怎麼確認 */}
+          {guide.how_to_verify && (
+            <div style={{ marginBottom: 8 }}>
+              <strong style={{ color: '#86efac' }}>🔍 怎麼確認真的有這個問題：</strong>
+              <ol style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                {guide.how_to_verify.map((s, i) => <li key={i} style={{ marginBottom: 2 }}>{s}</li>)}
+              </ol>
+            </div>
+          )}
+
+          {/* 3. 三種修法 */}
+          {guide.fix_options && (
+            <div style={{ marginBottom: 8 }}>
+              <strong style={{ color: '#fcd34d' }}>🛠️ 三種修法（由簡到難）：</strong>
+              <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {guide.fix_options.map((opt, i) => (
+                  <div key={i} style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.25)', borderRadius: 4 }}>
+                    <div style={{ fontWeight: 700, color: T.text, marginBottom: 2 }}>
+                      {opt.option}
+                      {opt.effort && <span style={{ marginLeft: 8, color: T.textLow, fontSize: 10, fontWeight: 400 }}>({opt.effort})</span>}
+                    </div>
+                    <div style={{ whiteSpace: 'pre-line', color: T.textMid, fontSize: 10.5 }}>{opt.detail}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. 給技術員的訊息（可一鍵複製）*/}
+          {guide.ticket_for_tech && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <strong style={{ color: '#c4b5fd' }}>💬 給工程師 / 客服的訊息（直接複製貼到 LINE / Email）：</strong>
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(guide.ticket_for_tech).catch(() => {})
+                    setTicketCopied(true)
+                    setTimeout(() => setTicketCopied(false), 1800)
+                  }}
+                  style={{
+                    padding: '2px 8px', fontSize: 10, fontWeight: 700,
+                    background: ticketCopied ? 'rgba(34,197,94,0.2)' : 'rgba(139,92,246,0.15)',
+                    color: ticketCopied ? '#86efac' : '#c4b5fd',
+                    border: `1px solid ${ticketCopied ? 'rgba(34,197,94,0.5)' : 'rgba(139,92,246,0.4)'}`,
+                    borderRadius: 4, cursor: 'pointer', fontFamily: T.font,
+                  }}
+                >{ticketCopied ? '✅ 已複製' : '📋 複製訊息'}</button>
+              </div>
+              <div style={{
+                padding: '6px 10px',
+                background: 'rgba(0,0,0,0.35)',
+                borderRadius: 4,
+                fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                fontSize: 10.5,
+                color: '#e2e8f0',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}>{guide.ticket_for_tech}</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function H1DetailCard({ detail, hideGuide }) {
   const { index, text, full_length, kind, suggested_action, reason, is_duplicate, parent_class, cross_container_duplicate, fix_guide } = detail
   const [guideOpen, setGuideOpen] = useState(false)
   const [ticketCopied, setTicketCopied] = useState(false)
+  // hideGuide：當上層已經把 fix_guide 提到 finding 層級顯示時、卡片就不重複秀（多個 H1 共用一份 guide）
+  const showInlineGuide = !hideGuide && fix_guide
   // 不同建議動作對應不同顏色：保留=綠、改 h2=藍、改 p=粉、刪除=橘
   const actionStyle = {
     keep:          { label: '✅ 保留',         color: '#86efac', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.35)' },
@@ -710,8 +827,9 @@ function H1DetailCard({ detail }) {
       {/* 原因說明（plain language）*/}
       <div style={{ color: T.textLow, fontSize: 10.5, marginBottom: fix_guide ? 6 : 0 }}>{reason}</div>
 
-      {/* 主題級重複時、給「如何處理」可展開區塊 — 4 段：症狀 / 驗證 / 修法 / 給工程師的訊息 */}
-      {fix_guide && (
+      {/* 主題級重複時、給「如何處理」可展開區塊 — 4 段：症狀 / 驗證 / 修法 / 給工程師的訊息
+          多 H1 共享同一個 guide 時、只在 SharedFixGuideBanner 顯示、卡片內就略過避免重複 */}
+      {showInlineGuide && (
         <div style={{ marginTop: 6, padding: '8px 10px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 4 }}>
           <button
             onClick={() => setGuideOpen(v => !v)}
@@ -810,8 +928,8 @@ function H1DetailCard({ detail }) {
         </div>
       )}
 
-      {/* 工程師專用 parent_class（非主題級重複 H1 才在 root 層級顯示）*/}
-      {!fix_guide && parent_class && (
+      {/* 工程師專用 parent_class（沒有 inline guide 才顯示 — 否則 guide 內已有同樣資訊）*/}
+      {!showInlineGuide && parent_class && (
         <details style={{ marginTop: 4 }}>
           <summary style={{ cursor: 'pointer', color: T.textLow, fontSize: 10 }}>
             🔬 工程師專用：父容器 class
