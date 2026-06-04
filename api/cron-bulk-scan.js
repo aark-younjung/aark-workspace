@@ -275,17 +275,54 @@ function analyzeArticleHtml(html, url) {
     return { index: idx + 1, text: text.slice(0, 200), full_length: len, kind, suggested_action: suggestedAction, reason }
   })
   const emptyH1Count = h1Details.filter(d => d.kind === 'empty').length
+
+  // 偵測「重複 H1」— 兩個或以上 H1 的純文字內容完全相同
+  // 多半是 WPBakery 響應式雙版本（手機/桌面各一份、CSS hide 但 DOM 還在）、或主題模板把 heading 嵌兩次
+  // 用 text → indices map 抓出每組重複
+  const textGroups = {}
+  h1Details.forEach(d => {
+    if (!d.text) return  // 空的不算
+    const key = d.text
+    if (!textGroups[key]) textGroups[key] = []
+    textGroups[key].push(d.index)
+  })
+  const duplicateH1Groups = Object.entries(textGroups)
+    .filter(([, indices]) => indices.length >= 2)
+    .map(([text, indices]) => ({ text: text.slice(0, 80), indices, count: indices.length }))
+
+  // 標記每個 detail 是否為「重複組」的成員、供前端顯示重複 chip + 給對應的建議
+  if (duplicateH1Groups.length > 0) {
+    const dupIndices = new Set(duplicateH1Groups.flatMap(g => g.indices))
+    h1Details.forEach(d => {
+      if (dupIndices.has(d.index)) {
+        d.is_duplicate = true
+        // 重複的 H1 第一個保留、其他改 <p> 或刪（不要保留多份相同文字）
+        if (d.index !== duplicateH1Groups.find(g => g.indices.includes(d.index)).indices[0]) {
+          d.suggested_action = 'change_to_p'
+          d.reason = '跟其他 H1 內容相同 → 改 <p> 或刪除重複（多半是響應式雙版本）'
+        }
+      }
+    })
+  }
+
   const hasH1 = h1Count > 0
   if (h1Count === 0) problems.push({ id: 'missing_h1', severity: 'high', label: '頁面沒有 H1 標題' })
   else if (h1Count > 1) {
-    // 多 H1 時補上「其中 N 個是空 H1（page builder 殘留）」提示
-    const suffix = emptyH1Count > 0 ? `，其中 ${emptyH1Count} 個是空 H1（page builder 殘留）` : ''
+    // 多 H1 時補上「其中 N 個是空 H1」與「N 個內容重複」雙提示
+    const suffixes = []
+    if (emptyH1Count > 0) suffixes.push(`${emptyH1Count} 個是空 H1（page builder 殘留）`)
+    if (duplicateH1Groups.length > 0) {
+      const dupCount = duplicateH1Groups.reduce((sum, g) => sum + g.count, 0)
+      suffixes.push(`${dupCount} 個內容相同（多半是響應式雙版本）`)
+    }
+    const suffix = suffixes.length > 0 ? `，其中 ${suffixes.join('、')}` : ''
     problems.push({
       id: 'multiple_h1',
       severity: 'medium',
       label: `頁面有 ${h1Count} 個 H1（應只有 1 個）${suffix}`,
       empty_h1_count: emptyH1Count,
-      h1_details: h1Details,  // 前端展開時顯示每個 H1 的內容卡片
+      duplicate_h1_groups: duplicateH1Groups,    // 給前端顯示「H1 #2 跟 H1 #3 相同」這種訊息
+      h1_details: h1Details,                      // 前端展開時顯示每個 H1 的內容卡片（內含 is_duplicate flag）
     })
   }
 

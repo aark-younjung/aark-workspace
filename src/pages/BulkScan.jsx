@@ -372,6 +372,9 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId }) {
         onRescan={onRescan} starting={starting} isSample={isSample}
       />
 
+      {/* 常見誤解 FAQ — 用戶常困惑「我看不到 X、為什麼掃到？」、預先列出來、減少誤判 bug 的回報 */}
+      <CommonMisunderstandingsPanel />
+
       {/* 重新掃描按鈕 — 只 Pro 顯示（Free 用戶不能再 sample，要升級才能重掃）
           注：banner 內也已有「重新掃描」按鈕、這顆作為次要備援（右上角習慣性位置） */}
       {!isSample && (
@@ -641,7 +644,7 @@ function UrlRow({ result, websiteId, userId }) {
 // multi_h1 警告展開時的每個 H1 詳情卡 — 顯示內容預覽 + 分類 chip + 建議動作說明
 // detail 結構：{ index, text, full_length, kind: 'empty'|'sentence'|'short', suggested_action: 'keep'|'change_to_p'|'change_to_h2'|'delete', reason }
 function H1DetailCard({ detail }) {
-  const { index, text, full_length, kind, suggested_action, reason } = detail
+  const { index, text, full_length, kind, suggested_action, reason, is_duplicate } = detail
   // 不同建議動作對應不同顏色：保留=綠、改 h2=藍、改 p=粉、刪除=橘
   const actionStyle = {
     keep:          { label: '✅ 保留',         color: '#86efac', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.35)' },
@@ -666,13 +669,20 @@ function H1DetailCard({ detail }) {
       fontSize: 11,
       lineHeight: 1.6,
     }}>
-      {/* 標頭：H1#N + 分類 chip + 建議動作 */}
+      {/* 標頭：H1#N + 分類 chip + 重複 chip（若 is_duplicate） + 建議動作 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
         <span style={{ fontWeight: 700, color: T.text }}>H1#{index}</span>
         <span style={{
           fontSize: 10, padding: '1px 6px', borderRadius: 3,
           background: kindChip.bg, color: kindChip.color,
         }}>{kindChip.text}</span>
+        {is_duplicate && (
+          <span style={{
+            fontSize: 10, padding: '1px 6px', borderRadius: 3,
+            background: 'rgba(251,191,36,0.18)', color: '#fcd34d',
+            fontWeight: 700,
+          }}>🔁 內容重複</span>
+        )}
         <span style={{ fontWeight: 600, color: actionStyle.color, fontSize: 11 }}>{actionStyle.label}</span>
       </div>
       {/* 內容預覽（空 H1 不顯示）— 用 monospace 強調是原 HTML 的可辨識片段 */}
@@ -692,6 +702,81 @@ function H1DetailCard({ detail }) {
       )}
       {/* 原因說明 */}
       <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
+    </div>
+  )
+}
+
+// 常見誤解 FAQ panel — 預先列出 5 種「看起來像 bug、其實是網站特殊狀況」的情境
+// 設計動機：用戶反覆把這幾類狀況回報為 bug、實際上是 WP/主題/外掛行為
+// 預設折疊（不擋掉重點）、用戶展開後可以對照自己的狀況
+function CommonMisunderstandingsPanel() {
+  const [open, setOpen] = useState(false)
+  const cases = [
+    {
+      symptom: '我編輯器 Ctrl+F 找 `<h1>` 只看到 1 個、但掃描說有 2 個',
+      cause: 'WordPress 主題在渲染時會自動在你的內容前加一個「文章標題」的 `<h1>`、編輯器看不到（不在文章 body）',
+      verify: '右鍵網頁 → 檢視原始碼 → Ctrl+F 搜 `<h1` 看實際渲染後幾個',
+    },
+    {
+      symptom: '我編輯器只寫 1 個 H1、但掃描說 2-3 個內容相同的 H1',
+      cause: 'WPBakery / Elementor 的「響應式雙版本」會把同一個 heading 渲染成桌面 + 手機兩份、CSS 只 hide 不 unmount、DOM 還是兩個（Google 也看到兩個）',
+      verify: '右鍵 → 檢視原始碼 → 搜 `<h1` → 看是不是 2 個內容一模一樣 / 或近似的',
+    },
+    {
+      symptom: '我已經修了、但掃描結果還是顯示舊問題',
+      cause: '`findings` 是「上次掃描那一刻」的快照、不會自動 re-eval、修完線上之後 DB 還是舊資料',
+      verify: '按頁面上方「🔄 重新掃描全站」、或等下次自動掃 → 新一輪會反映',
+    },
+    {
+      symptom: '我看 Rank Math 後台「Meta 描述」明明是 130 字、但掃描說 477 字',
+      cause: 'Rank Math 後台「Title 模板」可能有 hardcode 後綴 (如 `| 台南汽車影音改裝 | ...`)、後台只算 `%title% %sep% %sitename%` 變數部分、hardcode 段沒計入',
+      verify: '右鍵 → 檢視原始碼 → 搜 `name="description"` → 看實際渲染的 content="..." 內容',
+    },
+    {
+      symptom: '我 WP 後台找不到對應的編輯位置（如 /shop/、/locations.kml）',
+      cause: '/shop/ 是 WooCommerce archive、不是普通 page；/locations.kml 是 Rank Math Local SEO 外掛產的 XML、不是給編輯的',
+      verify: '每個 URL 展開時上方藍色「🗺️ WP 後台位置」banner 會告訴你具體去哪改',
+    },
+  ]
+  return (
+    <div style={{
+      marginBottom: 18,
+      padding: '12px 16px',
+      background: 'rgba(139,92,246,0.06)',
+      border: '1px solid rgba(139,92,246,0.25)',
+      borderRadius: 10,
+      fontSize: 13,
+    }}>
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+      >
+        <span style={{ fontSize: 18 }}>🤔</span>
+        <span style={{ flex: 1, color: T.text }}>
+          <strong>掃描結果跟我看到的不一樣？</strong>
+          <span style={{ color: T.textLow, marginLeft: 8, fontSize: 12 }}>5 種常見狀況、開啟前先確認</span>
+        </span>
+        <span style={{ color: T.textLow, fontSize: 11 }}>{open ? '▾ 收起' : '▸ 展開'}</span>
+      </div>
+      {open && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(139,92,246,0.2)' }}>
+          {cases.map((c, i) => (
+            <details key={i} style={{ marginBottom: 8 }}>
+              <summary style={{ cursor: 'pointer', color: T.text, fontWeight: 600, padding: '4px 0' }}>
+                {i + 1}. {c.symptom}
+              </summary>
+              <div style={{ marginLeft: 16, padding: '6px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 12 }}>
+                <div style={{ marginBottom: 4, color: T.textMid }}>
+                  <strong style={{ color: '#c4b5fd' }}>原因：</strong>{c.cause}
+                </div>
+                <div style={{ color: T.textMid }}>
+                  <strong style={{ color: '#86efac' }}>怎麼驗證：</strong>{c.verify}
+                </div>
+              </div>
+            </details>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

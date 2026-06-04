@@ -6,6 +6,36 @@
 
 ---
 
+### 2026-06-04（H1 重複偵測升級 + 常見誤解 FAQ panel）
+**用戶觀察：「我反覆把這幾類狀況當成 bug 回報、實際上是 WP/主題/外掛行為」。要把這些特殊狀況主動列出來、不要讓用戶以為是我們搜尋分析錯誤。**
+
+具體案例：kimbo3899 id-buzz-音響升級 商品頁、用戶編輯器只看到 1 個 H1、但我們報 3 個。我 curl 確認線上**真的有 3 個** — H1#2 跟 H1#3 內容完全相同、是 WPBakery 響應式雙版本造成 DOM 渲染兩次。用戶在編輯器層看不到、會以為是我們誤判。
+
+**兩層改動：**
+
+1. **後端 H1 重複偵測**（[api/cron-bulk-scan.js](api/cron-bulk-scan.js)）：
+   - H1 純文字分組、≥2 個內容相同 → 加進 `duplicate_h1_groups: [{text, indices, count}]`
+   - 每個 detail 標 `is_duplicate: true`、重複組除第 1 個外的 `suggested_action` 變 `change_to_p`、reason 改成「跟其他 H1 內容相同 → 改 <p> 或刪除重複（多半是響應式雙版本）」
+   - `multiple_h1` finding label 動態組合：可能同時顯示「N 個是空 H1」+「M 個內容相同」雙提示
+
+2. **前端 H1DetailCard**（[src/pages/BulkScan.jsx](src/pages/BulkScan.jsx)）：
+   - 標頭加 chip「🔁 內容重複」（琥珀色）標記重複 H1
+
+3. **CommonMisunderstandingsPanel**（前端新元件）：
+   - 結果頁頂部、3 個 banner 後面（位於 Stale + RescanHint 之下）
+   - 紫色折疊 panel「🤔 掃描結果跟我看到的不一樣？5 種常見狀況、開啟前先確認」
+   - 5 個 case：
+     1. 編輯器找 1 個 H1 但掃描說 2 個 → WP 主題自動加 H1
+     2. 掃描說 H1 內容相同 → WPBakery 響應式雙版本
+     3. 修了還顯示舊問題 → findings 是快照、要重掃
+     4. Rank Math 後台 130 字但掃描 477 字 → Title 模板 hardcode 後綴
+     5. 找不到 /shop/ /locations.kml 編輯位置 → 看 UrlRow 內藍色 wp_admin_hint banner
+   - 每個 case 含「症狀」「原因」「怎麼驗證」三段
+
+**設計意圖：** 降低用戶誤把這幾類狀況當成 bug 回報的機率、減少客服 / 信任成本。
+
+---
+
 ### 2026-06-04（Q1+Q2+Bug B — worker UA / WP 編輯位置提示 / KML 黑名單）
 **3 個用戶痛點一次修：**
 
