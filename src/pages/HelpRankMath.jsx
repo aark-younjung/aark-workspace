@@ -148,12 +148,79 @@ export default function HelpRankMath() {
         <Card>
           <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: T.text }}>📋 目錄</h3>
           <ol style={{ paddingLeft: 20, color: T.textMid, fontSize: 13, lineHeight: 1.9 }}>
+            <li><a href="#s0" style={{ color: '#93c5fd' }}><strong style={{ color: '#fcd34d' }}>⚡ Finding → 修哪裡 對照表（一眼看出該去哪）</strong></a></li>
             <li><a href="#s1" style={{ color: '#93c5fd' }}>怎麼找到 Rank Math meta box</a></li>
             <li><a href="#s2" style={{ color: '#93c5fd' }}>General 分頁的 4 個必填欄位</a></li>
             <li><a href="#s3" style={{ color: '#93c5fd' }}>Schema 分頁該選哪種類型</a></li>
             <li><a href="#s4" style={{ color: '#93c5fd' }}>Advanced 分頁 Robots Meta 預設別動</a></li>
             <li><a href="#s5" style={{ color: '#93c5fd' }}>全域設定（Titles & Meta）9 個常見開關</a></li>
           </ol>
+        </Card>
+
+        {/* Section 0 — Finding 對照表（用戶最常困惑的「該去哪改」） */}
+        <SectionAnchor id="s0" />
+        <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 12 }}>
+          ⚡ Finding → 修哪裡 對照表
+        </h2>
+        <p style={{ fontSize: 14, color: T.textMid, marginBottom: 14, lineHeight: 1.7 }}>
+          看到 BulkScan 報的 finding、不確定該去 WP 哪裡改？這張表一眼對應。
+          <strong style={{ color: 'white' }}>記法：finding 名含「meta_」「og」「schema」「canonical」→ 改 Rank Math meta box；含「h1」「content」→ 改文章內容本體</strong>
+        </p>
+
+        {/* 兩欄並列：Rank Math meta box vs 內容編輯器 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 16 }}>
+          {/* 左：Rank Math meta box */}
+          <Card>
+            <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 8, color: '#86efac', display: 'flex', alignItems: 'center', gap: 6 }}>
+              🏷️ Rank Math meta box（下方紫色區）
+            </h3>
+            <div style={{ fontSize: 12, color: T.textLow, marginBottom: 10 }}>
+              訪客看不到、只有 Google / AI 看到。對應 chip <strong style={{ color: '#86efac' }}>🛠️ SEO 外掛可解</strong>
+            </div>
+            <MappingRow finding="missing_meta_title / short_meta_title / long_meta_title" go="General → SEO Title" />
+            <MappingRow finding="missing_meta_desc / short_meta_desc / long_meta_desc" go="General → Description" />
+            <MappingRow finding="missing_og / incomplete_og" go="Social tab → Facebook / Twitter（圖片自動帶 OR 上傳 Thumbnail）" />
+            <MappingRow finding="no_json_ld / no_article_schema / no_product_schema" go="Schema tab → 選 Article / Product 類型" />
+            <MappingRow finding="missing_canonical" go="Rank Math 預設自動處理。如果缺、可能是外掛被關閉或主題覆寫" />
+          </Card>
+
+          {/* 右：內容編輯器 */}
+          <Card>
+            <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 8, color: '#fcd34d', display: 'flex', alignItems: 'center', gap: 6 }}>
+              📝 文章/商品內容本體（上方編輯器）
+            </h3>
+            <div style={{ fontSize: 12, color: T.textLow, marginBottom: 10 }}>
+              訪客直接看到的文字。對應 chip <strong style={{ color: '#fcd34d' }}>🔑 需 WP 後台</strong> 或 <strong style={{ color: '#f9a8d4' }}>✍️ 需要寫內容</strong>
+            </div>
+            <MappingRow finding="missing_h1" go="進內容編輯器 → 加 H1 標題 block（缺通常是主題問題）" />
+            <MappingRow finding="multiple_h1" go="進內容編輯器 → 程式碼模式 → 多餘 <h1> 改成 <h2>" />
+            <MappingRow finding="thin_content / short_content" go="進內容編輯器 → 加長文字、補完整段（要實際寫內容）" />
+          </Card>
+        </div>
+
+        {/* 特殊例外 */}
+        <h3 style={{ fontSize: 15, fontWeight: 800, marginTop: 12, marginBottom: 8, color: '#fca5a5' }}>
+          ⚠️ 兩個特殊例外（不在 WP 後台、要找其他地方）
+        </h3>
+        <Card>
+          <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 10, marginBottom: 10 }}>
+            <div style={{ fontWeight: 800, color: '#fca5a5', marginBottom: 4 }}>
+              multiple_h1 + 🔴 主題級重複 chip
+            </div>
+            <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.7 }}>
+              這個重複 H1 來自主題在多個位置渲染同份內容（不是用戶寫的）→ 需要修主題 PHP code、不在 WP 後台。
+              展開該 H1 看「🔧 如何處理」會給你具體步驟跟「給工程師的訊息」（可直接複製）。
+            </div>
+          </div>
+          <div>
+            <div style={{ fontWeight: 800, color: '#fdba74', marginBottom: 4 }}>
+              multiple_h1 在 /product/ 商品頁 + 內容相同
+            </div>
+            <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.7 }}>
+              通常是 WooCommerce「商品簡述」+「商品說明」兩個欄位都貼了同份內容 →
+              清空「商品簡述」(Short Description) 即可。在商品編輯頁下方、可能要從右上「螢幕選項」打開。
+            </div>
+          </div>
         </Card>
 
         {/* Section 1 */}
@@ -294,6 +361,25 @@ function FieldRow({ label, value, color }) {
     <div style={{ fontSize: 13, lineHeight: 1.7, marginTop: 4 }}>
       <strong style={{ color }}>{label}：</strong>
       <span style={{ color: T.text }}>{value}</span>
+    </div>
+  )
+}
+
+// Finding → 修哪裡對照表的單列
+function MappingRow({ finding, go }) {
+  return (
+    <div style={{
+      padding: '6px 0',
+      borderTop: '1px solid rgba(255,255,255,0.06)',
+      fontSize: 12,
+    }}>
+      <code style={{
+        fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+        color: '#a7f3d0',
+        fontSize: 11,
+        wordBreak: 'break-word',
+      }}>{finding}</code>
+      <div style={{ color: T.textMid, marginTop: 3, lineHeight: 1.55 }}>→ {go}</div>
     </div>
   )
 }
