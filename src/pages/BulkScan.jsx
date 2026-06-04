@@ -719,8 +719,8 @@ function CommonMisunderstandingsPanel() {
     },
     {
       symptom: '我編輯器只寫 1 個 H1、但掃描說 2-3 個內容相同的 H1',
-      cause: 'WPBakery / Elementor 的「響應式雙版本」會把同一個 heading 渲染成桌面 + 手機兩份、CSS 只 hide 不 unmount、DOM 還是兩個（Google 也看到兩個）',
-      verify: '右鍵 → 檢視原始碼 → 搜 `<h1` → 看是不是 2 個內容一模一樣 / 或近似的',
+      cause: '兩種最常見原因：\n（A）**WooCommerce 商品頁** — 你可能在「商品簡述」+「商品說明」兩個欄位都貼了相同內容 → 商品頁渲染 2 次 → 找下方的「商品簡述」欄位清空\n（B）**WPBakery / Elementor 響應式雙版本** — 同個 heading 渲染成桌面 + 手機兩份、CSS 只 hide 不 unmount、DOM 還是兩個（Google 也看到兩個）',
+      verify: '右鍵 → 檢視原始碼 → 搜 `<h1` → 看是不是 2 個內容一模一樣。如果是商品頁、優先檢查 WooCommerce「商品簡述」欄位（可能在頁面下方、要從右上「顯示選項」打開）',
     },
     {
       symptom: '我已經修了、但掃描結果還是顯示舊問題',
@@ -765,7 +765,7 @@ function CommonMisunderstandingsPanel() {
               <summary style={{ cursor: 'pointer', color: T.text, fontWeight: 600, padding: '4px 0' }}>
                 {i + 1}. {c.symptom}
               </summary>
-              <div style={{ marginLeft: 16, padding: '6px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 12 }}>
+              <div style={{ marginLeft: 16, padding: '6px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 12, whiteSpace: 'pre-line' }}>
                 <div style={{ marginBottom: 4, color: T.textMid }}>
                   <strong style={{ color: '#c4b5fd' }}>原因：</strong>{c.cause}
                 </div>

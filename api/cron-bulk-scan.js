@@ -299,7 +299,10 @@ function analyzeArticleHtml(html, url) {
         // 重複的 H1 第一個保留、其他改 <p> 或刪（不要保留多份相同文字）
         if (d.index !== duplicateH1Groups.find(g => g.indices.includes(d.index)).indices[0]) {
           d.suggested_action = 'change_to_p'
-          d.reason = '跟其他 H1 內容相同 → 改 <p> 或刪除重複（多半是響應式雙版本）'
+          // 商品頁 vs 一般頁有不同最常見原因
+          d.reason = url && /\/product\//i.test(url)
+            ? '跟其他 H1 內容相同 → 通常是 WooCommerce「商品簡述」+「商品說明」兩個欄位都貼了同內容、清空商品簡述即可'
+            : '跟其他 H1 內容相同 → 可能是 WPBakery 響應式雙版本、或主題模板把同份內容渲染兩次'
         }
       }
     })
