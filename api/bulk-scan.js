@@ -38,6 +38,7 @@ const URL_BLACKLIST_PATTERNS = [
   /\/comments\/feed/i,
   /\/page\/\d+\/?$/i,            // 分頁（/page/2/, /page/3/ ...）
   /\.(jpg|jpeg|png|gif|webp|pdf|zip|mp4)$/i,
+  /\.(kml|xml|json|rss|atom)$/i,         // 外掛自動產出的非 HTML 檔（Rank Math Local SEO 的 locations.kml 等）
 ]
 
 export default async function handler(req, res) {

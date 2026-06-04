@@ -550,6 +550,10 @@ function UrlRow({ result, websiteId, userId }) {
           )}
         </span>
       </div>
+      {/* Q2/Bug B: WP 後台編輯路徑提示 — 告訴用戶這個 URL 要去 WP 哪裡編輯（特別針對 /shop/ / locations.kml 等特殊 URL）*/}
+      {hasProblems && expanded && result.findings?.wp_admin_hint && (
+        <WpAdminHintBanner hint={result.findings.wp_admin_hint} />
+      )}
       {hasProblems && expanded && (
         <ul style={{
           margin: '8px 0 4px 16px', padding: 0, listStyle: 'none',
@@ -688,6 +692,58 @@ function H1DetailCard({ detail }) {
       )}
       {/* 原因說明 */}
       <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
+    </div>
+  )
+}
+
+// Q2/Bug B: WP 後台編輯路徑提示 — 從 finding.wp_admin_hint 展開
+// hint 結構：{ where, plugin?, steps: string[], note? }
+// 用戶常常困惑「這個 URL 要去 WP 哪裡編輯」（特別是 /shop/ / locations.kml / homepage）
+// 在 UrlRow 展開的 finding 列表上方顯示一條藍色 info banner、一次性告訴用戶後續找法
+function WpAdminHintBanner({ hint }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{
+      margin: '8px 0 4px 16px',
+      padding: '8px 12px',
+      background: 'rgba(59,130,246,0.08)',
+      border: '1px solid rgba(59,130,246,0.3)',
+      borderRadius: 6,
+      fontSize: 11,
+      color: T.textMid,
+      lineHeight: 1.6,
+    }}>
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+      >
+        <span style={{ fontSize: 14 }}>🗺️</span>
+        <span style={{ flex: 1 }}>
+          <strong style={{ color: '#93c5fd' }}>WP 後台位置：</strong>{hint.where}
+          {hint.plugin && <span style={{ color: T.textLow }}> · 需要 {hint.plugin}</span>}
+        </span>
+        <span style={{ color: T.textLow, fontSize: 10 }}>{open ? '▾ 收起步驟' : '▸ 展開步驟'}</span>
+      </div>
+      {open && (
+        <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(59,130,246,0.15)' }}>
+          <ol style={{ margin: 0, paddingLeft: 20, color: T.text }}>
+            {(hint.steps || []).map((s, i) => (
+              <li key={i} style={{ marginBottom: 2 }}>{s}</li>
+            ))}
+          </ol>
+          {hint.note && (
+            <div style={{
+              marginTop: 6,
+              padding: '4px 8px',
+              background: 'rgba(251,191,36,0.08)',
+              border: '1px solid rgba(251,191,36,0.25)',
+              borderRadius: 4,
+              fontSize: 10,
+              color: '#fcd34d',
+            }}>💡 {hint.note}</div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -157,19 +157,49 @@ async function processJobTick(supabase, job) {
   return { jobId: job.id, scanned, failed, batchSize: pending.length }
 }
 
+// 跟 sitemap discovery 同款 Chrome headers — 對付 mod_security / Cloudflare / WAF
+// 之前用簡單 'AIRadarBot/1.0' UA 會被部分主機（如 kimbo3899 Apache + mod_security）擋 406
+const ARTICLE_FETCH_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Sec-Ch-Ua': '"Chromium";v="120", "Not(A:Brand";v="24", "Google Chrome";v="120"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Upgrade-Insecure-Requests': '1',
+}
+
 async function scanSingleUrl({ url }) {
   try {
     const r = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; AIRadarBot/1.0; +https://aark-workspace.vercel.app)',
-        'Accept': 'text/html,application/xhtml+xml',
-      },
+      headers: ARTICLE_FETCH_HEADERS,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       redirect: 'follow',
     })
 
     if (!r.ok) {
       return { success: false, httpStatus: r.status, error: `HTTP ${r.status}`, findings: null }
+    }
+
+    // Content-type 檢查：跳過 XML / KML / JSON / RSS 等非 HTML — sitemap 偶爾會混入這類 URL（如 Rank Math Local SEO 的 /locations.kml）
+    // 對它們跑 HTML 分析會產出垃圾 finding（缺 H1 / 缺 title 等、實際無意義）
+    const ct = (r.headers.get('content-type') || '').toLowerCase()
+    if (ct && !ct.includes('text/html') && !ct.includes('application/xhtml')) {
+      return {
+        success: true,
+        httpStatus: r.status,
+        error: null,
+        findings: {
+          page_type: 'non-html',
+          content_type: ct,
+          problems: [],
+          wp_admin_hint: detectWpAdminHint(url, 'non-html'),
+        },
+      }
     }
 
     const html = await r.text()
@@ -506,7 +536,98 @@ function analyzeArticleHtml(html, url) {
     page_type: pageType,    // article / product / service / local-business / homepage / unknown
     word_count: wordCount,
     has_canonical: hasCanonical,
+    // 給用戶「這個 URL 在 WP 後台哪裡編輯」的具體指引（如 /shop/ vs /product/ vs /locations.kml 不同）
+    wp_admin_hint: detectWpAdminHint(url, pageType),
     problems,
+  }
+}
+
+// 根據 URL pattern 推 WordPress 後台編輯路徑提示
+// 用戶常常找不到「這個 URL 對應的編輯位置」（特別是 /shop/、/locations.kml 這種非普通 page）
+// 回傳結構：{ where: string, plugin?: string, steps: string[], note?: string }
+function detectWpAdminHint(url, pageType) {
+  let pathname = ''
+  try { pathname = new URL(url).pathname.toLowerCase() } catch { return null }
+
+  // 1. 外掛產出的 XML / KML — Rank Math Local SEO、不是給用戶編輯的
+  if (/\.(kml|xml|json|rss)$/i.test(pathname) || pathname.includes('sitemap')) {
+    return {
+      where: '外掛自動產出的非 HTML 檔（不是給編輯的）',
+      plugin: 'Rank Math SEO',
+      steps: [
+        '這個 URL 是 SEO 外掛（很可能是 Rank Math Local SEO）自動產生',
+        '上面 finding 對 XML/KML 檔大多無意義（不是 HTML）',
+        '想關掉：WordPress 後台 → Rank Math → Local SEO 設定 → 關閉「KML 輸出」/「XML sitemap」',
+      ],
+      note: '一般中小品牌沒在用 KML（給 Google My Business 整合用）、可以關掉',
+    }
+  }
+
+  // 2. WooCommerce 商店列表頁 /shop/ — 沒有對應 WP page 可編輯
+  if (pathname === '/shop/' || pathname === '/shop' || pathname.startsWith('/product-category/')) {
+    return {
+      where: 'WooCommerce 商店列表頁（archive page、不是普通 WP page）',
+      plugin: 'Rank Math SEO',
+      steps: [
+        'WordPress 後台 → Rank Math SEO',
+        '→ 標題與中繼資料（Titles & Meta）',
+        '→ WooCommerce',
+        '→ Product Archive（商品歸檔頁）',
+        '→ 改 SEO 標題 / 描述 / 其他 meta 設定',
+      ],
+      note: '/shop/ 跟個別商品（/product/xxx/）是不同設定區、別搞混',
+    }
+  }
+
+  // 3. 個別商品頁 /product/xxx/
+  if (pathname.startsWith('/product/') || pathname.match(/\/[^/]+\/$/) && pageType === 'product') {
+    return {
+      where: 'WooCommerce 商品頁',
+      plugin: 'Rank Math SEO（每個商品有獨立 meta box）',
+      steps: [
+        'WordPress 後台 → 商品 (Products) → 找到這個商品 → 編輯',
+        '滑到下方 Rank Math 區塊（在內容編輯器底下）',
+        '改 SEO 標題 / 描述 / Schema',
+      ],
+    }
+  }
+
+  // 4. 首頁 — 整個網站根
+  if (pathname === '/' || pathname === '') {
+    return {
+      where: '網站首頁',
+      plugin: 'Rank Math SEO',
+      steps: [
+        'WordPress 後台 → 設定 → 閱讀 → 看「首頁顯示」設成什麼',
+        'A) 如果是「最新文章」：到 Rank Math → 標題與中繼資料 → 首頁（Homepage） 改設定',
+        'B) 如果是「靜態頁面」：到 頁面 → 編輯那個指定的首頁、用該頁面的 Rank Math meta box 改',
+      ],
+    }
+  }
+
+  // 5. 文章頁 / blog post
+  if (pathname.includes('/blog/') || pathname.includes('/news/') || pageType === 'article') {
+    return {
+      where: 'WordPress 文章（Post）',
+      plugin: 'Rank Math SEO',
+      steps: [
+        'WordPress 後台 → 文章 → 全部文章 → 找到這篇 → 編輯',
+        '滑到下方 Rank Math 區塊（在內容編輯器底下）',
+        '改 SEO 標題 / 描述 / Schema',
+      ],
+    }
+  }
+
+  // 6. 預設：普通 page
+  return {
+    where: 'WordPress 頁面（Page）或文章',
+    plugin: 'Rank Math SEO',
+    steps: [
+      'WordPress 後台 → 頁面（或文章）→ 找到對應這個 URL 的項目 → 編輯',
+      '滑到下方 Rank Math 區塊',
+      '改 SEO 標題 / 描述',
+    ],
+    note: '找不到的話、看 WP 後台網址列；複製這個 URL 的最後一段 slug 去搜尋',
   }
 }
 

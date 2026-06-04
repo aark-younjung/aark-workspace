@@ -6,6 +6,33 @@
 
 ---
 
+### 2026-06-04（Q1+Q2+Bug B — worker UA / WP 編輯位置提示 / KML 黑名單）
+**3 個用戶痛點一次修：**
+
+1. **Q1：worker per-URL fetch 被 mod_security 擋** — `scanSingleUrl` 之前用簡單 `AIRadarBot/1.0` UA、跟 sitemap fix 同款問題、被 kimbo3899 (Apache + mod_security) 擋 406 → 部分 URL 標記 failed → 沒計入 finding count → 用戶以為「修了 10 篇 count 卻變多」。換 `ARTICLE_FETCH_HEADERS` Chrome 完整指紋（同 sitemap fix 設計）。
+2. **Q2：locations.kml 找不到** — 用戶問「這個 URL 在 WP 後台哪裡編輯」、教學沒寫進工具。`/locations.kml` 是 Rank Math Local SEO 自動產的 XML、不是給編輯的 page。
+3. **Bug B：/shop/ 找不到** — 用戶問同問題、`/shop/` 是 WooCommerce archive、不是普通 WP page、要去 Rank Math → Titles & Meta → WooCommerce → Product Archive 改。
+
+**改動：**
+- **[api/cron-bulk-scan.js](api/cron-bulk-scan.js) `scanSingleUrl`：**
+  - 加 `ARTICLE_FETCH_HEADERS` 常數（Chrome UA + Sec-Ch-Ua + Sec-Fetch-* 完整指紋）
+  - Content-type 檢查：非 `text/html` / `application/xhtml` → 早期回傳 `findings.page_type = 'non-html'`、空 problems、附 `wp_admin_hint` 說明這是外掛產 XML
+- **[api/cron-bulk-scan.js](api/cron-bulk-scan.js) `analyzeArticleHtml`：**
+  - 新增 `detectWpAdminHint(url, pageType)` helper、按 URL pattern 推 WP 編輯路徑
+  - 6 種 page context：外掛 XML/KML / WooCommerce shop / WooCommerce product / homepage / blog post / 預設 page
+  - 每種回傳 `{ where, plugin?, steps[], note? }`
+  - findings 新增 `wp_admin_hint` 欄位
+- **[api/bulk-scan.js](api/bulk-scan.js) `URL_BLACKLIST_PATTERNS`：**
+  - 加 `.kml / .xml / .json / .rss / .atom` 到黑名單、sitemap discovery 不再 queue 這類 URL
+- **[src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) `WpAdminHintBanner`：**
+  - 新元件、UrlRow 展開時、finding 列表上方顯示藍色 info banner
+  - 預設只顯示「WP 後台位置：xxx · 需要 Rank Math」一行 + 折疊按鈕
+  - 展開後列步驟（1, 2, 3...） + 琥珀色 note hint
+
+**反映訴求：用戶不只想知道「哪裡有問題」、還要知道「在 WP 後台怎麼找到那個地方」**。
+
+---
+
 ### 2026-06-04（Q2 — BulkScan「先聚焦 Top 20、修完再下一輪」工作流）
 **用戶觀察：200 篇文章一次給用戶看會把他壓垮、根本修不完。Top 10 文字現在 sticky 看得到 fix 但全部結果也是長串。**
 
