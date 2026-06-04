@@ -1274,9 +1274,29 @@ function WpAdminHintBanner({ hint }) {
         <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(59,130,246,0.15)' }}>
           <ol style={{ margin: 0, paddingLeft: 20, color: T.text }}>
             {(hint.steps || []).map((s, i) => (
-              <li key={i} style={{ marginBottom: 2 }}>{s}</li>
+              <li key={i} style={{ marginBottom: 2, whiteSpace: 'pre-line' }}>{s}</li>
             ))}
           </ol>
+          {/* 📖 完整教學連結 — 連到 /help/rank-math 速查表（B phase 建的） */}
+          {hint.help_link && (
+            <a
+              href={hint.help_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-block',
+                marginTop: 8,
+                padding: '4px 10px',
+                fontSize: 11,
+                fontWeight: 700,
+                background: 'rgba(139,92,246,0.15)',
+                color: '#c4b5fd',
+                border: '1px solid rgba(139,92,246,0.4)',
+                borderRadius: 6,
+                textDecoration: 'none',
+              }}
+            >{hint.help_link_label || '📖 完整教學'}</a>
+          )}
           {hint.note && (
             <div style={{
               marginTop: 6,

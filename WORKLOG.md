@@ -6,6 +6,34 @@
 
 ---
 
+### 2026-06-04（Rank Math 教學：inline 微教學 + /help/rank-math 速查頁）
+**用戶痛點：「告訴用戶該去 Rank Math 改 XX、但沒教 Rank Math 怎麼用」 → agency / 客戶斷層。**
+
+**A + B 兩階段：**
+
+**A — wp_admin_hint 內加 inline 微教學**（[api/cron-bulk-scan.js](api/cron-bulk-scan.js)）：
+- article / page / product 三種 hint 的 steps 末段加「📝 Rank Math meta box 常用欄位（教學）」
+- 每個欄位附「該填什麼 + 範例 + 注意事項」
+- 加 `help_link: '/help/rank-math'` + `help_link_label` 欄位、給前端渲染按鈕用
+- 前端 WpAdminHintBanner 多渲染一顆紫色「📖 看 Rank Math 完整速查表」按鈕、連到 B 速查頁
+
+**B — 新建 /help/rank-math 速查頁**（[src/pages/HelpRankMath.jsx](src/pages/HelpRankMath.jsx)）：
+- App.jsx 加路由 `/help/rank-math`
+- 5 大區塊 + 目錄錨點：
+  1. 怎麼找到 Rank Math meta box（找不到 = Screen Options 沒勾）
+  2. General 分頁 4 個欄位（Title / Description / Focus Keyword / Slug）含「該填什麼 + ✅ 好範例 + ❌ 不好範例 + 💡 重點」
+  3. Schema 分頁該選哪種類型（商品=Product / 文章=Article / 法律頁=None 等表格）
+  4. Advanced Robots Meta 各選項解釋（Index/NoIndex 等 6 個預設別動）
+  5. 全域設定（Titles & Meta）9 個常見開關（呼應你截圖的 8 個）
+- 暗色 V2 token 視覺、青綠雙漸層背景、Card 元件統一
+- Footer 引導：看完不懂用「📤 給客戶報告」匯出整段
+
+**效果：**
+- agency 從 finding hint 一鍵跳到 /help/rank-math、不需上 google
+- 客戶看到報告 + 速查頁、可以自己照表填、不用 agency 一個個解釋
+
+---
+
 ### 2026-06-04（主題級 H1 重複的「給一般人看的修法」）
 **用戶 push back：「父容器 class: pr-content」太技術、一般人看不懂、不知道找什麼東西、改什麼東西。**
 

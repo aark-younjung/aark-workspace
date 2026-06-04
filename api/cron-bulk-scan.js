@@ -783,14 +783,23 @@ function detectWpAdminHint(url, pageType) {
 
   // 3. 個別商品頁 /product/xxx/
   if (pathname.startsWith('/product/') || pathname.match(/\/[^/]+\/$/) && pageType === 'product') {
+    const slug = pathname.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
     return {
       where: 'WooCommerce 商品頁',
       plugin: 'Rank Math SEO（每個商品有獨立 meta box）',
       steps: [
-        'WordPress 後台 → 商品 (Products) → 找到這個商品 → 編輯',
-        '滑到下方 Rank Math 區塊（在內容編輯器底下）',
-        '改 SEO 標題 / 描述 / Schema',
+        '🔥 最快：登入 WP 後開這個商品前台 URL → admin bar 有「編輯商品」直達',
+        '備案：WordPress 後台 → 商品（Products）→ 全部商品 → 搜「' + slug + '」slug → 編輯',
+        '進到編輯頁後 → 滑到下方 Rank Math 區塊',
+        '📝 商品頁 Rank Math 必填欄位（教學）：',
+        '   • SEO Title：30-60 字、格式「商品名｜品牌」（如「Audi A4 CarPlay 升級｜金鉑先生」）',
+        '   • Description：70-155 字、含車型 / 適用範圍 / 服務承諾',
+        '   • Focus Keyword：用車型 + 升級項（如「Audi A4 CarPlay」）',
+        '   • Schema 分頁：選「Product」(WooCommerce 自動帶價格、庫存)',
+        '   • OG Image：上傳 1200x630 商品主圖（不傳的話用商品 featured image 代替）',
       ],
+      help_link: '/help/rank-math',
+      help_link_label: '📖 看 Rank Math 完整速查表',
     }
   }
 
@@ -817,8 +826,16 @@ function detectWpAdminHint(url, pageType) {
         '🔥 最快：先登入 WP、再開這篇文章前台網址 → 螢幕上方黑色 admin bar 會出現「編輯文章」連結、點下去直達編輯頁',
         '備案 A：WordPress 後台 → 文章 → 全部文章 → 右上「搜尋」框貼這篇的 slug 「' + slug + '」',
         '備案 B：在 WP 後台網址列直接打：你的網域/wp-admin/edit.php?post_type=post&s=' + slug,
-        '進到編輯頁後 → 滑到下方 Rank Math 區塊（在內容編輯器底下）→ 改 SEO 標題 / 描述 / Schema',
+        '進到編輯頁後 → 滑到下方 Rank Math 區塊（在內容編輯器底下）',
+        '📝 Rank Math meta box 內常用欄位（教學）：',
+        '   • SEO Title：30-60 字、含品牌名（如 "X 是什麼？完整指南｜你的品牌"）— Google 搜尋結果第一行',
+        '   • Description：70-155 字、用主動句、含主關鍵字 — Google 搜尋結果摘要',
+        '   • Focus Keyword：1 個主關鍵字（如「Audi 隱藏功能」）、Rank Math 用它算 SEO 分數',
+        '   • Schema 分頁：Article 類型一般選「Article」(部落格)、別用 NewsArticle 除非真是新聞稿',
+        '   • Robots Meta：預設 Index 就好、別亂打勾 NoIndex（會讓 Google 不收錄）',
       ],
+      help_link: '/help/rank-math',
+      help_link_label: '📖 看 Rank Math 完整速查表',
       note: '如果文章列表也搜尋不到、可能這篇其實是「頁面（Page）」而不是「文章（Post）」— 改到「頁面 → 全部頁面」一樣搜 slug',
     }
   }
@@ -832,8 +849,15 @@ function detectWpAdminHint(url, pageType) {
       '🔥 最快：先登入 WP、再開這個 URL 前台網址 → 螢幕上方黑色 admin bar 會出現「編輯文章 / 編輯頁面」連結、點下去直達',
       '備案 A：WordPress 後台 → 頁面 → 全部頁面 → 搜「' + slug + '」slug；找不到再到文章搜',
       '備案 B：在 WP 後台網址列直接打：你的網域/wp-admin/edit.php?post_type=page&s=' + slug,
-      '進到編輯頁後 → 滑到下方 Rank Math 區塊 → 改 SEO 標題 / 描述',
+      '進到編輯頁後 → 滑到下方 Rank Math 區塊',
+      '📝 Rank Math meta box 內常用欄位（教學）：',
+      '   • SEO Title：30-60 字、簡潔含品牌',
+      '   • Description：70-155 字、像「為什麼選你」的一句廣告詞',
+      '   • Robots Meta：預設、別動',
+      '   • Schema：頁面通常選「WebPage」或「None」',
     ],
+    help_link: '/help/rank-math',
+    help_link_label: '📖 看 Rank Math 完整速查表',
     note: 'admin bar 是「黑色長條、登入後出現在頁面最上方」— 如果沒看到、確認你 WP 後台「個人資料」設定有打開「顯示工具列」',
   }
 }

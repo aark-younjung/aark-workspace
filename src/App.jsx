@@ -37,6 +37,7 @@ import Terms from './pages/legal/Terms'
 import Privacy from './pages/legal/Privacy'
 import ConsumerRights from './pages/legal/ConsumerRights'
 import NotFound from './pages/NotFound'
+import HelpRankMath from './pages/HelpRankMath'
 
 const DARK_CIRCLES = [65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157]
 
@@ -102,6 +103,7 @@ function AppInner() {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/account" element={<Account />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/help/rank-math" element={<HelpRankMath />} />
         <Route path="/crawl-check" element={<CrawlCheck />} />
         <Route path="/schema-check" element={<SchemaCheck />} />
         <Route path="/content-audit" element={<ContentAudit />} />
