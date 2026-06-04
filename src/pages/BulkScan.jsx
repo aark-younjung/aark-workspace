@@ -1474,31 +1474,43 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
   })
   return (
     <div style={{ marginTop: 6, marginLeft: 20, position: 'relative' }}>
-      <button
-        onClick={onClick}
-        disabled={isFixed || isFixing}
-        style={{
-          padding: '6px 14px',
-          fontSize: 11,
-          fontWeight: 700,
-          background: isFixed
-            ? 'rgba(34,197,94,0.18)'
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <button
+          onClick={onClick}
+          disabled={isFixed || isFixing}
+          style={{
+            padding: '6px 14px',
+            fontSize: 11,
+            fontWeight: 700,
+            background: isFixed
+              ? 'rgba(34,197,94,0.18)'
+              : isFixing
+                ? 'rgba(255,255,255,0.08)'
+                : 'linear-gradient(135deg, rgba(20,184,166,0.18), rgba(20,184,166,0.08))',
+            color: isFixed ? '#86efac' : isFixing ? T.textMid : '#5eead4',
+            border: `1px solid ${isFixed ? 'rgba(34,197,94,0.5)' : 'rgba(20,184,166,0.4)'}`,
+            borderRadius: 6,
+            cursor: (isFixed || isFixing) ? 'default' : 'pointer',
+            fontFamily: T.font,
+          }}
+        >
+          {isFixed
+            ? '✅ 已記錄修復 +5 XP'
             : isFixing
-              ? 'rgba(255,255,255,0.08)'
-              : 'linear-gradient(135deg, rgba(20,184,166,0.18), rgba(20,184,166,0.08))',
-          color: isFixed ? '#86efac' : isFixing ? T.textMid : '#5eead4',
-          border: `1px solid ${isFixed ? 'rgba(34,197,94,0.5)' : 'rgba(20,184,166,0.4)'}`,
-          borderRadius: 6,
-          cursor: (isFixed || isFixing) ? 'default' : 'pointer',
-          fontFamily: T.font,
-        }}
-      >
-        {isFixed
-          ? '✅ 已記錄修復 +5 XP'
-          : isFixing
-            ? '⏳ 記錄中...'
-            : '✓ 我已修好 → 記錄修復'}
-      </button>
+              ? '⏳ 記錄中...'
+              : '✓ 我已修好 → 記錄修復'}
+        </button>
+        {/* 提示：避免用戶誤以為「按下去 = 自動驗證」、特別是 multiple_h1 這種「修了部分」case */}
+        <span style={{
+          fontSize: 10,
+          color: T.textLow,
+          fontStyle: 'italic',
+        }}>
+          {isFixed
+            ? '🔄 下次掃描才會檢查實際狀態'
+            : '💡 只記錄事件 +5 XP、重掃才會驗證'}
+        </span>
+      </div>
       {/* +5 XP 浮起動畫 + 12 顆綠粒子放射（C1） */}
       {showPop && (
         <>
