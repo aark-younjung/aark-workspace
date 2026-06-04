@@ -760,19 +760,24 @@ function detectWpAdminHint(url, pageType) {
     }
   }
 
-  // 2. WooCommerce 商店列表頁 /shop/ — 沒有對應 WP page 可編輯
+  // 2. WooCommerce 商店列表頁 /shop/ — 其實是 WP page、只是被 WooCommerce 用來當商店首頁
   if (pathname === '/shop/' || pathname === '/shop' || pathname.startsWith('/product-category/')) {
+    const isCategory = pathname.startsWith('/product-category/')
     return {
-      where: 'WooCommerce 商店列表頁（archive page、不是普通 WP page）',
+      where: isCategory ? 'WooCommerce 商品分類頁' : 'WooCommerce 商店列表頁（其實對應 WP 一個 page）',
       plugin: 'Rank Math SEO',
-      steps: [
-        'WordPress 後台 → Rank Math SEO',
-        '→ 標題與中繼資料（Titles & Meta）',
-        '→ WooCommerce',
-        '→ Product Archive（商品歸檔頁）',
-        '→ 改 SEO 標題 / 描述 / 其他 meta 設定',
+      steps: isCategory ? [
+        '🔥 最快：先登入 WP、再開這個 URL → 螢幕上方黑色 admin bar 有「編輯分類」連結、點下去',
+        '備案：WordPress 後台 → 商品 → 分類 → 找到對應的分類 → 編輯 → 滑下去找 Rank Math 區塊',
+        '改 SEO 標題 / 描述',
+      ] : [
+        '🔥 最快：先登入 WP、再開 https://你的網域/shop/ → 螢幕上方 admin bar 會出現「編輯頁面」、點下去直達',
+        '備案 A：WordPress 後台 → 商品（Products） → 設定 → 進階（Advanced） → 頁面設定 → 看「商店頁面」設成哪一個 WP page',
+        '備案 B：WordPress 後台 → 頁面（Pages）→ 全部頁面 → 搜尋「shop」或「商店」→ 編輯那個頁面',
+        '進到編輯頁後 → 滑到下方 Rank Math 區塊 → 改 SEO 標題 / 描述',
+        '備案 C（外掛模板層）：WP 後台 → Rank Math → 控制台（Dashboard）→ 確認 WooCommerce 模組已啟用 → 回 Titles & Meta、可能會多出 "Products" 或 "Misc Pages" 子分頁，shop page 設定可能在裡面（不同版本位置不一）',
       ],
-      note: '/shop/ 跟個別商品（/product/xxx/）是不同設定區、別搞混',
+      note: '/shop/ 本質是一個 WP page（WooCommerce 指定它當商店首頁）。最直接的方法 = 用 admin bar 或在「頁面」內找它、直接編輯。Rank Math 的 Titles & Meta 進去後位置因版本而異、走 page 編輯路徑最穩',
     }
   }
 
