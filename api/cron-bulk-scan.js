@@ -225,6 +225,13 @@ async function scanSingleUrl({ url }) {
 function detectPageType(schemaTypes, url) {
   const urlLower = (url || '').toLowerCase()
 
+  // 法律/功能頁面 — 不適用 SEO 標題優化規則（短標題本來就 OK）
+  // 例：/privacy-policy/、/terms/、/cookie-policy/、/refund/、/disclaimer/
+  // 也涵蓋 WooCommerce 結帳/帳號 functional 頁面
+  if (/\/(privacy[-_]?policy|privacy|terms|terms[-_]?of[-_]?service|cookie[-_]?policy|refund[-_]?policy|disclaimer|gdpr|legal)\/?$/i.test(urlLower)) return 'legal'
+  if (/\/(隱私|服務條款|退款|免責)/i.test(urlLower)) return 'legal'
+  if (/\/(cart|checkout|my-account|account|wishlist|lost-password)\/?/i.test(urlLower)) return 'functional'
+
   // URL pattern matching（最強訊號）
   if (/\/(product|products|shop|store|item|goods)\//i.test(urlLower)) return 'product'
   if (/\/(blog|article|news|post|posts)\//i.test(urlLower)) return 'article'
@@ -688,6 +695,19 @@ function analyzeArticleHtml(html, url) {
     })
   }
 
+  // 法律/功能性頁面（隱私政策、服務條款、結帳頁等）不適用 SEO 內容優化規則
+  // 「標題只有 13 字」對「隱私權政策」這種頁面是合理的、不該被報為問題
+  let filteredProblems = problems
+  if (pageType === 'legal' || pageType === 'functional') {
+    const SKIP_FOR_LEGAL_FUNCTIONAL = new Set([
+      'short_meta_title', 'long_meta_title',
+      'short_meta_desc', 'missing_meta_desc', 'long_meta_desc',
+      'thin_content', 'short_content',
+      'no_article_schema', 'no_product_schema',
+    ])
+    filteredProblems = problems.filter(p => !SKIP_FOR_LEGAL_FUNCTIONAL.has(p.id))
+  }
+
   return {
     has_h1: hasH1, h1_count: h1Count, empty_h1_count: emptyH1Count,
     has_meta_title: hasMetaTitle, meta_title_len: metaTitleLen,
@@ -696,12 +716,12 @@ function analyzeArticleHtml(html, url) {
     schema_types: schemaTypes,
     has_article_schema: hasArticleSchema,
     has_product_schema: hasProductSchema,
-    page_type: pageType,    // article / product / service / local-business / homepage / unknown
+    page_type: pageType,    // article / product / service / local-business / homepage / legal / functional / unknown
     word_count: wordCount,
     has_canonical: hasCanonical,
     // 給用戶「這個 URL 在 WP 後台哪裡編輯」的具體指引（如 /shop/ vs /product/ vs /locations.kml 不同）
     wp_admin_hint: detectWpAdminHint(url, pageType),
-    problems: tagFixOwners(problems),  // 每個 problem 標 fix_owner（給 agency 區分權限）
+    problems: tagFixOwners(filteredProblems),  // 每個 problem 標 fix_owner（給 agency 區分權限）
   }
 }
 
@@ -711,6 +731,20 @@ function analyzeArticleHtml(html, url) {
 function detectWpAdminHint(url, pageType) {
   let pathname = ''
   try { pathname = new URL(url).pathname.toLowerCase() } catch { return null }
+
+  // 0. 法律/功能頁面 — 隱私權、條款、結帳等、不適用 SEO 內容規則
+  if (pageType === 'legal' || pageType === 'functional') {
+    return {
+      where: pageType === 'legal' ? '法律頁面（隱私權政策、服務條款等）' : '功能性頁面（結帳、購物車、帳號等 WooCommerce 系統頁）',
+      plugin: 'Rank Math SEO',
+      steps: [
+        'WordPress 後台 → 頁面（Pages）→ 找這個頁面 → 編輯',
+        '法律 / 功能性頁面不需要 SEO 標題優化、短標題（如「隱私權政策」）反而清楚明確',
+        '我們已自動跳過不適用的 finding（標題太短、描述不夠、內容過少等）',
+      ],
+      note: '這類頁面的目的是法律宣示 / 系統功能、不是吸引搜尋流量。Google 不會懲罰法律頁標題短',
+    }
+  }
 
   // 1. 外掛產出的 XML / KML — Rank Math Local SEO、不是給用戶編輯的
   if (/\.(kml|xml|json|rss)$/i.test(pathname) || pathname.includes('sitemap')) {
