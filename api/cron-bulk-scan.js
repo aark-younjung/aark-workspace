@@ -376,12 +376,39 @@ function analyzeArticleHtml(html, url) {
           // 三層 reason：跨容器（主題級、最棘手）/ 商品頁雙描述 / 一般頁響應式
           if (group.cross_container) {
             // 找出非標準 WC 的那個 class 名 — 多半就是「主題自訂渲染區塊」的元兇
-            const stdSet = new Set()
-            ;['woocommerce-Tabs-panel--description', 'entry-content', 'wc-tab', 'tab-content'].forEach(s => stdSet.add(s))
-            const customClass = group.parent_classes.find(c => !['woocommerce-Tabs-panel--description', 'entry-content', 'wc-tab', 'tab-content'].some(s => c.includes(s)))
-            d.reason = customClass
-              ? `主題自訂區塊「${customClass.slice(0, 60)}」把描述渲染了 2 次（不是商品簡述問題）— 需要主題開發者改 PHP 或用 Code Snippets 外掛 remove_action`
-              : '主題在多個位置渲染了同份內容 — 需要主題層修復、不是後台欄位能解決'
+            const STD_WC = ['woocommerce-Tabs-panel--description', 'entry-content', 'wc-tab', 'tab-content']
+            const customClass = group.parent_classes.find(c => !STD_WC.some(s => c.includes(s)))
+            // 給一般人讀的 plain-language 說明（不講 class、不講 PHP）
+            d.reason = '你的網站把同一段商品描述「顯示了兩次」— 不是你寫了兩份、而是網站主題本身在頁面上方又自動塞了一份'
+            // 給工程師看的技術細節 + 可複製訊息
+            d.fix_guide = {
+              symptom_human: '同一段內容（含 H1 + YouTube + 段落）在商品頁出現兩次。第一次在商品圖下方某個自訂區塊、第二次在「描述」分頁。',
+              how_to_verify: [
+                '用無痕視窗打開商品頁（避開瀏覽器 cache）',
+                '滑到商品圖下方、看是不是出現一段含 YouTube 跟你寫的描述',
+                '繼續往下滑到「描述」分頁、看是不是同一份內容再出現一次',
+                '兩處都看到 = 確認是主題在重複渲染',
+              ],
+              fix_options: [
+                {
+                  option: 'A. 不修（接受）',
+                  effort: '0 分鐘',
+                  detail: 'SEO 影響輕微（不是致命因素）。商業判斷：如果這個客戶 SEO 沒卡死、可以暫不處理',
+                },
+                {
+                  option: 'B. 請主題開發者調整（推薦）',
+                  effort: '~30 分鐘工時',
+                  detail: '找原本做這個 WordPress 主題的工程師、請他「移除商品摘要區塊（pr-content）的重複渲染」。如果是用付費主題、聯絡主題官方客服',
+                },
+                {
+                  option: 'C. 自己裝 Code Snippets 外掛 + 貼 PHP',
+                  effort: '~10 分鐘（需要對 PHP 不害怕）',
+                  detail: '裝免費外掛「Code Snippets」→ 加新 snippet → 貼下面這段：\n\nadd_action(\'init\', function() {\n  remove_action(\'woocommerce_after_single_product_summary\', \'pr_render_content\', 10);\n}); \n\n注意：第 2 行的「pr_render_content」是猜的、實際 hook 名要靠開發者確認。建議搭配 B 比較保險',
+                },
+              ],
+              // 給技術員 / 客服一段可直接複製貼上的訊息
+              ticket_for_tech: `網站 ${url || '[URL]'} 的商品頁有「主題層描述重複渲染」問題。\n\n症狀：商品描述在頁面上出現兩次 — 一次在商品圖下方主題自訂區塊（CSS class: ${customClass || '未知'}）、一次在標準 WooCommerce 描述 tab。\n\n影響：SEO 上同一份 H1 被輸出兩次、Google 偵測為重複內容、不利搜尋排名。\n\n請協助：移除主題自訂區塊那次描述渲染、保留標準 WooCommerce 描述 tab 即可。如果不確定如何下手、應該是 \`woocommerce_after_single_product_summary\` 這個 hook 上掛了重複的 callback。`,
+            }
           } else if (url && /\/product\//i.test(url)) {
             d.reason = '跟其他 H1 內容相同 → 通常是 WooCommerce「商品簡述」+「商品說明」兩個欄位都貼了同內容、清空商品簡述即可'
           } else {

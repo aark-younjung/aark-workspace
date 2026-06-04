@@ -648,7 +648,9 @@ function UrlRow({ result, websiteId, userId }) {
 // multi_h1 警告展開時的每個 H1 詳情卡 — 顯示內容預覽 + 分類 chip + 建議動作說明
 // detail 結構：{ index, text, full_length, kind: 'empty'|'sentence'|'short', suggested_action: 'keep'|'change_to_p'|'change_to_h2'|'delete', reason }
 function H1DetailCard({ detail }) {
-  const { index, text, full_length, kind, suggested_action, reason, is_duplicate, parent_class, cross_container_duplicate } = detail
+  const { index, text, full_length, kind, suggested_action, reason, is_duplicate, parent_class, cross_container_duplicate, fix_guide } = detail
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [ticketCopied, setTicketCopied] = useState(false)
   // 不同建議動作對應不同顏色：保留=綠、改 h2=藍、改 p=粉、刪除=橘
   const actionStyle = {
     keep:          { label: '✅ 保留',         color: '#86efac', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.35)' },
@@ -705,17 +707,123 @@ function H1DetailCard({ detail }) {
           {text.length > 120 ? text.slice(0, 120) + '…' : text}
         </div>
       )}
-      {/* 父容器 class — 給用戶定位這個 H1 在 HTML 哪一段（debug + 主題級問題追蹤用）*/}
-      {parent_class && (
-        <div style={{
-          fontSize: 10, color: T.textLow, marginBottom: 4,
-          fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-        }}>
-          父容器 class：<code style={{ color: '#a7f3d0' }}>{parent_class.length > 80 ? parent_class.slice(0, 80) + '…' : parent_class}</code>
+      {/* 原因說明（plain language）*/}
+      <div style={{ color: T.textLow, fontSize: 10.5, marginBottom: fix_guide ? 6 : 0 }}>{reason}</div>
+
+      {/* 主題級重複時、給「如何處理」可展開區塊 — 4 段：症狀 / 驗證 / 修法 / 給工程師的訊息 */}
+      {fix_guide && (
+        <div style={{ marginTop: 6, padding: '8px 10px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 4 }}>
+          <button
+            onClick={() => setGuideOpen(v => !v)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: '#fca5a5', fontSize: 11, fontWeight: 700, fontFamily: T.font,
+            }}
+          >
+            <span>🔧 如何處理（找什麼、改什麼、怎麼跟工程師講）</span>
+            <span style={{ fontSize: 10 }}>{guideOpen ? '▴' : '▾'}</span>
+          </button>
+
+          {guideOpen && (
+            <div style={{ marginTop: 8, fontSize: 11, color: T.textMid, lineHeight: 1.65 }}>
+              {/* 1. 症狀 */}
+              <div style={{ marginBottom: 8 }}>
+                <strong style={{ color: '#fca5a5' }}>📝 症狀說明：</strong>
+                <div style={{ marginTop: 2 }}>{fix_guide.symptom_human}</div>
+              </div>
+
+              {/* 2. 怎麼確認 */}
+              {fix_guide.how_to_verify && (
+                <div style={{ marginBottom: 8 }}>
+                  <strong style={{ color: '#86efac' }}>🔍 怎麼確認真的有這個問題：</strong>
+                  <ol style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                    {fix_guide.how_to_verify.map((s, i) => <li key={i} style={{ marginBottom: 2 }}>{s}</li>)}
+                  </ol>
+                </div>
+              )}
+
+              {/* 3. 三種修法 */}
+              {fix_guide.fix_options && (
+                <div style={{ marginBottom: 8 }}>
+                  <strong style={{ color: '#fcd34d' }}>🛠️ 三種修法（由簡到難）：</strong>
+                  <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {fix_guide.fix_options.map((opt, i) => (
+                      <div key={i} style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.25)', borderRadius: 4 }}>
+                        <div style={{ fontWeight: 700, color: T.text, marginBottom: 2 }}>
+                          {opt.option}
+                          {opt.effort && <span style={{ marginLeft: 8, color: T.textLow, fontSize: 10, fontWeight: 400 }}>({opt.effort})</span>}
+                        </div>
+                        <div style={{ whiteSpace: 'pre-line', color: T.textMid, fontSize: 10.5 }}>{opt.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. 給技術員的訊息（可一鍵複製）*/}
+              {fix_guide.ticket_for_tech && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <strong style={{ color: '#c4b5fd' }}>💬 給工程師 / 客服的訊息（直接複製貼到 LINE / Email）：</strong>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(fix_guide.ticket_for_tech).catch(() => {})
+                        setTicketCopied(true)
+                        setTimeout(() => setTicketCopied(false), 1800)
+                      }}
+                      style={{
+                        padding: '2px 8px', fontSize: 10, fontWeight: 700,
+                        background: ticketCopied ? 'rgba(34,197,94,0.2)' : 'rgba(139,92,246,0.15)',
+                        color: ticketCopied ? '#86efac' : '#c4b5fd',
+                        border: `1px solid ${ticketCopied ? 'rgba(34,197,94,0.5)' : 'rgba(139,92,246,0.4)'}`,
+                        borderRadius: 4, cursor: 'pointer', fontFamily: T.font,
+                      }}
+                    >{ticketCopied ? '✅ 已複製' : '📋 複製訊息'}</button>
+                  </div>
+                  <div style={{
+                    padding: '6px 10px',
+                    background: 'rgba(0,0,0,0.35)',
+                    borderRadius: 4,
+                    fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+                    fontSize: 10.5,
+                    color: '#e2e8f0',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}>{fix_guide.ticket_for_tech}</div>
+                </div>
+              )}
+
+              {/* 5. 工程師專用 — debug 用的 parent_class 細節（折疊在最下方）*/}
+              {parent_class && (
+                <details style={{ marginTop: 8 }}>
+                  <summary style={{ cursor: 'pointer', color: T.textLow, fontSize: 10 }}>
+                    🔬 工程師專用：技術細節（父容器 class）
+                  </summary>
+                  <div style={{ marginTop: 4, fontSize: 10, color: T.textLow, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
+                    parent class: <code style={{ color: '#a7f3d0' }}>{parent_class.length > 100 ? parent_class.slice(0, 100) + '…' : parent_class}</code>
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
         </div>
       )}
-      {/* 原因說明 */}
-      <div style={{ color: T.textLow, fontSize: 10.5 }}>{reason}</div>
+
+      {/* 工程師專用 parent_class（非主題級重複 H1 才在 root 層級顯示）*/}
+      {!fix_guide && parent_class && (
+        <details style={{ marginTop: 4 }}>
+          <summary style={{ cursor: 'pointer', color: T.textLow, fontSize: 10 }}>
+            🔬 工程師專用：父容器 class
+          </summary>
+          <div style={{
+            marginTop: 2, fontSize: 10, color: T.textLow,
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+          }}>
+            <code style={{ color: '#a7f3d0' }}>{parent_class.length > 100 ? parent_class.slice(0, 100) + '…' : parent_class}</code>
+          </div>
+        </details>
+      )}
     </div>
   )
 }

@@ -6,6 +6,38 @@
 
 ---
 
+### 2026-06-04（主題級 H1 重複的「給一般人看的修法」）
+**用戶 push back：「父容器 class: pr-content」太技術、一般人看不懂、不知道找什麼東西、改什麼東西。**
+
+確實、之前的訊息太工程師導向。重寫成 4 段任何人都能照做的步驟：
+
+**[api/cron-bulk-scan.js](api/cron-bulk-scan.js) cross_container 重複時、附帶 `fix_guide` 物件：**
+```js
+{
+  symptom_human: '同一段內容在商品頁出現兩次。一次在商品圖下方某個自訂區塊、一次在描述分頁。',
+  how_to_verify: [4 步具體驗證流程],
+  fix_options: [
+    'A. 不修（接受）— 0 分鐘',
+    'B. 請主題開發者調整 — ~30 分鐘工時',
+    'C. 自己裝 Code Snippets 外掛 + 貼 PHP — ~10 分鐘',
+  ],
+  ticket_for_tech: '可直接複製貼到 LINE/Email 給工程師的訊息（含 URL + 症狀 + 影響 + 建議解法）'
+}
+```
+
+**[src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) H1DetailCard：**
+- 主 reason 變 plain language：「你的網站把同一段商品描述顯示了兩次 — 不是你寫了兩份、而是網站主題自動塞的」
+- 「🔧 如何處理」紅色 collapsible：點開有 4 段（症狀 / 驗證 / 3 修法 / 給工程師的訊息）
+- 給工程師的訊息有「📋 複製訊息」按鈕、按下去進剪貼簿
+- 父容器 class 收到最底下的 `<details>` 內、`🔬 工程師專用`、一般用戶不會看到
+
+**效果：**
+- 一般用戶展開「如何處理」、知道：哪個區塊有問題 + 怎麼確認 + 自己／工程師處理該怎麼下手
+- agency 把「給工程師的訊息」一鍵複製、直接傳 LINE 給客戶的維運工程師、不用自己翻譯技術細節
+- 工程師需要技術細節時、展開最底下 `🔬 工程師專用` 看 parent_class
+
+---
+
 ### 2026-06-04（主題級 H1 重複偵測 — parent_class + cross_container）
 **用戶 case：kimbo3899 skoda-mib-chinese 商品頁、改 H1→H2、清完快取、線上還是 3 個 H1。**
 
