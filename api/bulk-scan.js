@@ -312,6 +312,36 @@ const SITEMAP_FETCH_HEADERS = {
   'Upgrade-Insecure-Requests': '1',
 }
 
+// 多輪 UA fallback — 對付 Vercel function 連續打多次後被 mod_security rate-limit
+// 第一輪被擋就換 Googlebot（多數 SEO-friendly 站歡迎）、再不行換 Bingbot
+const UA_FALLBACK_CHAIN = [
+  { name: 'Chrome',    ua: SITEMAP_FETCH_HEADERS['User-Agent'], headers: SITEMAP_FETCH_HEADERS },
+  { name: 'Googlebot', ua: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'Accept': 'text/xml,application/xml,*/*' } },
+  { name: 'Bingbot',   ua: 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',  headers: { 'User-Agent': 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',  'Accept': 'text/xml,application/xml,*/*' } },
+]
+
+// 抓 URL、若被擋（4xx/5xx）自動換下一個 UA 重試、最多 3 輪
+async function fetchWithUaFallback(url, signal) {
+  let lastError = null
+  for (const { name, headers } of UA_FALLBACK_CHAIN) {
+    try {
+      const r = await fetch(url, { headers, signal })
+      if (r.ok) return r
+      // anti-bot 常見回應：406 / 403 / 429 → 換下一個 UA
+      if ([406, 403, 429, 503].includes(r.status)) {
+        lastError = `${name}: HTTP ${r.status}`
+        continue
+      }
+      // 其他 status code（如 404 真的沒檔案）直接返回、不重試
+      return r
+    } catch (err) {
+      lastError = `${name}: ${err.message}`
+      // network error / timeout、繼續試下一個 UA
+    }
+  }
+  throw new Error(`All UA attempts failed: ${lastError}`)
+}
+
 async function discoverSitemapUrls(siteUrl) {
   const origin = new URL(siteUrl).origin   // e.g. https://kimbo3899.com.tw
   const candidates = ['/sitemap_index.xml', '/wp-sitemap.xml', '/sitemap.xml']
@@ -320,10 +350,7 @@ async function discoverSitemapUrls(siteUrl) {
   let foundAt = null
   for (const path of candidates) {
     try {
-      const r = await fetch(origin + path, {
-        headers: SITEMAP_FETCH_HEADERS,
-        signal: AbortSignal.timeout(15000),
-      })
+      const r = await fetchWithUaFallback(origin + path, AbortSignal.timeout(15000))
       if (r.ok) {
         const text = await r.text()
         // 簡易驗證確實是 XML 而非 404 HTML（有些主機 404 也回 200）
@@ -351,10 +378,7 @@ async function discoverSitemapUrls(siteUrl) {
     }
     for (const batch of batches) {
       const results = await Promise.allSettled(batch.map(async (url) => {
-        const r = await fetch(url, {
-          headers: SITEMAP_FETCH_HEADERS,
-          signal: AbortSignal.timeout(15000),
-        })
+        const r = await fetchWithUaFallback(url, AbortSignal.timeout(15000))
         if (!r.ok) return []
         const sub = await r.text()
         return extractUrlsWithMeta(sub)

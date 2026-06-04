@@ -173,13 +173,42 @@ const ARTICLE_FETCH_HEADERS = {
   'Upgrade-Insecure-Requests': '1',
 }
 
+// 多輪 UA fallback — 同 bulk-scan.js 的 fetchWithUaFallback
+// Vercel function 連續打多次後可能被 mod_security rate-limit、要換 UA 重試
+const UA_FALLBACK_CHAIN_ARTICLE = [
+  { name: 'Chrome',    headers: ARTICLE_FETCH_HEADERS },
+  { name: 'Googlebot', headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', 'Accept': 'text/html,*/*' } },
+  { name: 'Bingbot',   headers: { 'User-Agent': 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',  'Accept': 'text/html,*/*' } },
+]
+
+async function fetchArticleWithFallback(url) {
+  let lastError = null
+  for (const { name, headers } of UA_FALLBACK_CHAIN_ARTICLE) {
+    try {
+      const r = await fetch(url, {
+        headers,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        redirect: 'follow',
+      })
+      if (r.ok) return r
+      // anti-bot 常見回應 → 換 UA
+      if ([406, 403, 429, 503].includes(r.status)) {
+        lastError = `${name}: HTTP ${r.status}`
+        continue
+      }
+      // 其他 status（如 404）直接返回
+      return r
+    } catch (err) {
+      lastError = `${name}: ${err.message}`
+    }
+  }
+  // 所有 UA 都失敗、最後 throw 給上層
+  throw new Error(`所有 UA 嘗試都失敗：${lastError}`)
+}
+
 async function scanSingleUrl({ url }) {
   try {
-    const r = await fetch(url, {
-      headers: ARTICLE_FETCH_HEADERS,
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      redirect: 'follow',
-    })
+    const r = await fetchArticleWithFallback(url)
 
     if (!r.ok) {
       return { success: false, httpStatus: r.status, error: `HTTP ${r.status}`, findings: null }
