@@ -26,7 +26,12 @@ import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
+import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
+import { analyzeAEO } from '../services/aeoAnalyzer'
+import { analyzeGEO } from '../services/geoAnalyzer'
+import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { useGamification } from '../hooks/useGamification'
+import { recordFixEvent } from '../lib/fixEvents'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -57,12 +62,116 @@ const FACE_BORDER = {
 
 // B2 上線後 gamification 從 useGamification hook 即時計算、不再用 MOCK
 
-// ─── B1 假資料：今日任務（B2 phase 會接修復建議引擎產出真實 quest）───
-const MOCK_QUESTS = [
-  { id: 'q1', face: 'aeo', icon: '🤖', title: '補 FAQ Schema', desc: '14 篇文章缺 FAQ Schema、AI 引用率會提升 ~15%', est: 8, mins: 25, done: false },
-  { id: 'q2', face: 'content', icon: '📝', title: '解鎖 2 篇句子型 H1', desc: '改 <h1> 為 <h2>、避免 SEO 標題權重稀釋', est: 4, mins: 10, done: false },
-  { id: 'q3', face: 'eeat', icon: '⭐', title: '加作者署名', desc: '8 篇文章缺作者資訊、E-E-A-T 分數會 +6', est: 6, mins: 15, done: true },
-]
+// Gap 2（2026-06-05）— Action Center 接真資料：從 4 大 audit 失敗項萃取 quest、按優先級排 top 3
+// 之前是 MOCK_QUESTS 寫死 3 個；現在從 audit 真實結果動態產出
+//
+// quest 結構：{ id, face, icon, title, desc, est, mins, link, done, priority }
+//   priority 越高越優先（10 為最高、1 為最低）— 用於 sort
+//   done 目前一律 false（fix_events 表追 BulkScan finding 不追 audit check、之後可串）
+function generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit, websiteId }) {
+  const quests = []
+
+  // ── SEO（meta_tags / h1_structure / alt_tags / mobile / speed 是 JSONB、各自有 passed flag）
+  if (seoAudit) {
+    if (seoAudit.meta_tags && seoAudit.meta_tags.passed === false) {
+      quests.push({ id: 'seo-meta', face: 'seo', priority: 9, icon: '🏷️',
+        title: '修 Meta 標籤', desc: 'Title / Description 缺漏或不在建議字數內、Google SERP 顯示會殘缺',
+        est: 8, mins: 15, link: `/seo-audit/${websiteId}`, done: false })
+    }
+    if (seoAudit.h1_structure && seoAudit.h1_structure.passed === false) {
+      quests.push({ id: 'seo-h1', face: 'seo', priority: 8, icon: '📰',
+        title: '修 H1 結構', desc: '頁面缺 H1 或多個 H1 — SEO 權重會被稀釋',
+        est: 6, mins: 10, link: `/seo-audit/${websiteId}`, done: false })
+    }
+    if (seoAudit.alt_tags && seoAudit.alt_tags.passed === false) {
+      quests.push({ id: 'seo-alt', face: 'seo', priority: 5, icon: '🖼️',
+        title: '補圖片 alt 文字', desc: '無障礙 + SEO 兼顧、AI 也吃 alt 來理解圖片',
+        est: 4, mins: 20, link: `/seo-audit/${websiteId}`, done: false })
+    }
+    if (seoAudit.bot_accessibility && seoAudit.bot_accessibility.passed === false) {
+      quests.push({ id: 'seo-bot', face: 'seo', priority: 10, icon: '🚦',
+        title: 'Cloudflare 在擋 ChatGPT', desc: 'AI 爬蟲根本進不來、修這個分數會跳很多',
+        est: 12, mins: 5, link: `/seo-audit/${websiteId}`, done: false })
+    }
+  }
+
+  // ── AEO（boolean columns: json_ld / faq_schema / canonical / breadcrumbs / open_graph / question_headings）
+  if (aeoAudit) {
+    if (!aeoAudit.json_ld) {
+      quests.push({ id: 'aeo-jsonld', face: 'aeo', priority: 10, icon: '📜',
+        title: '加 JSON-LD 結構化資料', desc: 'AI 沒辦法理解你的頁面結構、修這個 AI 引用率會大幅提升',
+        est: 12, mins: 30, link: `/aeo-audit/${websiteId}`, done: false })
+    }
+    if (!aeoAudit.faq_schema) {
+      quests.push({ id: 'aeo-faq', face: 'aeo', priority: 9, icon: '🤖',
+        title: '補 FAQ Schema', desc: aeoAudit.faq_visual
+          ? '頁面有 FAQ 但缺 schema、AI 看不到你的問答'
+          : 'AI 引用率會提升 ~15%、特別適合教學 / 服務內容',
+        est: 8, mins: 25, link: `/aeo-audit/${websiteId}`, done: false })
+    }
+    if (!aeoAudit.open_graph) {
+      quests.push({ id: 'aeo-og', face: 'aeo', priority: 6, icon: '🔗',
+        title: '補 Open Graph 標籤', desc: 'FB / LINE / X 分享預覽會空白、social CTR 會差',
+        est: 5, mins: 15, link: `/aeo-audit/${websiteId}`, done: false })
+    }
+    if (!aeoAudit.canonical) {
+      quests.push({ id: 'aeo-canon', face: 'aeo', priority: 4, icon: '🔒',
+        title: '加 Canonical 標籤', desc: '避免重複內容懲罰、告訴 AI 引用哪個 URL',
+        est: 3, mins: 10, link: `/aeo-audit/${websiteId}`, done: false })
+    }
+  }
+
+  // ── GEO（boolean: llms_txt / robots_ai / sitemap / json_ld_citation 等）
+  if (geoAudit) {
+    if (!geoAudit.llms_txt) {
+      quests.push({ id: 'geo-llms', face: 'geo', priority: 9, icon: '🤖',
+        title: '建 llms.txt', desc: '告訴 ChatGPT / Claude 怎麼讀你的網站、LLMO 必備',
+        est: 6, mins: 10, link: `/geo-audit/${websiteId}`, done: false })
+    }
+    if (!geoAudit.robots_ai) {
+      quests.push({ id: 'geo-robots', face: 'geo', priority: 10, icon: '🚦',
+        title: '檢查 robots.txt 沒擋 AI 爬蟲', desc: 'GPTBot / Google-Extended 被擋的話 AI 完全找不到你',
+        est: 10, mins: 5, link: `/geo-audit/${websiteId}`, done: false })
+    }
+    if (!geoAudit.sitemap) {
+      quests.push({ id: 'geo-sitemap', face: 'geo', priority: 7, icon: '🗺️',
+        title: '建 sitemap.xml', desc: '幫 AI 爬蟲快速發現所有頁面',
+        est: 5, mins: 5, link: `/geo-audit/${websiteId}`, done: false })
+    }
+    if (!geoAudit.json_ld_citation) {
+      quests.push({ id: 'geo-citation', face: 'geo', priority: 7, icon: '📚',
+        title: '補 JSON-LD 引用訊號', desc: '加 author / publisher / datePublished、AI 判斷可信度',
+        est: 6, mins: 20, link: `/geo-audit/${websiteId}`, done: false })
+    }
+  }
+
+  // ── E-E-A-T（boolean: author_info / about_page / contact_page / privacy_policy / organization_schema / 等）
+  if (eeatAudit) {
+    if (!eeatAudit.organization_schema) {
+      quests.push({ id: 'eeat-orgschema', face: 'eeat', priority: 8, icon: '🏢',
+        title: '加 Organization Schema', desc: '告訴 Google 你是誰、品牌可信度核心訊號',
+        est: 7, mins: 15, link: `/eeat-audit/${websiteId}`, done: false })
+    }
+    if (!eeatAudit.author_info) {
+      quests.push({ id: 'eeat-author', face: 'eeat', priority: 6, icon: '⭐',
+        title: '加作者署名', desc: '文章缺作者資訊、E-E-A-T 分數會 +6、AI 判斷你可信',
+        est: 6, mins: 15, link: `/eeat-audit/${websiteId}`, done: false })
+    }
+    if (!eeatAudit.about_page) {
+      quests.push({ id: 'eeat-about', face: 'eeat', priority: 5, icon: '👥',
+        title: '建關於我們頁', desc: 'AI 找不到「你是誰」就不會推薦你',
+        est: 5, mins: 30, link: `/eeat-audit/${websiteId}`, done: false })
+    }
+    if (!eeatAudit.privacy_policy) {
+      quests.push({ id: 'eeat-privacy', face: 'eeat', priority: 4, icon: '🔐',
+        title: '加隱私權政策', desc: 'AI 看你有沒有合規意識的訊號',
+        est: 3, mins: 20, link: `/eeat-audit/${websiteId}`, done: false })
+    }
+  }
+
+  // 按優先級降序、回傳 top 3（先做最關鍵的）
+  return quests.sort((a, b) => b.priority - a.priority).slice(0, 3)
+}
 
 export default function DashboardV2() {
   const { id } = useParams()
@@ -89,6 +198,8 @@ export default function DashboardV2() {
   const [contentLatest, setContentLatest] = useState(null)   // 最新一筆 content_audits 完整 row（含 heading/meta/aeo/eeat/multimedia JSONB）
   const [contentHistory, setContentHistory] = useState([])   // 30 天內所有 content_audits（給 sparkline + 月 stats）
   const [loading, setLoading] = useState(true)
+  // Gap 1（2026-06-05）— 新用戶 onboarding 空狀態用、按下「開始第一次檢測」時用
+  const [scanning, setScanning] = useState(false)
 
   // 5 Tab nav active
   const [activeFace, setActiveFace] = useState('seo')
@@ -168,6 +279,59 @@ export default function DashboardV2() {
     return () => { cancelled = true }
   }, [id])
 
+  // Gap 1（2026-06-05）— 新用戶 onboarding 的「開始第一次檢測」handler
+  // 對齊 HomeDark.jsx 的 4 個 analyzer + insert pattern（line 425-496）、跑完 reload 重抓資料
+  async function handleFirstScan() {
+    if (!website?.url || scanning) return
+    setScanning(true)
+    try {
+      const { html } = await fetchPageContent(website.url)
+      const doc = parseHTML(html)
+      const [seoResult, aeoResult, geoResult, eeatResult] = await Promise.all([
+        analyzeSEO(website.url, doc).catch(() => null),
+        analyzeAEO(website.url, doc).catch(() => null),
+        analyzeGEO(website.url, doc).catch(() => null),
+        analyzeEEAT(website.url, doc).catch(() => null),
+      ])
+      await Promise.allSettled([
+        seoResult && supabase.from('seo_audits').insert([{
+          website_id: id, score: seoResult.score,
+          meta_tags: seoResult.meta_tags, h1_structure: seoResult.h1_structure,
+          alt_tags: seoResult.alt_tags, mobile_compatible: seoResult.mobile_compatible,
+          page_speed: seoResult.page_speed,
+          ssl_chain: seoResult.ssl_chain, bot_accessibility: seoResult.bot_accessibility,
+        }]),
+        aeoResult && supabase.from('aeo_audits').insert([{
+          website_id: id, score: aeoResult.score,
+          json_ld: aeoResult.json_ld, faq_schema: aeoResult.faq_schema,
+          faq_visual: aeoResult.faq_visual,
+          canonical: aeoResult.canonical, breadcrumbs: aeoResult.breadcrumbs,
+          open_graph: aeoResult.open_graph, question_headings: aeoResult.question_headings,
+        }]),
+        geoResult && supabase.from('geo_audits').insert([{
+          website_id: id, score: geoResult.score,
+          llms_txt: !!geoResult.llms_txt, robots_ai: !!geoResult.robots_ai,
+          sitemap: !!geoResult.sitemap, open_graph: !!geoResult.open_graph,
+          twitter_card: !!geoResult.twitter_card, json_ld_citation: !!geoResult.json_ld_citation,
+          canonical: !!geoResult.canonical, https: !!geoResult.https,
+        }]),
+        eeatResult && supabase.from('eeat_audits').insert([{
+          website_id: id, score: eeatResult.score,
+          author_info: !!eeatResult.author_info, about_page: !!eeatResult.about_page,
+          contact_page: !!eeatResult.contact_page, privacy_policy: !!eeatResult.privacy_policy,
+          organization_schema: !!eeatResult.organization_schema, date_published: !!eeatResult.date_published,
+          social_links: !!eeatResult.social_links, outbound_links: !!eeatResult.outbound_links,
+        }]),
+      ])
+      // 簡單做法：reload 重抓資料、確保所有 state 都從 DB 拿最新（避免 race）
+      window.location.reload()
+    } catch (err) {
+      console.error('First scan failed:', err)
+      alert('檢測失敗，請稍後再試或回首頁重新輸入網址')
+      setScanning(false)
+    }
+  }
+
   // 5 個分數彙整（從 audit 各自的 score 欄位 / contentScore state）
   const scores = {
     seo: seoAudit?.score || 0,
@@ -244,42 +408,50 @@ export default function DashboardV2() {
         {/* ─── 頁面 TopBar：返回 + 網站名 + 動作按鈕 ─── */}
         <TopBar website={website} navigate={navigate} />
 
-        {/* ─── ✨ aivis Hero + Gamify Rail（grid 8:4） ─── */}
-        <section className="grid lg:grid-cols-12 gap-4 mb-6">
-          <div className="lg:col-span-8">
-            <AivisHero isPro={isPro} websiteName={website.name} overallScore={overallScore} />
-          </div>
-          <div className="lg:col-span-4">
-            <GamifyRail gamify={gamify} />
-          </div>
-        </section>
+        {/* Gap 1（2026-06-05）— 還沒掃過任何網站 = 顯示 onboarding 空狀態、不渲染下方所有資料卡
+            觸發條件：4 大 audit + content 全部 null（新用戶剛建 website 還沒跑分析） */}
+        {!seoAudit && !aeoAudit && !geoAudit && !eeatAudit && !contentLatest ? (
+          <EmptyState website={website} scanning={scanning} onScan={handleFirstScan} />
+        ) : (
+          <>
+            {/* ─── ✨ aivis Hero + Gamify Rail（grid 8:4） ─── */}
+            <section className="grid lg:grid-cols-12 gap-4 mb-6">
+              <div className="lg:col-span-8">
+                <AivisHero isPro={isPro} websiteName={website.name} overallScore={overallScore} />
+              </div>
+              <div className="lg:col-span-4">
+                <GamifyRail gamify={gamify} />
+              </div>
+            </section>
 
-        {/* ─── Notice strip（取代走馬燈、一格通知欄） ─── */}
-        <NoticeStrip />
+            {/* ─── Notice strip（取代走馬燈、一格通知欄） ─── */}
+            <NoticeStrip />
 
-        {/* ─── Quest Section（今日任務 = Action Center） ─── */}
-        <QuestSection quests={MOCK_QUESTS} />
+            {/* ─── Quest Section（今日任務 = Action Center）— Gap 2（2026-06-05）接真資料 ─── */}
+            <QuestSection quests={generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit, websiteId: website.id })} />
 
-        {/* ─── 站點體檢（5 Tab wrapper） ─── */}
-        <AuditSection
-          scores={scores}
-          activeFace={activeFace}
-          setActiveFace={setActiveFace}
-          website={website}
-          seoAudit={seoAudit}
-          aeoAudit={aeoAudit}
-          geoAudit={geoAudit}
-          eeatAudit={eeatAudit}
-          contentLatest={contentLatest}
-          contentHistory={contentHistory}
-          isPro={isPro}
-        />
+            {/* ─── 站點體檢（5 Tab wrapper） ─── */}
+            <AuditSection
+              scores={scores}
+              activeFace={activeFace}
+              setActiveFace={setActiveFace}
+              website={website}
+              seoAudit={seoAudit}
+              aeoAudit={aeoAudit}
+              geoAudit={geoAudit}
+              eeatAudit={eeatAudit}
+              contentLatest={contentLatest}
+              contentHistory={contentHistory}
+              isPro={isPro}
+            />
 
-        {/* ─── 修復工具箱（合併版單一入口） ─── */}
-        <ToolBox websiteId={website.id} />
+            {/* ─── 修復工具箱（合併版單一入口） ─── */}
+            <ToolBox websiteId={website.id} />
 
-        {/* ─── 30 天進步曲線 ─── */}
-        {trendData.length > 1 && <TrendChart trendData={trendData} />}
+            {/* ─── 30 天進步曲線 ─── */}
+            {trendData.length > 1 && <TrendChart trendData={trendData} />}
+          </>
+        )}
 
       </main>
 
@@ -644,11 +816,11 @@ function TopBar({ website, navigate }) {
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
-          onClick={() => navigate(`/dashboard/${website.id}`)}
+          onClick={() => navigate(`/dashboard-legacy/${website.id}`)}
           className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
-          title="切回舊版 Dashboard"
+          title="切回舊版 Dashboard（不適應新版時用）"
         >
-          ← v1
+          ← 切回舊版
         </button>
         <button
           className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
@@ -895,9 +1067,97 @@ function NoticeStrip() {
   )
 }
 
+// Gap 1（2026-06-05）— 新用戶 onboarding 空狀態
+// 觸發：用戶剛建 website、4 大 audit + content 都還沒跑
+// 設計重點：(1) 不要看起來像「產品壞掉」 (2) 給單一明確 CTA (3) 預告 60 秒後會看到什麼
+function EmptyState({ website, scanning, onScan }) {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-10 mb-6">
+      {/* 上：歡迎 + 網站名 */}
+      <div className="text-center max-w-2xl mx-auto mb-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-sm font-mono mb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          首次設定 · 還沒檢測過
+        </div>
+        <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight">
+          歡迎使用方舟 AI 雷達
+        </h2>
+        <p className="text-base text-white/65 leading-relaxed">
+          <span className="text-white font-mono break-all">{website.name || website.url}</span> 還沒有檢測紀錄。<br />
+          按下方按鈕、60 秒給你完整 <span className="text-emerald-300 font-semibold">AI 能見度報告</span>。
+        </p>
+      </div>
+
+      {/* 中：3 步驟說明（告訴用戶接下來會發生什麼、降低未知感） */}
+      <div className="grid sm:grid-cols-3 gap-3 mb-10 max-w-4xl mx-auto">
+        <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
+          <div className="text-xl font-mono font-bold text-emerald-300 mb-3">01</div>
+          <div className="text-white font-bold mb-1.5">爬取你的網站</div>
+          <div className="text-sm text-white/55 leading-relaxed">抓 HTML / sitemap / robots.txt、分析 5 大訊號層</div>
+        </div>
+        <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
+          <div className="text-xl font-mono font-bold text-emerald-300 mb-3">02</div>
+          <div className="text-white font-bold mb-1.5">產出 5 維度分數</div>
+          <div className="text-sm text-white/55 leading-relaxed">SEO · AEO · GEO · E-E-A-T · 內容品質，各自打分</div>
+        </div>
+        <div className="rounded-xl border border-white/8 bg-white/[0.02] p-5">
+          <div className="text-xl font-mono font-bold text-emerald-300 mb-3">03</div>
+          <div className="text-white font-bold mb-1.5">給你「今日該修」清單</div>
+          <div className="text-sm text-white/55 leading-relaxed">按優先級排好的具體行動、含平台別修法步驟</div>
+        </div>
+      </div>
+
+      {/* 下：主 CTA 按鈕 + 安心話 */}
+      <div className="flex flex-col items-center gap-3">
+        <button
+          onClick={onScan}
+          disabled={scanning}
+          className="px-8 py-3.5 rounded-xl font-bold text-lg bg-emerald-500 hover:bg-emerald-400 text-black transition disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
+        >
+          {scanning ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></span>
+              檢測中…
+            </>
+          ) : (
+            <>🚀 開始第一次檢測</>
+          )}
+        </button>
+        <p className="text-sm text-white/40">
+          {scanning
+            ? '正在跑 5 個訊號層，可關閉視窗、跑完回來看結果'
+            : '約 60 秒、可關閉視窗，跑完回來看結果'}
+        </p>
+      </div>
+    </section>
+  )
+}
+
 // Quest Section — 今日任務（遊戲化 Action Center）
+// Gap 2（2026-06-05）改：quests 從 generateQuests() 動態產出、按優先級排 Top 3
+//   - 全部都通過時顯示「無待修」慶祝狀態（非空陣列就跳過）
+//   - 「去修」按鈕從 <button> 換成 <Link to={q.link}>、點下去跳對應 audit 頁
 function QuestSection({ quests }) {
   const totalEst = quests.filter(q => !q.done).reduce((sum, q) => sum + q.est, 0)
+
+  // 全部通過 = 顯示慶祝狀態而不是空白卡（避免「產品看起來壞了」感）
+  if (quests.length === 0) {
+    return (
+      <section className="mb-6 rounded-2xl p-5 sm:p-6" style={{
+        background: 'rgba(34,197,94,0.05)',
+        border: '1px solid rgba(34,197,94,0.2)',
+      }}>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">🎉</span>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-white mb-1">本日無待修</h3>
+            <p className="text-sm text-white/55">所有 LLMO 訊號層都通過了 — 再來檢查一次或等下次掃描看看新變化</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="mb-6 rounded-2xl p-5 sm:p-6" style={{
       background: 'rgba(255,255,255,0.04)',
@@ -905,7 +1165,7 @@ function QuestSection({ quests }) {
     }}>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          ⚡ 今日任務
+          ⚡ 今日該修 Top {quests.length}
         </h3>
         <div className="text-sm text-white/50">
           完成可拿 <strong className="text-emerald-300 font-mono">+{totalEst} 分</strong>
@@ -930,14 +1190,14 @@ function QuestSection({ quests }) {
                     <span className="text-emerald-300 font-bold font-mono">+{q.est}分</span>
                     <span className="text-white/40">~{q.mins} 分鐘</span>
                   </div>
-                  {!q.done && (
-                    <button className="px-2 py-1 rounded text-sm font-bold transition" style={{
+                  {!q.done && q.link && (
+                    <Link to={q.link} className="px-2 py-1 rounded text-sm font-bold transition hover:opacity-80" style={{
                       background: `${FACE_BG[q.face]}`,
                       color: FACE_COLORS[q.face],
                       border: `1px solid ${FACE_BORDER[q.face]}`,
                     }}>
                       去修 →
-                    </button>
+                    </Link>
                   )}
                 </div>
               </div>
@@ -1537,45 +1797,156 @@ function buildCheckCategories(contentLatest, overallScore) {
 
 // 修復工具箱 — 合併單一入口（對齊 prototype-2b 第 1613-1641）
 // 4 個產生器：Organization Schema / FAQ Schema / llms.txt / Article Schema
-// B1 用靜態卡片、B2 phase 接真的「點開 → 模態 → 填表 → 產出 code」流程
+// Gap 3（2026-06-05）改：點卡開 modal + 「我已修好」按鈕、寫 fix_event 給用戶 +5 XP
 function ToolBox({ websiteId }) {
+  const { user } = useAuth()
+  const [activeTool, setActiveTool] = useState(null) // null | tool object
+
   const tools = [
-    { emoji: '🪪', name: 'Organization Schema', desc: '品牌報名表、永久儲存',     to: '/schema-check' },
-    { emoji: '📋', name: 'FAQ Schema',          desc: '問答結構化資料',           to: '/schema-check' },
-    { emoji: '📄', name: 'llms.txt',            desc: 'AI 爬蟲索引引導',          to: '/crawl-check' },
-    { emoji: '📰', name: 'Article Schema',      desc: '文章結構化',               to: `/bulk-scan/${websiteId}` },
+    { emoji: '🪪', name: 'Organization Schema', desc: '品牌報名表、永久儲存',
+      longDesc: '告訴 Google / AI「你是誰」的核心 schema — 公司名、logo、聯絡方式。一次設定、全站套用，E-E-A-T 分數會跳很多。LLMO 必備。',
+      findingId: 'tool_org_schema', to: '/schema-check' },
+    { emoji: '📋', name: 'FAQ Schema', desc: '問答結構化資料',
+      longDesc: '把網頁上的常見問題包成 schema.org FAQPage 格式 — AI 引用率會提升 ~15%，特別適合教學 / 服務介紹頁。',
+      findingId: 'tool_faq_schema', to: '/schema-check' },
+    { emoji: '📄', name: 'llms.txt', desc: 'AI 爬蟲索引引導',
+      longDesc: '在網站根目錄放一個 /llms.txt 文件、告訴 ChatGPT / Claude / Perplexity 怎麼讀你的網站。LLMO 業界新標準。',
+      findingId: 'tool_llms_txt', to: '/crawl-check' },
+    { emoji: '📰', name: 'Article Schema', desc: '文章結構化',
+      longDesc: '為文章頁加 Article schema、含 author / datePublished / headline — AI 在引用時會知道作者是誰、文章寫於何時。',
+      findingId: 'tool_article_schema', to: `/bulk-scan/${websiteId}` },
   ]
+
   return (
-    <section className="mb-6 rounded-2xl p-5 sm:p-6" style={{
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.1)',
-    }}>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          🛠 修復工具箱 <span className="text-sm font-normal text-white/55">· 合併單一入口</span>
-        </h3>
-        <Link to={`/bulk-scan/${websiteId}`} className="text-sm text-white/55 hover:text-white">
-          查看所有工具 →
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {tools.map((t, i) => (
+    <>
+      <section className="mb-6 rounded-2xl p-5 sm:p-6" style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.1)',
+      }}>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            🛠 修復工具箱 <span className="text-sm font-normal text-white/55">· 點下去看怎麼用</span>
+          </h3>
+          <Link to={`/bulk-scan/${websiteId}`} className="text-sm text-white/55 hover:text-white">
+            查看所有工具 →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {tools.map((t, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveTool(t)}
+              className="rounded-xl p-4 transition hover:scale-[1.02] block text-left"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <div className="text-3xl mb-2">{t.emoji}</div>
+              <div className="text-base font-bold text-white mb-1">{t.name}</div>
+              <div className="text-sm text-white/55 leading-relaxed">{t.desc}</div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {activeTool && (
+        <ToolModal
+          tool={activeTool}
+          websiteId={websiteId}
+          userId={user?.id}
+          onClose={() => setActiveTool(null)}
+        />
+      )}
+    </>
+  )
+}
+
+// Gap 3（2026-06-05）— ToolBox 工具卡點下去後的 modal
+// 顯示工具完整說明 + 兩個 CTA：「去用工具」（新分頁開實際 generator）+「我已修好」（寫 fix_event +5 XP）
+function ToolModal({ tool, websiteId, userId, onClose }) {
+  const [state, setState] = useState('idle') // idle | recording | done | error
+
+  async function handleDone() {
+    if (state !== 'idle') return
+    if (!userId) { alert('請先登入'); return }
+    setState('recording')
+    try {
+      await recordFixEvent({
+        userId,
+        websiteId,
+        findingId: tool.findingId,
+        source: 'toolbox',
+      })
+      setState('done')
+      // 1.5 秒後自動關閉、讓用戶看到成功訊息
+      setTimeout(() => onClose(), 1500)
+    } catch (err) {
+      console.error('recordFixEvent failed:', err)
+      setState('error')
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-md w-full rounded-2xl p-7"
+        style={{
+          background: 'linear-gradient(180deg, #0a0c10 0%, #050608 100%)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* 關閉按鈕 */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 w-8 h-8 rounded-lg text-white/40 hover:text-white hover:bg-white/5 flex items-center justify-center text-xl"
+          aria-label="關閉"
+        >×</button>
+
+        {/* 工具資訊 */}
+        <div className="text-5xl mb-4">{tool.emoji}</div>
+        <h3 className="text-2xl font-bold text-white mb-2">{tool.name}</h3>
+        <p className="text-base text-white/70 mb-3">{tool.desc}</p>
+        <p className="text-sm text-white/50 mb-7 leading-relaxed">{tool.longDesc}</p>
+
+        {/* 2 個 CTA */}
+        <div className="flex flex-col gap-2.5">
           <Link
-            key={i}
-            to={t.to}
-            className="rounded-xl p-4 transition hover:scale-[1.02] block"
+            to={tool.to}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-3 rounded-xl font-bold text-base bg-emerald-500 hover:bg-emerald-400 text-black text-center transition"
+          >
+            去用這個工具 → 新分頁開
+          </Link>
+          <button
+            onClick={handleDone}
+            disabled={state !== 'idle'}
+            className="px-5 py-3 rounded-xl font-bold text-base text-white border transition disabled:opacity-60"
             style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: state === 'done' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+              borderColor: state === 'done' ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)',
             }}
           >
-            <div className="text-3xl mb-2">{t.emoji}</div>
-            <div className="text-base font-bold text-white mb-1">{t.name}</div>
-            <div className="text-sm text-white/55 leading-relaxed">{t.desc}</div>
-          </Link>
-        ))}
+            {state === 'idle' && '✓ 我已修好 (+5 XP)'}
+            {state === 'recording' && '記錄中…'}
+            {state === 'done' && '🎉 +5 XP 已入帳！'}
+            {state === 'error' && '⚠️ 記錄失敗、再試一次'}
+          </button>
+        </div>
+
+        {/* 小提醒 */}
+        <p className="mt-5 pt-4 border-t border-white/8 text-xs text-white/40 leading-relaxed">
+          💡 「我已修好」會記錄一筆修復事件、給你 +5 XP。記得修完後回 Dashboard 按「重新檢測」、看新分數有沒有跳。
+        </p>
       </div>
-    </section>
+    </div>
   )
 }
 

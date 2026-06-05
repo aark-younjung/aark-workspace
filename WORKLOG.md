@@ -6,6 +6,48 @@
 
 ---
 
+### 2026-06-06（DashboardV2 上線：補 3 缺口 + 主路由切換）
+
+**用戶決策路線：補完 3 缺口 → 切換 `/dashboard/:id` 主路由 → 舊版改 `/dashboard-legacy/:id` 緩衝。**
+
+**Gap 1 · 新用戶 onboarding 空狀態**（[src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx) `EmptyState`）：
+- 觸發條件：`!seoAudit && !aeoAudit && !geoAudit && !eeatAudit && !contentLatest`
+- 內容：歡迎標題 + 3 步驟說明（爬取 / 5 維度打分 / 給你今日該修清單）+「🚀 開始第一次檢測」主 CTA
+- 點 CTA 觸發 `handleFirstScan()` — 對齊 HomeDark.jsx 的 4 analyzer + insert pattern（同步 SEO / AEO / GEO / E-E-A-T）、跑完 `window.location.reload()` 重抓資料
+- 之前用戶第一次進 Dashboard 看到空白雷達 + 全 0 分數會以為產品壞掉 → 現在清楚知道下一步該做什麼
+
+**Gap 2 · Action Center 接真資料**（DashboardV2.jsx `generateQuests()` + `QuestSection`）：
+- 拿掉 `MOCK_QUESTS` 寫死的 3 筆假任務
+- 新增 `generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit })` — 從 4 大 audit 的失敗 boolean / JSONB.passed 抓出待修項
+- 每個 quest 帶 priority（1-10）、按降序排 Top 3
+- 16 個 quest 模板涵蓋：SEO bot_accessibility / meta / h1 / alt、AEO json_ld / faq / og / canonical、GEO llms / robots / sitemap / citation、EEAT org_schema / author / about / privacy
+- 「去修」按鈕從 `<button>` 換 `<Link>` 跳對應 audit 詳情頁
+- 全部通過 → 顯示「🎉 本日無待修」慶祝狀態（不是空白）
+
+**Gap 3 · ToolBox 4 卡點下去開 modal + 「我已修好」**（DashboardV2.jsx `ToolBox` + `ToolModal`）：
+- 卡從 `<Link>` 換 `<button>` 開 modal、不再直接跳走
+- Modal 顯示工具完整說明（emoji + name + desc + longDesc）+ 2 個 CTA：
+  - 「去用這個工具 → 新分頁開」（target="_blank" 跳對應 generator 頁、不離開 Dashboard）
+  - 「✓ 我已修好 (+5 XP)」（呼叫 `recordFixEvent({ source: 'toolbox', findingId: 'tool_xxx' })`、入帳 +5 XP）
+- modal 寫進 fix_event 後跳 +5 XP 狀態、1.5 秒後自動關閉
+- finding_id 使用 `tool_org_schema / tool_faq_schema / tool_llms_txt / tool_article_schema`
+
+**主路由切換**（[src/App.jsx](src/App.jsx)）：
+- `/dashboard/:id` → 從 `<Dashboard />` 換成 `<DashboardV2 />`
+- `/dashboard-v2/:id` 保留為 alias（歷史 email / 書籤連結 broken 防範）
+- 新增 `/dashboard-legacy/:id` → `<Dashboard />`（舊版緩衝期 fallback）
+- DashboardV2 TopBar「← v1」按鈕改名「← 切回舊版」、目標 URL 改 `/dashboard-legacy/:id`
+- 觀察 1-2 週穩定後可刪除舊 Dashboard.jsx + `/dashboard-legacy/:id` 路由
+
+**影響面：** 純前端、無 DB schema 變動、無 API 變動。Vercel 部署 ~2 分鐘生效。所有既有 `/dashboard/:id` 連結（Dashboard 內 / Email 報告 / showcase 等）會自動跳新版、不需另外更新。
+
+**待後續：**
+- 觀察 1-2 週後刪除 `/dashboard-legacy/:id` 路由 + 移除舊 Dashboard.jsx
+- 把 DashboardV2.jsx 改名 Dashboard.jsx（讓檔案名跟主路由一致）
+- 之前的 Dashboard.jsx 用了 `loadContentScore` cached bug 修法，記得移植到 DashboardV2 的 `analyzeContent` 流程
+
+---
+
 ### 2026-06-05（LLMO 重新定位 P1+P2+P3：DashboardV2 同步 / Audit 訊號層副標 / lastmod 新訊號）
 
 **承接 6/5 LLMO P0 重新定位（已上線 commit 38d3fa6）、用戶要求 P1-P3 接續做完。**

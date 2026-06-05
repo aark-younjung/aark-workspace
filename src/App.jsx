@@ -90,9 +90,13 @@ function AppInner() {
         <Route path="/register" element={<Register />} />
         <Route path="/showcase" element={<Showcase />} />
         <Route path="/compare" element={<Compare />} />
-        <Route path="/dashboard/:id" element={<Dashboard />} />
-        {/* prototype-2b 設計實作預覽 — B1 phase，舊版仍掛在 /dashboard/:id 不影響 */}
+        {/* 主路由（2026-06-06 切換到 V2）— DashboardV2 = prototype-2b 實作完成版
+            「← 切回舊版」按鈕會引導用戶到 /dashboard-legacy/:id（舊版保留 1-2 週做緩衝） */}
+        <Route path="/dashboard/:id" element={<DashboardV2 />} />
+        {/* /dashboard-v2/:id 保留為 alias，避免歷史 email / 書籤連結 broken */}
         <Route path="/dashboard-v2/:id" element={<DashboardV2 />} />
+        {/* 舊版 Dashboard 保留在 /dashboard-legacy/:id 做緩衝期 fallback，觀察 1-2 週穩定後刪除 */}
+        <Route path="/dashboard-legacy/:id" element={<Dashboard />} />
         {/* 公開摘要頁（TOP 8 點擊進來）— 只顯示分數總覽，不公開具體缺陷 */}
         <Route path="/website-summary/:id" element={<WebsiteSummary />} />
         <Route path="/seo-audit/:id" element={<SEOAudit />} />
