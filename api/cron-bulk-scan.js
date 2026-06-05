@@ -508,24 +508,25 @@ function analyzeArticleHtml(html, url) {
   else if (metaTitleLen < 20) {
     // 短標題建議：如果有品牌名、補成「{current}｜{brand}」；如果連品牌都沒有、純粹提示
     // 重要：補完品牌名後可能還是 < 30 字、要主動告訴用戶仍需手動延伸（不能讓用戶以為「照建議改了就解決」）
+    // ⚠️ 注意：以下所有「SEO 標題」都指 <title> tag、即 Rank Math 的「SEO Title」欄位、不是 WP 文章/商品標題
     const containsBrand = brandName && metaTitle.includes(brandName)
     const suggested = brandName && !containsBrand ? `${metaTitle}｜${brandName}` : null
     const suggestedLen = suggested ? suggested.length : null
     const stillTooShort = suggestedLen != null && suggestedLen < 30
     let note
     if (suggested && !stillTooShort) {
-      note = `偵測到品牌「${brandName}」，建議在標題後加「｜${brandName}」拉到 ${suggestedLen} 字`
+      note = `偵測到品牌「${brandName}」，建議在 SEO Title 後加「｜${brandName}」拉到 ${suggestedLen} 字。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
     } else if (suggested && stillTooShort) {
       // 補完品牌名仍 < 30 字、要明確告訴用戶這不夠、需要手動延伸主關鍵字 / 描述
       const need = 30 - suggestedLen
-      note = `自動補品牌名只拉到 ${suggestedLen} 字、還差 ${need} 字才到建議下限 30。請手動延伸：在標題前段加主關鍵字描述（例如「2025 最新 」「實測 」「指南：」等定語）、或加副標再接品牌`
+      note = `自動補品牌名只拉到 ${suggestedLen} 字、還差 ${need} 字才到建議下限 30。請手動延伸：在 SEO Title 前段加主關鍵字描述（例如「2025 最新 」「實測 」「指南：」等定語）、或加副標再接品牌。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
     } else {
-      note = '建議補主關鍵字 + 品牌名拉到 30-60 字（系統未偵測到品牌名、需手動補）'
+      note = '建議補主關鍵字 + 品牌名拉到 30-60 字（系統未偵測到品牌名、需手動補）。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）'
     }
     problems.push({
       id: 'short_meta_title',
       severity: 'medium',
-      label: `標題只有 ${metaTitleLen} 字（建議 30-60）`,
+      label: `SEO Title 只有 ${metaTitleLen} 字、建議 30-60（Rank Math「SEO Title」欄位）`,
       suggestion: {
         kind: 'text',
         current: metaTitle, current_len: metaTitleLen,
@@ -542,13 +543,13 @@ function analyzeArticleHtml(html, url) {
     problems.push({
       id: 'long_meta_title',
       severity: 'low',
-      label: `標題 ${metaTitleLen} 字過長（建議 30-60，Google SERP 會截斷）`,
+      label: `SEO Title 過長（${metaTitleLen} 字、建議 30-60，Rank Math「SEO Title」欄位）`,
       suggestion: {
         kind: 'text',
         current: metaTitle, current_len: metaTitleLen,
         suggested: truncated, suggested_len: truncated.length,
         code_snippet: `<title>${truncated}</title>`,
-        note: 'Google SERP 顯示上限約 60 字，超過會被「...」截掉',
+        note: 'Google SERP 顯示上限約 60 字、超過會被「...」截掉。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）',
       },
     })
   }
@@ -560,19 +561,20 @@ function analyzeArticleHtml(html, url) {
   const hasMetaDesc = metaDescLen > 0
   // Stage 2: 抽內文摘要、給缺 / 短 desc 建議
   const bodyExcerpt = extractBodyExcerpt(html, 155)
+  // ⚠️ Meta 描述 = <meta name="description"> tag = Rank Math「Description」欄位（不是 WP 文章內文 / 商品說明）
   if (!hasMetaDesc) {
     problems.push({
       id: 'missing_meta_desc',
       severity: 'high',
-      label: '缺 Meta 描述',
+      label: '缺 Meta 描述（Rank Math「Description」欄位空白）',
       suggestion: bodyExcerpt ? {
         kind: 'text',
         suggested: bodyExcerpt, suggested_len: bodyExcerpt.length,
         code_snippet: metaDescCode(bodyExcerpt),
-        note: '系統從文章內文自動抓的開頭摘要、可直接複製或微調後使用',
+        note: '系統從文章內文自動抓的開頭摘要、可直接複製或微調後使用。貼到 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
       } : {
         kind: 'text',
-        note: '文章內文太短抓不到摘要、請手動寫 70-155 字描述',
+        note: '文章內文太短抓不到摘要、請手動寫 70-155 字描述。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
       },
     })
   }
@@ -582,15 +584,15 @@ function analyzeArticleHtml(html, url) {
     problems.push({
       id: 'short_meta_desc',
       severity: 'medium',
-      label: `Meta 描述只有 ${metaDescLen} 字（建議 70-155）`,
+      label: `Meta 描述只有 ${metaDescLen} 字、建議 70-155（Rank Math「Description」欄位）`,
       suggestion: {
         kind: 'text',
         current: metaDesc, current_len: metaDescLen,
         suggested: replacement, suggested_len: replacement ? replacement.length : null,
         code_snippet: replacement ? metaDescCode(replacement) : null,
         note: replacement
-          ? '系統從內文抓的較長版本、可取代或合併'
-          : '建議擴充到 70-155 字、含主關鍵字 + 賣點',
+          ? '系統從內文抓的較長版本、可取代或合併。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）'
+          : '建議擴充到 70-155 字、含主關鍵字 + 賣點。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
       },
     })
   }
@@ -599,13 +601,13 @@ function analyzeArticleHtml(html, url) {
     problems.push({
       id: 'long_meta_desc',
       severity: 'low',
-      label: `Meta 描述 ${metaDescLen} 字過長（建議 70-155）`,
+      label: `Meta 描述過長（${metaDescLen} 字、建議 70-155，Rank Math「Description」欄位）`,
       suggestion: {
         kind: 'text',
         current: metaDesc, current_len: metaDescLen,
         suggested: truncated, suggested_len: truncated.length,
         code_snippet: metaDescCode(truncated),
-        note: 'Google SERP 描述顯示上限約 155 字，超過會被截掉',
+        note: 'Google SERP 描述顯示上限約 155 字、超過會被截掉。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
       },
     })
   }

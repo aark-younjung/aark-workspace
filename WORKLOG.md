@@ -6,6 +6,28 @@
 
 ---
 
+### 2026-06-05（meta title / desc 提示加「Rank Math 欄位」明確指引、消除「標題」歧義）
+
+**用戶痛點：** finding 寫「標題只有 14 字（建議 30-60）」，客戶會困惑「標題指哪個」 — 可能誤改 WP 文章/商品名稱（h1）、瀏覽器分頁標題、或 Rank Math SEO Title。實際指的是 `<title>` tag = Rank Math「SEO Title」欄位。
+
+**修法：所有 meta title / desc 文案加「Rank Math 欄位明確指引」**
+
+[api/cron-bulk-scan.js](api/cron-bulk-scan.js) — 動態 label + note：
+- `short_meta_title.label`：「標題只有 X 字...」→「**SEO Title 只有 X 字、建議 30-60（Rank Math「SEO Title」欄位）**」
+- `long_meta_title.label`：「標題 X 字過長」→「**SEO Title 過長（Rank Math「SEO Title」欄位）**」
+- `missing_meta_desc.label`：「缺 Meta 描述」→「**缺 Meta 描述（Rank Math「Description」欄位空白）**」
+- `short_meta_desc.label`：「Meta 描述只有 X 字」→「**Meta 描述只有 X 字、建議 70-155（Rank Math「Description」欄位）**」
+- `long_meta_desc.label`：「Meta 描述 X 字過長」→「**Meta 描述過長（Rank Math「Description」欄位）**」
+- 所有 `suggestion.note` 結尾加「**改 Rank Math meta box 的「SEO Title / Description」欄位（不是 WP 文章/商品名稱 / 內文）**」
+
+[src/pages/BulkScan.jsx](src/pages/BulkScan.jsx) — 靜態 PROBLEM_LABELS + PROBLEM_FIX_TIPS：
+- PROBLEM_LABELS 6 個 meta 標題 / 描述 entry 全部補上「Rank Math「X」欄位」字尾
+- PROBLEM_FIX_TIPS 6 個 entry 前段補上「這是 Rank Math meta box 的「X」欄位（不是 WP 文章/商品名稱 / 內文）」
+
+**影響面：** 純文案改動、無邏輯變動。Push 後 Vercel 部署 ~2 分鐘；新舊 finding 都會顯示新文案（label 來自 server / tip 是 client 靜態）。
+
+---
+
 ### 2026-06-05（Sitemap discovery 強化：robots.txt + 路徑擴充 + 重試）
 
 **用戶痛點：「批次文章掃描立刻重掃確認之後又出現 ⚠️ Sitemap discovery failed，這個問題好像常常出現」**

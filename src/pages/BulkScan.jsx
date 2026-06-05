@@ -1840,12 +1840,12 @@ const proButtonStyle = {
 const PROBLEM_LABELS = {
   missing_h1: '頁面沒有 H1 標題',
   multiple_h1: '頁面有多個 H1（應只有 1 個）',
-  missing_meta_title: '缺 <title> 標題',
-  short_meta_title: '標題過短（< 20 字）',
-  long_meta_title: '標題過長（> 70 字，Google SERP 會截斷）',
-  missing_meta_desc: '缺 Meta 描述',
-  short_meta_desc: 'Meta 描述過短（< 50 字）',
-  long_meta_desc: 'Meta 描述過長（> 200 字）',
+  missing_meta_title: '缺 SEO Title（Rank Math「SEO Title」欄位空白）',
+  short_meta_title: 'SEO Title 過短（< 20 字，Rank Math「SEO Title」欄位）',
+  long_meta_title: 'SEO Title 過長（> 70 字，Google SERP 會截斷）',
+  missing_meta_desc: '缺 Meta 描述（Rank Math「Description」欄位空白）',
+  short_meta_desc: 'Meta 描述過短（< 50 字，Rank Math「Description」欄位）',
+  long_meta_desc: 'Meta 描述過長（> 200 字，Rank Math「Description」欄位）',
   missing_og: '完全沒有 Open Graph 標籤',
   incomplete_og: 'Open Graph 不完整',
   no_json_ld: '完全沒有 JSON-LD 結構化資料',
@@ -1875,18 +1875,18 @@ const PROBLEM_FIX_TIPS = {
     '進文章編輯 → 切「程式碼編輯器」→ Ctrl+F 搜 <h1>。注意：WP 主題會自動加 1 個文章標題 H1（編輯器看不到），所以正確的剩 1 個 H1 = 編輯器裡 0 個。空 H1（<h1></h1>，page builder 殘留）直接整行刪；有文字的 H1 改成 <h2> 或 <h3>',
 
   missing_meta_title:
-    '安裝 Yoast SEO 或 Rank Math 外掛 → 編輯文章 → 下方 SEO 區塊「SEO 標題」欄位填 30-60 字含主關鍵字',
+    '這是 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱、不是 H1）。安裝 Yoast SEO 或 Rank Math 外掛 → 編輯文章 → 下方 SEO 區塊「SEO Title」欄位填 30-60 字含主關鍵字',
   short_meta_title:
-    '標題太短搜尋引擎判定資訊量不足。擴充到 30-60 字、含主關鍵字 + 品牌名',
+    '這是 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）。SEO Title 太短搜尋引擎判定資訊量不足、擴充到 30-60 字、含主關鍵字 + 品牌名',
   long_meta_title:
-    'Google SERP 通常截斷 60 字後內容。壓縮到 30-60 字，重要關鍵字放前段',
+    '這是 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）。Google SERP 通常截斷 60 字後內容、壓縮到 30-60 字、重要關鍵字放前段',
 
   missing_meta_desc:
-    'Yoast SEO / Rank Math → 編輯文章 → SEO 區塊「Meta 描述」欄位填 70-155 字，包含目標關鍵字 + 行動呼籲',
+    '這是 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）。Yoast SEO / Rank Math → 編輯文章 → SEO 區塊「Description」欄位填 70-155 字、包含目標關鍵字 + 行動呼籲',
   short_meta_desc:
-    'Meta 描述太短 Google 會自動補抓內容、不一定符合你的訴求。擴充到 70-155 字',
+    '這是 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）。Meta 描述太短 Google 會自動補抓內容、不一定符合你的訴求、擴充到 70-155 字',
   long_meta_desc:
-    'Google SERP 通常只顯示前 155 字。壓縮到 70-155 字，重要訊息放前段',
+    '這是 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）。Google SERP 通常只顯示前 155 字、壓縮到 70-155 字、重要訊息放前段',
 
   missing_og:
     'Yoast SEO 或 Rank Math（二選一）→ 編輯文章 → 「社群」(Yoast) 或「Social」(Rank Math) 分頁 → 填 Facebook / X 標題、描述、圖片 1200×630px',
