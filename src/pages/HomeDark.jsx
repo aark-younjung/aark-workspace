@@ -5,6 +5,8 @@ import Footer from '../components/Footer'
 import NotificationBell from '../components/v2/NotificationBell'
 // 2026-06-06：上 C 方向 logo mark
 import AarkMark from '../components/v2/AarkMark'
+// 2026-06-06：本週 AI 趨勢卡 — 訪客也看得到、促進每日 / 每週回訪
+import WeeklyAITrendsCard from '../components/v2/WeeklyAITrendsCard'
 import EarlybirdBanner from '../components/EarlybirdBanner'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -1187,6 +1189,11 @@ export default function HomeDark() {
             </div>
           </div>
         )}
+
+        {/* 本週 AI 趨勢卡（2026-06-06）— 訪客也看得到、創造每週回訪動機 */}
+        <div className="mt-12">
+          <WeeklyAITrendsCard />
+        </div>
 
         {/* 本週 AI 能見度 TOP 8 — 真實掃描分數排名(不足時樣本補位) */}
         {topSites.length > 0 && (
