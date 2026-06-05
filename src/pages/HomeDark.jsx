@@ -863,28 +863,31 @@ export default function HomeDark() {
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold mb-3 leading-tight text-white">
-              ChatGPT 推不<br />推薦你?
+              ChatGPT 推不<br />推薦你的品牌?
             </h1>
 
             <p className="text-xl md:text-2xl font-semibold text-white mb-3 leading-snug">
-              你花在 SEO 的投資，AI 時代不會自動延續。<br />
-              AI 雷達天天監測你在 ChatGPT、Perplexity、Gemini 的能見度。
+              你過去花在 SEO 的努力，不會 1:1 自動轉成 AI 曝光。<br />
+              方舟 AI 雷達把這些成果，再轉成 ChatGPT、Perplexity 看得懂的訊號。
             </p>
 
-            {/* LLMO 主軸定位（2026-06-05 改）— 從「五大維度字母湯」改為「LLMO 大傘 + 5 個子訊號層」，
-                理由：實際 70-80% 的檢測都是 LLMO 範疇、誠實對齊產品本質、台灣首個 LLMO 監測平台拿先發優勢 */}
+            {/* LLMO 訊號層定位（2026-06-05 v2 改）— 5 AI 共識：必須先給中文錨點、LLMO 當專有名詞補在後面，
+                不能裸放 LLMO（95% 台灣讀者不熟）；訊號層內 aivis 改為「跨 LLM 引用追蹤」更具象 */}
             <p className="text-sm text-white/55 mb-6 tracking-wide">
-              LLMO 監測平台 <span className="text-white/40">— 拆 5 個可量化訊號：SEO · AEO · GEO · E-E-A-T · aivis 跨 LLM 引用追蹤</span>
+              AI 搜尋能見度監測平台（LLMO）<span className="text-white/40">— 拆 5 個可量化訊號：SEO · AEO · GEO · E-E-A-T · 跨 LLM 引用追蹤</span>
             </p>
 
             <p className="text-base text-white/80 mb-4 max-w-lg">
-              輸入網址，60 秒給你完整 LLMO 健康報告 — 免費診斷 + 平台別修法步驟手把手帶你修
+              輸入網址，60 秒給你完整 AI 能見度報告 — 免費診斷 + 平台別修法步驟手把手帶你修
             </p>
 
-            {/* 差異化賣點 chip — 4 條軸線：功能廣度 / 技術差異 / 競爭差異 / TA 友善度（對標 GetAutoSEO non-technical 訴求） */}
+            {/* 差異化賣點 chip — v2 改動（2026-06-05）：
+                - 第 1 個 chip 從「7 大檢測項一次到位」換成「代理商必備：多站追蹤 + PDF 報告」
+                  → 5 AI 共識：必須在 Hero 暗示「給代理商用」、不然品牌主 vs 代理商混淆
+                - 「不懂程式碼也能照著步驟修」保留、給 P1 品牌主友善訊號 */}
             <div className="flex flex-wrap gap-2 mb-10 max-w-lg">
               <span className="text-sm px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-medium">
-                ✓ 7 大檢測項一次到位
+                ✓ 代理商必備:多站追蹤 + PDF 報告
               </span>
               <span className="text-sm px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 font-medium">
                 ✓ 連 Cloudflare 擋 ChatGPT 都檢得出

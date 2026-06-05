@@ -1,6 +1,8 @@
-# AI 雷達 — 台灣第一個 LLMO 監測平台
+# 方舟 AI 雷達 — 台灣第一個 LLMO 監測平台
 
-> ChatGPT 推不推薦你？AI 雷達把 LLMO（Large Language Model Optimization）拆成 5 個可量化訊號層（SEO / AEO / GEO / E-E-A-T / aivis 跨 LLM 引用追蹤），給代理商和品牌主一份能交出去的 AI 能見度報告。
+> ChatGPT 推不推薦你的品牌？方舟 AI 雷達把 LLMO（Large Language Model Optimization，俗稱「AI 搜尋優化」）拆成 5 個可量化訊號層（SEO / AEO / GEO / E-E-A-T / aivis 跨 LLM 引用追蹤），給代理商和品牌主一份能交出去的 AI 能見度報告。
+>
+> 產品線：**方舟 AI 雷達**（前端 / 口頭）·  品牌母體：**AARK**（logo）·  營運公司：**優勢方舟數位行銷**（法律 / 發票）
 
 **產品名稱**: AI 雷達
 **營運公司**: 優勢方舟數位行銷
