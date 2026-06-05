@@ -193,8 +193,8 @@ export default function AEOAudit() {
           <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
             <ScoreHero
               face="AEO"
-              subChip="技術檢測"
-              tagline="Answer Engine Optimization — 讓內容適合 Google 精選摘要與問答框"
+              subChip="LLMO 訊號層 ②"
+              tagline="Answer Engine Optimization — 讓 AI 把你當答案、引用你的內容（精選摘要、問答框、Siri / Google AI）"
               score={score}
               passedCount={passedCount}
               failedCount={totalCount - passedCount}

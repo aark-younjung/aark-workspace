@@ -255,8 +255,8 @@ export default function SEOAudit() {
               <>
                 <ScoreHero
                   face="SEO"
-                  subChip="技術檢測"
-                  tagline="傳統搜尋排名 — AI 爬蟲評估頁面品質的基礎"
+                  subChip="LLMO 訊號層 ①"
+                  tagline="傳統搜尋排名 — LLMO 5 個訊號層的地基，沒這個 AI 也找不到你"
                   score={score}
                   passedCount={passedCount}
                   failedCount={failedCount}

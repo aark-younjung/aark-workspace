@@ -688,7 +688,9 @@ function AivisHero({ isPro, websiteName, overallScore }) {
             Pro 核心
           </span>
         </div>
-        <p className="text-base text-white/65 mb-5">{websiteName} 在 5 個 AI 引擎的真實提及率</p>
+        {/* 副標補上 LLMO 訊號層定位（2026-06-05 P1）— 表明這是 LLMO 結果驗證層、跟其他 4 訊號層的關係 */}
+        <p className="text-base text-white/65 mb-1">{websiteName} 在 5 個 AI 引擎的真實提及率</p>
+        <p className="text-sm text-white/45 mb-5"><span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-semibold text-xs">LLMO 結果驗證層</span> · 跨 LLM 引用追蹤、跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分</p>
 
         {/* ─── 本月引用次數 + 30 天 sparkline（aivis-spotlight from prototype-2b） ─── */}
         <div className="grid sm:grid-cols-2 gap-5 mb-5">
@@ -971,7 +973,13 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
       <div className="relative z-10">
         {/* Section head */}
         <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">📊 站點體檢</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">📊 站點體檢</h2>
+            {/* P1 同步：LLMO 訊號層的 4+1 標籤、表明這 5 個 tab 是 LLMO 的子訊號層 */}
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-semibold">
+              LLMO 4 訊號層 + aivis 結果驗證
+            </span>
+          </div>
           <span className="text-sm text-white/45 font-mono">{website.url}</span>
         </div>
 

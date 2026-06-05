@@ -190,8 +190,8 @@ export default function EEATAudit() {
           <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
             <ScoreHero
               face="E-E-A-T"
-              subChip="可信度檢測"
-              tagline="Experience · Expertise · Authoritativeness · Trustworthiness — Google 評估網站可信度的四維度"
+              subChip="LLMO 訊號層 ④"
+              tagline="Experience · Expertise · Authoritativeness · Trustworthiness — 讓 AI 判斷你可信、值得被引用的訊號"
               score={score}
               passedCount={passedCount}
               failedCount={EEAT_CHECKS.length - passedCount}

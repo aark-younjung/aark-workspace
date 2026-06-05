@@ -76,6 +76,18 @@ const GEO_CHECKS = [
     priority: 'P1',
     recommendation: '確保網站使用 HTTPS，向 AI 傳遞「此網站安全可信」的信號',
   },
+  // P3 LLMO 深化（2026-06-05）— content freshness 訊號
+  // LLM 在 retrieve / cite 時偏好「新鮮」內容（dateModified ≤ 365 天）
+  // 暫不計入主分數、待 SQL ADD COLUMN lastmod_passed 後再升級為計分項
+  {
+    id: 'lastmod_passed',
+    name: '內容新鮮度（lastmod）',
+    description: '頁面是否標記最後修改時間 article:modified_time / dateModified / <time>，且距今 ≤ 365 天。LLM 引擎引用時優先選擇新鮮內容',
+    icon: '🕒',
+    priority: 'P1',
+    recommendation: '用 Yoast / Rank Math 自動輸出 article:modified_time，或在 JSON-LD 加 dateModified。長期沒更新的頁面建議定期翻新內文（補新案例 / 新數據 / 新年度），LLM 比較願意引用',
+    isNewSignal: true, // 標記為「新增訊號、暫不計分」
+  },
 ]
 
 export default function GEOAudit() {
@@ -143,8 +155,10 @@ export default function GEOAudit() {
     }
   }
 
-  const passedCount = GEO_CHECKS.filter(check => getCheckStatus(check.id) === 'pass').length
-  const totalCount = GEO_CHECKS.length
+  // 分數計算：isNewSignal 標記的訊號暫不計入分母（lastmod 等新訊號、待 schema migration 後再升級）
+  const scoredChecks = GEO_CHECKS.filter(c => !c.isNewSignal)
+  const passedCount = scoredChecks.filter(check => getCheckStatus(check.id) === 'pass').length
+  const totalCount = scoredChecks.length
   const score = geoAudit ? geoAudit.score : Math.round((passedCount / totalCount) * 100)
 
   // 把 GEO_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
@@ -189,8 +203,8 @@ export default function GEOAudit() {
           <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
             <ScoreHero
               face="GEO"
-              subChip="技術檢測"
-              tagline="Generative Engine Optimization — 生成式 AI 引用優化"
+              subChip="LLMO 訊號層 ③"
+              tagline="Generative Engine Optimization — 讓 ChatGPT、Perplexity、Gemini 在長篇回答中推薦你（LLMO 重疊度最高的一層）"
               score={score}
               passedCount={passedCount}
               failedCount={totalCount - passedCount}

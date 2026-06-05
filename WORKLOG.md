@@ -6,6 +6,60 @@
 
 ---
 
+### 2026-06-05（LLMO 重新定位 P1+P2+P3：DashboardV2 同步 / Audit 訊號層副標 / lastmod 新訊號）
+
+**承接 6/5 LLMO P0 重新定位（已上線 commit 38d3fa6）、用戶要求 P1-P3 接續做完。**
+
+---
+
+**P1 — DashboardV2 prototype 同步**（[src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx)）
+
+DashboardV2 是登入後的儀表板、不是行銷 hero、所以不需要 Variant B 完整文案。但要把「aivis 跟其他 4 訊號層的關係」說清楚：
+- AivisHero 副標補一行「LLMO 結果驗證層 · 跨 LLM 引用追蹤、跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分」
+- AuditSection「📊 站點體檢」標題旁加綠色 chip「LLMO 4 訊號層 + aivis 結果驗證」
+
+---
+
+**P2 — 4 個 audit 詳情頁加 LLMO 訊號層副標**（4 個檔案）
+
+之前 subChip 都是「技術檢測 / 可信度檢測」、太含糊。改成明確標出「LLMO 訊號層 ①/②/③/④」（aivis = ⑤、不另算）：
+
+- [SEOAudit.jsx](src/pages/SEOAudit.jsx)：「LLMO 訊號層 ①」+ tagline「傳統搜尋排名 — LLMO 5 個訊號層的地基，沒這個 AI 也找不到你」
+- [AEOAudit.jsx](src/pages/AEOAudit.jsx)：「LLMO 訊號層 ②」+ tagline「讓 AI 把你當答案、引用你的內容」
+- [GEOAudit.jsx](src/pages/GEOAudit.jsx)：「LLMO 訊號層 ③」+ tagline「讓 ChatGPT、Perplexity、Gemini 在長篇回答中推薦你（LLMO 重疊度最高的一層）」
+- [EEATAudit.jsx](src/pages/EEATAudit.jsx)：「LLMO 訊號層 ④」+ tagline「讓 AI 判斷你可信、值得被引用的訊號」
+
+---
+
+**P3 — geoAnalyzer 補 lastmod (content freshness) 訊號**（[src/services/geoAnalyzer.js](src/services/geoAnalyzer.js) + [GEOAudit.jsx](src/pages/GEOAudit.jsx)）
+
+LLM 引擎在 retrieve / cite 時偏好「新鮮」內容（dateModified ≤ 365 天）— LLMO 業界共識訊號、之前完全沒檢測。
+
+**新增 `checkLastmod(doc)` 函式**，從 4 個來源抓修改時間並判定新鮮度：
+- (a) `<meta property="article:modified_time">` ← Yoast / Rank Math 自動輸出
+- (b) `<meta itemprop="dateModified">` ← Schema.org microdata
+- (c) JSON-LD 內 `dateModified` 欄位
+- (d) `<time datetime>` 標籤
+
+通過條件：找到任一來源、且 daysSince 在 [0, 365] 之間。
+
+**設計選擇 — 暫不計入主分數：**
+- 主分數仍用 /8 分母、避免歷史用戶分數突然 -11
+- 也避免 geo_audits 表的 schema migration 壓力
+- GEO_CHECKS 新增條目用 `isNewSignal: true` 標記
+- GEOAudit.jsx 算 score 時 filter 掉 isNewSignal、不入分母
+- 結果存在 `result.details.lastmod` 給 UI 展示
+
+**未來升級為計分項的步驟（記錄、不在本次做）：**
+1. SQL：`ALTER TABLE geo_audits ADD COLUMN lastmod_passed BOOLEAN DEFAULT NULL;`
+2. 更新 4 個 insert sites（Dashboard / HomeDark / GEOAudit / AdminSeed）加 lastmod_passed 欄位
+3. 拿掉 GEO_CHECKS 該條目的 isNewSignal flag、分母自動變 /9
+4. 更新 [src/components/v2/MetricSignatures.jsx](src/components/v2/MetricSignatures.jsx) 加 lastmod 圖示（若有）
+
+**影響面：** P1 / P2 純文案 + UI 結構小調整、零邏輯改動；P3 加 1 個 analyzer 函式 + 1 個 UI 條目、零 schema 變動、零既有分數影響。Vercel 部署 ~2 分鐘生效。
+
+---
+
 ### 2026-06-05（meta title / desc 提示加「Rank Math 欄位」明確指引、消除「標題」歧義）
 
 **用戶痛點：** finding 寫「標題只有 14 字（建議 30-60）」，客戶會困惑「標題指哪個」 — 可能誤改 WP 文章/商品名稱（h1）、瀏覽器分頁標題、或 Rank Math SEO Title。實際指的是 `<title>` tag = Rank Math「SEO Title」欄位。

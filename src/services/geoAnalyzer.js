@@ -164,6 +164,78 @@ function checkHttps(url) {
 }
 
 /**
+ * 9. Content freshness (lastmod) 檢測（2026-06-05 P3 加，LLMO 業界共識訊號）
+ *
+ * LLM 引擎在 retrieve / cite 時會優先選擇「新鮮」內容（dateModified ≤ 365 天）。
+ * 來源優先順序：
+ *   (a) <meta property="article:modified_time">  ← Yoast / Rank Math 自動輸出
+ *   (b) <meta itemprop="dateModified">           ← Schema.org microdata
+ *   (c) JSON-LD 內 dateModified 欄位             ← 結構化資料
+ *   (d) <time datetime="..."> 標籤                ← 文章內可見的修改時間
+ *
+ * 通過條件：找到任一來源、且距今 ≤ 365 天
+ */
+function checkLastmod(doc) {
+  const sources = []
+
+  // (a) OG meta — Yoast / Rank Math 預設輸出
+  const ogModified = doc.querySelector('meta[property="article:modified_time"]')
+  if (ogModified) sources.push({ source: 'og', value: ogModified.getAttribute('content') })
+
+  // (b) Schema.org microdata
+  const itempropModified = doc.querySelector('meta[itemprop="dateModified"]')
+  if (itempropModified) sources.push({ source: 'microdata', value: itempropModified.getAttribute('content') })
+
+  // (c) JSON-LD dateModified
+  const scripts = doc.querySelectorAll('script[type="application/ld+json"]')
+  scripts.forEach(script => {
+    try {
+      const data = JSON.parse(script.textContent)
+      const findModified = (obj) => {
+        if (!obj || typeof obj !== 'object') return
+        if (obj.dateModified) sources.push({ source: 'jsonld', value: obj.dateModified })
+        if (Array.isArray(obj['@graph'])) obj['@graph'].forEach(findModified)
+      }
+      findModified(data)
+    } catch {}
+  })
+
+  // (d) <time datetime>
+  const timeTags = doc.querySelectorAll('time[datetime]')
+  timeTags.forEach(t => {
+    const dt = t.getAttribute('datetime')
+    if (dt) sources.push({ source: 'time', value: dt })
+  })
+
+  if (sources.length === 0) {
+    return { passed: false, hasLastmod: false, daysSince: null, sources: [] }
+  }
+
+  // 解析日期、找最近的修改時間
+  const parsedDates = sources
+    .map(s => ({ ...s, parsed: new Date(s.value) }))
+    .filter(s => !isNaN(s.parsed.getTime()))
+
+  if (parsedDates.length === 0) {
+    return { passed: false, hasLastmod: true, daysSince: null, sources, note: 'lastmod 標記存在但日期格式無法解析' }
+  }
+
+  // 取最近一筆
+  const latest = parsedDates.reduce((a, b) => a.parsed > b.parsed ? a : b)
+  const now = new Date()
+  const daysSince = Math.floor((now.getTime() - latest.parsed.getTime()) / (1000 * 60 * 60 * 24))
+
+  return {
+    passed: daysSince >= 0 && daysSince <= 365,
+    hasLastmod: true,
+    daysSince,
+    latestDate: latest.value,
+    latestSource: latest.source,
+    sources,
+  }
+}
+
+/**
  * 完整的 GEO 分析
  */
 export async function analyzeGEO(url) {
@@ -199,6 +271,12 @@ export async function analyzeGEO(url) {
   const jsonLdCitation = doc ? checkJsonLdCitation(doc) : { passed: false }
   const canonical = doc ? checkCanonical(doc) : { passed: false }
   const https = checkHttps(cleanUrl)
+  // P3 LLMO 深化：加 content freshness 檢測（2026-06-05）
+  // 設計選擇：lastmod 暫時不計入主分數（避免歷史分數突然 -11，也避免 schema migration 壓力）
+  // 主分數仍維持 /8、lastmod 結果只放在 details 給 UI 當「LLMO 新訊號」展示
+  // 未來要正式計入時、加 SQL: ALTER TABLE geo_audits ADD COLUMN lastmod_passed BOOLEAN DEFAULT NULL;
+  // 然後把 lastmod 加進 checks 陣列、分母改 /9、insert sites 加 lastmod_passed 欄位
+  const lastmod = doc ? checkLastmod(doc) : { passed: false, hasLastmod: false }
 
   const checks = [llmsTxt, robotsAI, sitemap, openGraph, twitterCard, jsonLdCitation, canonical, https]
   const passedCount = checks.filter(c => c.passed).length
@@ -223,8 +301,12 @@ export async function analyzeGEO(url) {
       twitterCard,
       jsonLdCitation,
       canonical,
-      https
+      https,
+      lastmod, // ← 新增、給 UI 顯示「LLMO 新訊號」用（暫不計分）
     },
+    // 給 UI 快速判斷用、不入 DB（geo_audits 表沒這欄）
+    lastmod_passed: lastmod.passed,
+    lastmod_days_since: lastmod.daysSince,
     analyzed_at: new Date().toISOString()
   }
 
