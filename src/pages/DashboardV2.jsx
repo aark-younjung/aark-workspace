@@ -424,9 +424,6 @@ export default function DashboardV2() {
               </div>
             </section>
 
-            {/* ─── Notice strip（取代走馬燈、一格通知欄） ─── */}
-            <NoticeStrip />
-
             {/* ─── Quest Section（今日任務 = Action Center）— Gap 2（2026-06-05）接真資料 ─── */}
             <QuestSection quests={generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit, websiteId: website.id })} />
 
@@ -837,9 +834,30 @@ function TopBar({ website, navigate }) {
   )
 }
 
-// aivis Hero — 主視覺左大區（B1：mock 本月引用次數 + 30 天 sparkline、真資料 B2 補）
-// 對齊 prototype-2b 第 1300-1340 行 aivis-spotlight 設計
+// aivis Hero — 主視覺左大區
+// 2026-06-06 改：拿掉所有 mock 數據（47 / 12% / 18% / sparkline 都是 hardcoded、所有網站長一樣很糟）
+// 改成「實查 aivis_brands」+ 3 種狀態：
+//   1. loading — 抓資料中
+//   2. no_brands — 用戶沒設定追蹤品牌、顯示設定 CTA
+//   3. has_brands — 用戶有設品牌、列出來、給「看完整監測」入口
+// aivis 真實提及率資料需要等到 aivis monitoring run 才有、目前先讓用戶能正確進入設定流程
 function AivisHero({ isPro, websiteName, overallScore }) {
+  const { user } = useAuth()
+  const [brands, setBrands] = useState(null) // null = loading, [] = no brands, [...] = has brands
+
+  useEffect(() => {
+    if (!user?.id) return
+    let cancelled = false
+    supabase
+      .from('aivis_brands')
+      .select('id, brand_name, domain')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        if (!cancelled) setBrands(data || [])
+      })
+    return () => { cancelled = true }
+  }, [user?.id])
+
   return (
     <div className="relative overflow-hidden rounded-2xl p-6 sm:p-7" style={{
       background: 'linear-gradient(135deg, rgba(249,115,22,0.12), rgba(0,0,0,0.5))',
@@ -857,70 +875,20 @@ function AivisHero({ isPro, websiteName, overallScore }) {
           <span className="text-3xl">🎯</span>
           <h2 className="text-2xl font-bold text-white">AI 曝光監測 <span className="text-orange-300 text-lg font-normal">(aivis)</span></h2>
           <span className="ml-auto text-sm uppercase tracking-wider px-3 py-1 rounded-full bg-orange-500/25 border border-orange-400/50 text-orange-200 font-bold">
-            Pro 核心
+            {isPro ? 'Pro 核心' : '🔒 Pro 功能'}
           </span>
         </div>
-        {/* 副標補上 LLMO 訊號層定位（2026-06-05 P1）— 表明這是 LLMO 結果驗證層、跟其他 4 訊號層的關係 */}
-        <p className="text-base text-white/65 mb-1">{websiteName} 在 5 個 AI 引擎的真實提及率</p>
-        <p className="text-sm text-white/45 mb-5"><span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-semibold text-xs">LLMO 結果驗證層</span> · 跨 LLM 引用追蹤、跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分</p>
+        <p className="text-base text-white/65 mb-1">追蹤你在 ChatGPT / Claude / Perplexity / Gemini / GLM 的真實提及率</p>
+        <p className="text-sm text-white/45 mb-6"><span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-semibold text-xs">LLMO 結果驗證層</span> · 跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分</p>
 
-        {/* ─── 本月引用次數 + 30 天 sparkline（aivis-spotlight from prototype-2b） ─── */}
-        <div className="grid sm:grid-cols-2 gap-5 mb-5">
-          {/* 大數字 */}
-          <div className="rounded-xl p-4" style={{
-            background: 'rgba(0,0,0,0.25)',
-            border: '1px solid rgba(249,115,22,0.18)',
-          }}>
-            <div className="text-sm text-white/55 mb-1">本月引用次數</div>
-            <div className="flex items-baseline gap-3 mb-1">
-              <span className="text-5xl font-black font-mono text-white leading-none">{isPro ? '47' : '?'}</span>
-              {isPro && <span className="text-sm font-bold text-emerald-300">▲ +12 次 vs 上月</span>}
-            </div>
-            <div className="text-sm text-white/45">{isPro ? '勝過 73% 同行品牌' : '升 Pro 看完整數據'}</div>
-          </div>
-
-          {/* 30 天 sparkline */}
-          <div className="rounded-xl p-4" style={{
-            background: 'rgba(0,0,0,0.25)',
-            border: '1px solid rgba(249,115,22,0.18)',
-          }}>
-            <div className="text-sm text-white/55 mb-2">📈 30 天引用曲線</div>
-            <svg viewBox="0 0 300 80" preserveAspectRatio="none" className="w-full" style={{ height: 60 }}>
-              <defs>
-                <linearGradient id="aivisGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#f97316" stopOpacity="0.5"/>
-                  <stop offset="100%" stopColor="#f97316" stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              {/* Grid */}
-              <line x1="0" y1="20" x2="300" y2="20" stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
-              <line x1="0" y1="40" x2="300" y2="40" stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
-              <line x1="0" y1="60" x2="300" y2="60" stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
-              {/* Area */}
-              <path d="M 0,68 L 12,66 L 24,62 L 36,60 L 48,58 L 60,55 L 72,52 L 84,48 L 96,46 L 108,43 L 120,40 L 132,38 L 144,35 L 156,32 L 168,30 L 180,28 L 192,26 L 204,22 L 216,20 L 228,16 L 240,14 L 252,12 L 264,10 L 276,8 L 288,6 L 300,4 L 300,80 L 0,80 Z" fill="url(#aivisGrad)"/>
-              {/* Line */}
-              <path d="M 0,68 L 12,66 L 24,62 L 36,60 L 48,58 L 60,55 L 72,52 L 84,48 L 96,46 L 108,43 L 120,40 L 132,38 L 144,35 L 156,32 L 168,30 L 180,28 L 192,26 L 204,22 L 216,20 L 228,16 L 240,14 L 252,12 L 264,10 L 276,8 L 288,6 L 300,4" fill="none" stroke="#f97316" strokeWidth="2.5"/>
-              {/* End point glow */}
-              <circle cx="300" cy="4" r="4" fill="#f97316">
-                <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite"/>
-              </circle>
-            </svg>
-            <div className="flex justify-between text-sm text-white/40 mt-1">
-              <span>30 天前 · 3 次</span>
-              <span>本週 · 14 次</span>
-              <span>今天</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 5 AI 引擎 chips */}
-        <div className="grid grid-cols-5 gap-2 mb-5">
+        {/* 5 AI 引擎 chips（中性、不掛假數據）— 純展示「我們追蹤這 5 個 AI 引擎」這件事 */}
+        <div className="grid grid-cols-5 gap-2 mb-6">
           {[
-            { name: 'ChatGPT',     emoji: '💬', pct: 12 },
-            { name: 'Claude',      emoji: '🟣', pct: 18 },
-            { name: 'Perplexity',  emoji: '🔎', pct: 8 },
-            { name: 'Gemini',      emoji: '✨', pct: 14 },
-            { name: 'GLM',         emoji: '🧠', pct: 6 },
+            { name: 'ChatGPT',    emoji: '💬' },
+            { name: 'Claude',     emoji: '🟣' },
+            { name: 'Perplexity', emoji: '🔎' },
+            { name: 'Gemini',     emoji: '✨' },
+            { name: 'GLM',        emoji: '🧠' },
           ].map((e, i) => (
             <div key={i} className="text-center p-2 rounded-lg" style={{
               background: 'rgba(255,255,255,0.04)',
@@ -928,28 +896,68 @@ function AivisHero({ isPro, websiteName, overallScore }) {
             }}>
               <div className="text-2xl mb-1">{e.emoji}</div>
               <div className="text-sm text-white/55">{e.name}</div>
-              <div className="text-sm font-bold text-orange-300 font-mono">{isPro ? `${e.pct}%` : '🔒'}</div>
+              <div className="text-sm font-mono text-white/35">—</div>
             </div>
           ))}
         </div>
 
-        {/* 平均提及率 + CTA */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <div className="text-sm text-white/55 mb-1">平均提及率（30 天）</div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-black text-white font-mono">{isPro ? '11.6' : '?'}</span>
-              <span className="text-xl text-white/40 font-mono">%</span>
-              {isPro && <span className="text-sm font-bold text-emerald-300">▲ +2.3</span>}
+        {/* 3 種狀態：loading / no_brands / has_brands */}
+        {brands === null ? (
+          <div className="text-sm text-white/40 py-2">載入中…</div>
+        ) : brands.length === 0 ? (
+          // 用戶還沒設定追蹤品牌 — 顯示明確 CTA
+          <div className="rounded-xl p-5" style={{
+            background: 'rgba(0,0,0,0.3)',
+            border: '1px solid rgba(249,115,22,0.25)',
+          }}>
+            <div className="flex items-start gap-3 mb-4">
+              <span className="text-2xl flex-shrink-0">📡</span>
+              <div className="flex-1">
+                <div className="text-base font-bold text-white mb-1">尚未啟用 aivis 追蹤</div>
+                <p className="text-sm text-white/55 leading-relaxed">
+                  {isPro
+                    ? '設定你想追蹤的品牌名稱（例：金鉑先生、kimbo3899）、aivis 會每天問 5 個 AI 引擎、看你被提及幾次。'
+                    : 'aivis 是 Pro 核心功能 — 追蹤品牌在 5 個 AI 引擎的真實提及率，升 Pro 解鎖。'}
+                </p>
+              </div>
             </div>
+            <Link
+              to={isPro ? '/ai-visibility' : '/pricing'}
+              className="block w-full text-center px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
+            >
+              {isPro ? '設定追蹤品牌 →' : '升 Pro 解鎖 aivis →'}
+            </Link>
           </div>
-          <Link
-            to="/ai-visibility"
-            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
-          >
-            {isPro ? '看完整監測 →' : '升 Pro 解鎖 →'}
-          </Link>
-        </div>
+        ) : (
+          // 用戶有設定品牌 — 列出 + 「看完整監測」入口
+          <div className="rounded-xl p-5" style={{
+            background: 'rgba(0,0,0,0.3)',
+            border: '1px solid rgba(249,115,22,0.25)',
+          }}>
+            <div className="text-sm text-white/55 mb-3">追蹤中的品牌（{brands.length}）</div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {brands.slice(0, 6).map(b => (
+                <span key={b.id} className="text-sm px-3 py-1.5 rounded-full text-white" style={{
+                  background: 'rgba(249,115,22,0.15)',
+                  border: '1px solid rgba(249,115,22,0.35)',
+                }}>
+                  {b.brand_name}
+                </span>
+              ))}
+              {brands.length > 6 && (
+                <span className="text-sm px-3 py-1.5 rounded-full text-white/55 bg-white/5 border border-white/10">
+                  +{brands.length - 6} 個
+                </span>
+              )}
+            </div>
+            <Link
+              to="/ai-visibility"
+              className="block w-full text-center px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
+            >
+              看完整監測數據 →
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1026,25 +1034,68 @@ function GamifyRail({ gamify }) {
         </div>
         <div className="grid grid-cols-4 gap-1.5">
           {gamify.badges.map((b, i) => (
-            <div
-              key={i}
-              title={b.label}
-              className="aspect-square rounded-lg flex items-center justify-center text-xl transition relative"
-              style={{
-                background: b.unlocked ? 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${b.unlocked ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`,
-                opacity: b.unlocked ? 1 : 0.3,
-                filter: b.unlocked ? 'none' : 'grayscale(1)',
-              }}
-            >
-              {b.emoji}
-              {!b.unlocked && (
-                <span className="absolute inset-0 flex items-center justify-center text-sm text-white/25 bg-black/30 rounded-lg">🔒</span>
-              )}
-            </div>
+            <BadgeCell key={i} badge={b} />
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// 徽章單一格子 + hover popover（2026-06-06）— 顯示徽章名稱 + 達標條件
+// 注意：grayscale filter 只套在 emoji span、不影響 tooltip 子層
+function BadgeCell({ badge }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="aspect-square rounded-lg flex items-center justify-center text-xl transition relative cursor-help"
+      style={{
+        background: badge.unlocked ? 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05))' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${badge.unlocked ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`,
+      }}
+    >
+      {/* 套濾鏡的 emoji 區（grayscale + opacity 只套在這層、不影響 tooltip） */}
+      <span style={{
+        opacity: badge.unlocked ? 1 : 0.3,
+        filter: badge.unlocked ? 'none' : 'grayscale(1)',
+      }}>
+        {badge.emoji}
+      </span>
+      {!badge.unlocked && (
+        <span className="absolute inset-0 flex items-center justify-center text-sm text-white/25 bg-black/30 rounded-lg">🔒</span>
+      )}
+      {/* hover popover — 顯示徽章名稱 + 達標條件 */}
+      {hover && (
+        <div
+          className="absolute z-30 bottom-full left-1/2 mb-2 -translate-x-1/2 w-48 pointer-events-none"
+          style={{
+            background: 'rgba(10, 12, 16, 0.96)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: 8,
+            padding: '8px 10px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <div className="text-sm font-bold text-white mb-1">
+            {badge.unlocked ? '✓ ' : '🔒 '}{badge.label}
+          </div>
+          <div className="text-xs text-white/65 leading-relaxed">
+            <span className="text-white/40">達標：</span>{badge.criteria}
+          </div>
+          {/* 小三角箭頭指向徽章 */}
+          <div
+            className="absolute left-1/2 top-full -translate-x-1/2"
+            style={{
+              width: 0, height: 0,
+              borderLeft: '5px solid transparent',
+              borderRight: '5px solid transparent',
+              borderTop: '5px solid rgba(10, 12, 16, 0.96)',
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }

@@ -98,15 +98,16 @@ function formatDate(d) {
 }
 
 // ── 預設徽章定義（順序對齊 prototype-2b）────────────
+// criteria：給 GamifyRail 的 hover tooltip 顯示「怎麼解鎖」（2026-06-06 加）
 const BADGE_DEFS = [
-  { key: 'first_scan',    emoji: '🚀', label: '首次掃描',         test: (s) => s.totalAudits >= 1 },
-  { key: 'streak_7',      emoji: '🔥', label: '7 日連續登入',      test: (s) => s.streak >= 7 },
-  { key: 'full_audit',    emoji: '🩺', label: '完成站點體檢',      test: (s) => s.hasFullAudit },
-  { key: 'first_fix',     emoji: '🔧', label: '初次修復',          test: (s) => s.fixEventCount >= 1 },
-  { key: 'improve_10',    emoji: '✨', label: '改進 +10 分',       test: (s) => s.maxImprove >= 10 },
-  { key: 'all_green',     emoji: '🎯', label: '所有 5 面向 ≥80',   test: (s) => s.allGreen },
-  { key: 'streak_30',    emoji: '📈', label: '連續 30 天進步',     test: (s) => s.streak >= 30 },
-  { key: 'diamond_tier', emoji: '💎', label: '達到鑽石級',         test: (s) => s.level >= 21 },
+  { key: 'first_scan',    emoji: '🚀', label: '首次掃描',         criteria: '完成任一網站的第一次 audit',          test: (s) => s.totalAudits >= 1 },
+  { key: 'streak_7',      emoji: '🔥', label: '7 日連續登入',     criteria: '連續 7 天每天至少跑 1 次 audit',      test: (s) => s.streak >= 7 },
+  { key: 'full_audit',    emoji: '🩺', label: '完成站點體檢',     criteria: '任一網站 5 個面向（SEO/AEO/GEO/E-E-A-T/內容）都有分數', test: (s) => s.hasFullAudit },
+  { key: 'first_fix',     emoji: '🔧', label: '初次修復',         criteria: '按過至少 1 次「✓ 我已修好」按鈕',     test: (s) => s.fixEventCount >= 1 },
+  { key: 'improve_10',    emoji: '✨', label: '改進 +10 分',      criteria: '任一面向歷史最高分 − 最低分 ≥ 10',    test: (s) => s.maxImprove >= 10 },
+  { key: 'all_green',     emoji: '🎯', label: '所有 5 面向 ≥80',  criteria: '任一網站 5 個面向都拿 ≥ 80 分',       test: (s) => s.allGreen },
+  { key: 'streak_30',     emoji: '📈', label: '連續 30 天進步',   criteria: '連續 30 天每天至少跑 1 次 audit',     test: (s) => s.streak >= 30 },
+  { key: 'diamond_tier',  emoji: '💎', label: '達到鑽石級',       criteria: '累積 7500 XP 升到鑽石級（Lv.21+）',   test: (s) => s.level >= 21 },
 ]
 
 export function useGamification(userId) {
@@ -228,6 +229,7 @@ export function useGamification(userId) {
         const badges = BADGE_DEFS.map(b => ({
           emoji: b.emoji,
           label: b.label,
+          criteria: b.criteria,
           key: b.key,
           unlocked: b.test(stats),
         }))

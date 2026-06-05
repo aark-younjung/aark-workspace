@@ -866,16 +866,13 @@ export default function HomeDark() {
               ChatGPT 推不<br />推薦你的品牌?
             </h1>
 
-            <p className="text-xl md:text-2xl font-semibold text-white mb-3 leading-snug">
-              你過去花在 SEO 的努力，不會 1:1 自動轉成 AI 曝光。<br />
-              方舟 AI 雷達把這些成果，再轉成 ChatGPT、Perplexity 看得懂的訊號。
+            {/* 副標精簡（2026-06-06）— 拿掉第二句「方舟把這些成果再轉成...」、用 nowrap 避免「光」被斷字孤立 */}
+            <p className="text-xl md:text-2xl font-semibold text-white mb-6 leading-snug">
+              你過去花在 SEO 的努力，<br />
+              不會 1:1 自動轉成 <span className="whitespace-nowrap">AI 曝光</span>。
             </p>
 
-            {/* LLMO 訊號層定位（2026-06-05 v2 改）— 5 AI 共識：必須先給中文錨點、LLMO 當專有名詞補在後面，
-                不能裸放 LLMO（95% 台灣讀者不熟）；訊號層內 aivis 改為「跨 LLM 引用追蹤」更具象 */}
-            <p className="text-sm text-white/55 mb-6 tracking-wide">
-              AI 搜尋能見度監測平台（LLMO）<span className="text-white/40">— 拆 5 個可量化訊號：SEO · AEO · GEO · E-E-A-T · 跨 LLM 引用追蹤</span>
-            </p>
+            {/* 「AI 搜尋能見度監測平台（LLMO）」這段於 2026-06-06 拿掉 — h1 + chips 已說明、避免 Hero 文字過多 */}
 
             <p className="text-base text-white/80 mb-4 max-w-lg">
               輸入網址，60 秒給你完整 AI 能見度報告 — 免費診斷 + 平台別修法步驟手把手帶你修

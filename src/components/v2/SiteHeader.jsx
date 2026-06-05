@@ -10,16 +10,18 @@ export default function SiteHeader() {
     <header className="relative z-50 border-b border-white/8 bg-black/50 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between py-3 sm:py-4">
-          {/* Logo + 公司名（手機版只顯示「優勢方舟」） */}
-          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 no-underline">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-900/50">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="text-base sm:text-xl font-bold text-white leading-tight">
-              <span className="sm:hidden">AI 雷達</span>
-              <span className="hidden sm:inline">AI 雷達</span>
+          {/* Logo 區（2026-06-06 改）— 暫時拿掉橘色閃電 mark（logo 還沒定案）、改用 Aark wordmark + AI 雷達 中文副標
+              Aark 用 Space Grotesk Bold（跟 6 個 logo 方向探索一致）、之後選定 logo 再補回 mark */}
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0 no-underline">
+            <span className="text-xl sm:text-2xl font-bold text-white leading-none"
+              style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                letterSpacing: '-0.04em',
+              }}>
+              Aark
+            </span>
+            <span className="text-sm sm:text-base text-white/55 leading-none">
+              · AI 雷達
             </span>
           </Link>
 
