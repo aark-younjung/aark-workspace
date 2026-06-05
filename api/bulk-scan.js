@@ -342,29 +342,82 @@ async function fetchWithUaFallback(url, signal) {
   throw new Error(`All UA attempts failed: ${lastError}`)
 }
 
+// Timeout 從 15s 拉到 25s（2026-06-05）— 慢主機友善、跟 article fetch 一致
+const SITEMAP_FETCH_TIMEOUT_MS = 25000
+
+// 從 robots.txt 抽出 `Sitemap: <url>` 指令的所有 URL（SEO 業界標準路徑、2026-06-05 加）
+// kimbo3899 / 一般 WP+Yoast/Rank Math 站幾乎都會在 robots.txt 寫 Sitemap 指令
+async function discoverSitemapsFromRobotsTxt(origin) {
+  try {
+    const r = await fetchWithUaFallback(origin + '/robots.txt', AbortSignal.timeout(SITEMAP_FETCH_TIMEOUT_MS))
+    if (!r.ok) return []
+    const text = await r.text()
+    const sitemapUrls = []
+    // robots.txt 規格：`Sitemap: <url>` 一行一個、大小寫不敏感
+    for (const line of text.split(/\r?\n/)) {
+      const m = line.match(/^\s*sitemap\s*:\s*(\S+)/i)
+      if (m && m[1]) sitemapUrls.push(m[1].trim())
+    }
+    return sitemapUrls
+  } catch {
+    return []
+  }
+}
+
 async function discoverSitemapUrls(siteUrl) {
   const origin = new URL(siteUrl).origin   // e.g. https://kimbo3899.com.tw
-  const candidates = ['/sitemap_index.xml', '/wp-sitemap.xml', '/sitemap.xml']
 
+  // 1. 先從 /robots.txt 抓 Sitemap 指令（SEO 業界標準、優先級最高）
+  const robotsSitemaps = await discoverSitemapsFromRobotsTxt(origin)
+
+  // 2. 候選路徑清單從 3 個擴充到 8 個（2026-06-05）— 涵蓋 WP / Yoast / Rank Math / 自訂變體
+  const hardCodedCandidates = [
+    '/sitemap_index.xml',          // Yoast / Rank Math 預設
+    '/wp-sitemap.xml',             // WordPress core 5.5+
+    '/sitemap.xml',                // 通用 / 單一 sitemap
+    '/sitemap-index.xml',          // 變體（用 dash 不是底線）
+    '/sitemaps.xml',               // 複數變體
+    '/sitemap1.xml',               // 編號變體
+    '/post-sitemap.xml',           // Yoast 文章 sitemap 直連
+    '/wp-sitemap-posts-post-1.xml', // WP core 文章 sitemap 第 1 頁直連
+  ]
+
+  // robots.txt 找到的優先試、再試 hard-coded、去重
+  const allCandidates = [
+    ...robotsSitemaps,
+    ...hardCodedCandidates.map(p => origin + p),
+  ].filter((url, i, arr) => arr.indexOf(url) === i) // 去重
+
+  // 嘗試找有效 sitemap、失敗一輪後等 3 秒重試一次（2026-06-05）
+  // 應付 mod_security 暫時 throttle（通常 < 5 秒就過）
   let xml = null
   let foundAt = null
-  for (const path of candidates) {
-    try {
-      const r = await fetchWithUaFallback(origin + path, AbortSignal.timeout(15000))
-      if (r.ok) {
-        const text = await r.text()
-        // 簡易驗證確實是 XML 而非 404 HTML（有些主機 404 也回 200）
-        if (text.includes('<urlset') || text.includes('<sitemapindex')) {
-          xml = text
-          foundAt = path
-          break
+
+  for (let attempt = 0; attempt < 2 && !xml; attempt++) {
+    if (attempt > 0) {
+      await new Promise(resolve => setTimeout(resolve, 3000))
+    }
+    for (const url of allCandidates) {
+      try {
+        const r = await fetchWithUaFallback(url, AbortSignal.timeout(SITEMAP_FETCH_TIMEOUT_MS))
+        if (r.ok) {
+          const text = await r.text()
+          // 簡易驗證確實是 XML 而非 404 HTML（有些主機 404 也回 200）
+          if (text.includes('<urlset') || text.includes('<sitemapindex')) {
+            xml = text
+            foundAt = url
+            break
+          }
         }
-      }
-    } catch { /* 試下一個 */ }
+      } catch { /* 試下一個 */ }
+    }
   }
 
   if (!xml) {
-    throw new Error('在 /sitemap_index.xml、/wp-sitemap.xml、/sitemap.xml 都找不到有效 sitemap（可能被 anti-bot 擋、或網站沒裝 SEO 外掛產 sitemap）')
+    const robotsHint = robotsSitemaps.length > 0
+      ? `（robots.txt 內找到 ${robotsSitemaps.length} 個 Sitemap 指令但都抓不到 — 可能被 anti-bot 擋）`
+      : '（robots.txt 內也沒寫 Sitemap 指令）'
+    throw new Error(`已試 ${allCandidates.length} 個 sitemap 路徑都找不到有效 XML${robotsHint}。請確認：(a) 網站有裝 Yoast / Rank Math 等 SEO 外掛並啟用 sitemap (b) sitemap 不被 Cloudflare / mod_security 擋 (c) robots.txt 可正常存取`)
   }
 
   // 如果是 sitemap index → 抓所有子 sitemap 的 URL 集合 union
@@ -378,7 +431,7 @@ async function discoverSitemapUrls(siteUrl) {
     }
     for (const batch of batches) {
       const results = await Promise.allSettled(batch.map(async (url) => {
-        const r = await fetchWithUaFallback(url, AbortSignal.timeout(15000))
+        const r = await fetchWithUaFallback(url, AbortSignal.timeout(SITEMAP_FETCH_TIMEOUT_MS))
         if (!r.ok) return []
         const sub = await r.text()
         return extractUrlsWithMeta(sub)

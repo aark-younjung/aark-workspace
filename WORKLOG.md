@@ -6,6 +6,30 @@
 
 ---
 
+### 2026-06-05（Sitemap discovery 強化：robots.txt + 路徑擴充 + 重試）
+
+**用戶痛點：「批次文章掃描立刻重掃確認之後又出現 ⚠️ Sitemap discovery failed，這個問題好像常常出現」**
+
+**根因 4 個結構性缺口：**
+1. **只查 3 個 hard-coded 路徑** — /sitemap_index.xml / /wp-sitemap.xml / /sitemap.xml；自訂變體（dash / 複數 / 編號）會 miss
+2. **完全不讀 /robots.txt 的 Sitemap 指令** — 這是 SEO 業界標準路徑、最該優先讀的；之前漏了
+3. **Timeout 15s 對慢主機不夠** — 跟之前 article fetch 同問題
+4. **全失敗就立刻 throw** — mod_security 暫時 throttle（通常 < 5 秒就過）沒重試機會
+
+**修法（[api/bulk-scan.js](api/bulk-scan.js)）：**
+- 新增 `discoverSitemapsFromRobotsTxt(origin)` — fetch /robots.txt、用 regex 抽出所有 `Sitemap: <url>` 指令
+- 候選路徑清單從 3 個 → 8 個（加 `/sitemap-index.xml` / `/sitemaps.xml` / `/sitemap1.xml` / `/post-sitemap.xml` / `/wp-sitemap-posts-post-1.xml`）
+- robots.txt 找到的 sitemap URL 優先試、再試 hard-coded、最後去重
+- 全失敗 → sleep 3 秒 → 重試 1 輪（應付暫時 rate-limit）
+- Timeout 15s → 25s（常數提到 `SITEMAP_FETCH_TIMEOUT_MS` 同時更新子 sitemap fetch）
+- 失敗錯誤訊息更具體：列出試了幾個路徑、robots.txt 內有沒有 Sitemap 指令、給用戶具體下一步
+
+**預期效果：** 成功率從 60-70% → 90%+；失敗時 start endpoint 阻塞從 ~9 秒拉到 ~30-40 秒（多了 robots.txt + 重試 + 8 路徑 × 3 UA），但用戶看 ❌ 機率大減。
+
+**影響面：** 純 worker 端、無 DB / 無前端、無 schema 變動。Push 後 Vercel 部署 ~2 分鐘生效、下次按重掃就用新版。
+
+---
+
 ### 2026-06-05（LLMO v2 文案 + 品牌名「方舟 AI 雷達」定案 — 5 AI 共識整合）
 
 **用戶把 P0 文案拿給 5 個 AI（GPT-5 / Gemini 2.5 / Grok / Perplexity / Claude）跑第二意見後、回來整合。**
