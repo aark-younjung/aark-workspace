@@ -424,6 +424,9 @@ export default function DashboardV2() {
               </div>
             </section>
 
+            {/* ─── 本週通報卡（2026-06-06）— 取代之前移除的 NoticeStrip 跑馬燈 ─── */}
+            <WeeklyBriefingCard />
+
             {/* ─── Quest Section（今日任務 = Action Center）— Gap 2（2026-06-05）接真資料 ─── */}
             <QuestSection quests={generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit, websiteId: website.id })} />
 
@@ -1097,6 +1100,111 @@ function BadgeCell({ badge }) {
         </div>
       )}
     </div>
+  )
+}
+
+// WeeklyBriefingCard — 本週通報卡（2026-06-06）— 取代跑馬燈 / NoticeStrip
+// 設計理念：登入用戶每天看 Dashboard、要的是「我沒注意到的新事」、不是「看了 100 遍的價值主張」
+// 內容類型：產品更新 / 個人化提醒 / 同儕標竿（社會證明 Dashboard 版）/ 早鳥提示
+//
+// 目前是靜態 hardcoded、之後可以接 supabase.from('announcements') 或 cron 產生
+// 用單行條狀 chip 配個 emoji + 文字、可關閉（X 後 localStorage 記住 dismissed_id）
+const BRIEFINGS = [
+  {
+    id: 'lastmod-2026-06-05',
+    type: 'feature',
+    emoji: '🆕',
+    title: '新增 lastmod 訊號',
+    body: 'GEO Audit 加入「內容新鮮度」檢測 — LLM 偏好引用 ≤ 365 天的內容、現在會自動偵測你的 article:modified_time。',
+    link: null,
+  },
+  {
+    id: 'sitemap-fix-2026-06-05',
+    type: 'fix',
+    emoji: '🔧',
+    title: 'BulkScan 抓 sitemap 失敗率大降',
+    body: '改讀 robots.txt + 路徑擴充 + 重試 — 之前 60-70% 成功率拉到 90%+，重掃看看吧。',
+    link: null,
+  },
+  {
+    id: 'dashboard-v2-2026-06-06',
+    type: 'feature',
+    emoji: '🎮',
+    title: 'Dashboard v2 正式上線',
+    body: '5 Tab 站點體檢、徽章 hover 看達標、修復工具箱「我已修好 +5 XP」— 不適應的話 TopBar 還有「← 切回舊版」按鈕。',
+    link: null,
+  },
+]
+
+function WeeklyBriefingCard() {
+  // localStorage 記住已關閉的 briefing id、不每次刷新都跳同一條
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      const raw = localStorage.getItem('aark_briefing_dismissed')
+      return raw ? new Set(JSON.parse(raw)) : new Set()
+    } catch { return new Set() }
+  })
+
+  const visible = BRIEFINGS.filter(b => !dismissed.has(b.id))
+  if (visible.length === 0) return null
+
+  function handleDismiss(id) {
+    const next = new Set(dismissed)
+    next.add(id)
+    setDismissed(next)
+    try {
+      localStorage.setItem('aark_briefing_dismissed', JSON.stringify([...next]))
+    } catch {}
+  }
+
+  const TYPE_COLOR = {
+    feature: { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)', accent: '#86efac' },
+    fix:     { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)', accent: '#93c5fd' },
+    notice:  { bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.25)', accent: '#fcd34d' },
+    promo:   { bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)', accent: '#fdba74' },
+  }
+
+  return (
+    <section className="mb-6 rounded-2xl p-4 sm:p-5" style={{
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(255,255,255,0.08)',
+    }}>
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h3 className="text-base font-bold text-white flex items-center gap-2">
+          📰 本週通報 <span className="text-sm font-normal text-white/40">· {visible.length} 條未讀</span>
+        </h3>
+      </div>
+      <div className="flex flex-col gap-2">
+        {visible.map(b => {
+          const color = TYPE_COLOR[b.type] || TYPE_COLOR.notice
+          return (
+            <div key={b.id} className="rounded-xl p-3 flex items-start gap-3" style={{
+              background: color.bg,
+              border: `1px solid ${color.border}`,
+            }}>
+              <span className="text-xl flex-shrink-0">{b.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 mb-0.5 flex-wrap">
+                  <span className="text-sm font-bold" style={{ color: color.accent }}>{b.title}</span>
+                </div>
+                <p className="text-sm text-white/60 leading-relaxed">{b.body}</p>
+                {b.link && (
+                  <Link to={b.link} className="inline-block mt-1.5 text-sm font-bold hover:underline" style={{ color: color.accent }}>
+                    看詳細 →
+                  </Link>
+                )}
+              </div>
+              <button
+                onClick={() => handleDismiss(b.id)}
+                className="flex-shrink-0 w-6 h-6 rounded text-white/35 hover:text-white hover:bg-white/5 flex items-center justify-center text-base"
+                aria-label="關閉這則通報"
+                title="關閉這則通報"
+              >×</button>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 

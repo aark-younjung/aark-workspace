@@ -272,10 +272,21 @@ export default function HomeDark() {
   const [myWebsites, setMyWebsites] = useState([])
   // TOP 8 排行榜:預設用 SAMPLE_TOP,真實資料載入後若有 ≥1 筆會混合或覆蓋
   const [topSites, setTopSites] = useState(SAMPLE_TOP)
+  // 公開 KPI（2026-06-06 加）— Hero 下方社會證明 + 早鳥剩餘名額 bar 用
+  // /api/public?action=stats 回 { brands, reports, mentions, scans, earlybird_taken }
+  const [publicStats, setPublicStats] = useState(null)
   const navigate = useNavigate()
   const { user, isPro, userName, signOut } = useAuth()
   const { setDark } = useTheme()
   useEffect(() => { setDark(true) }, [])
+
+  // 抓社會證明 KPI（2026-06-06）— Hero thin bar 用
+  useEffect(() => {
+    fetch('/api/public?action=stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setPublicStats(data) })
+      .catch(() => {})
+  }, [])
 
   // 打字動畫:循環打/刪範例網址,只在已登入且 input 為空時跑
   useEffect(() => {
@@ -866,13 +877,27 @@ export default function HomeDark() {
               ChatGPT 推不<br />推薦你的品牌?
             </h1>
 
-            {/* 副標精簡（2026-06-06）— 拿掉第二句「方舟把這些成果再轉成...」、用 nowrap 避免「光」被斷字孤立 */}
-            <p className="text-xl md:text-2xl font-semibold text-white mb-6 leading-snug">
+            {/* 副標精簡（2026-06-06）— 主副標保持單一陳述、用 nowrap 避免「光」被斷字孤立 */}
+            <p className="text-xl md:text-2xl font-semibold text-white mb-2 leading-snug">
               你過去花在 SEO 的努力，<br />
               不會 1:1 自動轉成 <span className="whitespace-nowrap">AI 曝光</span>。
             </p>
 
-            {/* 「AI 搜尋能見度監測平台（LLMO）」這段於 2026-06-06 拿掉 — h1 + chips 已說明、避免 Hero 文字過多 */}
+            {/* 副標延伸小字（2026-06-06 加回、5 AI 共識「接住老 SEO 從業者」）— 用小字 + 暗色、不破壞 Hero 簡潔 */}
+            <p className="text-sm text-white/55 mb-5 max-w-lg leading-relaxed">
+              方舟 AI 雷達把這些成果，再轉成 ChatGPT、Perplexity 看得懂的訊號 —
+              <span className="text-emerald-300 ml-1">延續而非取代 SEO</span>。
+            </p>
+
+            {/* LLMO 訊號層 chip 列（2026-06-06 加回精簡版）— 替代之前刪掉的長段、用 chip 形式讓 LLMO 字串還在頁面（SEO 友好） */}
+            <div className="flex flex-wrap items-center gap-1.5 mb-5 text-sm">
+              <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-white/70 font-mono">SEO</span>
+              <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-white/70 font-mono">AEO</span>
+              <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-white/70 font-mono">GEO</span>
+              <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-white/70 font-mono">E-E-A-T</span>
+              <span className="px-2 py-1 rounded bg-orange-500/15 border border-orange-400/30 text-orange-300 font-mono">aivis</span>
+              <span className="text-white/40 ml-1">— LLMO 監測平台</span>
+            </div>
 
             <p className="text-base text-white/80 mb-4 max-w-lg">
               輸入網址，60 秒給你完整 AI 能見度報告 — 免費診斷 + 平台別修法步驟手把手帶你修
@@ -884,7 +909,7 @@ export default function HomeDark() {
                 - 「不懂程式碼也能照著步驟修」保留、給 P1 品牌主友善訊號 */}
             <div className="flex flex-wrap gap-2 mb-10 max-w-lg">
               <span className="text-sm px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-medium">
-                ✓ 代理商必備:多站追蹤 + PDF 報告
+                ✓ 代理商：拿這份報告賣給你客戶
               </span>
               <span className="text-sm px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 font-medium">
                 ✓ 連 Cloudflare 擋 ChatGPT 都檢得出
@@ -941,6 +966,28 @@ export default function HomeDark() {
                 <p className="mt-3 text-white/50 text-sm">
                   <Link to="/login" className="text-orange-400 hover:text-orange-300 underline font-medium">登入</Link> 或 <Link to="/register" className="text-orange-400 hover:text-orange-300 underline font-medium">免費註冊</Link> 後即可開始分析
                 </p>
+              )}
+
+              {/* 社會證明 + 早鳥剩餘名額 thin bar（2026-06-06 加、GPT 5 AI 共識建議）—
+                  「為什麼現在做」時間壓力 = 早鳥前 100 名 NT$990/月、剩餘名額即時顯示 */}
+              {publicStats && (
+                <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/55">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-emerald-400">✓</span>
+                    已協助 <strong className="text-white font-mono">{publicStats.brands.toLocaleString()}</strong> 個品牌完成
+                    <strong className="text-white font-mono">{publicStats.reports.toLocaleString()}</strong> 次 AI 能見度檢測
+                  </span>
+                  {publicStats.earlybird_taken < 100 && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-amber-300">⏰</span>
+                      早鳥
+                      <strong className="text-amber-300 font-mono">NT$990 / 月</strong>
+                      剩
+                      <strong className="text-amber-300 font-mono">{100 - publicStats.earlybird_taken}</strong>
+                      名
+                    </span>
+                  )}
+                </div>
               )}
 
               {/* 結構化錯誤 banner — 取代原本 alert，給用戶可行動的下一步 */}
