@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import Footer from '../components/Footer'
 // 2026-06-06：公告改成右上角 NotificationBell — HomeDark 用自己內嵌 header（不是 SiteHeader）、要單獨 import
 import NotificationBell from '../components/v2/NotificationBell'
+// 2026-06-06：上 C 方向 logo mark
+import AarkMark from '../components/v2/AarkMark'
 import EarlybirdBanner from '../components/EarlybirdBanner'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -784,8 +786,9 @@ export default function HomeDark() {
       <header className="relative z-50 border-b border-white/8 bg-black/50 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between py-3 sm:py-4">
-            {/* Logo 區（2026-06-06 跟 SiteHeader 同步）— 暫拿掉橘色閃電 mark、改 Aark wordmark + AI 雷達 中文副標 */}
+            {/* Logo 區（2026-06-06 v3）— 補上 C 方向 radar dial mark + Aark wordmark + AI 雷達 中文副標 */}
             <Link to="/" className="flex items-center gap-2 flex-shrink-0 no-underline">
+              <AarkMark size={36} className="flex-shrink-0" />
               <span className="text-xl sm:text-2xl font-bold text-white leading-none"
                 style={{
                   fontFamily: "'Space Grotesk', sans-serif",
@@ -793,7 +796,7 @@ export default function HomeDark() {
                 }}>
                 Aark
               </span>
-              <span className="text-sm sm:text-base text-white/55 leading-none">
+              <span className="hidden sm:inline text-sm sm:text-base text-white/55 leading-none">
                 · AI 雷達
               </span>
             </Link>

@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 // 2026-06-06：公告從卡片堆疊改成右上角鈴鐺 + 下拉 panel（跟 GitHub / Notion 一致）
 import NotificationBell from './NotificationBell'
+// 2026-06-06：上 C 方向 logo（radar dial mark）— 取代之前留 wordmark only 的階段
+import AarkMark from './AarkMark'
 
 // 全站共用暗色頂部導覽列：Logo + 桌機 nav + 登入 / 用戶區 + 手機 nav
 // 沿用 HomeDark 同款 — 黑色玻璃條 + 橘色強調 hover
@@ -12,9 +14,9 @@ export default function SiteHeader() {
     <header className="relative z-50 border-b border-white/8 bg-black/50 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between py-3 sm:py-4">
-          {/* Logo 區（2026-06-06 改）— 暫時拿掉橘色閃電 mark（logo 還沒定案）、改用 Aark wordmark + AI 雷達 中文副標
-              Aark 用 Space Grotesk Bold（跟 6 個 logo 方向探索一致）、之後選定 logo 再補回 mark */}
+          {/* Logo 區（2026-06-06 v3 改）— 補上 C 方向 radar dial mark + 既有 Aark wordmark */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0 no-underline">
+            <AarkMark size={32} className="flex-shrink-0" />
             <span className="text-xl sm:text-2xl font-bold text-white leading-none"
               style={{
                 fontFamily: "'Space Grotesk', sans-serif",
@@ -22,7 +24,7 @@ export default function SiteHeader() {
               }}>
               Aark
             </span>
-            <span className="text-sm sm:text-base text-white/55 leading-none">
+            <span className="hidden sm:inline text-sm sm:text-base text-white/55 leading-none">
               · AI 雷達
             </span>
           </Link>

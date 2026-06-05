@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import AarkMark from './v2/AarkMark'
 
 export default function Footer({ dark = false }) {
   /* 配色 token — dark 用於暗色頁面（HomeDark、所有報告頁），light 留給日後切換回橘白版 */
@@ -20,8 +21,9 @@ export default function Footer({ dark = false }) {
 
           {/* 第 1 欄：品牌 */}
           <div>
-            {/* Footer brand（2026-06-06 跟 header 同步）— Aark wordmark + AI 雷達 中文副標 */}
+            {/* Footer brand（2026-06-06 v3）— C 方向 radar mark + Aark wordmark + AI 雷達 中文副標 */}
             <div className="flex items-center gap-2 mb-3">
+              <AarkMark size={24} className="flex-shrink-0" />
               <span className={`text-lg font-bold ${t.brand}`}
                 style={{
                   fontFamily: "'Space Grotesk', sans-serif",

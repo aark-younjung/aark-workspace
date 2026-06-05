@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpenInSystemBrowser } from '../lib/inAppBrowser'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
+import AarkMark from '../components/v2/AarkMark'
 
 // 2026-05-25：移除 Cloudflare Turnstile captcha（理由與 Register.jsx 同）
 
@@ -111,8 +112,9 @@ export default function Login() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          {/* Logo（2026-06-06 跟 SiteHeader 同步）— Aark wordmark + AI 雷達 中文副標 */}
+          {/* Logo（2026-06-06 v3）— C 方向 radar dial mark + Aark wordmark + AI 雷達 中文副標 */}
           <Link to="/" className="inline-flex items-center gap-2 mb-6 no-underline">
+            <AarkMark size={44} className="flex-shrink-0" />
             <span className="text-2xl font-bold"
               style={{
                 fontFamily: "'Space Grotesk', sans-serif",

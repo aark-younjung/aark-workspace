@@ -6,6 +6,7 @@ import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
 import NotificationBell from '../components/v2/NotificationBell'
+import AarkMark from '../components/v2/AarkMark'
 
 const FEATURES_FREE = [
   '追蹤最多 3 個網站',
@@ -425,8 +426,9 @@ export default function Pricing() {
         isDark ? 'border-white/8 bg-black/50' : 'border-orange-100 bg-white/60'
       }`}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          {/* Logo（2026-06-06 跟 SiteHeader 同步）— Aark wordmark + AI 雷達 中文副標 */}
+          {/* Logo（2026-06-06 v3）— C 方向 radar dial mark + Aark wordmark + AI 雷達 中文副標 */}
           <Link to="/" className="flex items-center gap-2 no-underline">
+            <AarkMark size={36} color={isDark ? '#18c590' : '#0d7a58'} className="flex-shrink-0" />
             <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}
               style={{
                 fontFamily: "'Space Grotesk', sans-serif",
@@ -434,7 +436,7 @@ export default function Pricing() {
               }}>
               Aark
             </span>
-            <span className={`text-sm ${isDark ? 'text-white/55' : 'text-slate-500'}`}>· AI 雷達</span>
+            <span className={`hidden sm:inline text-sm ${isDark ? 'text-white/55' : 'text-slate-500'}`}>· AI 雷達</span>
           </Link>
           <nav className="flex items-center gap-4">
             <Link to="/showcase" className={`hidden sm:block text-sm transition-colors ${

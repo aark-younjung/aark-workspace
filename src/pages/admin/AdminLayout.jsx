@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import AarkMark from '../../components/v2/AarkMark'
 
 const NAV = [
   { path: '/admin', label: '總覽', icon: '📊' },
@@ -26,8 +27,9 @@ export default function AdminLayout({ children }) {
       {/* Sidebar */}
       <aside className="w-56 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0">
         <div className="px-5 py-5 border-b border-slate-800">
-          {/* Brand（2026-06-06 跟 header 同步）— Aark wordmark + 後臺管理 */}
+          {/* Brand（2026-06-06 v3）— C 方向 radar mark + Aark wordmark + 後臺管理 */}
           <div className="flex items-center gap-2">
+            <AarkMark size={28} className="flex-shrink-0" />
             <span className="text-lg font-bold text-white leading-none"
               style={{
                 fontFamily: "'Space Grotesk', sans-serif",
