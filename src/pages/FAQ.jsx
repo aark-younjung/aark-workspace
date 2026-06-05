@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
+import NotificationBell from '../components/v2/NotificationBell'
 
 const FAQ_ITEMS = [
   {
@@ -230,15 +231,16 @@ export default function FAQ() {
         isDark ? 'border-white/8 bg-black/50' : 'border-white/40 bg-white/30'
       }`}>
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className={`w-9 h-9 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md ${
-              isDark ? 'shadow-orange-900/50' : 'shadow-orange-200'
-            }`}>
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>AI 雷達</span>
+          {/* Logo（2026-06-06 跟 SiteHeader 同步）— Aark wordmark + AI 雷達 中文副標 */}
+          <Link to="/" className="flex items-center gap-2 no-underline">
+            <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}
+              style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                letterSpacing: '-0.04em',
+              }}>
+              Aark
+            </span>
+            <span className={`text-sm ${isDark ? 'text-white/55' : 'text-slate-500'}`}>· AI 雷達</span>
           </Link>
           <nav className="flex items-center gap-4">
             <Link to="/" className={`hidden sm:block text-sm transition-colors ${
@@ -247,6 +249,7 @@ export default function FAQ() {
             <Link to="/pricing" className={`hidden sm:block text-sm transition-colors ${
               isDark ? 'text-white/85 hover:text-orange-300' : 'text-slate-600 hover:text-slate-900'
             }`}>定價</Link>
+            <NotificationBell />
             {user ? (
               <>
                 {!isPro && (

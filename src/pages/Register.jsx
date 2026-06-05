@@ -142,13 +142,17 @@ export default function Register() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-900/50 rounded-xl flex items-center justify-center">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="text-2xl font-bold" style={{ color: T.text }}>AI 雷達</span>
+          {/* Logo（2026-06-06 跟 SiteHeader 同步）— Aark wordmark + AI 雷達 中文副標 */}
+          <Link to="/" className="inline-flex items-center gap-2 mb-6 no-underline">
+            <span className="text-2xl font-bold"
+              style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                letterSpacing: '-0.04em',
+                color: T.text,
+              }}>
+              Aark
+            </span>
+            <span className="text-base" style={{ color: T.textMid }}>· AI 雷達</span>
           </Link>
           <h1 className="text-3xl font-bold mb-2" style={{ color: T.text, letterSpacing: '-0.02em' }}>建立帳號</h1>
           <p style={{ color: T.textMid }}>加入即獲得 3 個網站免費分析額度，不需信用卡</p>

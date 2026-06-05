@@ -26,12 +26,15 @@ export default function AdminLayout({ children }) {
       {/* Sidebar */}
       <aside className="w-56 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0">
         <div className="px-5 py-5 border-b border-slate-800">
+          {/* Brand（2026-06-06 跟 header 同步）— Aark wordmark + 後臺管理 */}
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
+            <span className="text-lg font-bold text-white leading-none"
+              style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                letterSpacing: '-0.04em',
+              }}>
+              Aark
+            </span>
             <div>
               <p className="text-white text-sm font-bold leading-none">後臺管理</p>
               <p className="text-slate-500 text-xs mt-0.5">Admin Panel</p>

@@ -20,13 +20,16 @@ export default function Footer({ dark = false }) {
 
           {/* 第 1 欄：品牌 */}
           <div>
+            {/* Footer brand（2026-06-06 跟 header 同步）— Aark wordmark + AI 雷達 中文副標 */}
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <span className={`font-bold ${t.brand}`}>AI 雷達</span>
+              <span className={`text-lg font-bold ${t.brand}`}
+                style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  letterSpacing: '-0.04em',
+                }}>
+                Aark
+              </span>
+              <span className={`text-sm ${t.body}`}>· AI 雷達</span>
             </div>
             <p className={`text-sm ${t.body} leading-relaxed`}>
               幫助品牌掌握 AI 搜尋時代的能見度，<br />讓 ChatGPT、Claude、Gemini、Perplexity 看見你。
