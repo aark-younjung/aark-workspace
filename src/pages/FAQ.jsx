@@ -29,7 +29,7 @@ const FAQ_ITEMS = [
       },
       {
         q: '什麼是 LLMO？跟 GEO、AEO 差在哪？',
-        a: '大型語言模型最佳化（Large Language Model Optimization）是 GEO 的技術子集，聚焦「大型語言模型實際怎麼 retrieve、cite 你的內容」。簡單說：AEO 讓你被當答案、GEO 讓你被生成式 AI 引用、LLMO 是 GEO 裡更技術的那層 — 關注 llms.txt、Article Schema、E-E-A-T 訊號、跨 LLM 引用率量化。國際 SEO 圈把這群縮寫合稱「SEO alphabet soup（字母湯）」。AI 雷達同時做 SEO + AEO + GEO + LLMO 四種、不只其中一個。'
+        a: 'LLMO（Large Language Model Optimization，大型語言模型優化）是 2024-2025 興起的新概念 — 它是大傘、不是子集。傘下包含：①SEO（讓 Google 找到你 — 基礎底盤）、②AEO（讓 AI 把你當答案、引用你的內容）、③GEO（讓生成式 AI 在長篇回答推薦你）、④E-E-A-T（讓 AI 判斷你可信、值得引用）、⑤跨 LLM 引用率追蹤（實際量化你在 ChatGPT / Perplexity / Gemini 被提幾次）。AI 雷達把 LLMO 拆成這 5 個可測量子訊號、各自打分、合成總分。市面上多數工具只做 SEO 一層、AI 雷達是台灣第一個完整覆蓋 LLMO 的監測平台。'
       },
       {
         q: '什麼是 E-E-A-T？',
@@ -37,7 +37,7 @@ const FAQ_ITEMS = [
       },
       {
         q: 'SEO、AEO、GEO、LLMO、E-E-A-T 到底差在哪？我需要哪個？',
-        a: '五者是「層層疊加」的關係，不是選一個就好：①SEO 是基礎，讓 Google 搜尋找到你；②AEO 進階層，讓你的內容被「答案類平台」引用（Google Featured Snippets、語音助理）；③GEO 再上一層，讓生成式 AI（ChatGPT、Perplexity）在長篇回答中推薦你；④LLMO 是 GEO 的技術子集，量化「LLM 實際引用你幾次、跟競品比佔比多少」；⑤E-E-A-T 是貫穿全部的可信度框架。完整數位行銷策略需要全部並進 — 這也是為什麼 AI 雷達把這 4+1 個維度全做了。'
+        a: 'LLMO 是大傘、其他 4 個是傘下的子訊號層：①SEO 解 Google 排名（地基，沒這個 AI 也找不到你）；②AEO 解答案引擎引用（Google Featured Snippets、語音助理）；③GEO 解生成式 AI 推薦（ChatGPT、Perplexity 長篇答案）；④E-E-A-T 解可信度（AI 判斷你值不值得引用的訊號）；⑤aivis 解結果驗證（實際追蹤你被跨 LLM 引用的次數）。5 個訊號不是替代關係、是疊加關係。AI 雷達一次幫你看完全部 — 從 Meta tag 到 llms.txt、從作者 bio 到 ChatGPT 引用率。'
       },
     ]
   },

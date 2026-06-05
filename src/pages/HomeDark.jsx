@@ -863,20 +863,22 @@ export default function HomeDark() {
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold mb-3 leading-tight text-white">
-              你的網站,<br />AI 看得見嗎?
+              ChatGPT 推不<br />推薦你?
             </h1>
 
             <p className="text-xl md:text-2xl font-semibold text-white mb-3 leading-snug">
-              從 Google 到 ChatGPT<br />一次掌握你的 AI 能見度
+              你花在 SEO 的投資，AI 時代不會自動延續。<br />
+              AI 雷達天天監測你在 ChatGPT、Perplexity、Gemini 的能見度。
             </p>
 
-            {/* 「字母湯」訊號 — 對齊國際 SEO 圈共識術語、展現我們做的是整套不是只一個維度 */}
+            {/* LLMO 主軸定位（2026-06-05 改）— 從「五大維度字母湯」改為「LLMO 大傘 + 5 個子訊號層」，
+                理由：實際 70-80% 的檢測都是 LLMO 範疇、誠實對齊產品本質、台灣首個 LLMO 監測平台拿先發優勢 */}
             <p className="text-sm text-white/55 mb-6 tracking-wide">
-              SEO · AEO · GEO · LLMO · E-E-A-T <span className="text-white/40">— 五大維度一次到位</span>
+              LLMO 監測平台 <span className="text-white/40">— 拆 5 個可量化訊號：SEO · AEO · GEO · E-E-A-T · aivis 跨 LLM 引用追蹤</span>
             </p>
 
             <p className="text-base text-white/80 mb-4 max-w-lg">
-              輸入網址，60 秒給你完整 AI 能見度報告 — 免費診斷 + 平台別修法步驟手把手帶你修
+              輸入網址，60 秒給你完整 LLMO 健康報告 — 免費診斷 + 平台別修法步驟手把手帶你修
             </p>
 
             {/* 差異化賣點 chip — 4 條軸線：功能廣度 / 技術差異 / 競爭差異 / TA 友善度（對標 GetAutoSEO non-technical 訴求） */}

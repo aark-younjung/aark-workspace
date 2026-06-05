@@ -6,6 +6,35 @@
 
 ---
 
+### 2026-06-05（LLMO 重新定位 P0：HomeDark hero / FAQ / README / CLAUDE.md 文案改寫）
+
+**戰略討論結論：** 跟用戶對照 5 個模組（SEO/AEO/GEO/E-E-A-T/內容品質 + aivis）跟 LLMO 業界共識訊號的重疊度後，發現 AI 雷達實際做的事 70-80% 都落在 LLMO 範疇（GEO 90% + AEO 80% + E-E-A-T 70% + aivis 100%）。原本「SEO · AEO · GEO · LLMO · E-E-A-T 五大維度字母湯」語言是行銷詞、產品實際只有 4+1（沒獨立 LLMO 軸）— 言行不一致。
+
+**新定位：** 「LLMO 是大傘、其他 4+1 是傘下子訊號層」。AI 雷達 = 台灣第一個 LLMO 監測平台。
+
+**主要客戶（P0）：** 數位行銷代理商（5-30 人、已賣 SEO 服務、需要多客戶工作區 + 白標報告）— 用戶自己就是代理商、做產品的人 = 用戶 = PMF 最快路徑。代理商付工具是 OPEX 心理門檻低（Ahrefs $129+ USD/月已是標配），且 1 個代理商客戶 = 10-50 個網站 multiplier。
+
+**Hero 文案改寫（Variant B 進攻版）：**
+- h1：「ChatGPT 推不推薦你?」（從「你的網站，AI 看得見嗎?」改）
+- 副標：「你花在 SEO 的投資，AI 時代不會自動延續。AI 雷達天天監測你在 ChatGPT、Perplexity、Gemini 的能見度。」（從「從 Google 到 ChatGPT，一次掌握你的 AI 能見度」改）
+- 字母湯：「LLMO 監測平台 — 拆 5 個可量化訊號：SEO · AEO · GEO · E-E-A-T · aivis 跨 LLM 引用追蹤」（從「SEO · AEO · GEO · LLMO · E-E-A-T 五大維度一次到位」改）— 拿掉「字母湯」這個業界自嘲詞、產品端不該出現
+
+**FAQ 兩題改寫：**
+- 「什麼是 LLMO？」— 從「LLMO 是 GEO 的技術子集」改為「LLMO 是大傘、不是子集；AI 雷達把它拆成 5 個可測量子訊號」
+- 「5 個維度差在哪？」— 從「層層疊加」改為「LLMO 是傘、其他 4 個是傘下子訊號層」、aivis 列入做「結果驗證」
+
+**README + CLAUDE.md：** 標題改「AI 雷達 — 台灣第一個 LLMO 監測平台」、產品定位段補主要客戶 P0/P1 與核心訴求（從一次性顧問升級成持續訂閱）。
+
+**影響面：** 純文字 / 標題 / 文案改動，0 行邏輯改動，0 個元件 layout 改動，可一個 git revert 即回去。Vercel 部署 ~2 分鐘生效。
+
+**待做（後續階段）：**
+- P1：DashboardV2 prototype hero 同步、Pricing 頁副標更新（金流敏感先觀望）
+- P2：GEO / AEO / E-E-A-T audit 詳情頁 hero 加副標「（LLMO 訊號層）」
+- P3：補真正缺的 LLMO 項目（lastmod / Markdown-friendly HTML / aivis 整合更深）
+- 拿給 Gemini / GPT 做第二意見、看市場語感 + 轉換率角度
+
+---
+
 ### 2026-06-05（BulkScan worker 對 Hostinger 共享主機過於兇猛、200 篇只掃到 12 篇的修復）
 
 **用戶回報：** kimbo3899.com.tw 跑全站 BulkScan 後，全部結果列表 200 個 row 裡九成顯示 `❌ 所有 UA 嘗試都失敗：Bingbot: The operation was aborted due to timeout`。

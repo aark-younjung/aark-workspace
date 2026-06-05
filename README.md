@@ -1,6 +1,6 @@
-# AI 雷達（AI 能見度儀表板）
+# AI 雷達 — 台灣第一個 LLMO 監測平台
 
-> 檢測網站在 AI 搜尋引擎（ChatGPT、Perplexity、Google AI、Claude）的「被看見程度」— 五大面向分析（SEO / AEO / GEO / E-E-A-T / 內容品質）+ AI 曝光監測（aivis）+ 平台別修復指南
+> ChatGPT 推不推薦你？AI 雷達把 LLMO（Large Language Model Optimization）拆成 5 個可量化訊號層（SEO / AEO / GEO / E-E-A-T / aivis 跨 LLM 引用追蹤），給代理商和品牌主一份能交出去的 AI 能見度報告。
 
 **產品名稱**: AI 雷達
 **營運公司**: 優勢方舟數位行銷

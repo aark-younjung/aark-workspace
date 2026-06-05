@@ -6,12 +6,17 @@
 
 ## 產品定位
 
-**產品名稱：** AI 雷達（AI 能見度儀表板）
+**產品名稱：** AI 雷達（台灣第一個 LLMO 監測平台）
 **營運公司：** 優勢方舟數位行銷（法定收款方，金流商家戶名稱）
 **線上網址：** https://aark-workspace.vercel.app/
 **GitHub：** https://github.com/aark-younjung/aark-workspace
 
-幫助品牌主與行銷人員檢測網站在 AI 搜尋引擎（ChatGPT、Perplexity、Google AI）中的「被看見程度」，提供 SEO、AEO、GEO、E-E-A-T 四大面向分析與具體修復建議。
+**核心定位（2026-06-05 重新定位）：** AI 雷達是台灣第一個完整覆蓋 LLMO（Large Language Model Optimization，大型語言模型優化）的監測平台。把 LLMO 這把大傘拆成 5 個可量化的訊號層 — SEO（Google 排名地基）、AEO（答案引擎引用）、GEO（生成式 AI 推薦）、E-E-A-T（可信度訊號）、aivis（跨 LLM 引用率追蹤）— 各自打分、合成總分。
+
+**主要客戶（P0）：** 中小型數位行銷代理商（5-30 人、有 SEO 服務、需要多客戶工作區 + 白標報告）
+**次要客戶（P1）：** 品牌主 / 電商老闆（自己接觸過 SEO、想被 AI 推薦）
+
+**核心訴求：** 從工具升級成平台、從一次性 SEO 顧問升級成持續訂閱服務。Ahrefs / SEMrush 教代理商贏 Google、AI 雷達教代理商贏 ChatGPT。
 
 **品牌使用原則（2026-05-20 rename 後）：**
 - **產品名「AI 雷達」**：用於 logo、Footer、Email header / from、PDF 報告 header、index.html title / OG / Twitter、NewebPay ItemDesc / ProdDesc、法律文件「商店名稱」欄
