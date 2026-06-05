@@ -876,27 +876,14 @@ export default function HomeDark() {
               ChatGPT 推不<br />推薦你的品牌?
             </h1>
 
-            {/* 副標精簡（2026-06-06）— 主副標保持單一陳述、用 nowrap 避免「光」被斷字孤立 */}
-            <p className="text-xl md:text-2xl font-semibold text-white mb-2 leading-snug">
+            {/* Hero 進一步瘦身（2026-06-06）— 拿掉 3 樣搬去更適合的脈絡：
+                - 副標第二句小字「延續而非取代 SEO」 → 搬到「五大訊號層」section subtitle
+                - LLMO chip 列 → 升級成「五大訊號層」5 卡片 section
+                - social proof bar → 搬到 PlatformLogoWall 下方獨立 strip */}
+            <p className="text-xl md:text-2xl font-semibold text-white mb-6 leading-snug">
               你過去花在 SEO 的努力，<br />
               不會 1:1 自動轉成 <span className="whitespace-nowrap">AI 曝光</span>。
             </p>
-
-            {/* 副標延伸小字（2026-06-06 加回、5 AI 共識「接住老 SEO 從業者」）— 用小字 + 暗色、不破壞 Hero 簡潔 */}
-            <p className="text-sm text-white/55 mb-5 max-w-lg leading-relaxed">
-              方舟 AI 雷達把這些成果，再轉成 ChatGPT、Perplexity 看得懂的訊號 —
-              <span className="text-emerald-300 ml-1">延續而非取代 SEO</span>。
-            </p>
-
-            {/* LLMO 訊號層 chip 列（2026-06-06 加回精簡版）— 替代之前刪掉的長段、用 chip 形式讓 LLMO 字串還在頁面（SEO 友好） */}
-            <div className="flex flex-wrap items-center gap-1.5 mb-5 text-sm">
-              <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-white/70 font-mono">SEO</span>
-              <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-white/70 font-mono">AEO</span>
-              <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-white/70 font-mono">GEO</span>
-              <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-white/70 font-mono">E-E-A-T</span>
-              <span className="px-2 py-1 rounded bg-orange-500/15 border border-orange-400/30 text-orange-300 font-mono">aivis</span>
-              <span className="text-white/40 ml-1">— LLMO 監測平台</span>
-            </div>
 
             <p className="text-base text-white/80 mb-4 max-w-lg">
               輸入網址，60 秒給你完整 AI 能見度報告 — 免費診斷 + 平台別修法步驟手把手帶你修
@@ -967,27 +954,7 @@ export default function HomeDark() {
                 </p>
               )}
 
-              {/* 社會證明 + 早鳥剩餘名額 thin bar（2026-06-06 加、GPT 5 AI 共識建議）—
-                  「為什麼現在做」時間壓力 = 早鳥前 100 名 NT$990/月、剩餘名額即時顯示 */}
-              {publicStats && (
-                <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/55">
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-emerald-400">✓</span>
-                    已協助 <strong className="text-white font-mono">{publicStats.brands.toLocaleString()}</strong> 個品牌完成
-                    <strong className="text-white font-mono">{publicStats.reports.toLocaleString()}</strong> 次 AI 能見度檢測
-                  </span>
-                  {publicStats.earlybird_taken < 100 && (
-                    <span className="flex items-center gap-1.5">
-                      <span className="text-amber-300">⏰</span>
-                      早鳥
-                      <strong className="text-amber-300 font-mono">NT$990 / 月</strong>
-                      剩
-                      <strong className="text-amber-300 font-mono">{100 - publicStats.earlybird_taken}</strong>
-                      名
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* social proof + 早鳥 strip 已搬到 PlatformLogoWall 下方（2026-06-06）— 跟「覆蓋哪些 AI」緊接更連貫 */}
 
               {/* 結構化錯誤 banner — 取代原本 alert，給用戶可行動的下一步 */}
               {errorInfo && (
@@ -1180,6 +1147,39 @@ export default function HomeDark() {
         {/* 平台 logo wall — 信任訊號 + 對標 GetAutoSEO/Surfer/Ahrefs 等首頁標準操作 */}
         <PlatformLogoWall />
 
+        {/* Social proof + 早鳥 strip（2026-06-06 從 Hero 搬到這裡）— 緊接 PlatformLogoWall：
+            「我們覆蓋這 5 個 AI 引擎 → 已協助 X 個品牌跑了 Y 次檢測」的連貫敘事 */}
+        {publicStats && (
+          <div className="mt-8 max-w-3xl mx-auto rounded-2xl p-4 sm:p-5" style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}>
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-white/65">
+              <span className="flex items-center gap-2">
+                <span className="text-emerald-400 text-base">✓</span>
+                已協助
+                <strong className="text-white font-mono text-base">{publicStats.brands.toLocaleString()}</strong>
+                個品牌完成
+                <strong className="text-white font-mono text-base">{publicStats.reports.toLocaleString()}</strong>
+                次 AI 能見度檢測
+              </span>
+              {publicStats.earlybird_taken < 100 && (
+                <>
+                  <span className="text-white/15">·</span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-amber-300 text-base">⏰</span>
+                    早鳥
+                    <strong className="text-amber-300 font-mono text-base">NT$990</strong>
+                    / 月 剩
+                    <strong className="text-amber-300 font-mono text-base">{100 - publicStats.earlybird_taken}</strong>
+                    名
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 本週 AI 能見度 TOP 8 — 真實掃描分數排名(不足時樣本補位) */}
         {topSites.length > 0 && (
           <div className="mt-16">
@@ -1250,7 +1250,8 @@ export default function HomeDark() {
           </div>
         )}
 
-        {/* How it Works — 三大 AI 能見度檢測面向(v2 設計版,取代原 Features) */}
+        {/* How it Works — 五大 LLMO 訊號層（2026-06-06 從「三大」升級到「五大」、補進 E-E-A-T 跟 aivis）
+            為什麼從 3 → 5：跟產品實際做的事一致（5 大訊號層）、跟 Dashboard 5 Tab 視覺一致、把 LLMO 完整架構在首頁呈現 */}
         <div className="mt-24">
           {/* Section header */}
           <div className="text-center mb-12">
@@ -1259,62 +1260,89 @@ export default function HomeDark() {
               border: `1px solid ${T.aivis}55`,
             }}>
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: T.aivis }} />
-              <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>How it Works</span>
+              <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>LLMO Signal Stack</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: T.text, letterSpacing: '-0.02em' }}>
-              三大 AI 能見度檢測面向
+              五大 LLMO 訊號層
             </h2>
             <p className="text-base max-w-2xl mx-auto" style={{ color: T.textMid, lineHeight: 1.7 }}>
-              從傳統 SEO 到 AI 時代的 AEO、GEO —— 我們幫你拆解每個維度的優化機會
+              方舟 AI 雷達把 LLMO 拆成 5 個可量化訊號 — 把你過去花在 SEO 的成果，
+              <span style={{ color: T.aivis }}>再轉成 ChatGPT、Perplexity 看得懂的訊號</span>。
+              <br />
+              <span className="text-sm" style={{ color: T.textLow }}>延續而非取代 SEO。</span>
             </p>
           </div>
 
-          {/* 三張詳細卡 — 階段編號 + icon + 描述 + 檢測項目清單 */}
-          <div className="grid md:grid-cols-3 gap-6">
+          {/* 5 張卡（3+2 響應式：桌面 5 欄、平板 3 欄、手機 1 欄） */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               {
                 stage: '01',
                 icon: '🎯',
-                title: 'SEO 搜尋引擎優化',
-                tag: '傳統地基',
-                desc: '網站技術基礎,讓 Google / Bing 等搜尋引擎能正確讀懂你的內容架構。',
-                items: ['Meta 標籤完整性', 'H1 / Hn 結構', '圖片 Alt 文字', '行動版相容', '頁面載入速度'],
+                title: 'SEO',
+                fullName: '搜尋引擎優化',
+                tag: '地基',
+                desc: '讓 Google / Bing 能正確讀懂你的內容架構。',
+                items: ['Meta 標籤', 'H1 / Hn 結構', '圖片 Alt', '行動版相容', '載入速度'],
                 color: T.seo,
               },
               {
                 stage: '02',
                 icon: '💬',
-                title: 'AEO 問答引擎優化',
-                tag: '直接被引用',
-                desc: '當 AI 直接回答使用者問題時,讓你的內容成為被引用的精選摘要來源。',
-                items: ['FAQ Schema 標記', 'JSON-LD 結構化資料', '問句式標題', 'Open Graph / Canonical', '麵包屑導覽'],
+                title: 'AEO',
+                fullName: '問答引擎優化',
+                tag: '答案層',
+                desc: '讓 AI 直接把你當答案、引用你的內容。',
+                items: ['FAQ Schema', 'JSON-LD', '問句式標題', 'Open Graph', '麵包屑'],
                 color: T.aeo,
               },
               {
                 stage: '03',
                 icon: '🤖',
-                title: 'GEO 生成引擎優化',
-                tag: 'AI 時代新賽道',
-                desc: '面對 ChatGPT / Claude / Perplexity 等生成式 AI,讓你的品牌與產品被主動推薦。',
-                items: ['llms.txt 配置', 'AI 爬蟲開放性', 'Sitemap / Robots', '引用信號(JSON-LD Citation)', 'HTTPS / 規範化'],
+                title: 'GEO',
+                fullName: '生成引擎優化',
+                tag: '推薦層',
+                desc: '讓 ChatGPT / Claude / Perplexity 主動推薦你。',
+                items: ['llms.txt', 'AI 爬蟲開放', 'Sitemap', 'JSON-LD Citation', '內容新鮮度'],
                 color: T.geo,
               },
+              {
+                stage: '04',
+                icon: '🏆',
+                title: 'E-E-A-T',
+                fullName: '可信度框架',
+                tag: '信任層',
+                desc: '讓 AI 判斷你可信、值得引用的訊號。',
+                items: ['作者署名', '關於我們', '聯絡方式', '隱私權政策', 'Organization Schema'],
+                color: T.eeat,
+              },
+              {
+                stage: '05',
+                icon: '📡',
+                title: 'aivis',
+                fullName: '跨 LLM 引用追蹤',
+                tag: '結果驗證',
+                desc: '量化你在 5 個 AI 引擎的真實提及率。',
+                items: ['ChatGPT 引用率', 'Claude 引用率', 'Perplexity 引用率', 'Gemini 引用率', 'GLM 引用率'],
+                color: '#f97316',
+              },
             ].map((item) => (
-              <GlassCard key={item.stage} color={item.color} hover style={{ padding: 28 }}>
+              <GlassCard key={item.stage} color={item.color} hover style={{ padding: 20 }}>
                 {/* 階段編號 + tag */}
-                <div className="flex items-center justify-between mb-5">
-                  <span className="font-mono text-3xl font-bold" style={{ color: item.color, opacity: 0.85 }}>{item.stage}</span>
-                  <span className="text-sm font-medium px-2.5 py-1 rounded-full" style={{
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-mono text-2xl font-bold" style={{ color: item.color, opacity: 0.85 }}>{item.stage}</span>
+                  <span className="text-sm font-medium px-2 py-0.5 rounded-full" style={{
                     color: item.color,
                     background: item.color + '1a',
                     border: `1px solid ${item.color}40`,
                   }}>{item.tag}</span>
                 </div>
-                <div className="text-3xl mb-3">{item.icon}</div>
-                <h3 className="text-xl font-bold mb-2" style={{ color: T.text, letterSpacing: '-0.01em' }}>{item.title}</h3>
-                <p className="text-sm mb-5" style={{ color: T.textMid, lineHeight: 1.7 }}>{item.desc}</p>
+                <div className="text-3xl mb-2">{item.icon}</div>
+                <h3 className="text-lg font-bold mb-0.5" style={{ color: T.text, letterSpacing: '-0.01em' }}>{item.title}</h3>
+                <div className="text-sm mb-2" style={{ color: T.textMid }}>{item.fullName}</div>
+                <p className="text-sm mb-3" style={{ color: T.textMid, lineHeight: 1.6 }}>{item.desc}</p>
                 {/* 檢測項目清單 */}
-                <ul className="space-y-2 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <ul className="space-y-1.5 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                   {item.items.map((it, j) => (
                     <li key={j} className="flex items-start gap-2 text-sm" style={{ color: T.textMid }}>
                       <span className="flex-shrink-0 mt-0.5" style={{ color: item.color }}>✓</span>
