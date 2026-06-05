@@ -1,6 +1,7 @@
 /**
  * GET /api/public?action=stats           — Pricing 頁社會證明 KPI（取代 /api/public-stats）
  * GET /api/public?action=llms&id={uuid}  — llms.txt 代管 endpoint（取代 /api/llms-txt）
+ * GET /api/public?action=aivis-trends    — Dashboard「本週 AI 趨勢」widget（2026-06-06 加）
  *
  * 為什麼合併：Vercel Hobby plan 一個 deployment 最多 12 個 serverless functions。
  *   加 llms-txt 後超過上限導致 4 個 commit 連續 deploy fail。合併 public-stats + llms-txt
@@ -66,7 +67,8 @@ export default async function handler(req, res) {
   const action = (req.query.action || '').toString()
   if (action === 'stats') return handleStats(req, res, supabase)
   if (action === 'llms') return handleLlms(req, res, supabase)
-  return res.status(400).json({ error: 'Missing or invalid action (expected: stats | llms)' })
+  if (action === 'aivis-trends') return handleAivisTrends(req, res, supabase)
+  return res.status(400).json({ error: 'Missing or invalid action (expected: stats | llms | aivis-trends)' })
 }
 
 // ───────────────────────────────────────────────────────────
@@ -99,6 +101,111 @@ async function handleStats(req, res, supabase) {
   } catch (err) {
     console.error('[public/stats] query failed:', err)
     return res.status(500).json({ error: 'Failed to load stats' })
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+// action=aivis-trends — Dashboard「本週 AI 趨勢」widget（2026-06-06 加）
+//
+// 用 aivis 累積資料反推「本週 AI 引擎在推薦什麼品牌」 — 跨用戶匿名聚合
+// 用戶看了會想「我的品牌有沒有在榜上 / 排第幾」→ 創造每週回訪動機
+//
+// 回傳：
+//   {
+//     range: { from: ISO, to: ISO },
+//     topMentions: [{ name, count, change_pct }, ...]    本週提及次數 Top 5、含對比上週
+//     engineBreakdown: { ChatGPT: N, Claude: N, ... }    本週各引擎呼叫總量（規模感）
+//     totalMentions: N                                    本週總提及次數
+//     totalResponses: N                                   本週總 AI 回應數
+//   }
+// ───────────────────────────────────────────────────────────
+async function handleAivisTrends(req, res, supabase) {
+  try {
+    const now = new Date()
+    const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const lastWeekStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+
+    // 本週 + 上週 mentions（拿 mentioned_name + created_at 計算 top 與 change）
+    const [thisWeek, lastWeek, engines, totalResp] = await Promise.all([
+      supabase.from('aivis_mentions')
+        .select('mentioned_name')
+        .gte('created_at', thisWeekStart.toISOString()),
+      supabase.from('aivis_mentions')
+        .select('mentioned_name')
+        .gte('created_at', lastWeekStart.toISOString())
+        .lt('created_at', thisWeekStart.toISOString()),
+      supabase.from('aivis_responses')
+        .select('model')
+        .gte('created_at', thisWeekStart.toISOString()),
+      supabase.from('aivis_responses')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', thisWeekStart.toISOString()),
+    ])
+
+    // 計算本週 Top mentions（按 mentioned_name 計數）
+    const thisWeekCounts = {}
+    ;(thisWeek.data || []).forEach(r => {
+      const name = (r.mentioned_name || '').trim()
+      if (!name) return
+      thisWeekCounts[name] = (thisWeekCounts[name] || 0) + 1
+    })
+    const lastWeekCounts = {}
+    ;(lastWeek.data || []).forEach(r => {
+      const name = (r.mentioned_name || '').trim()
+      if (!name) return
+      lastWeekCounts[name] = (lastWeekCounts[name] || 0) + 1
+    })
+
+    const topMentions = Object.entries(thisWeekCounts)
+      .map(([name, count]) => {
+        const prev = lastWeekCounts[name] || 0
+        let change_pct = null
+        if (prev > 0) change_pct = Math.round(((count - prev) / prev) * 100)
+        else if (count > 0) change_pct = 100 // 上週 0 → 本週 N，新進榜
+        return { name, count, change_pct }
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    // Engine breakdown — 把 model 名稱對應到友善 label
+    const MODEL_LABEL = {
+      'claude-sonnet': 'Claude',
+      'claude': 'Claude',
+      'anthropic': 'Claude',
+      'gpt': 'ChatGPT',
+      'openai': 'ChatGPT',
+      'gemini': 'Gemini',
+      'perplexity': 'Perplexity',
+      'glm': 'GLM',
+    }
+    const engineBreakdown = {}
+    ;(engines.data || []).forEach(r => {
+      const m = (r.model || '').toLowerCase()
+      let label = '其他'
+      for (const [key, value] of Object.entries(MODEL_LABEL)) {
+        if (m.includes(key)) { label = value; break }
+      }
+      engineBreakdown[label] = (engineBreakdown[label] || 0) + 1
+    })
+
+    const totalMentions = (thisWeek.data || []).length
+    const totalResponses = totalResp.count || 0
+
+    // 5 分鐘 CDN cache（cron 跑 aivis 也是大時段、5 分鐘足夠新鮮）
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600')
+    return res.status(200).json({
+      range: {
+        from: thisWeekStart.toISOString().slice(0, 10),
+        to: now.toISOString().slice(0, 10),
+      },
+      topMentions,
+      engineBreakdown,
+      totalMentions,
+      totalResponses,
+    })
+  } catch (err) {
+    console.error('[public/aivis-trends] query failed:', err)
+    return res.status(500).json({ error: 'Failed to load aivis trends' })
   }
 }
 

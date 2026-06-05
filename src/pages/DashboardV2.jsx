@@ -24,6 +24,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import SiteHeader from '../components/v2/SiteHeader'
 // 2026-06-06：公告從 BriefingCard 改成 SiteHeader 右上角 NotificationBell、Dashboard 不再單獨放卡片
+// 2026-06-06：本週 AI 趨勢卡 — 用 aivis 累積資料反推「跨用戶 AI 提及 Top 5」、創造每週回訪動機
+import WeeklyAITrendsCard from '../components/v2/WeeklyAITrendsCard'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
@@ -426,6 +428,9 @@ export default function DashboardV2() {
             </section>
 
             {/* ─── 公告改成 SiteHeader 鈴鐺、Dashboard 內不再放卡片（2026-06-06） ─── */}
+
+            {/* ─── 本週 AI 趨勢卡（2026-06-06）— 用 aivis 跨用戶資料、創造每週回訪動機 ─── */}
+            <WeeklyAITrendsCard />
 
             {/* ─── Quest Section（今日任務 = Action Center）— Gap 2（2026-06-05）接真資料 ─── */}
             <QuestSection quests={generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit, websiteId: website.id })} />
