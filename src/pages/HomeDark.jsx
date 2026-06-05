@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Footer from '../components/Footer'
-// 2026-06-06：公告改成右上角 NotificationBell（在 SiteHeader 內）、首頁不再放 banner / 卡片堆疊
+// 2026-06-06：公告改成右上角 NotificationBell — HomeDark 用自己內嵌 header（不是 SiteHeader）、要單獨 import
+import NotificationBell from '../components/v2/NotificationBell'
 import EarlybirdBanner from '../components/EarlybirdBanner'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -783,17 +784,19 @@ export default function HomeDark() {
       <header className="relative z-50 border-b border-white/8 bg-black/50 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between py-3 sm:py-4">
-            <div className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-900/50">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <span className="text-base sm:text-xl font-bold text-white leading-tight">
-                <span className="sm:hidden">AI 雷達</span>
-                <span className="hidden sm:inline">AI 雷達</span>
+            {/* Logo 區（2026-06-06 跟 SiteHeader 同步）— 暫拿掉橘色閃電 mark、改 Aark wordmark + AI 雷達 中文副標 */}
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0 no-underline">
+              <span className="text-xl sm:text-2xl font-bold text-white leading-none"
+                style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  letterSpacing: '-0.04em',
+                }}>
+                Aark
               </span>
-            </div>
+              <span className="text-sm sm:text-base text-white/55 leading-none">
+                · AI 雷達
+              </span>
+            </Link>
 
             <nav className="hidden md:flex items-center gap-5">
               <Link to="/showcase" className="text-white hover:text-orange-300 transition-colors text-sm">排行榜</Link>
@@ -804,6 +807,8 @@ export default function HomeDark() {
             </nav>
 
             <div className="flex items-center gap-2 flex-shrink-0">
+              {/* 公告鈴鐺（2026-06-06）— 跟 SiteHeader 同步、0 條未讀時自動隱藏 */}
+              <NotificationBell />
               {user ? (
                 <>
                   {!isPro && (
