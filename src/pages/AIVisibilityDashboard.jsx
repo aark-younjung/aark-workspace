@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import AnnouncementBanner from '../components/AnnouncementBanner'
+// 2026-06-06：AnnouncementBanner（輪播）→ BriefingCard（卡片堆疊）
+import BriefingCard from '../components/v2/BriefingCard'
 
 /**
  * AI 曝光監測 — 單一品牌儀表板（Phase 2c v2 版型）
@@ -506,8 +507,10 @@ export default function AIVisibilityDashboard() {
         background: `linear-gradient(155deg, ${AIVIS_TEAL} 0%, ${AIVIS_TEAL_DEEP} 18%, #084773 32%, #011520 52%, #000000 72%)`,
       }} />
 
-      {/* 站內公告 banner */}
-      <AnnouncementBanner />
+      {/* 站內公告卡片（2026-06-06 改）— BriefingCard 取代 AnnouncementBanner 6 秒輪播 */}
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px 0' }}>
+        <BriefingCard maxItems={3} />
+      </div>
 
       {/* 返回連結 */}
       <header style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 24px 0' }}>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Footer from '../components/Footer'
-import AnnouncementBanner from '../components/AnnouncementBanner'
+// 2026-06-06：AnnouncementBanner（6 秒輪播 marquee）→ BriefingCard（卡片堆疊）
+import BriefingCard from '../components/v2/BriefingCard'
 import EarlybirdBanner from '../components/EarlybirdBanner'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -838,9 +839,10 @@ export default function HomeDark() {
         </div>
       </header>
 
-      {/* 站內公告 banner（admin 後臺管理） */}
-      <div className="relative z-10">
-        <AnnouncementBanner />
+      {/* 站內公告卡片（2026-06-06 改）— 之前 AnnouncementBanner 6 秒輪播太 marquee、改 BriefingCard 卡片堆疊
+          HomeDark 首頁 max 顯示 2 則（避免遮 hero）、不顯示「📰 本週通報」標題（首頁直接看卡片） */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-4">
+        <BriefingCard maxItems={2} showTitle={false} />
         {/* 早鳥優惠 banner — 自動依 earlybird_taken 顯示剩餘名額，售完自動藏；Pro 用戶不顯示 */}
         <EarlybirdBanner />
       </div>
