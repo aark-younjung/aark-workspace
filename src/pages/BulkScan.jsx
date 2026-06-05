@@ -1272,6 +1272,27 @@ function WpAdminHintBanner({ hint }) {
       </div>
       {open && (
         <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(59,130,246,0.15)' }}>
+          {/* 🔥 一鍵直達 WP 後台搜尋頁（2026-06-05 加）— 用戶最大痛點：「找不到對應頁面」
+              放在 steps 上方最顯眼位置、按下開新分頁、要求用戶已登入 WP admin */}
+          {hint.direct_admin_url && (
+            <a
+              href={hint.direct_admin_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-block',
+                marginBottom: 8,
+                padding: '6px 12px',
+                fontSize: 12,
+                fontWeight: 700,
+                background: 'rgba(59,130,246,0.25)',
+                color: '#dbeafe',
+                border: '1px solid rgba(59,130,246,0.6)',
+                borderRadius: 6,
+                textDecoration: 'none',
+              }}
+            >{hint.direct_admin_label || '🔥 一鍵直達 WP 後台'}</a>
+          )}
           <ol style={{ margin: 0, paddingLeft: 20, color: T.text }}>
             {(hint.steps || []).map((s, i) => (
               <li key={i} style={{ marginBottom: 2, whiteSpace: 'pre-line' }}>{s}</li>

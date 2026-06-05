@@ -6,6 +6,41 @@
 
 ---
 
+### 2026-06-05（wp_admin_hint 加 slug 解析 + 一鍵直達 WP 後台搜尋按鈕）
+
+**用戶痛點：「以上分析這有辦法寫得詳細一點嗎？因為現在都很難找到對應的頁面」**
+
+範例：[kimbo3899.com.tw/product-category/特斯拉配件/screen/](https://kimbo3899.com.tw/product-category/特斯拉配件/screen/) 的 wp_admin_hint 只說「去 WooCommerce 商品分類頁」、沒講具體是「特斯拉配件 → screen」這個分類、用戶要自己去 200 個分類裡找。
+
+**根因：** [detectWpAdminHint()](api/cron-bulk-scan.js) 給的 steps 太通用、沒從 URL 抽出 slug 也沒提供直達連結。
+
+**修法（2 個層次）：**
+
+**1. cron-bulk-scan.js — 從 URL 解析 slug + 組「直達後台搜尋」URL：**
+- 商品分類頁（/product-category/A/B/）：
+  - `where` 改為「WooCommerce 商品分類頁（路徑：A → B）」
+  - steps 第一行寫「🎯 這個分類的 slug 是「B」、父層是「A」」
+  - 新增 `direct_admin_url` = `{origin}/wp-admin/edit-tags.php?taxonomy=product_cat&post_type=product&s={leafSlug}`
+  - URL 路徑 toLowerCase 後 `%E7` → `%e7`、decodeURIComponent 仍正確還原中文
+- 商品頁（/product/xxx/）：
+  - `where` 改為「WooCommerce 商品頁（商品 slug：xxx）」
+  - 新增 `direct_admin_url` = `{origin}/wp-admin/edit.php?post_type=product&s={slug}`
+- 商店頁（/shop/）：
+  - 新增 `direct_admin_url` = `{origin}/wp-admin/edit.php?post_type=page&s=shop`
+
+**2. BulkScan.jsx WpAdminHintBanner — 渲染 direct_admin_url 為藍色按鈕：**
+- 放在 steps 上方最顯眼位置
+- 用 rgba(59,130,246,0.25) 藍色 + emoji 🔥 + slug 字串標題
+- target="_blank" 開新分頁、要求用戶已登入 WP admin
+
+**體驗變化：**
+- 之前：用戶看到 finding → 知道哪個 URL 有問題 → 自己想辦法找 WP 後台對應分類（可能 30 秒-2 分鐘）
+- 之後：用戶看到 finding → 點藍按鈕 → 直達後台搜尋結果頁 → 按編輯（5 秒）
+
+**影響面：** worker + 前端兩處改動，無 DB schema 變動。Push 後 Vercel 部署 ~2 分鐘；BulkScan 已快取的 result 要重掃才會帶新 hint 欄位，但 BulkScan.jsx 對舊欄位向下相容（沒 direct_admin_url 就不渲染按鈕）。
+
+---
+
 ### 2026-06-05（LLMO 重新定位 P0：HomeDark hero / FAQ / README / CLAUDE.md 文案改寫）
 
 **戰略討論結論：** 跟用戶對照 5 個模組（SEO/AEO/GEO/E-E-A-T/內容品質 + aivis）跟 LLMO 業界共識訊號的重疊度後，發現 AI 雷達實際做的事 70-80% 都落在 LLMO 範疇（GEO 90% + AEO 80% + E-E-A-T 70% + aivis 100%）。原本「SEO · AEO · GEO · LLMO · E-E-A-T 五大維度字母湯」語言是行銷詞、產品實際只有 4+1（沒獨立 LLMO 軸）— 言行不一致。

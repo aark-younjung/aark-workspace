@@ -803,40 +803,86 @@ function detectWpAdminHint(url, pageType) {
   // 2. WooCommerce 商店列表頁 /shop/ — 其實是 WP page、只是被 WooCommerce 用來當商店首頁
   if (pathname === '/shop/' || pathname === '/shop' || pathname.startsWith('/product-category/')) {
     const isCategory = pathname.startsWith('/product-category/')
+
+    // 抓 site origin + 從 URL 拆 slug、組「直達 WP 後台搜尋頁」URL（2026-06-05 加）
+    // 用戶最大痛點：「現在都很難找到對應的頁面」— 給具體 slug + 一鍵直達連結
+    let origin = ''
+    try { origin = new URL(url).origin } catch {}
+
+    if (isCategory) {
+      // /product-category/特斯拉配件/screen/ → segments = ['product-category', '特斯拉配件', 'screen']
+      const segments = pathname.split('/').filter(Boolean)
+      const rawSlugs = segments.slice(1) // 去掉 'product-category'
+      const decodedSlugs = rawSlugs.map(s => { try { return decodeURIComponent(s) } catch { return s } })
+      const leafSlug = decodedSlugs[decodedSlugs.length - 1] || ''
+      const parentChain = decodedSlugs.length > 1 ? decodedSlugs.slice(0, -1).join(' → ') : null
+
+      // WP 後台分類搜尋 URL — taxonomy=product_cat、post_type=product 是 WooCommerce 商品分類的標準參數
+      const adminSearchUrl = origin && leafSlug
+        ? `${origin}/wp-admin/edit-tags.php?taxonomy=product_cat&post_type=product&s=${encodeURIComponent(leafSlug)}`
+        : null
+
+      return {
+        where: parentChain
+          ? `WooCommerce 商品分類頁（路徑：${parentChain} → ${leafSlug}）`
+          : `WooCommerce 商品分類頁（分類 slug：${leafSlug}）`,
+        plugin: 'Rank Math SEO',
+        steps: [
+          `🎯 這個分類的 slug 是「${leafSlug}」${parentChain ? `、父層是「${parentChain}」` : ''}`,
+          '🔥 最快（一鍵直達）：點下方藍色按鈕「在 WP 後台搜尋這個分類」、會直接打開後台搜尋結果頁、看到結果按「編輯」即可',
+          '備案 A：登入 WP 後直接開這個前台 URL → 螢幕上方黑色 admin bar 有「編輯分類」連結、點下去直達',
+          `備案 B：WordPress 後台 → 商品 → 分類 → 右上搜尋框打「${leafSlug}」→ 找到後按「編輯」`,
+          '⚠️ 注意：分類編輯頁有「兩組」描述欄位、別搞混：',
+          '  📝 上方「內容描述（Description）」= 訪客看得到的分類頁前言文字（影響用戶體驗 + 內文 SEO）',
+          '  🏷️ 下方「Rank Math」紫色 meta box = 訪客看不到、只給 Google 的 <title> + meta description',
+          '若 finding 說「標題太短」「描述過長」→ 改 Rank Math meta box（meta tag 層）',
+          '若 finding 說「內容過少」（thin_content）→ 改上面的「內容描述」（寫給訪客看的）',
+          '📝 Rank Math meta box 常用欄位：',
+          '   • SEO Title：30-60 字、含分類名 + 品牌（如「特斯拉螢幕升級｜金鉑先生」）',
+          '   • Description：70-155 字、介紹這個分類賣什麼',
+        ],
+        direct_admin_url: adminSearchUrl,
+        direct_admin_label: `🔥 在 WP 後台搜尋「${leafSlug}」分類`,
+      }
+    }
+
+    // /shop/ — 商店列表頁、固定 1 個 WP page、不需要 slug 搜尋
+    const adminShopSearchUrl = origin
+      ? `${origin}/wp-admin/edit.php?post_type=page&s=shop`
+      : null
     return {
-      where: isCategory ? 'WooCommerce 商品分類頁' : 'WooCommerce 商店列表頁（其實對應 WP 一個 page）',
+      where: 'WooCommerce 商店列表頁（其實對應 WP 一個 page）',
       plugin: 'Rank Math SEO',
-      steps: isCategory ? [
-        '🔥 最快：先登入 WP、再開這個 URL → 螢幕上方黑色 admin bar 有「編輯分類」連結、點下去',
-        '備案：WordPress 後台 → 商品 → 分類 → 找到對應的分類 → 編輯',
-        '⚠️ 注意：分類編輯頁有「兩組」描述欄位、別搞混：',
-        '  📝 上方「內容描述（Description）」= 訪客看得到的分類頁前言文字（影響用戶體驗 + 內文 SEO）',
-        '  🏷️ 下方「Rank Math」紫色 meta box = 訪客看不到、只給 Google 的 <title> + meta description',
-        '若 finding 說「標題太短」「描述過長」→ 改 Rank Math meta box（meta tag 層）',
-        '若 finding 說「內容過少」（thin_content）→ 改上面的「內容描述」（寫給訪客看的）',
-        '📝 Rank Math meta box 常用欄位：',
-        '   • SEO Title：30-60 字、含分類名 + 品牌',
-        '   • Description：70-155 字、介紹這個分類賣什麼',
-      ] : [
-        '🔥 最快：先登入 WP、再開 https://你的網域/shop/ → 螢幕上方 admin bar 會出現「編輯頁面」、點下去直達',
-        '備案 A：WordPress 後台 → 商品（Products） → 設定 → 進階（Advanced） → 頁面設定 → 看「商店頁面」設成哪一個 WP page',
-        '備案 B：WordPress 後台 → 頁面（Pages）→ 全部頁面 → 搜尋「shop」或「商店」→ 編輯那個頁面',
+      steps: [
+        '🔥 最快：點下方藍色按鈕「在 WP 後台搜尋商店頁」、找到「Shop」或「商店」page 按「編輯」',
+        '備案 A：先登入 WP、再開 /shop/ → 螢幕上方 admin bar 會出現「編輯頁面」、點下去直達',
+        '備案 B：WordPress 後台 → 商品（Products）→ 設定 → 進階（Advanced）→ 頁面設定 → 看「商店頁面」設成哪一個 WP page',
         '進到編輯頁後 → 滑到下方 Rank Math 區塊 → 改 SEO 標題 / 描述',
-        '備案 C（外掛模板層）：WP 後台 → Rank Math → 控制台（Dashboard）→ 確認 WooCommerce 模組已啟用 → 回 Titles & Meta、可能會多出 "Products" 或 "Misc Pages" 子分頁，shop page 設定可能在裡面（不同版本位置不一）',
       ],
-      note: '/shop/ 本質是一個 WP page（WooCommerce 指定它當商店首頁）。最直接的方法 = 用 admin bar 或在「頁面」內找它、直接編輯。Rank Math 的 Titles & Meta 進去後位置因版本而異、走 page 編輯路徑最穩',
+      direct_admin_url: adminShopSearchUrl,
+      direct_admin_label: '🔥 在 WP 後台搜尋商店頁',
+      note: '/shop/ 本質是一個 WP page（WooCommerce 指定它當商店首頁）。Rank Math 的 Titles & Meta 進去後位置因版本而異、走 page 編輯路徑最穩',
     }
   }
 
   // 3. 個別商品頁 /product/xxx/
   if (pathname.startsWith('/product/') || pathname.match(/\/[^/]+\/$/) && pageType === 'product') {
     const slug = pathname.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
+    const decodedSlug = (() => { try { return decodeURIComponent(slug) } catch { return slug } })()
+    // WP 後台商品搜尋 URL（2026-06-05 加）— 用戶按下去直達商品列表搜尋結果
+    let origin = ''
+    try { origin = new URL(url).origin } catch {}
+    const adminSearchUrl = origin && decodedSlug
+      ? `${origin}/wp-admin/edit.php?post_type=product&s=${encodeURIComponent(decodedSlug)}`
+      : null
     return {
-      where: 'WooCommerce 商品頁',
+      where: `WooCommerce 商品頁（商品 slug：${decodedSlug}）`,
       plugin: 'Rank Math SEO（每個商品有獨立 meta box）',
       steps: [
-        '🔥 最快：登入 WP 後開這個商品前台 URL → admin bar 有「編輯商品」直達',
-        '備案：WordPress 後台 → 商品（Products）→ 全部商品 → 搜「' + slug + '」slug → 編輯',
+        `🎯 這個商品的 slug 是「${decodedSlug}」`,
+        '🔥 最快（一鍵直達）：點下方藍色按鈕「在 WP 後台搜尋這個商品」、看到結果按「編輯」即可',
+        '備案 A：登入 WP 後直接開這個商品前台 URL → admin bar 有「編輯商品」直達',
+        `備案 B：WordPress 後台 → 商品（Products）→ 全部商品 → 右上搜尋框打「${decodedSlug}」→ 編輯`,
         '⚠️ 商品編輯頁有「兩組」內容欄位、別搞混：',
         '  📝 上方「商品說明 / 商品簡述」= 訪客看得到的商品介紹（影響用戶體驗 + 內文 SEO）',
         '  🏷️ 下方「Rank Math」紫色 meta box = 訪客看不到、只給 Google 的 <title> + meta description',
@@ -849,6 +895,8 @@ function detectWpAdminHint(url, pageType) {
         '   • Schema 分頁：選「Product」(WooCommerce 自動帶價格、庫存)',
         '   • OG Image：上傳 1200x630 商品主圖（不傳的話用商品 featured image 代替）',
       ],
+      direct_admin_url: adminSearchUrl,
+      direct_admin_label: `🔥 在 WP 後台搜尋「${decodedSlug}」商品`,
       help_link: '/help/rank-math',
       help_link_label: '📖 看 Rank Math 完整速查表',
     }
