@@ -23,7 +23,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import SiteHeader from '../components/v2/SiteHeader'
-import BriefingCard from '../components/v2/BriefingCard'
+// 2026-06-06：公告從 BriefingCard 改成 SiteHeader 右上角 NotificationBell、Dashboard 不再單獨放卡片
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
@@ -425,8 +425,7 @@ export default function DashboardV2() {
               </div>
             </section>
 
-            {/* ─── 本週通報卡（2026-06-06）— 改成 import BriefingCard、跟 HomeDark / AIVisibilityDashboard 共用同一元件 ─── */}
-            <BriefingCard maxItems={3} />
+            {/* ─── 公告改成 SiteHeader 鈴鐺、Dashboard 內不再放卡片（2026-06-06） ─── */}
 
             {/* ─── Quest Section（今日任務 = Action Center）— Gap 2（2026-06-05）接真資料 ─── */}
             <QuestSection quests={generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit, websiteId: website.id })} />

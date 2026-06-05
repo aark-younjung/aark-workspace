@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+// 2026-06-06：公告從卡片堆疊改成右上角鈴鐺 + 下拉 panel（跟 GitHub / Notion 一致）
+import NotificationBell from './NotificationBell'
 
 // 全站共用暗色頂部導覽列：Logo + 桌機 nav + 登入 / 用戶區 + 手機 nav
 // 沿用 HomeDark 同款 — 黑色玻璃條 + 橘色強調 hover
@@ -34,8 +36,10 @@ export default function SiteHeader() {
             <Link to="/faq" className="text-white hover:text-orange-300 transition-colors text-sm">FAQ</Link>
           </nav>
 
-          {/* 右側：登入 / 用戶 avatar / 升級 Pro / 登出 */}
+          {/* 右側：公告鈴鐺 + 登入 / 用戶 avatar / 升級 Pro / 登出 */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* 公告鈴鐺（2026-06-06）— 0 條未讀時自動隱藏、跟登入狀態無關 */}
+            <NotificationBell />
             {user ? (
               <>
                 {!isPro && (

@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-// 2026-06-06：AnnouncementBanner（輪播）→ BriefingCard（卡片堆疊）
-import BriefingCard from '../components/v2/BriefingCard'
+// 2026-06-06：公告改成 SiteHeader 右上角 NotificationBell、AIVisibilityDashboard 不再放卡片
+// 注意：本頁沒用 SiteHeader（自有頁首），鈴鐺要的話得另外加
 
 /**
  * AI 曝光監測 — 單一品牌儀表板（Phase 2c v2 版型）
@@ -507,10 +507,7 @@ export default function AIVisibilityDashboard() {
         background: `linear-gradient(155deg, ${AIVIS_TEAL} 0%, ${AIVIS_TEAL_DEEP} 18%, #084773 32%, #011520 52%, #000000 72%)`,
       }} />
 
-      {/* 站內公告卡片（2026-06-06 改）— BriefingCard 取代 AnnouncementBanner 6 秒輪播 */}
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px 0' }}>
-        <BriefingCard maxItems={3} />
-      </div>
+      {/* 公告改成 SiteHeader 右上角鈴鐺、本頁不再放卡片（2026-06-06） */}
 
       {/* 返回連結 */}
       <header style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 24px 0' }}>
