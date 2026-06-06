@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+// 2026-06-07：行業分類 taxonomy（複選 chip）
+import { INDUSTRIES, INDUSTRIES_BY_SLUG, namesOf } from '../lib/industries'
 
 /**
  * AI 曝光監測 — 品牌列表頁
@@ -16,7 +18,18 @@ export default function AIVisibility() {
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  const [form, setForm] = useState({ name: '', domain: '', industry: '', description: '' })
+  // 2026-06-07：form.industry 文字輸入 → form.industries 複選 slug 陣列（Phase A）
+  // 為了向後相容、submit 時 industry 還是會存單一名稱（industries[0] 對應的中文名）
+  const [form, setForm] = useState({ name: '', domain: '', industries: [], description: '' })
+
+  function toggleFormIndustry(slug) {
+    setForm(prev => ({
+      ...prev,
+      industries: prev.industries.includes(slug)
+        ? prev.industries.filter(s => s !== slug)
+        : [...prev.industries, slug],
+    }))
+  }
 
   // 是否有 aivis 使用權限（Pro 訂閱用戶 或 7 天試用期內）
   const hasAccess = isPro || isTrial
@@ -61,19 +74,22 @@ export default function AIVisibility() {
     }
     setSubmitting(true)
     try {
+      // Phase A：industries[] 是新主欄位、industry 是 legacy 單一字串（向後相容、第一個行業中文名）
+      const primaryName = form.industries[0] ? INDUSTRIES_BY_SLUG[form.industries[0]]?.name : null
       const { data, error } = await supabase
         .from('aivis_brands')
         .insert([{
           user_id: user.id,
           name: form.name.trim(),
           domain: form.domain.trim() || null,
-          industry: form.industry.trim() || null,
+          industry: primaryName || null,
+          industries: form.industries.length > 0 ? form.industries : null,
           description: form.description.trim() || null,
         }])
         .select()
         .single()
       if (error) throw error
-      setForm({ name: '', domain: '', industry: '', description: '' })
+      setForm({ name: '', domain: '', industries: [], description: '' })
       setShowForm(false)
       navigate(`/ai-visibility/${data.id}`)
     } catch (err) {
@@ -204,14 +220,35 @@ export default function AIVisibility() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">產業分類</label>
-                <input
-                  type="text"
-                  value={form.industry}
-                  onChange={e => setForm({ ...form, industry: e.target.value })}
-                  placeholder="例：數位行銷 / SaaS / 電商"
-                  className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                />
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  行業分類 <span className="text-xs font-normal text-white/45">（可複選、用於趨勢報告分群）</span>
+                </label>
+                <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 border border-white/15 rounded-xl min-h-[44px]">
+                  {INDUSTRIES.map(ind => {
+                    const active = form.industries.includes(ind.slug)
+                    return (
+                      <button
+                        type="button"
+                        key={ind.slug}
+                        onClick={() => toggleFormIndustry(ind.slug)}
+                        className="text-xs px-2.5 py-1 rounded-full font-medium transition inline-flex items-center gap-1"
+                        style={{
+                          background: active ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
+                          border: active ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)',
+                          color: active ? '#86efac' : 'rgba(255,255,255,0.65)',
+                        }}
+                      >
+                        <span>{ind.emoji}</span>
+                        <span>{ind.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                {form.industries.length > 0 && (
+                  <p className="mt-1.5 text-xs text-white/45">
+                    已選：{namesOf(form.industries).join(' · ')}
+                  </p>
+                )}
               </div>
             </div>
             <div>

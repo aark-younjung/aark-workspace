@@ -125,21 +125,48 @@ async function handleAivisTrends(req, res, supabase) {
     const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const lastWeekStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
 
+    // 行業 filter（2026-06-07 Phase A 加）— industries query param: 'beauty-spa,restaurant'
+    // 空 → 不 filter、全平台聚合；有值 → 找該行業品牌的 mentions
+    const industriesRaw = (req.query.industries || '').toString().trim()
+    const industries = industriesRaw ? industriesRaw.split(',').map(s => s.trim()).filter(Boolean) : []
+
+    // 如果有 industries filter、先查出符合的 brand_ids
+    let allowedBrandIds = null
+    if (industries.length > 0) {
+      const { data: brands } = await supabase
+        .from('aivis_brands')
+        .select('id')
+        .overlaps('industries', industries) // PostgreSQL && 運算子
+      allowedBrandIds = (brands || []).map(b => b.id)
+      // 如果該行業沒任何品牌、直接回空（避免下面 query .in([]) 出問題）
+      if (allowedBrandIds.length === 0) {
+        res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600')
+        return res.status(200).json({
+          range: { from: thisWeekStart.toISOString().slice(0, 10), to: now.toISOString().slice(0, 10) },
+          industries,
+          topMentions: [], engineBreakdown: {}, totalMentions: 0, totalResponses: 0,
+        })
+      }
+    }
+
+    // build queries — 視 industries filter 決定要不要加 .in()
+    const filterByBrand = q => allowedBrandIds ? q.in('brand_id', allowedBrandIds) : q
+
     // 本週 + 上週 mentions（拿 mentioned_name + created_at 計算 top 與 change）
     const [thisWeek, lastWeek, engines, totalResp] = await Promise.all([
-      supabase.from('aivis_mentions')
+      filterByBrand(supabase.from('aivis_mentions')
         .select('mentioned_name')
-        .gte('created_at', thisWeekStart.toISOString()),
-      supabase.from('aivis_mentions')
+        .gte('created_at', thisWeekStart.toISOString())),
+      filterByBrand(supabase.from('aivis_mentions')
         .select('mentioned_name')
         .gte('created_at', lastWeekStart.toISOString())
-        .lt('created_at', thisWeekStart.toISOString()),
-      supabase.from('aivis_responses')
+        .lt('created_at', thisWeekStart.toISOString())),
+      filterByBrand(supabase.from('aivis_responses')
         .select('model')
-        .gte('created_at', thisWeekStart.toISOString()),
-      supabase.from('aivis_responses')
+        .gte('created_at', thisWeekStart.toISOString())),
+      filterByBrand(supabase.from('aivis_responses')
         .select('id', { count: 'exact', head: true })
-        .gte('created_at', thisWeekStart.toISOString()),
+        .gte('created_at', thisWeekStart.toISOString())),
     ])
 
     // 計算本週 Top mentions（按 mentioned_name 計數）
@@ -198,6 +225,7 @@ async function handleAivisTrends(req, res, supabase) {
         from: thisWeekStart.toISOString().slice(0, 10),
         to: now.toISOString().slice(0, 10),
       },
+      industries,
       topMentions,
       engineBreakdown,
       totalMentions,

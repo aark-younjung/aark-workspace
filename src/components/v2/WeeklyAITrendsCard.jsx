@@ -18,19 +18,45 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { INDUSTRIES } from '../../lib/industries'
 
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000
+const STORAGE_KEY_INDUSTRIES = 'aark_trends_industries'
 
 export default function WeeklyAITrendsCard() {
   const { user, isPro } = useAuth()
   const [publicData, setPublicData] = useState(null)
   const [personalData, setPersonalData] = useState(null) // { brands: [{ name, count, change_pct }], hasBrands: bool }
   const [loading, setLoading] = useState(true)
+  // 行業 filter（2026-06-07 Phase A）— localStorage 記住用戶選擇、跨 session 保留
+  const [selectedIndustries, setSelectedIndustries] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_INDUSTRIES)
+      return raw ? JSON.parse(raw) : []
+    } catch { return [] }
+  })
 
-  // 公共趨勢資料（A 區、訪客也能看）
+  function toggleIndustry(slug) {
+    setSelectedIndustries(prev => {
+      const next = prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+      try { localStorage.setItem(STORAGE_KEY_INDUSTRIES, JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  function clearIndustries() {
+    setSelectedIndustries([])
+    try { localStorage.removeItem(STORAGE_KEY_INDUSTRIES) } catch {}
+  }
+
+  // 公共趨勢資料（A 區、訪客也能看、依 selectedIndustries filter）
   useEffect(() => {
     let cancelled = false
-    fetch('/api/public?action=aivis-trends')
+    setLoading(true)
+    const url = selectedIndustries.length > 0
+      ? `/api/public?action=aivis-trends&industries=${encodeURIComponent(selectedIndustries.join(','))}`
+      : '/api/public?action=aivis-trends'
+    fetch(url)
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (cancelled) return
@@ -39,9 +65,9 @@ export default function WeeklyAITrendsCard() {
       })
       .catch(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [])
+  }, [selectedIndustries])
 
-  // 個人化趨勢資料（C 區、僅登入用戶）
+  // 個人化趨勢資料（C 區、僅登入用戶、依 selectedIndustries filter）
   useEffect(() => {
     if (!user?.id) {
       setPersonalData(null)
@@ -50,18 +76,30 @@ export default function WeeklyAITrendsCard() {
     let cancelled = false
     ;(async () => {
       try {
-        // 1. 用戶的追蹤品牌列表
-        const { data: brands } = await supabase
+        // 1. 用戶的追蹤品牌列表（行業有 filter 就 narrow、沒就全拉）
+        let brandsQuery = supabase
           .from('aivis_brands')
-          .select('id, brand_name')
+          .select('id, brand_name, industries')
           .eq('user_id', user.id)
+        if (selectedIndustries.length > 0) {
+          brandsQuery = brandsQuery.overlaps('industries', selectedIndustries)
+        }
+        const { data: brands } = await brandsQuery
         if (cancelled) return
         if (!brands || brands.length === 0) {
-          setPersonalData({ brands: [], hasBrands: false })
+          // hasBrands 判斷拿掉 industry filter 後是否真的有品牌
+          if (selectedIndustries.length > 0) {
+            const { data: allBrands } = await supabase
+              .from('aivis_brands')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id)
+            setPersonalData({ brands: [], hasBrands: (allBrands?.length || 0) > 0, filteredOut: (allBrands?.length || 0) > 0 })
+          } else {
+            setPersonalData({ brands: [], hasBrands: false })
+          }
           return
         }
         const brandIds = brands.map(b => b.id)
-        const brandIdToName = Object.fromEntries(brands.map(b => [b.id, b.brand_name]))
 
         const now = new Date()
         const thisWeekStart = new Date(now.getTime() - MS_PER_WEEK)
@@ -111,7 +149,7 @@ export default function WeeklyAITrendsCard() {
       }
     })()
     return () => { cancelled = true }
-  }, [user?.id])
+  }, [user?.id, selectedIndustries])
 
   if (loading) {
     return (
@@ -161,7 +199,7 @@ export default function WeeklyAITrendsCard() {
       border: '1px solid rgba(249,115,22,0.22)',
     }}>
       {/* Header */}
-      <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
+      <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-baseline gap-2">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             🔥 本週 AI 趨勢
@@ -175,6 +213,44 @@ export default function WeeklyAITrendsCard() {
         <Link to="/ai-visibility" className="text-xs text-orange-300 hover:text-orange-200 font-bold">
           看完整 aivis →
         </Link>
+      </div>
+
+      {/* 行業 filter chip row（2026-06-07 Phase A）— 預設「全部」、點 chip 多選 toggle、localStorage 記憶 */}
+      <div className="flex flex-wrap gap-1.5 mb-4 items-center">
+        <button
+          onClick={clearIndustries}
+          className="text-xs px-2.5 py-1 rounded-full font-bold transition"
+          style={{
+            background: selectedIndustries.length === 0 ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.04)',
+            border: selectedIndustries.length === 0 ? '1px solid rgba(249,115,22,0.5)' : '1px solid rgba(255,255,255,0.1)',
+            color: selectedIndustries.length === 0 ? '#fdba74' : 'rgba(255,255,255,0.55)',
+          }}
+        >
+          全部
+        </button>
+        {INDUSTRIES.map(ind => {
+          const active = selectedIndustries.includes(ind.slug)
+          return (
+            <button
+              key={ind.slug}
+              onClick={() => toggleIndustry(ind.slug)}
+              className="text-xs px-2.5 py-1 rounded-full font-medium transition inline-flex items-center gap-1"
+              style={{
+                background: active ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.04)',
+                border: active ? '1px solid rgba(249,115,22,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                color: active ? '#fdba74' : 'rgba(255,255,255,0.6)',
+              }}
+            >
+              <span>{ind.emoji}</span>
+              <span>{ind.name}</span>
+            </button>
+          )
+        })}
+        {selectedIndustries.length > 0 && (
+          <span className="text-xs text-white/40 ml-1">
+            已選 {selectedIndustries.length} 個行業
+          </span>
+        )}
       </div>
 
       {/* ───────── C 個人化區（有 Pro + 設品牌才顯示）───────── */}
