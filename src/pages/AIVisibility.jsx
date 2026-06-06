@@ -18,16 +18,15 @@ export default function AIVisibility() {
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  // 2026-06-07：form.industry 文字輸入 → form.industries 複選 slug 陣列（Phase A）
-  // 為了向後相容、submit 時 industry 還是會存單一名稱（industries[0] 對應的中文名）
+  // 2026-06-07：form.industry 文字輸入 → form.industries 單選 chip（Phase A、之後 Phase B 想開放複選不用 DB migration）
+  // DB 還是 industries TEXT[]、實際只存 [singleton]；industry 單一字串欄位向後相容
   const [form, setForm] = useState({ name: '', domain: '', industries: [], description: '' })
 
-  function toggleFormIndustry(slug) {
+  // radio behavior：點同一個取消、點不同 chip 切換
+  function selectFormIndustry(slug) {
     setForm(prev => ({
       ...prev,
-      industries: prev.industries.includes(slug)
-        ? prev.industries.filter(s => s !== slug)
-        : [...prev.industries, slug],
+      industries: prev.industries[0] === slug ? [] : [slug],
     }))
   }
 
@@ -221,22 +220,23 @@ export default function AIVisibility() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  行業分類 <span className="text-xs font-normal text-white/45">（可複選、用於趨勢報告分群）</span>
+                  行業分類 <span className="text-xs font-normal text-white/45">（選最符合的、找不到請選「其他」並在簡介說明）</span>
                 </label>
                 <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 border border-white/15 rounded-xl min-h-[44px]">
                   {INDUSTRIES.map(ind => {
-                    const active = form.industries.includes(ind.slug)
+                    const active = form.industries[0] === ind.slug
                     return (
                       <button
                         type="button"
                         key={ind.slug}
-                        onClick={() => toggleFormIndustry(ind.slug)}
+                        onClick={() => selectFormIndustry(ind.slug)}
                         className="text-xs px-2.5 py-1 rounded-full font-medium transition inline-flex items-center gap-1"
                         style={{
                           background: active ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
                           border: active ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)',
                           color: active ? '#86efac' : 'rgba(255,255,255,0.65)',
                         }}
+                        title={active ? '再點一次取消' : `選為 ${ind.name}`}
                       >
                         <span>{ind.emoji}</span>
                         <span>{ind.name}</span>
@@ -246,7 +246,7 @@ export default function AIVisibility() {
                 </div>
                 {form.industries.length > 0 && (
                   <p className="mt-1.5 text-xs text-white/45">
-                    已選：{namesOf(form.industries).join(' · ')}
+                    已選：{namesOf(form.industries)[0]}
                   </p>
                 )}
               </div>

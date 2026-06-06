@@ -28,17 +28,22 @@ export default function WeeklyAITrendsCard() {
   const [publicData, setPublicData] = useState(null)
   const [personalData, setPersonalData] = useState(null) // { brands: [{ name, count, change_pct }], hasBrands: bool }
   const [loading, setLoading] = useState(true)
-  // 行業 filter（2026-06-07 Phase A）— localStorage 記住用戶選擇、跨 session 保留
+  // 行業 filter（2026-06-07 Phase A 單選）— localStorage 記住用戶選擇、跨 session 保留
+  // 2026-06-07 改：複選→單選（避免 Phase B 行業 prompts 預算暴衝、之後配額制再決定要不要開複選）
+  // DB 還是 industries TEXT[]、實際只存 [singleton]、forward compat
   const [selectedIndustries, setSelectedIndustries] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_INDUSTRIES)
-      return raw ? JSON.parse(raw) : []
+      const parsed = raw ? JSON.parse(raw) : []
+      // 安全 net：之前複選版本可能存了多個、只取第一個
+      return parsed.slice(0, 1)
     } catch { return [] }
   })
 
-  function toggleIndustry(slug) {
+  // radio behavior：點同一個取消、點不同 chip 切換
+  function selectIndustry(slug) {
     setSelectedIndustries(prev => {
-      const next = prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+      const next = prev[0] === slug ? [] : [slug]
       try { localStorage.setItem(STORAGE_KEY_INDUSTRIES, JSON.stringify(next)) } catch {}
       return next
     })
@@ -233,24 +238,20 @@ export default function WeeklyAITrendsCard() {
           return (
             <button
               key={ind.slug}
-              onClick={() => toggleIndustry(ind.slug)}
+              onClick={() => selectIndustry(ind.slug)}
               className="text-xs px-2.5 py-1 rounded-full font-medium transition inline-flex items-center gap-1"
               style={{
                 background: active ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.04)',
                 border: active ? '1px solid rgba(249,115,22,0.5)' : '1px solid rgba(255,255,255,0.1)',
                 color: active ? '#fdba74' : 'rgba(255,255,255,0.6)',
               }}
+              title={active ? '再點一次取消' : `只看 ${ind.name}`}
             >
               <span>{ind.emoji}</span>
               <span>{ind.name}</span>
             </button>
           )
         })}
-        {selectedIndustries.length > 0 && (
-          <span className="text-xs text-white/40 ml-1">
-            已選 {selectedIndustries.length} 個行業
-          </span>
-        )}
       </div>
 
       {/* ───────── C 個人化區（有 Pro + 設品牌才顯示）───────── */}
