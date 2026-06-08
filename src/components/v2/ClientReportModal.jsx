@@ -122,12 +122,12 @@ export default function ClientReportModal({ open, onClose, data }) {
               placeholder="例：某客戶公司 / 品牌名"
               className="w-full px-4 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/35 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400/50"
             />
-            <p className="mt-1 text-xs text-white/40">顯示在報告封面「為您製作」欄</p>
+            <p className="mt-1 text-sm text-white/40">顯示在報告封面「為您製作」欄</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-white/80 mb-2">
-              自訂報告標題 <span className="text-xs font-normal text-white/40">(選填)</span>
+              自訂報告標題 <span className="text-sm font-normal text-white/40">(選填)</span>
             </label>
             <input
               type="text"
@@ -141,11 +141,11 @@ export default function ClientReportModal({ open, onClose, data }) {
           {/* 代理商資訊（折線分隔） */}
           <div className="pt-4 mt-4 border-t border-white/8">
             <div className="text-sm font-medium text-white/55 mb-3 uppercase tracking-widest">
-              代理商署名 <span className="text-xs font-normal text-white/35 normal-case">(白標、選填、會記住下次帶入)</span>
+              代理商署名 <span className="text-sm font-normal text-white/35 normal-case">(白標、選填、會記住下次帶入)</span>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-white/65 mb-1.5">代理商名稱</label>
+                <label className="block text-sm font-medium text-white/65 mb-1.5">代理商名稱</label>
                 <input
                   type="text"
                   value={agencyName}
@@ -155,7 +155,7 @@ export default function ClientReportModal({ open, onClose, data }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-white/65 mb-1.5">聯絡方式</label>
+                <label className="block text-sm font-medium text-white/65 mb-1.5">聯絡方式</label>
                 <input
                   type="text"
                   value={agencyContact}
@@ -194,7 +194,7 @@ export default function ClientReportModal({ open, onClose, data }) {
         </div>
 
         {/* 小提醒 */}
-        <p className="mt-5 pt-4 border-t border-white/8 text-xs text-white/40 leading-relaxed">
+        <p className="mt-5 pt-4 border-t border-white/8 text-sm text-white/40 leading-relaxed">
           💡 PDF 內含 5 訊號層分析 + Top 5 建議行動 + 各層詳細檢測。
           產出大小約 200-500 KB、可直接 email 給客戶或印成紙本。
         </p>

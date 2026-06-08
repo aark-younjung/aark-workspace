@@ -143,7 +143,7 @@ export default function Login() {
               <span className="text-lg leading-none">⚠️</span>
               <div className="flex-1">
                 <p className="font-semibold mb-1">偵測到您正在 {inAppName} 瀏覽</p>
-                <p className="text-xs leading-relaxed" style={{ color: '#fde68acc' }}>
+                <p className="text-sm leading-relaxed" style={{ color: '#fde68acc' }}>
                   Google 不允許在 App 內建瀏覽器登入。請點下方按鈕複製網址，再用 {deviceOS === 'ios' ? 'Safari' : 'Chrome'} 開啟，或改用 Email 登入。
                 </p>
               </div>
@@ -183,7 +183,7 @@ export default function Login() {
 
           <div className="flex items-center gap-3 mb-5">
             <div className="flex-1 h-px" style={{ background: T.cardBorder }} />
-            <span className="text-xs" style={{ color: T.textLow }}>或使用 Email 登入</span>
+            <span className="text-sm" style={{ color: T.textLow }}>或使用 Email 登入</span>
             <div className="flex-1 h-px" style={{ background: T.cardBorder }} />
           </div>
 
@@ -287,7 +287,7 @@ export default function Login() {
                 border: `1px solid ${T.cardBorder}`,
               }}
             >
-              <p className="text-xs mb-1" style={{ color: T.textLow }}>網址</p>
+              <p className="text-sm mb-1" style={{ color: T.textLow }}>網址</p>
               <p className="text-sm break-all font-mono" style={{ color: T.text }}>{getCurrentUrl()}</p>
             </div>
 
@@ -317,7 +317,7 @@ export default function Login() {
 
             {/* iOS 步驟說明 */}
             {deviceOS === 'ios' && (
-              <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.textMid }}>
+              <div className="text-sm leading-relaxed mb-3 px-1" style={{ color: T.textMid }}>
                 <p className="mb-1">📱 iPhone 操作步驟：</p>
                 <p>1. 點上方「複製網址」</p>
                 <p>2. 開啟 Safari</p>

@@ -718,7 +718,7 @@ export default function AdminUsers() {
 
           {/* 用戶列表 */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider">
               <div className="col-span-4">用戶</div>
               <div className="col-span-2">方案</div>
               <div className="col-span-3">註冊時間</div>
@@ -747,34 +747,34 @@ export default function AdminUsers() {
                     >
                       <div className="col-span-4">
                         <p className="text-slate-200 text-sm font-medium">{u.name || '（未填）'}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{u.email}</p>
+                        <p className="text-slate-500 text-sm mt-0.5">{u.email}</p>
                       </div>
                       <div className="col-span-2">
                         {/* 方案標籤：依 subscriptionType 細分為 早鳥/年繳/月繳/授予 Pro/Free */}
                         {(() => {
                           if (!u.is_pro) {
-                            return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-slate-700 text-slate-400">Free</span>
+                            return <span className="text-sm px-2 py-1 rounded-full font-semibold bg-slate-700 text-slate-400">Free</span>
                           }
                           if (u.subscriptionType === 'earlybird') {
-                            return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-amber-500/20 text-amber-400">🐣 早鳥</span>
+                            return <span className="text-sm px-2 py-1 rounded-full font-semibold bg-amber-500/20 text-amber-400">🐣 早鳥</span>
                           }
                           if (u.subscriptionType === 'yearly') {
-                            return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-orange-500/20 text-orange-400">⭐ 年繳</span>
+                            return <span className="text-sm px-2 py-1 rounded-full font-semibold bg-orange-500/20 text-orange-400">⭐ 年繳</span>
                           }
                           if (u.subscriptionType === 'monthly') {
-                            return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-teal-500/20 text-teal-400">📅 月繳</span>
+                            return <span className="text-sm px-2 py-1 rounded-full font-semibold bg-teal-500/20 text-teal-400">📅 月繳</span>
                           }
                           // is_pro 但無付費記錄 = 手動授予
-                          return <span className="text-xs px-2 py-1 rounded-full font-semibold bg-slate-600/40 text-slate-300">⭐ 授予</span>
+                          return <span className="text-sm px-2 py-1 rounded-full font-semibold bg-slate-600/40 text-slate-300">⭐ 授予</span>
                         })()}
-                        {u.is_admin && <span className="ml-1 text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">Admin</span>}
+                        {u.is_admin && <span className="ml-1 text-sm px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">Admin</span>}
                         {/* 退款警示 — 列表上即時看到，不必展開 */}
                         {u.hasRefund && (
-                          <span className="ml-1 text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-400" title="此用戶有退款紀錄">↩️</span>
+                          <span className="ml-1 text-sm px-2 py-1 rounded-full bg-red-500/20 text-red-400" title="此用戶有退款紀錄">↩️</span>
                         )}
                         {/* Pro 到期日（僅在有設定 pro_expires_at 時顯示）— 客服參考用 */}
                         {u.is_pro && u.pro_expires_at && (
-                          <p className="text-slate-500 text-[10px] mt-1">
+                          <p className="text-slate-500 text-sm mt-1">
                             至 {new Date(u.pro_expires_at).toLocaleDateString('zh-TW')}
                           </p>
                         )}
@@ -786,7 +786,7 @@ export default function AdminUsers() {
                         {/* 延長 Pro — 同步設定 pro_expires_at + 升 is_pro=true，並寫 admin_history */}
                         <button
                           onClick={e => { e.stopPropagation(); openExtendModal(u) }}
-                          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                          className="text-sm px-2.5 py-1.5 rounded-lg font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
                           title="延長 Pro 期限（含設定到期日）"
                         >
                           📅 延長
@@ -794,7 +794,7 @@ export default function AdminUsers() {
                         {/* 寄自訂 email — 走後端 Resend，admin_history 後端 append */}
                         <button
                           onClick={e => { e.stopPropagation(); openEmailModal(u) }}
-                          className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 transition-colors"
+                          className="text-sm px-2.5 py-1.5 rounded-lg font-medium bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 transition-colors"
                           title="寄送自訂 email 給此用戶"
                         >
                           ✉️ 寄信
@@ -802,7 +802,7 @@ export default function AdminUsers() {
                         <button
                           onClick={e => { e.stopPropagation(); handleTogglePro(u.id, u.is_pro) }}
                           disabled={toggling === u.id}
-                          className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                          className={`text-sm px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${
                             u.is_pro
                               ? 'bg-slate-700 text-slate-300 hover:bg-red-900/40 hover:text-red-400'
                               : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
@@ -820,7 +820,7 @@ export default function AdminUsers() {
                     {expandedId === u.id && (
                       <div className="px-6 pb-5 bg-slate-900/50 border-t border-slate-700">
                         {/* AI 曝光監測 API 成本（admin 內部追蹤，前台對用戶隱藏） */}
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-4 mb-3">AI 曝光監測 — API 成本（內部）</p>
+                        <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mt-4 mb-3">AI 曝光監測 — API 成本（內部）</p>
                         {!userAivis[u.id] ? (
                           <p className="text-slate-500 text-sm">載入中...</p>
                         ) : userAivis[u.id].totalRuns === 0 ? (
@@ -829,38 +829,38 @@ export default function AdminUsers() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             {/* 本月成本 */}
                             <div className="bg-slate-800 rounded-lg px-4 py-3">
-                              <p className="text-slate-500 text-xs mb-1">本月成本</p>
+                              <p className="text-slate-500 text-sm mb-1">本月成本</p>
                               <p className="text-emerald-400 text-lg font-bold">${userAivis[u.id].monthUsd.toFixed(4)}</p>
-                              <p className="text-slate-500 text-xs">≈ NT$ {(userAivis[u.id].monthUsd * 31).toFixed(2)}</p>
+                              <p className="text-slate-500 text-sm">≈ NT$ {(userAivis[u.id].monthUsd * 31).toFixed(2)}</p>
                             </div>
                             {/* 累積成本 */}
                             <div className="bg-slate-800 rounded-lg px-4 py-3">
-                              <p className="text-slate-500 text-xs mb-1">累積成本</p>
+                              <p className="text-slate-500 text-sm mb-1">累積成本</p>
                               <p className="text-slate-200 text-lg font-bold">${userAivis[u.id].totalUsd.toFixed(4)}</p>
-                              <p className="text-slate-500 text-xs">≈ NT$ {(userAivis[u.id].totalUsd * 31).toFixed(2)}</p>
+                              <p className="text-slate-500 text-sm">≈ NT$ {(userAivis[u.id].totalUsd * 31).toFixed(2)}</p>
                             </div>
                             {/* 本月呼叫數 */}
                             <div className="bg-slate-800 rounded-lg px-4 py-3">
-                              <p className="text-slate-500 text-xs mb-1">本月 API 呼叫</p>
+                              <p className="text-slate-500 text-sm mb-1">本月 API 呼叫</p>
                               <p className="text-slate-200 text-lg font-bold">{userAivis[u.id].monthRuns}</p>
-                              <p className="text-slate-500 text-xs">次</p>
+                              <p className="text-slate-500 text-sm">次</p>
                             </div>
                             {/* 累積呼叫數 */}
                             <div className="bg-slate-800 rounded-lg px-4 py-3">
-                              <p className="text-slate-500 text-xs mb-1">累積 API 呼叫</p>
+                              <p className="text-slate-500 text-sm mb-1">累積 API 呼叫</p>
                               <p className="text-slate-200 text-lg font-bold">{userAivis[u.id].totalRuns}</p>
-                              <p className="text-slate-500 text-xs">次</p>
+                              <p className="text-slate-500 text-sm">次</p>
                             </div>
                           </div>
                         )}
 
                         {/* Top-up 加購餘額（aivis_topup_credits 累計） */}
                         <div className="flex items-center justify-between mt-5 mb-3">
-                          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">AI 曝光監測 — Top-up 加購餘額</p>
+                          <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider">AI 曝光監測 — Top-up 加購餘額</p>
                           {/* 客服補發按鈕 — 走前端 RLS 直寫 aivis_topup_credits */}
                           <button
                             onClick={e => { e.stopPropagation(); openTopupModal(u) }}
-                            className="text-xs px-3 py-1 rounded-md bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 font-medium transition-colors"
+                            className="text-sm px-3 py-1 rounded-md bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 font-medium transition-colors"
                           >
                             ✚ 補發點數包
                           </button>
@@ -874,11 +874,11 @@ export default function AdminUsers() {
                             {/* 餘額總計 */}
                             <div className="bg-slate-800 rounded-lg px-4 py-3 flex items-center justify-between">
                               <div>
-                                <p className="text-slate-500 text-xs mb-1">目前可用次數</p>
+                                <p className="text-slate-500 text-sm mb-1">目前可用次數</p>
                                 <p className="text-emerald-400 text-2xl font-bold">{userTopup[u.id].balance} <span className="text-slate-500 text-sm font-normal">次</span></p>
                               </div>
                               <div className="text-right">
-                                <p className="text-slate-500 text-xs">共 {userTopup[u.id].packs.length} 個點數包</p>
+                                <p className="text-slate-500 text-sm">共 {userTopup[u.id].packs.length} 個點數包</p>
                               </div>
                             </div>
                             {/* 各點數包明細 */}
@@ -889,12 +889,12 @@ export default function AdminUsers() {
                                 return (
                                   <div
                                     key={pack.id}
-                                    className={`flex items-center justify-between rounded-md px-3 py-2 text-xs ${
+                                    className={`flex items-center justify-between rounded-md px-3 py-2 text-sm ${
                                       isExhausted ? 'bg-slate-800/40 text-slate-500' : 'bg-slate-800/70 text-slate-300'
                                     }`}
                                   >
                                     <div className="flex items-center gap-2">
-                                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                      <span className={`px-1.5 py-0.5 rounded text-sm font-semibold ${
                                         pack.pack_size === 'large' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-300'
                                       }`}>
                                         {pack.pack_size === 'large' ? '大包 800' : '小包 300'}
@@ -910,7 +910,7 @@ export default function AdminUsers() {
                         )}
 
                         {/* NewebPay Pro 年繳訂單（含早鳥 + 退款紀錄）— 客服稽核用 */}
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-5 mb-3">Pro 年繳訂單（NewebPay）</p>
+                        <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mt-5 mb-3">Pro 年繳訂單（NewebPay）</p>
                         {!userOrders[u.id] ? (
                           <p className="text-slate-500 text-sm">載入中...</p>
                         ) : userOrders[u.id].length === 0 ? (
@@ -935,11 +935,11 @@ export default function AdminUsers() {
                                 return t || '—'
                               })()
                               return (
-                                <div key={order.merchant_order_no} className="bg-slate-800 rounded-lg px-4 py-3 text-xs">
+                                <div key={order.merchant_order_no} className="bg-slate-800 rounded-lg px-4 py-3 text-sm">
                                   {/* Header row：方案 + 金額 + 退款狀態 */}
                                   <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                      <span className={`px-1.5 py-0.5 rounded text-sm font-semibold ${
                                         isEarlybird ? 'bg-amber-500/20 text-amber-400' : 'bg-orange-500/20 text-orange-400'
                                       }`}>
                                         {isEarlybird ? '🐣 早鳥首年' : '⭐ 一般年繳'}
@@ -951,7 +951,7 @@ export default function AdminUsers() {
                                           handleToggleTestOrder('aivis_newebpay_pending', 'merchant_order_no', order.merchant_order_no, !!order.is_test_order, u.id)
                                         }}
                                         disabled={togglingTest[order.merchant_order_no]}
-                                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-40 ${
+                                        className={`px-1.5 py-0.5 rounded text-sm font-semibold transition-colors disabled:opacity-40 ${
                                           order.is_test_order
                                             ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                                             : 'bg-slate-700/50 text-slate-500 hover:bg-yellow-500/15 hover:text-yellow-400'
@@ -964,22 +964,22 @@ export default function AdminUsers() {
                                     </div>
                                     {/* 退款狀態 chip */}
                                     {order.refund_status === 'completed' && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 text-red-400">
+                                      <span className="px-1.5 py-0.5 rounded text-sm font-semibold bg-red-500/20 text-red-400">
                                         ✓ 已退款 {order.refund_method === 'api_credit' ? '(信用卡 API)' : '(手動轉帳)'}
                                       </span>
                                     )}
                                     {order.refund_status === 'pending' && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-500/20 text-yellow-400">
+                                      <span className="px-1.5 py-0.5 rounded text-sm font-semibold bg-yellow-500/20 text-yellow-400">
                                         ⏳ 待手動轉帳
                                       </span>
                                     )}
                                     {order.refund_status === 'failed' && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/30 text-red-300">
+                                      <span className="px-1.5 py-0.5 rounded text-sm font-semibold bg-red-500/30 text-red-300">
                                         ⚠️ 退款失敗
                                       </span>
                                     )}
                                     {order.refund_status === 'none' && refundDaysLeft > 0 && refundDaysLeft <= 3 && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-500/20 text-yellow-400">
+                                      <span className="px-1.5 py-0.5 rounded text-sm font-semibold bg-yellow-500/20 text-yellow-400">
                                         🕐 鑑賞期剩 {refundDaysLeft} 天
                                       </span>
                                     )}
@@ -987,28 +987,28 @@ export default function AdminUsers() {
                                   {/* 詳細資訊 grid */}
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-slate-400">
                                     <div>
-                                      <p className="text-slate-500 text-[10px]">付款方式</p>
+                                      <p className="text-slate-500 text-sm">付款方式</p>
                                       <p className="text-slate-300">{payTypeLabel}</p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-[10px]">付款日</p>
+                                      <p className="text-slate-500 text-sm">付款日</p>
                                       <p className="text-slate-300">{paidDate ? paidDate.toLocaleDateString('zh-TW') : '—'}</p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-[10px]">到期日</p>
+                                      <p className="text-slate-500 text-sm">到期日</p>
                                       <p className={`${expireDate && expireDate < now ? 'text-slate-500 line-through' : 'text-slate-300'}`}>
                                         {expireDate ? expireDate.toLocaleDateString('zh-TW') : '—'}
                                       </p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-[10px]">訂單編號</p>
-                                      <p className="text-slate-500 font-mono text-[10px] truncate" title={order.merchant_order_no}>{order.merchant_order_no}</p>
+                                      <p className="text-slate-500 text-sm">訂單編號</p>
+                                      <p className="text-slate-500 font-mono text-sm truncate" title={order.merchant_order_no}>{order.merchant_order_no}</p>
                                     </div>
                                   </div>
                                   {/* 退款備註（有的話） */}
                                   {order.refund_note && (
                                     <div className="mt-2 pt-2 border-t border-slate-700/50">
-                                      <p className="text-slate-500 text-[10px] mb-0.5">退款備註</p>
+                                      <p className="text-slate-500 text-sm mb-0.5">退款備註</p>
                                       <p className="text-slate-400 whitespace-pre-wrap">{order.refund_note}</p>
                                     </div>
                                   )}
@@ -1019,7 +1019,7 @@ export default function AdminUsers() {
                         )}
 
                         {/* NPA 月繳訂閱（aivis_newebpay_period）— 客服稽核 + lifetime value 追蹤 */}
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-5 mb-3">Pro 月繳訂閱（NewebPay NPA）</p>
+                        <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mt-5 mb-3">Pro 月繳訂閱（NewebPay NPA）</p>
                         {!userPeriods[u.id] ? (
                           <p className="text-slate-500 text-sm">載入中...</p>
                         ) : userPeriods[u.id].length === 0 ? (
@@ -1035,11 +1035,11 @@ export default function AdminUsers() {
                               // 月繳 lifetime revenue = 已扣款次數 × NT$1,490
                               const lifetimeRevenue = (Number(period.already_times) || 0) * 1490
                               return (
-                                <div key={period.period_no} className="bg-slate-800 rounded-lg px-4 py-3 text-xs">
+                                <div key={period.period_no} className="bg-slate-800 rounded-lg px-4 py-3 text-sm">
                                   {/* Header row：狀態 chip + 已扣款次數 + lifetime revenue */}
                                   <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                      <span className={`px-1.5 py-0.5 rounded text-sm font-semibold ${
                                         isActive ? 'bg-teal-500/20 text-teal-400' : 'bg-slate-700 text-slate-400'
                                       }`}>
                                         {isActive ? '📅 月繳進行中' : isCancelled ? '⏸ 已取消委託' : period.status}
@@ -1051,7 +1051,7 @@ export default function AdminUsers() {
                                           handleToggleTestOrder('aivis_newebpay_period', 'period_no', period.period_no, !!period.is_test_order, u.id)
                                         }}
                                         disabled={togglingTest[period.period_no]}
-                                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-40 ${
+                                        className={`px-1.5 py-0.5 rounded text-sm font-semibold transition-colors disabled:opacity-40 ${
                                           period.is_test_order
                                             ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                                             : 'bg-slate-700/50 text-slate-500 hover:bg-yellow-500/15 hover:text-yellow-400'
@@ -1069,15 +1069,15 @@ export default function AdminUsers() {
                                   {/* 詳細資訊 grid */}
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-slate-400">
                                     <div>
-                                      <p className="text-slate-500 text-[10px]">首次扣款</p>
+                                      <p className="text-slate-500 text-sm">首次扣款</p>
                                       <p className="text-slate-300">{createdDate ? createdDate.toLocaleDateString('zh-TW') : '—'}</p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-[10px]">最後扣款</p>
+                                      <p className="text-slate-500 text-sm">最後扣款</p>
                                       <p className="text-slate-300">{lastPayDate ? lastPayDate.toLocaleDateString('zh-TW') : '—'}</p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-[10px]">{isCancelled ? '取消日期' : '下次扣款（預估）'}</p>
+                                      <p className="text-slate-500 text-sm">{isCancelled ? '取消日期' : '下次扣款（預估）'}</p>
                                       <p className={isCancelled ? 'text-red-400' : 'text-slate-300'}>
                                         {isCancelled
                                           ? (cancelledDate ? cancelledDate.toLocaleDateString('zh-TW') : '—')
@@ -1086,14 +1086,14 @@ export default function AdminUsers() {
                                       </p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-500 text-[10px]">委託編號</p>
-                                      <p className="text-slate-500 font-mono text-[10px] truncate" title={period.period_no}>{period.period_no}</p>
+                                      <p className="text-slate-500 text-sm">委託編號</p>
+                                      <p className="text-slate-500 font-mono text-sm truncate" title={period.period_no}>{period.period_no}</p>
                                     </div>
                                   </div>
                                   {/* 取消備註（取消的話） */}
                                   {isCancelled && period.cancel_note && (
                                     <div className="mt-2 pt-2 border-t border-slate-700/50">
-                                      <p className="text-slate-500 text-[10px] mb-0.5">取消備註</p>
+                                      <p className="text-slate-500 text-sm mb-0.5">取消備註</p>
                                       <p className="text-slate-400 whitespace-pre-wrap">{period.cancel_note}</p>
                                     </div>
                                   )}
@@ -1103,7 +1103,7 @@ export default function AdminUsers() {
                           </div>
                         )}
 
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-5 mb-3">已分析的網站</p>
+                        <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mt-5 mb-3">已分析的網站</p>
                         {!userWebsites[u.id] ? (
                           <p className="text-slate-500 text-sm">載入中...</p>
                         ) : userWebsites[u.id].length === 0 ? (
@@ -1127,9 +1127,9 @@ export default function AdminUsers() {
                                   <div>
                                     {/* hover 時網站名稱橘色強調，提示可點 */}
                                     <p className="text-slate-200 text-sm group-hover:text-orange-400 transition-colors">{site.name || site.url}</p>
-                                    <p className="text-slate-500 text-xs">{site.url}</p>
+                                    <p className="text-slate-500 text-sm">{site.url}</p>
                                   </div>
-                                  <div className="flex gap-3 text-xs text-slate-400">
+                                  <div className="flex gap-3 text-sm text-slate-400">
                                     <span>SEO <strong className="text-blue-400">{seo}</strong></span>
                                     <span>AEO <strong className="text-purple-400">{aeo}</strong></span>
                                     <span>GEO <strong className="text-emerald-400">{geo}</strong></span>
@@ -1142,7 +1142,7 @@ export default function AdminUsers() {
                         )}
 
                         {/* 掃描失敗紀錄（scan_error_logs）— 客服查「為什麼掃不出來」用，最近 10 筆 */}
-                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mt-5 mb-3">
+                        <p className="text-slate-400 text-sm font-semibold uppercase tracking-wider mt-5 mb-3">
                           最近掃描錯誤紀錄
                           <span className="ml-2 text-slate-600 normal-case font-normal">（最多 10 筆）</span>
                         </p>
@@ -1167,18 +1167,18 @@ export default function AdminUsers() {
                                 : isDns ? 'bg-purple-500/20 text-purple-400'
                                 : 'bg-slate-700 text-slate-400'
                               return (
-                                <div key={log.id} className="bg-slate-800 rounded-lg px-4 py-3 text-xs">
+                                <div key={log.id} className="bg-slate-800 rounded-lg px-4 py-3 text-sm">
                                   {/* Header：類型 chip + URL + 時間 */}
                                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${chipColor}`}>{chipLabel}</span>
+                                    <span className={`px-1.5 py-0.5 rounded text-sm font-semibold ${chipColor}`}>{chipLabel}</span>
                                     {log.http_status && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-700 text-slate-400">HTTP {log.http_status}</span>
+                                      <span className="px-1.5 py-0.5 rounded text-sm font-mono bg-slate-700 text-slate-400">HTTP {log.http_status}</span>
                                     )}
                                     {log.ua_fallback && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-400">UA fallback</span>
+                                      <span className="px-1.5 py-0.5 rounded text-sm bg-blue-500/20 text-blue-400">UA fallback</span>
                                     )}
                                     {log.ssl_fallback && (
-                                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-400">SSL fallback</span>
+                                      <span className="px-1.5 py-0.5 rounded text-sm bg-amber-500/20 text-amber-400">SSL fallback</span>
                                     )}
                                     <span className="text-slate-500 ml-auto">{when}</span>
                                   </div>
@@ -1306,7 +1306,7 @@ export default function AdminUsers() {
                     }`}
                   >
                     <p className="text-sm font-semibold">{opt.label}</p>
-                    <p className="text-xs opacity-70 mt-0.5">{opt.sub}</p>
+                    <p className="text-sm opacity-70 mt-0.5">{opt.sub}</p>
                   </button>
                 ))}
               </div>
@@ -1423,7 +1423,7 @@ export default function AdminUsers() {
                 {/* 預覽新到期日 */}
                 {newExpiresAt && (
                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4 text-sm">
-                    <p className="text-slate-400 text-xs mb-1">延長後新到期日</p>
+                    <p className="text-slate-400 text-sm mb-1">延長後新到期日</p>
                     <p className="text-blue-300 font-semibold">{newExpiresAt.toLocaleDateString('zh-TW')}（{newExpiresAt.toLocaleString('zh-TW', { weekday: 'short' })}）</p>
                   </div>
                 )}
@@ -1449,7 +1449,7 @@ export default function AdminUsers() {
 
                 {/* 警示：若已是付費年繳用戶，會疊加在原 paid_at + 1 year 之後 */}
                 {user.is_pro && user.payment_gateway === 'newebpay' && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs rounded-lg px-3 py-2 mb-4">
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm rounded-lg px-3 py-2 mb-4">
                     ⚠️ 此用戶為 NewebPay 付費年繳用戶。延長到期日**不會**自動退費或衝突原訂單，僅供客服補償。
                   </div>
                 )}
@@ -1494,7 +1494,7 @@ export default function AdminUsers() {
               {/* 主旨 */}
               <label className="block text-slate-300 text-sm font-medium mb-2">
                 主旨 <span className="text-red-400">*</span>
-                <span className="text-slate-500 text-xs ml-2">{emailForm.subject.length}/200</span>
+                <span className="text-slate-500 text-sm ml-2">{emailForm.subject.length}/200</span>
               </label>
               <input
                 type="text"
@@ -1509,7 +1509,7 @@ export default function AdminUsers() {
               {/* 內容 */}
               <label className="block text-slate-300 text-sm font-medium mb-2">
                 信件內容 <span className="text-red-400">*</span>
-                <span className="text-slate-500 text-xs ml-2">{emailForm.body.length}/10000</span>
+                <span className="text-slate-500 text-sm ml-2">{emailForm.body.length}/10000</span>
               </label>
               <textarea
                 value={emailForm.body}
@@ -1544,13 +1544,13 @@ export default function AdminUsers() {
                 <div className="bg-green-500/20 border border-green-500/30 text-green-300 text-sm rounded-lg px-3 py-2 mb-4">
                   ✅ 已寄送至 {emailSuccess.to}
                   {emailSuccess.message_id && (
-                    <p className="text-green-400/70 text-xs mt-1 font-mono">message_id: {emailSuccess.message_id}</p>
+                    <p className="text-green-400/70 text-sm mt-1 font-mono">message_id: {emailSuccess.message_id}</p>
                   )}
                 </div>
               )}
 
               {/* 寄件人提示 */}
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 mb-4 text-xs text-slate-400">
+              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 mb-4 text-sm text-slate-400">
                 <p>📤 寄件人：<span className="text-slate-300 font-medium">AI 雷達客服 &lt;support@aark.io&gt;</span></p>
                 <p className="mt-1">📝 此次操作會記錄至 <code className="bg-slate-700/50 px-1 rounded">admin_history</code> JSONB 供日後稽核</p>
               </div>

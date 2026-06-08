@@ -437,7 +437,7 @@ export default function Account() {
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {isTrial ? (
                     <span
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-semibold rounded-full"
                       style={{ background: T.pass + '33', color: '#86efac' }}
                     >
                       <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.pass }}></span>
@@ -445,7 +445,7 @@ export default function Account() {
                     </span>
                   ) : isPro ? (
                     <span
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-semibold rounded-full"
                       style={{ background: T.aeo + '33', color: '#c4b5fd' }}
                     >
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: T.aeo }}></span>
@@ -453,7 +453,7 @@ export default function Account() {
                     </span>
                   ) : (
                     <span
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-semibold rounded-full"
                       style={{ background: T.orange + '26', color: '#fdba74' }}
                     >
                       免費版
@@ -479,7 +479,7 @@ export default function Account() {
                   <p className="text-sm" style={{ color: T.textMid }}>
                     試用結束：{new Date(trialEndsAt).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
-                  <p className="text-xs mt-2 leading-relaxed" style={{ color: T.textLow }}>
+                  <p className="text-sm mt-2 leading-relaxed" style={{ color: T.textLow }}>
                     試用結束前升級 Pro 可無縫銜接所有功能；若不升級則自動降回免費版，已建立的資料保留。
                   </p>
                 </div>
@@ -542,7 +542,7 @@ export default function Account() {
                           ? '退款已申請（待手動轉帳）'
                           : '退款已完成'}
                     </p>
-                    <p className="text-xs mt-1 leading-relaxed" style={{ color: '#86efacd0' }}>
+                    <p className="text-sm mt-1 leading-relaxed" style={{ color: '#86efacd0' }}>
                       {refundResult?.message || '訂閱已取消，將於下次重整後生效。'}
                     </p>
                   </div>
@@ -550,7 +550,7 @@ export default function Account() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium" style={{ color: T.text }}>取消訂閱</p>
-                      <p className="text-xs mt-0.5" style={{ color: T.textLow }}>
+                      <p className="text-sm mt-0.5" style={{ color: T.textLow }}>
                         {latestPeriodSub
                           ? '月繳可隨時取消，當期已扣不退；期末降回免費版'
                           : '14 天內無條件退款；超過則用至年期到期'}
@@ -593,7 +593,7 @@ export default function Account() {
           {userWebsites.length > 0 && (
             <GlassCard style={{ padding: 24 }}>
               <h3 className="text-sm font-semibold uppercase tracking-wide mb-2" style={{ color: T.textMid }}>排行榜公開設定</h3>
-              <p className="text-xs mb-4" style={{ color: T.textLow }}>
+              <p className="text-sm mb-4" style={{ color: T.textLow }}>
                 關閉「公開」會把該網站從首頁 AI 能見度 TOP 8 排行榜 / 公開摘要頁拿掉，只剩你自己登入後能看到分析。預設公開。
               </p>
               <div className="space-y-2">
@@ -605,12 +605,12 @@ export default function Account() {
                     <div key={w.id} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 border" style={{ background: 'rgba(255,255,255,.03)', borderColor: T.cardBorder }}>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate" style={{ color: T.text }}>{w.name || host}</p>
-                        <p className="text-xs truncate" style={{ color: T.textLow }}>{host}</p>
+                        <p className="text-sm truncate" style={{ color: T.textLow }}>{host}</p>
                       </div>
                       <button
                         onClick={() => handleToggleOptout(w.id, !!w.is_public_optout)}
                         disabled={togglingOptout[w.id]}
-                        className="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors disabled:opacity-40"
+                        className="px-3 py-1.5 rounded-md text-sm font-semibold transition-colors disabled:opacity-40"
                         style={isPublic
                           ? { background: 'rgba(16,185,129,.15)', color: '#34d399', border: '1px solid rgba(16,185,129,.3)' }
                           : { background: 'rgba(148,163,184,.15)', color: '#94a3b8', border: '1px solid rgba(148,163,184,.3)' }
@@ -732,7 +732,7 @@ function RefundModal({ order, cancelling, onClose, onConfirm }) {
         {/* 付款方式分流提示 */}
         {isCreditCard ? (
           <div
-            className="mb-5 p-3 rounded-lg text-xs leading-relaxed"
+            className="mb-5 p-3 rounded-lg text-sm leading-relaxed"
             style={{ background: T.pass + '15', border: `1px solid ${T.pass}40`, color: '#86efac' }}
           >
             <strong>💳 信用卡退款</strong>：確認後系統會自動透過 NewebPay API 退款至原卡，
@@ -740,7 +740,7 @@ function RefundModal({ order, cancelling, onClose, onConfirm }) {
           </div>
         ) : (
           <div
-            className="mb-5 p-3 rounded-lg text-xs leading-relaxed"
+            className="mb-5 p-3 rounded-lg text-sm leading-relaxed"
             style={{ background: T.warn + '15', border: `1px solid ${T.warn}40`, color: '#fde68a' }}
           >
             <strong>🏦 手動轉帳退款</strong>：因 {order.payment_type} 方式無法線上自動退款，
@@ -749,7 +749,7 @@ function RefundModal({ order, cancelling, onClose, onConfirm }) {
         )}
 
         {/* 警語 */}
-        <p className="mb-5 text-xs leading-relaxed" style={{ color: T.textLow }}>
+        <p className="mb-5 text-sm leading-relaxed" style={{ color: T.textLow }}>
           ⚠️ 確認退款後 Pro 功能會立即停用，已分析的網站資料保留，但無法再使用 PDF 匯出、aivis 監測、修復碼產生器等 Pro 功能。
         </p>
 
@@ -848,14 +848,14 @@ function CancelPeriodModal({ sub, cancelling, onClose, onConfirm }) {
         </div>
 
         <div
-          className="mb-5 p-3 rounded-lg text-xs leading-relaxed"
+          className="mb-5 p-3 rounded-lg text-sm leading-relaxed"
           style={{ background: T.warn + '15', border: `1px solid ${T.warn}40`, color: '#fde68a' }}
         >
           <strong>⚠️ 取消後規則</strong>：NewebPay 委託立即終止、下期不再扣款；本期已扣款費用<strong>不退款</strong>，
           帳號將同步降回免費版（Pro 功能停用）。如需繼續訂閱請重新建立委託。
         </div>
 
-        <p className="mb-5 text-xs leading-relaxed" style={{ color: T.textLow }}>
+        <p className="mb-5 text-sm leading-relaxed" style={{ color: T.textLow }}>
           ⚠️ 確認取消後 Pro 功能會立即停用，已分析的網站資料保留，但無法再使用 PDF 匯出、aivis 監測、修復碼產生器等 Pro 功能。
         </p>
 

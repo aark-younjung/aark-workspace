@@ -125,12 +125,12 @@ export default function LLMOChecklistModal({ open, onClose, data, baselineScores
               placeholder="例：某客戶公司 / 品牌名"
               className="w-full px-4 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/35 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400/50"
             />
-            <p className="mt-1 text-xs text-white/40">顯示在報告封面「為您製作」欄</p>
+            <p className="mt-1 text-sm text-white/40">顯示在報告封面「為您製作」欄</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-white/80 mb-2">
-              起跑日 <span className="text-xs font-normal text-white/40">(顯示在封面 Week 0)</span>
+              起跑日 <span className="text-sm font-normal text-white/40">(顯示在封面 Week 0)</span>
             </label>
             <input
               type="date"
@@ -143,25 +143,25 @@ export default function LLMOChecklistModal({ open, onClose, data, baselineScores
           {/* 起跑分數預覽（如果有資料就顯示） */}
           {baselineScores && (baselineScores.seo || baselineScores.aeo || baselineScores.geo || baselineScores.eeat) && (
             <div className="px-4 py-3 bg-emerald-500/10 border border-emerald-400/25 rounded-xl">
-              <div className="text-xs font-medium text-emerald-300 mb-2 tracking-wide uppercase">
+              <div className="text-sm font-medium text-emerald-300 mb-2 tracking-wide uppercase">
                 Week 0 起跑分數（自動帶入封面）
               </div>
               <div className="grid grid-cols-4 gap-2 text-center">
                 <div>
                   <div className="text-base font-bold text-white">{baselineScores.seo || 0}</div>
-                  <div className="text-[10px] text-white/50 tracking-wider">SEO</div>
+                  <div className="text-sm text-white/50 tracking-wider">SEO</div>
                 </div>
                 <div>
                   <div className="text-base font-bold text-white">{baselineScores.aeo || 0}</div>
-                  <div className="text-[10px] text-white/50 tracking-wider">AEO</div>
+                  <div className="text-sm text-white/50 tracking-wider">AEO</div>
                 </div>
                 <div>
                   <div className="text-base font-bold text-white">{baselineScores.geo || 0}</div>
-                  <div className="text-[10px] text-white/50 tracking-wider">GEO</div>
+                  <div className="text-sm text-white/50 tracking-wider">GEO</div>
                 </div>
                 <div>
                   <div className="text-base font-bold text-white">{baselineScores.eeat || 0}</div>
-                  <div className="text-[10px] text-white/50 tracking-wider">EEAT</div>
+                  <div className="text-sm text-white/50 tracking-wider">EEAT</div>
                 </div>
               </div>
             </div>
@@ -170,11 +170,11 @@ export default function LLMOChecklistModal({ open, onClose, data, baselineScores
           {/* 代理商署名（折線分隔） */}
           <div className="pt-4 mt-4 border-t border-white/8">
             <div className="text-sm font-medium text-white/55 mb-3 uppercase tracking-widest">
-              代理商署名 <span className="text-xs font-normal text-white/35 normal-case">(白標、選填、會記住下次帶入)</span>
+              代理商署名 <span className="text-sm font-normal text-white/35 normal-case">(白標、選填、會記住下次帶入)</span>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-white/65 mb-1.5">代理商名稱</label>
+                <label className="block text-sm font-medium text-white/65 mb-1.5">代理商名稱</label>
                 <input
                   type="text"
                   value={agencyName}
@@ -184,7 +184,7 @@ export default function LLMOChecklistModal({ open, onClose, data, baselineScores
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-white/65 mb-1.5">聯絡方式</label>
+                <label className="block text-sm font-medium text-white/65 mb-1.5">聯絡方式</label>
                 <input
                   type="text"
                   value={agencyContact}
@@ -223,7 +223,7 @@ export default function LLMOChecklistModal({ open, onClose, data, baselineScores
         </div>
 
         {/* 小提醒 */}
-        <p className="mt-5 pt-4 border-t border-white/8 text-xs text-white/40 leading-relaxed">
+        <p className="mt-5 pt-4 border-t border-white/8 text-sm text-white/40 leading-relaxed">
           💡 PDF 含 10 頁：封面 + 序章 + Week 1-6 逐週清單 + 附錄 A 工具 + 附錄 B 常見錯覺。
           含 robots.txt / llms.txt / Schema 完整可複製模板。產出大小約 500-800 KB。
         </p>

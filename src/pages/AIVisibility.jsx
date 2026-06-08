@@ -133,7 +133,7 @@ export default function AIVisibility() {
         {/* 標題區塊 */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
-            <span className="inline-block px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/30 rounded-full text-xs font-medium text-emerald-300">
+            <span className="inline-block px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/30 rounded-full text-sm font-medium text-emerald-300">
               NEW · Phase 1
             </span>
           </div>
@@ -220,7 +220,7 @@ export default function AIVisibility() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  行業分類 <span className="text-xs font-normal text-white/45">（選最符合的、找不到請選「其他」並在簡介說明）</span>
+                  行業分類 <span className="text-sm font-normal text-white/45">（選最符合的、找不到請選「其他」並在簡介說明）</span>
                 </label>
                 <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 border border-white/15 rounded-xl min-h-[44px]">
                   {INDUSTRIES.map(ind => {
@@ -230,7 +230,7 @@ export default function AIVisibility() {
                         type="button"
                         key={ind.slug}
                         onClick={() => selectFormIndustry(ind.slug)}
-                        className="text-xs px-2.5 py-1 rounded-full font-medium transition inline-flex items-center gap-1"
+                        className="text-sm px-2.5 py-1 rounded-full font-medium transition inline-flex items-center gap-1"
                         style={{
                           background: active ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
                           border: active ? '1px solid rgba(34,197,94,0.5)' : '1px solid rgba(255,255,255,0.15)',
@@ -245,7 +245,7 @@ export default function AIVisibility() {
                   })}
                 </div>
                 {form.industries.length > 0 && (
-                  <p className="mt-1.5 text-xs text-white/45">
+                  <p className="mt-1.5 text-sm text-white/45">
                     已選：{namesOf(form.industries)[0]}
                   </p>
                 )}
@@ -317,19 +317,19 @@ export default function AIVisibility() {
                       {brand.name}
                     </Link>
                     {brand.domain && (
-                      <p className="text-xs text-white/50 mt-1 truncate">{brand.domain}</p>
+                      <p className="text-sm text-white/50 mt-1 truncate">{brand.domain}</p>
                     )}
                   </div>
                   <button
                     onClick={() => handleDelete(brand.id, brand.name)}
-                    className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-red-400 text-xs transition-opacity"
+                    className="opacity-0 group-hover:opacity-100 text-white/40 hover:text-red-400 text-sm transition-opacity"
                     title="刪除品牌"
                   >
                     刪除
                   </button>
                 </div>
                 {brand.industry && (
-                  <span className="inline-block px-2 py-0.5 bg-white/10 rounded-md text-xs text-white/70 mb-3">
+                  <span className="inline-block px-2 py-0.5 bg-white/10 rounded-md text-sm text-white/70 mb-3">
                     {brand.industry}
                   </span>
                 )}
@@ -337,12 +337,12 @@ export default function AIVisibility() {
                   <p className="text-sm text-white/60 line-clamp-2 mb-3">{brand.description}</p>
                 )}
                 <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                  <span className="text-xs text-white/40">
+                  <span className="text-sm text-white/40">
                     {new Date(brand.created_at).toLocaleDateString('zh-TW')} 建立
                   </span>
                   <Link
                     to={`/ai-visibility/${brand.id}`}
-                    className="text-xs text-emerald-300 hover:text-emerald-200 font-medium"
+                    className="text-sm text-emerald-300 hover:text-emerald-200 font-medium"
                   >
                     進入監測 →
                   </Link>

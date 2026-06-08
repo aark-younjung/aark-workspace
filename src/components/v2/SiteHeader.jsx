@@ -45,21 +45,21 @@ export default function SiteHeader() {
             {user ? (
               <>
                 {!isPro && (
-                  <Link to="/pricing" className="hidden sm:block px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded-lg transition-colors font-medium">升級 Pro</Link>
+                  <Link to="/pricing" className="hidden sm:block px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
                 )}
                 <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0">
                   {user?.user_metadata?.avatar_url ? (
                     <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">
+                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-sm font-bold">
                       {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
                     </div>
                   )}
                 </Link>
-                <button onClick={signOut} className="text-white/70 hover:text-white text-xs sm:text-sm transition-colors">登出</button>
+                <button onClick={signOut} className="text-white/70 hover:text-white text-sm sm:text-sm transition-colors">登出</button>
               </>
             ) : (
-              <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
+              <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
             )}
           </div>
         </div>
@@ -70,7 +70,7 @@ export default function SiteHeader() {
             ['/showcase', '排行榜'], ['/compare', '競品比較'],
             ['/pricing', '定價'], ['/content-audit', '文章分析'], ['/faq', 'FAQ'],
           ].map(([to, label]) => (
-            <Link key={to} to={to} className="flex-shrink-0 px-3 py-1 text-xs text-white hover:text-orange-300 hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap">{label}</Link>
+            <Link key={to} to={to} className="flex-shrink-0 px-3 py-1 text-sm text-white hover:text-orange-300 hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap">{label}</Link>
           ))}
         </div>
       </div>

@@ -210,12 +210,12 @@ export default function WeeklyAITrendsCard() {
             🔥 本週 AI 趨勢
           </h3>
           {publicData && (
-            <span className="text-xs font-mono text-white/40">
+            <span className="text-sm font-mono text-white/40">
               {publicData.range.from} ~ {publicData.range.to}
             </span>
           )}
         </div>
-        <Link to="/ai-visibility" className="text-xs text-orange-300 hover:text-orange-200 font-bold">
+        <Link to="/ai-visibility" className="text-sm text-orange-300 hover:text-orange-200 font-bold">
           看完整 aivis →
         </Link>
       </div>
@@ -224,7 +224,7 @@ export default function WeeklyAITrendsCard() {
       <div className="flex flex-wrap gap-1.5 mb-4 items-center">
         <button
           onClick={clearIndustries}
-          className="text-xs px-2.5 py-1 rounded-full font-bold transition"
+          className="text-sm px-2.5 py-1 rounded-full font-bold transition"
           style={{
             background: selectedIndustries.length === 0 ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.04)',
             border: selectedIndustries.length === 0 ? '1px solid rgba(249,115,22,0.5)' : '1px solid rgba(255,255,255,0.1)',
@@ -239,7 +239,7 @@ export default function WeeklyAITrendsCard() {
             <button
               key={ind.slug}
               onClick={() => selectIndustry(ind.slug)}
-              className="text-xs px-2.5 py-1 rounded-full font-medium transition inline-flex items-center gap-1"
+              className="text-sm px-2.5 py-1 rounded-full font-medium transition inline-flex items-center gap-1"
               style={{
                 background: active ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.04)',
                 border: active ? '1px solid rgba(249,115,22,0.5)' : '1px solid rgba(255,255,255,0.1)',
@@ -261,10 +261,10 @@ export default function WeeklyAITrendsCard() {
           border: '1px solid rgba(34,197,94,0.25)',
         }}>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 font-bold uppercase tracking-widest">
+            <span className="text-sm px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 font-bold uppercase tracking-widest">
               你的品牌
             </span>
-            <span className="text-xs text-white/45">追蹤中 {personalData.brands.length} 個 · 本週表現</span>
+            <span className="text-sm text-white/45">追蹤中 {personalData.brands.length} 個 · 本週表現</span>
           </div>
           {personalData.brands.length === 0 ? (
             <p className="text-sm text-white/50">本週還沒有任何 AI 提及紀錄、跑下一輪 aivis 試試</p>
@@ -280,12 +280,12 @@ export default function WeeklyAITrendsCard() {
                       color: rank <= 3 ? '#86efac' : 'rgba(255,255,255,0.55)',
                     }}>{medal}</span>
                     <span className="flex-1 text-sm text-white font-bold truncate">{b.name}</span>
-                    <span className="text-xs text-white/55 font-mono whitespace-nowrap">
+                    <span className="text-sm text-white/55 font-mono whitespace-nowrap">
                       {b.count.toLocaleString()} 次
                     </span>
                     {change != null && (
                       <span
-                        className="text-xs font-bold font-mono whitespace-nowrap min-w-[3rem] text-right"
+                        className="text-sm font-bold font-mono whitespace-nowrap min-w-[3rem] text-right"
                         style={{ color: change > 0 ? '#86efac' : change < 0 ? '#fca5a5' : 'rgba(255,255,255,0.4)' }}
                       >
                         {change > 0 ? '▲' : change < 0 ? '▼' : '—'} {Math.abs(change)}%
@@ -307,13 +307,13 @@ export default function WeeklyAITrendsCard() {
         }}>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-emerald-300">解鎖你的個人 AI 趨勢</div>
-            <p className="text-xs text-white/55 mt-0.5">
+            <p className="text-sm text-white/55 mt-0.5">
               {isPro ? '設定追蹤品牌、aivis 會每天問 5 個 AI、本週起就有你的排名變化' : 'aivis 是 Pro 核心功能 — 升 Pro 解鎖品牌追蹤'}
             </p>
           </div>
           <Link
             to={isPro ? '/ai-visibility' : '/pricing'}
-            className="text-xs font-bold px-3 py-1.5 rounded-lg text-emerald-300 hover:text-emerald-200 border border-emerald-400/40 hover:border-emerald-400/70 whitespace-nowrap"
+            className="text-sm font-bold px-3 py-1.5 rounded-lg text-emerald-300 hover:text-emerald-200 border border-emerald-400/40 hover:border-emerald-400/70 whitespace-nowrap"
           >
             {isPro ? '設定追蹤 →' : '升級 Pro →'}
           </Link>
@@ -324,7 +324,7 @@ export default function WeeklyAITrendsCard() {
       {hasPublicData && (
         <>
           {/* 規模感 */}
-          <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-white/55">
+          <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-white/55">
             <span>本週全平台 AI 引擎共回應</span>
             <strong className="text-white font-mono text-sm">{publicData.totalResponses.toLocaleString()}</strong>
             <span>次 · 提及品牌</span>
@@ -338,7 +338,7 @@ export default function WeeklyAITrendsCard() {
               {Object.entries(publicData.engineBreakdown)
                 .sort((a, b) => b[1] - a[1])
                 .map(([engine, count]) => (
-                  <span key={engine} className="text-xs px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 font-mono">
+                  <span key={engine} className="text-sm px-2 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 font-mono">
                     {engine} · {count.toLocaleString()}
                   </span>
                 ))}
@@ -351,7 +351,7 @@ export default function WeeklyAITrendsCard() {
               background: 'rgba(0,0,0,0.3)',
               border: '1px solid rgba(249,115,22,0.18)',
             }}>
-              <div className="text-xs text-white/50 mb-3 font-bold uppercase tracking-widest">
+              <div className="text-sm text-white/50 mb-3 font-bold uppercase tracking-widest">
                 本週全平台 AI 最常提及的品牌
               </div>
               <ol className="space-y-2">
@@ -365,12 +365,12 @@ export default function WeeklyAITrendsCard() {
                         color: rank <= 3 ? '#fdba74' : 'rgba(255,255,255,0.55)',
                       }}>{medal}</span>
                       <span className="flex-1 text-sm text-white font-bold truncate">{m.name}</span>
-                      <span className="text-xs text-white/55 font-mono whitespace-nowrap">
+                      <span className="text-sm text-white/55 font-mono whitespace-nowrap">
                         {m.count.toLocaleString()} 次
                       </span>
                       {change != null && (
                         <span
-                          className="text-xs font-bold font-mono whitespace-nowrap min-w-[3rem] text-right"
+                          className="text-sm font-bold font-mono whitespace-nowrap min-w-[3rem] text-right"
                           style={{ color: change > 0 ? '#86efac' : change < 0 ? '#fca5a5' : 'rgba(255,255,255,0.4)' }}
                         >
                           {change > 0 ? '▲' : change < 0 ? '▼' : '—'} {Math.abs(change)}%
@@ -386,7 +386,7 @@ export default function WeeklyAITrendsCard() {
       )}
 
       {/* Footer 小字 — 解釋資料來源 */}
-      <p className="mt-3 text-[11px] text-white/35 leading-relaxed">
+      <p className="mt-3 text-sm text-white/35 leading-relaxed">
         💡 {showPersonal ? '個人區來自你的 aivis 追蹤；' : ''}
         全平台統計來自 Aark aivis 監測累積（跨用戶匿名）— 涵蓋 ChatGPT / Claude / Perplexity / Gemini / GLM 5 個 AI 引擎、每 5 分鐘更新。
       </p>

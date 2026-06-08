@@ -34,8 +34,8 @@ function InfoTooltip({ text }) {
   const lines = text.split('\n')
   return (
     <span className="relative group inline-flex items-center ml-1.5 align-middle">
-      <span className="w-4 h-4 rounded-full bg-white/15 text-white/70 text-xs flex items-center justify-center cursor-help font-bold leading-none">?</span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-black/90 border border-white/15 text-white text-xs rounded-lg px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl backdrop-blur">
+      <span className="w-4 h-4 rounded-full bg-white/15 text-white/70 text-sm flex items-center justify-center cursor-help font-bold leading-none">?</span>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-black/90 border border-white/15 text-white text-sm rounded-lg px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl backdrop-blur">
         {lines.map((line, i) => (
           <span key={i} className={`block ${line.startsWith('・') ? 'mt-1 text-white/60' : 'font-medium mb-1'}`}>{line}</span>
         ))}
@@ -715,7 +715,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 <p className="text-sm font-semibold" style={{ color: T.text }}>
                   Pro 試用中・剩 <span style={{ color: T.pass }}>{trialDaysRemaining} 天</span>
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: T.textMid }}>
+                <p className="text-sm mt-0.5" style={{ color: T.textMid }}>
                   {new Date(trialEndsAt).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })} 到期・升級訂閱可無縫銜接所有功能
                 </p>
               </div>
@@ -723,14 +723,14 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Link
                 to="/account"
-                className="text-xs px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+                className="text-sm px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
                 style={{ color: T.textMid, border: `1px solid ${T.cardBorder}` }}
               >
                 查看試用詳情
               </Link>
               <Link
                 to="/pricing"
-                className="text-xs px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-lg transition-all shadow-lg shadow-orange-900/30 whitespace-nowrap"
+                className="text-sm px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-lg transition-all shadow-lg shadow-orange-900/30 whitespace-nowrap"
               >
                 立即升級 Pro →
               </Link>
@@ -759,12 +759,12 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <div className="min-w-0">
                 <h1 className="text-base sm:text-xl font-bold text-white truncate">{website.name}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-white/50 truncate hidden sm:block">{website.url}</p>
+                  <p className="text-sm text-white/50 truncate hidden sm:block">{website.url}</p>
                   {(seoAudit || aeoAudit || geoAudit || eeatAudit) && (() => {
                     const ts = seoAudit?.created_at || aeoAudit?.created_at || geoAudit?.created_at || eeatAudit?.created_at
                     const ago = timeAgo(ts)
                     return ago ? (
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-orange-500/15 text-orange-300 border border-orange-400/30 rounded-full font-medium whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-sm px-2 py-0.5 bg-orange-500/15 text-orange-300 border border-orange-400/30 rounded-full font-medium whitespace-nowrap">
                         🤖 {ago}
                       </span>
                     ) : null
@@ -780,7 +780,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <button
               onClick={handleReanalyze}
               disabled={analyzing}
-              className="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-xs font-medium shadow-lg shadow-orange-500/20"
+              className="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm font-medium shadow-lg shadow-orange-500/20"
             >
               {analyzing ? (
                 <>
@@ -804,7 +804,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <button
                 onClick={handleExportPDF}
                 disabled={exportingPDF || analyzing}
-                className="flex-shrink-0 px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white border border-white/15 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-xs font-medium"
+                className="flex-shrink-0 px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white border border-white/15 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm font-medium"
               >
                 {exportingPDF ? (
                   <>
@@ -827,7 +827,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <button
                 onClick={handleUpgrade}
                 disabled={upgrading}
-                className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-orange-400/30 text-orange-300 hover:bg-orange-500/15 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-orange-400/30 text-orange-300 hover:bg-orange-500/15 rounded-lg text-sm font-semibold flex items-center gap-1 transition-colors"
               >
                 🔒 <span className="hidden sm:inline">匯出 PDF</span> (Pro)
               </button>
@@ -836,7 +836,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             {website?.is_approved ? (
               <Link
                 to="/showcase"
-                className="flex-shrink-0 px-3 py-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 rounded-lg text-xs font-medium hover:bg-emerald-500/25 transition-colors flex items-center gap-1.5"
+                className="flex-shrink-0 px-3 py-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 rounded-lg text-sm font-medium hover:bg-emerald-500/25 transition-colors flex items-center gap-1.5"
                 title="本網站已在公開排行榜，點擊查看"
               >
                 <span>✅</span>
@@ -847,7 +847,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <button
                 type="button"
                 onClick={() => alert(`提交至排行榜未通過審核：\n\n${website.rejection_reason}\n\n如需重新申請請聯絡客服 aark.younjung@gmail.com`)}
-                className="flex-shrink-0 px-3 py-1.5 bg-red-500/15 text-red-300 border border-red-400/30 rounded-lg text-xs font-medium hover:bg-red-500/25 transition-colors flex items-center gap-1.5"
+                className="flex-shrink-0 px-3 py-1.5 bg-red-500/15 text-red-300 border border-red-400/30 rounded-lg text-sm font-medium hover:bg-red-500/25 transition-colors flex items-center gap-1.5"
                 title="點擊查看退件原因"
               >
                 <span>🚫</span>
@@ -855,7 +855,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 <span className="sm:hidden">已退回</span>
               </button>
             ) : website?.submitted_at ? (
-              <span className="flex-shrink-0 px-3 py-1.5 bg-amber-500/15 text-amber-300 border border-amber-400/30 rounded-lg text-xs font-medium flex items-center gap-1.5 whitespace-nowrap" title="管理員審核中，通常 1-3 個工作天">
+              <span className="flex-shrink-0 px-3 py-1.5 bg-amber-500/15 text-amber-300 border border-amber-400/30 rounded-lg text-sm font-medium flex items-center gap-1.5 whitespace-nowrap" title="管理員審核中，通常 1-3 個工作天">
                 <span>⏳</span>
                 <span className="hidden sm:inline">排行榜審核中</span>
                 <span className="sm:hidden">審核中</span>
@@ -864,7 +864,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <button
                 onClick={handleSubmitToShowcase}
                 disabled={submittingShowcase}
-                className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-amber-400/30 text-amber-300 hover:bg-amber-500/15 rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+                className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-amber-400/30 text-amber-300 hover:bg-amber-500/15 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
                 title="提交本網站至公開排行榜 /showcase（需通過管理員審核）"
               >
                 {submittingShowcase ? (
@@ -885,7 +885,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               </button>
             )}
             {!isPro && (
-              <Link to="/pricing" className="flex-shrink-0 px-3 py-1.5 text-xs text-orange-300 hover:text-orange-200 border border-orange-400/30 hover:border-orange-400/60 rounded-lg transition-colors whitespace-nowrap">
+              <Link to="/pricing" className="flex-shrink-0 px-3 py-1.5 text-sm text-orange-300 hover:text-orange-200 border border-orange-400/30 hover:border-orange-400/60 rounded-lg transition-colors whitespace-nowrap">
                 查看方案 →
               </Link>
             )}
@@ -919,20 +919,20 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       ) : (
                         <>
                           <span className="text-3xl font-bold" style={{ color: item.color }}>{item.value ?? '—'}</span>
-                          <p className="text-xs leading-tight text-white/40">{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
+                          <p className="text-sm leading-tight text-white/40">{item.value != null ? getVerdict(item.name, item.value) : '分析中...'}</p>
                         </>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
+                  <p className="text-sm font-medium mb-3" style={{ color: item.color }}>{item.desc}</p>
                   <div className="h-2 rounded-full overflow-hidden mb-3 bg-white/10">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${item.value ?? 0}%`, backgroundColor: item.color }}
                     />
                   </div>
-                  <p className="text-xs leading-relaxed text-white/60">{item.detail}</p>
-                  <p className="text-xs mt-3 font-medium" style={{ color: item.color, opacity: 0.85 }}>查看詳細報告 →</p>
+                  <p className="text-sm leading-relaxed text-white/60">{item.detail}</p>
+                  <p className="text-sm mt-3 font-medium" style={{ color: item.color, opacity: 0.85 }}>查看詳細報告 →</p>
                 </GlassCard>
               </Link>
             )
@@ -960,12 +960,12 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-white">被 AI 引用的關鍵條件</h3>
-                    <p className="text-xs mt-0.5 text-white/50">ChatGPT · Perplexity · Claude · Gemini 引用網站通常需具備這些條件</p>
+                    <p className="text-sm mt-0.5 text-white/50">ChatGPT · Perplexity · Claude · Gemini 引用網站通常需具備這些條件</p>
                   </div>
                   <div className="text-right flex-shrink-0 ml-4">
                     <span className="text-2xl font-bold" style={{ color: accent }}>{passCount}</span>
                     <span className="text-sm text-white/40"> / {conditions.length}</span>
-                    <p className="text-xs text-white/40">{passCount >= 6 ? '具備引用條件' : passCount >= 4 ? '部分達標' : '引用機率偏低'}</p>
+                    <p className="text-sm text-white/40">{passCount >= 6 ? '具備引用條件' : passCount >= 4 ? '部分達標' : '引用機率偏低'}</p>
                   </div>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-2">
@@ -978,7 +978,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       <span className="text-base flex-shrink-0 mt-0.5">{c.pass ? '✅' : '❌'}</span>
                       <div>
                         <p className="text-sm font-medium leading-tight text-white/90">{c.label}</p>
-                        <p className="text-xs mt-0.5 text-white/40">{c.desc}</p>
+                        <p className="text-sm mt-0.5 text-white/40">{c.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -1000,7 +1000,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl transition-all whitespace-nowrap"
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm sm:text-sm font-semibold rounded-xl transition-all whitespace-nowrap"
                 style={isActive ? {
                   background: 'rgba(0,0,0,0.5)',
                   border: '1px solid rgba(24,197,144,0.5)',
@@ -1093,7 +1093,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               {radarData.map((item) => (
                 <div key={item.subject} className="text-center">
                   <div className="text-lg font-bold text-white">{item.score}</div>
-                  <div className="text-xs font-semibold" style={{ color: FACE_COLORS[item.subject] }}>{item.subject}</div>
+                  <div className="text-sm font-semibold" style={{ color: FACE_COLORS[item.subject] }}>{item.subject}</div>
                 </div>
               ))}
             </div>
@@ -1103,9 +1103,9 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           <GlassCard color={T.aeo} style={{ padding: 24 }}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-semibold text-white">歷史趨勢<InfoTooltip text={`每次重新檢測後自動記錄，最多顯示近 10 次\n・折線圖追蹤 SEO、AEO、GEO、E-E-A-T 四項分數變化\n・綜合分數為四項平均值\n・可觀察優化動作是否有效提升分數\n・卡片上的 +/- 數字代表與上次相比的變化`} /></h3>
-              {!isPro && <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-300 border border-orange-400/30 rounded-full font-semibold">🔒 Pro 功能</span>}
+              {!isPro && <span className="text-sm px-2 py-1 bg-orange-500/20 text-orange-300 border border-orange-400/30 rounded-full font-semibold">🔒 Pro 功能</span>}
             </div>
-            <p className="text-xs text-white/40 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
+            <p className="text-sm text-white/40 mb-5">每次重新檢測後自動記錄，最多顯示最近 10 次</p>
 
             {!isPro ? (
               <div className="relative">
@@ -1147,9 +1147,9 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     return (
                       <div key={key} className="rounded-xl p-3 text-center border"
                         style={{ background: `${color}1a`, borderColor: `${color}33` }}>
-                        <div className="text-xs text-white/60 mb-1">{key}</div>
+                        <div className="text-sm text-white/60 mb-1">{key}</div>
                         <div className="text-xl font-bold" style={{ color }}>{last}</div>
-                        <div className={`text-xs font-medium mt-0.5 ${diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-red-400' : 'text-white/40'}`}>
+                        <div className={`text-sm font-medium mt-0.5 ${diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-red-400' : 'text-white/40'}`}>
                           {diff > 0 ? `+${diff}` : diff < 0 ? `${diff}` : '持平'}
                         </div>
                       </div>
@@ -1249,7 +1249,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 <div key={i} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg">
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-medium text-white block">{item.name}</span>
-                    <span className="text-xs text-white/50 truncate block">{item.value}</span>
+                    <span className="text-sm text-white/50 truncate block">{item.value}</span>
                   </div>
                   <div className="flex items-center gap-3 ml-4">
                     <span className="text-sm font-bold text-white">{item.score}</span>
@@ -1270,11 +1270,11 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 查看詳情 →
               </Link>
             </div>
-            <p className="text-xs text-white/40 mb-4">Answer Engine — 傳統 Google 問答優化</p>
+            <p className="text-sm text-white/40 mb-4">Answer Engine — 傳統 Google 問答優化</p>
             <div className="grid grid-cols-2 gap-3">
               {aeoChecks.map((check) => (
                 <div key={check.key} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
                     check.passed
                       ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                       : 'bg-red-500/20 text-red-300 border border-red-500/30'
@@ -1294,16 +1294,16 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-white">GEO 生成式 AI 優化<InfoTooltip text={`GEO（生成式引擎優化）共 8 項指標\n・llms.txt：專為 AI 爬蟲設計的說明文件\n・AI 爬蟲開放：robots.txt 是否允許 GPTBot 等爬取\n・Sitemap：網站地圖，幫助搜尋引擎完整索引\n・Open Graph：頁面的標題、描述、圖片標記\n・Twitter Card：社群預覽卡片設定\n・JSON-LD 引用信號：提供 AI 引用所需的結構化資訊\n・Canonical：告知搜尋引擎頁面的標準版本\n・HTTPS：安全連線，影響排名與用戶信任`} /></h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-medium">Generative Engine</span>
+              <span className="text-sm px-2 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-medium">Generative Engine</span>
               <Link to={`/geo-audit/${id}`} className="text-emerald-300 hover:text-emerald-200 text-sm font-medium">查看詳情 →</Link>
             </div>
           </div>
-          <p className="text-xs text-white/40 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Claude、Perplexity、Gemini）</p>
+          <p className="text-sm text-white/40 mb-4">檢測 AI 爬蟲開放性與引用可信度信號（ChatGPT、Claude、Perplexity、Gemini）</p>
           {geoAudit ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {geoChecks.map((check) => (
                 <div key={check.key} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
                     check.passed
                       ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                       : 'bg-red-500/20 text-red-300 border border-red-500/30'
@@ -1328,16 +1328,16 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-white">E-E-A-T 可信度<InfoTooltip text={`Google 品質評分核心：經驗、專業、權威、可信度\n・作者資訊：頁面是否標示作者姓名與專業背景\n・關於我們：是否有介紹公司/團隊的頁面\n・聯絡方式：是否提供可驗證的聯絡資訊\n・隱私權政策：必備的法律合規頁面\n・Organization Schema：結構化的組織資訊標記\n・發布日期：文章是否標示發布與更新時間\n・社群媒體連結：提升品牌可信度與權威性\n・外部權威連結：引用可信來源，增加內容可信度`} /></h3>
             <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full font-medium">Trust Signals</span>
+              <span className="text-sm px-2 py-1 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full font-medium">Trust Signals</span>
               <Link to={`/eeat-audit/${id}`} className="text-orange-300 hover:text-orange-200 text-sm font-medium">查看詳情 →</Link>
             </div>
           </div>
-          <p className="text-xs text-white/40 mb-4">檢測作者資訊、組織可信度與外部權威連結（Experience · Expertise · Authoritativeness · Trustworthiness）</p>
+          <p className="text-sm text-white/40 mb-4">檢測作者資訊、組織可信度與外部權威連結（Experience · Expertise · Authoritativeness · Trustworthiness）</p>
           {eeatAudit ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {eeatChecks.map((check) => (
                 <div key={check.key} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
                     check.passed ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'
                   }`}>
                     {check.passed ? '✓' : '✗'}
@@ -1353,7 +1353,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 <button
                   onClick={handleUpgrade}
                   disabled={upgrading}
-                  className="mt-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60"
+                  className="mt-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all disabled:opacity-60"
                 >
                   {upgrading ? '跳轉中...' : '🔒 升級 Pro，解鎖完整修改建議'}
                 </button>
@@ -1374,7 +1374,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="text-lg font-bold text-white">AI 曝光監測</h3>
-                  <span className="px-2 py-0.5 bg-emerald-500/25 border border-emerald-400/50 rounded-full text-[10px] font-semibold text-emerald-200 uppercase tracking-wider">
+                  <span className="px-2 py-0.5 bg-emerald-500/25 border border-emerald-400/50 rounded-full text-sm font-semibold text-emerald-200 uppercase tracking-wider">
                     New · Beta
                   </span>
                 </div>
@@ -1417,7 +1417,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   {/* P1/P2/P3 priority 圖例 chips（不是篩選器，純標示三級色碼） */}
                   <div className="flex items-center gap-1.5">
                     {['P1', 'P2', 'P3'].map(p => (
-                      <span key={p} className="text-[10px] font-bold px-2 py-1 rounded border" style={{ background: PRIORITY_STYLE[p].bg, color: PRIORITY_STYLE[p].color, borderColor: PRIORITY_STYLE[p].border }}>{p}</span>
+                      <span key={p} className="text-sm font-bold px-2 py-1 rounded border" style={{ background: PRIORITY_STYLE[p].bg, color: PRIORITY_STYLE[p].color, borderColor: PRIORITY_STYLE[p].border }}>{p}</span>
                     ))}
                   </div>
                 </div>
@@ -1430,7 +1430,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     return (
                       <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}>
                         {/* P1/P2/P3 chip */}
-                        <span className="flex-shrink-0 text-[10px] font-bold px-2 py-1 rounded border" style={{ background: ps.bg, color: ps.color, borderColor: ps.border }}>{tip.priority}</span>
+                        <span className="flex-shrink-0 text-sm font-bold px-2 py-1 rounded border" style={{ background: ps.bg, color: ps.color, borderColor: ps.border }}>{tip.priority}</span>
                         {/* 標題 + 描述 */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -1438,15 +1438,15 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: faceColor }}></span>
                             <p className="font-semibold text-white text-sm">{tip.title}</p>
                           </div>
-                          <p className="text-xs text-white/60 leading-relaxed">{tip.desc}</p>
+                          <p className="text-sm text-white/60 leading-relaxed">{tip.desc}</p>
                         </div>
                         {/* 右側：時間估計 + Pro 鎖 */}
                         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                          <span className="flex items-center gap-1 text-[11px] text-white/50 whitespace-nowrap">
+                          <span className="flex items-center gap-1 text-sm text-white/50 whitespace-nowrap">
                             <span>⏱</span><span>{tip.time}</span>
                           </span>
                           {!isPro && (
-                            <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border whitespace-nowrap" style={{ background: `${T.orange}26`, color: '#fdba74', borderColor: `${T.orange}66` }}>
+                            <span className="flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded border whitespace-nowrap" style={{ background: `${T.orange}26`, color: '#fdba74', borderColor: `${T.orange}66` }}>
                               <span>🔒</span><span>Pro</span>
                             </span>
                           )}
@@ -1463,7 +1463,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       <p className="font-bold text-white">
                         {remaining > 0 ? `還有 ${remaining} 項問題 + 完整修復碼在等你` : '完整修復碼在等你'}
                       </p>
-                      <p className="text-xs text-white/70 mt-1">Pro 版含修復碼產生器、歷史趨勢圖、PDF 匯出、aivis AI 曝光監測</p>
+                      <p className="text-sm text-white/70 mt-1">Pro 版含修復碼產生器、歷史趨勢圖、PDF 匯出、aivis AI 曝光監測</p>
                     </div>
                     <Link
                       to="/pricing"
@@ -1538,9 +1538,9 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 <span className="w-3 h-3 rounded-full bg-red-500/80"></span>
                 <span className="w-3 h-3 rounded-full bg-yellow-500/80"></span>
                 <span className="w-3 h-3 rounded-full bg-green-500/80"></span>
-                <span className="text-slate-500 text-xs ml-3 font-mono truncate">crawler-scan ~ {website?.url}</span>
+                <span className="text-slate-500 text-sm ml-3 font-mono truncate">crawler-scan ~ {website?.url}</span>
               </div>
-              <div ref={terminalRef} className="p-4 h-52 overflow-y-auto font-mono text-xs space-y-0.5 scrollbar-hide">
+              <div ref={terminalRef} className="p-4 h-52 overflow-y-auto font-mono text-sm space-y-0.5 scrollbar-hide">
                 {terminalLogs.length === 0 ? (
                   <span className="text-slate-600">等待掃描...</span>
                 ) : terminalLogs.map(log => (
@@ -1573,7 +1573,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                         }`}>
                           <div className="flex items-start justify-between mb-2">
                             <span className="text-xl leading-none">{bot.emoji}</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold border ${
+                            <span className={`text-sm px-1.5 py-0.5 rounded-full font-semibold border ${
                               status === 'blocked'
                                 ? 'bg-red-500/20 text-red-300 border-red-500/30'
                                 : status === 'allowed'
@@ -1584,12 +1584,12 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                             </span>
                           </div>
                           <p className="text-white font-semibold text-sm leading-tight">{bot.name}</p>
-                          <p className="text-white/50 text-xs mt-0.5">{bot.company}</p>
+                          <p className="text-white/50 text-sm mt-0.5">{bot.company}</p>
                         </div>
                       )
                     })}
                   </div>
-                  <p className="text-xs text-white/40 mt-2">「預設」代表 robots.txt 未特別設定，爬蟲預設可存取</p>
+                  <p className="text-sm text-white/40 mt-2">「預設」代表 robots.txt 未特別設定，爬蟲預設可存取</p>
                 </div>
 
                 {/* AI Visibility Signals */}
@@ -1607,7 +1607,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                         <span className="text-2xl flex-shrink-0">{item.icon}</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-white text-sm">{item.label}</p>
-                          <p className="text-xs text-white/60 truncate">{item.passed ? item.desc : item.fix}</p>
+                          <p className="text-sm text-white/60 truncate">{item.passed ? item.desc : item.fix}</p>
                         </div>
                         <span className={`text-xl flex-shrink-0 ${item.passed ? 'text-green-300' : 'text-orange-300'}`}>
                           {item.passed ? '✓' : '✗'}
@@ -1681,7 +1681,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 }`}
               >
                 <div>{tab.label}</div>
-                <div className="text-xs opacity-60 hidden sm:block">{tab.sub}</div>
+                <div className="text-sm opacity-60 hidden sm:block">{tab.sub}</div>
               </button>
             ))}
           </div>
@@ -1708,7 +1708,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                         <span className="text-2xl flex-shrink-0">{tip.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: priorityStyle.bg, color: priorityStyle.color }}>{priorityStyle.label}</span>
+                            <span className="text-sm font-semibold px-2 py-0.5 rounded" style={{ background: priorityStyle.bg, color: priorityStyle.color }}>{priorityStyle.label}</span>
                             <p className="font-semibold text-white">{tip.title}</p>
                           </div>
                           <p className="text-sm leading-relaxed text-white/70">{tip.desc}</p>
@@ -1742,7 +1742,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-base">✏️</span>
                     <h4 className="text-sm font-semibold text-white/90">補充商家資訊（選填）</h4>
-                    <span className="text-xs text-white/50">填入後程式碼即時更新</span>
+                    <span className="text-sm text-white/50">填入後程式碼即時更新</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
@@ -1752,7 +1752,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                       { key: 'description', label: '品牌描述', placeholder: '簡短說明你的品牌與服務（留空則使用網站描述）', icon: '📝' },
                     ].map(({ key, label, placeholder, icon }) => (
                       <div key={key}>
-                        <label className="text-xs text-white/60 mb-1 flex items-center gap-1">
+                        <label className="text-sm text-white/60 mb-1 flex items-center gap-1">
                           <span>{icon}</span>{label}
                         </label>
                         <input
@@ -1760,7 +1760,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                           value={bizInfo[key]}
                           onChange={e => setBizInfo(prev => ({ ...prev, [key]: e.target.value }))}
                           placeholder={placeholder}
-                          className="w-full px-3 py-2 text-xs rounded-lg border border-white/15 bg-black/40 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-white/15 bg-black/40 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
                         />
                       </div>
                     ))}
@@ -1775,16 +1775,16 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <h4 className="font-semibold text-white">{label}</h4>
-                        <p className="text-xs text-white/60">{hint}</p>
+                        <p className="text-sm text-white/60">{hint}</p>
                       </div>
                       <button
                         onClick={() => copyToClipboard(fn(), id)}
-                        className="px-3 py-1.5 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-lg text-xs font-medium hover:bg-orange-500/30 transition-colors flex-shrink-0"
+                        className="px-3 py-1.5 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-lg text-sm font-medium hover:bg-orange-500/30 transition-colors flex-shrink-0"
                       >
                         {copiedCode === id ? '✓ 已複製！' : '複製'}
                       </button>
                     </div>
-                    <pre className={`bg-slate-950/80 border border-white/10 ${color} rounded-xl p-4 text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48`}>
+                    <pre className={`bg-slate-950/80 border border-white/10 ${color} rounded-xl p-4 text-sm overflow-x-auto whitespace-pre-wrap leading-relaxed max-h-48`}>
                       {fn()}
                     </pre>
                   </div>
@@ -1806,7 +1806,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <h3 className="font-bold text-white mb-1">通知搜尋引擎，讓 AI 更快找到你</h3>
                   <p className="text-sm text-white/60">向 Google 與 Bing 發送 Sitemap 更新通知，讓 AI 爬蟲優先重新索引你的網站內容。</p>
                   {pingResult && (
-                    <p className={`text-xs mt-2 font-medium ${pingResult.success ? 'text-green-300' : 'text-red-300'}`}>
+                    <p className={`text-sm mt-2 font-medium ${pingResult.success ? 'text-green-300' : 'text-red-300'}`}>
                       {pingResult.success
                         ? `✓ 已成功通知 Google & Bing（${new Date(pingResult.pingedAt).toLocaleTimeString('zh-TW')}）`
                         : '✗ 通知失敗，請稍後再試'}
@@ -1841,12 +1841,12 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
             <span className="text-xl">📧</span>
             <h3 className="font-semibold text-slate-800">Email 通知</h3>
             {isPro && emailSubscription && (
-              <span className="ml-auto text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+              <span className="ml-auto text-sm px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">
                 已訂閱週報
               </span>
             )}
             {!isPro && (
-              <span className="ml-auto text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full font-semibold">Pro 功能</span>
+              <span className="ml-auto text-sm px-2 py-1 bg-orange-100 text-orange-600 rounded-full font-semibold">Pro 功能</span>
             )}
           </div>
           <p className="text-sm text-slate-500 mb-5">
@@ -1919,7 +1919,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
               )}
 
               {emailSubscription && (
-                <p className="text-xs text-slate-400 mt-3">
+                <p className="text-sm text-slate-400 mt-3">
                   訂閱信箱：{emailSubscription.email} ·
                   上次發送：{emailSubscription.last_sent_at
                     ? new Date(emailSubscription.last_sent_at).toLocaleDateString('zh-TW')

@@ -180,7 +180,7 @@ export default function AdminWebsites() {
 
           {/* 列表 */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider">
               <div className="col-span-3">網站</div>
               {/* 分析欄：點擊按鈕另開新分頁查看完整儀表板 */}
               <div className="col-span-1 text-center">分析</div>
@@ -219,7 +219,7 @@ export default function AdminWebsites() {
                         <button
                           onClick={() => handleToggleTestSite(site.id, !!site.is_test_site)}
                           disabled={togglingTest[site.id]}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold transition-colors disabled:opacity-40 ${
+                          className={`px-1.5 py-0.5 rounded text-sm font-semibold transition-colors disabled:opacity-40 ${
                             site.is_test_site
                               ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                               : 'bg-slate-700/50 text-slate-500 hover:bg-yellow-500/15 hover:text-yellow-400'
@@ -231,14 +231,14 @@ export default function AdminWebsites() {
                           {togglingTest[site.id] ? '...' : site.is_test_site ? '🧪 測試' : '⭕ 標為測試'}
                         </button>
                         {site.is_public_optout && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-300" title="用戶 opt-out 不在 TOP 8 公開">
+                          <span className="px-1.5 py-0.5 rounded text-sm font-semibold bg-purple-500/20 text-purple-300" title="用戶 opt-out 不在 TOP 8 公開">
                             🔒 不公開
                           </span>
                         )}
                       </div>
                       {/* 網址直接連到客戶實際網站（外部開新分頁） */}
                       <a href={site.url} target="_blank" rel="noopener noreferrer"
-                        className="text-slate-500 text-xs hover:text-slate-300 transition-colors truncate block">
+                        className="text-slate-500 text-sm hover:text-slate-300 transition-colors truncate block">
                         {site.url}
                       </a>
                     </div>
@@ -248,7 +248,7 @@ export default function AdminWebsites() {
                         to={`/dashboard/${site.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-2 py-1 bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 text-xs rounded-md font-medium transition-colors whitespace-nowrap"
+                        className="px-2 py-1 bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 text-sm rounded-md font-medium transition-colors whitespace-nowrap"
                         title="於新分頁查看完整分析儀表板"
                       >
                         📊 查看
@@ -258,9 +258,9 @@ export default function AdminWebsites() {
                       <p className="text-slate-300 text-sm truncate">{site.profiles?.name || '—'}</p>
                       <div className="flex items-center gap-1 mt-0.5">
                         {site.profiles?.is_pro && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium">Pro</span>
+                          <span className="text-sm px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium">Pro</span>
                         )}
-                        <p className="text-slate-500 text-xs truncate">{site.profiles?.email}</p>
+                        <p className="text-slate-500 text-sm truncate">{site.profiles?.email}</p>
                       </div>
                     </div>
                     <div className="col-span-3 grid grid-cols-4 text-center text-sm">
@@ -269,7 +269,7 @@ export default function AdminWebsites() {
                       <ScoreBadge score={getLatestScore(site.geo_audits)} color="text-emerald-400" />
                       <ScoreBadge score={getLatestScore(site.eeat_audits)} color="text-amber-400" />
                     </div>
-                    <div className="col-span-2 text-right text-slate-500 text-xs">
+                    <div className="col-span-2 text-right text-slate-500 text-sm">
                       {new Date(site.created_at).toLocaleDateString('zh-TW')}
                     </div>
                     {/* 刪除操作 */}
@@ -279,13 +279,13 @@ export default function AdminWebsites() {
                           <button
                             onClick={() => handleDelete(site.id)}
                             disabled={deletingId === site.id}
-                            className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded font-medium disabled:opacity-50"
+                            className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-medium disabled:opacity-50"
                           >
                             {deletingId === site.id ? '刪除中...' : '確認'}
                           </button>
                           <button
                             onClick={() => setConfirmId(null)}
-                            className="px-2 py-1 bg-slate-600 hover:bg-slate-500 text-slate-300 text-xs rounded"
+                            className="px-2 py-1 bg-slate-600 hover:bg-slate-500 text-slate-300 text-sm rounded"
                           >
                             取消
                           </button>

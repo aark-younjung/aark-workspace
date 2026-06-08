@@ -292,7 +292,7 @@ export default function AdminRevenue() {
             <div>
               <h1 className="text-2xl font-bold text-white">
                 營收儀表板
-                {includeTest && <span className="ml-2 text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 font-semibold align-middle">🧪 含測試訂單</span>}
+                {includeTest && <span className="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 font-semibold align-middle">🧪 含測試訂單</span>}
               </h1>
               <p className="text-slate-400 text-sm mt-1">
                 MRR = NewebPay 年繳（每位 active 用戶 ÷ 12）+ NPA 月繳（每位 × NT$1,490）+ Stripe 月繳。Top-up 為一次性購買，列累計營收不計入 MRR。退款訂單與手動授予不計入。
@@ -322,7 +322,7 @@ export default function AdminRevenue() {
                   <div className="text-2xl mb-3">{card.icon}</div>
                   <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
                   <p className="text-slate-400 text-sm mt-1">{card.label}</p>
-                  <p className="text-slate-600 text-xs mt-0.5">{card.sub}</p>
+                  <p className="text-slate-600 text-sm mt-0.5">{card.sub}</p>
                 </div>
               ))}
             </div>
@@ -335,11 +335,11 @@ export default function AdminRevenue() {
                 <div key={card.label} className={`border rounded-xl p-5 ${card.bg}`}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-2xl">{card.icon}</span>
-                    <span className="text-xs text-slate-500">{card.unitPriceLabel}</span>
+                    <span className="text-sm text-slate-500">{card.unitPriceLabel}</span>
                   </div>
                   <p className={`text-3xl font-bold ${card.accent}`}>{card.count}</p>
                   <p className="text-slate-300 text-sm mt-1">{card.label}</p>
-                  <p className="text-slate-500 text-xs mt-2 border-t border-slate-700/50 pt-2">
+                  <p className="text-slate-500 text-sm mt-2 border-t border-slate-700/50 pt-2">
                     {card.revenueLabel || '累計營收'} <strong className={card.accent}>NT$ {card.revenue.toLocaleString()}</strong>
                   </p>
                 </div>
@@ -385,32 +385,32 @@ export default function AdminRevenue() {
                   const upgradeDate = u.subscribed_at || u.created_at
                   let badge, priceLabel
                   if (isNewebpay) {
-                    badge = <span className="text-xs px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium">⭐ NewebPay 年繳</span>
+                    badge = <span className="text-sm px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium">⭐ NewebPay 年繳</span>
                     priceLabel = '年繳方案'
                   } else if (isStripe) {
-                    badge = <span className="text-xs px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 font-medium">💳 Stripe 月繳</span>
+                    badge = <span className="text-sm px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 font-medium">💳 Stripe 月繳</span>
                     priceLabel = `NT$ ${PRICE_STRIPE_MONTHLY.toLocaleString()}/月`
                   } else {
-                    badge = <span className="text-xs px-1.5 py-0.5 rounded bg-slate-600/40 text-slate-400 font-medium">⭐ 授予</span>
+                    badge = <span className="text-sm px-1.5 py-0.5 rounded bg-slate-600/40 text-slate-400 font-medium">⭐ 授予</span>
                     priceLabel = '不計入營收'
                   }
                   return (
                     <div key={u.id} className="flex items-center justify-between px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <span className="text-slate-600 text-xs w-5 text-right">{i + 1}</span>
+                        <span className="text-slate-600 text-sm w-5 text-right">{i + 1}</span>
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="text-slate-200 text-sm font-medium">{u.name || '（未填姓名）'}</p>
                             {badge}
                           </div>
-                          <p className="text-slate-500 text-xs">{u.email}</p>
+                          <p className="text-slate-500 text-sm">{u.email}</p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className={`text-sm font-semibold ${isNewebpay || isStripe ? 'text-orange-400' : 'text-slate-500'}`}>
                           {priceLabel}
                         </p>
-                        <p className="text-slate-500 text-xs">
+                        <p className="text-slate-500 text-sm">
                           {isStripe || isNewebpay ? '訂閱於' : '授予於'} {new Date(upgradeDate).toLocaleDateString('zh-TW')}
                         </p>
                       </div>

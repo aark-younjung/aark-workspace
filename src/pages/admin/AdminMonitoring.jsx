@@ -156,7 +156,7 @@ export default function AdminMonitoring() {
                   <div className="text-2xl mb-3">{card.icon}</div>
                   <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
                   <p className="text-slate-400 text-sm mt-1">{card.label}</p>
-                  <p className="text-slate-600 text-xs mt-0.5">{card.sub}</p>
+                  <p className="text-slate-600 text-sm mt-0.5">{card.sub}</p>
                 </div>
               ))}
             </div>
@@ -166,7 +166,7 @@ export default function AdminMonitoring() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-white font-semibold">近 7 天掃描趨勢</h2>
-              <p className="text-slate-500 text-xs">按日統計 aivis_responses 寫入量</p>
+              <p className="text-slate-500 text-sm">按日統計 aivis_responses 寫入量</p>
             </div>
             {trend7.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
@@ -191,7 +191,7 @@ export default function AdminMonitoring() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-white font-semibold">近 30 天掃描趨勢</h2>
-              <p className="text-slate-500 text-xs">看月度起伏與週週成長</p>
+              <p className="text-slate-500 text-sm">看月度起伏與週週成長</p>
             </div>
             {trend30.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
@@ -216,7 +216,7 @@ export default function AdminMonitoring() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
               <h2 className="text-white font-semibold">本月 Top 10 重度使用者</h2>
-              <p className="text-slate-500 text-xs">依掃描次數排序，異常用量可警示刷單</p>
+              <p className="text-slate-500 text-sm">依掃描次數排序，異常用量可警示刷單</p>
             </div>
             <div className="divide-y divide-slate-700">
               {topUsers.length === 0 ? (
@@ -225,20 +225,20 @@ export default function AdminMonitoring() {
                 topUsers.map((u, i) => (
                   <div key={u.user_id} className="flex items-center justify-between px-6 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-slate-600 text-xs w-5 text-right">{i + 1}</span>
+                      <span className="text-slate-600 text-sm w-5 text-right">{i + 1}</span>
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="text-slate-200 text-sm font-medium">{u.name || '（未填姓名）'}</p>
-                          {u.is_pro && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium">⭐ Pro</span>}
+                          {u.is_pro && <span className="text-sm px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium">⭐ Pro</span>}
                         </div>
-                        <p className="text-slate-500 text-xs">{u.email}</p>
+                        <p className="text-slate-500 text-sm">{u.email}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold text-blue-400">
                         {u.scans.toLocaleString()} 次掃描
                       </p>
-                      <p className="text-slate-500 text-xs">
+                      <p className="text-slate-500 text-sm">
                         $ {u.cost.toFixed(3)} · 提及 {u.mentioned} 次
                       </p>
                     </div>

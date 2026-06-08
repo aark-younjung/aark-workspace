@@ -6,6 +6,27 @@
 
 ---
 
+### 2026-06-08（Stage 3：Tailwind `text-xs` + `text-[9-13px]` → `text-sm`、共 311 處）
+
+**動機：** Stage 1+2 處理完 inline fontSize 後、Tailwind class 還有 `text-xs`（12px）和少數 `text-[10px]/[11px]/[12px]/[13px]` 散落 26 個檔。再次拉到 Dashboard 基準（text-sm = 14px）。
+
+**處理量（合計 26 檔 / 311 處）：**
+- AdminUsers: 68（admin 表格密集區）
+- Dashboard.jsx (V1 legacy): 63
+- WeeklyAITrendsCard: 16
+- Account / Showcase: 14 各
+- AdminAnnouncements / AdminShowcase: 13 各
+- LLMOChecklistModal: 11
+- AdminRevenue / AdminWebsites: 10 各
+- AIVisibility / AdminMonitoring: 8-9 各
+- FixGuide / WebsiteSummary / ClientReportModal / SiteHeader / Register / Footer / NotificationBell / AdminLayout / DashboardV2 / Login / AnnouncementBanner / EarlybirdBanner / AdminDashboard / AdminSeed: 3-7 各
+
+**跳過：** `src/pages/_legacy/` 已下線、不渲染、不處理。
+
+**累計 Stage 1+2+3：** 50 個檔案 / 679 處小字體拉到 14px 基準。
+
+---
+
 ### 2026-06-08（Stage 2：全站殘存 inline fontSize 9-13 → 14、共 228 處）
 
 **動機：** Stage 1 處理完 6 個 audit 頁後、再次全 src/ 掃描、發現還有 18 個檔案、228 處 inline fontSize 9-13 沒處理（包含 AIVisibilityDashboard 71 處、共享 components 像 MetricSignatures / IssueBoard / AuditHero、甚至 Dashboard V2 本身也有 5 處）。

@@ -301,16 +301,16 @@ export default function Showcase() {
                         <div className="flex items-center gap-6 mt-6">
                           <div className="text-center">
                             <div className="text-3xl font-bold text-white/40">{star.first_total_score}</div>
-                            <div className="text-xs text-white/50 mt-1">首次分數</div>
+                            <div className="text-sm text-white/50 mt-1">首次分數</div>
                           </div>
                           <div className="text-white/30 text-3xl">→</div>
                           <div className="text-center">
                             <div className={`text-3xl font-bold ${scoreColor(star.total_score)}`}>{star.total_score}</div>
-                            <div className="text-xs text-white/50 mt-1">最新分數</div>
+                            <div className="text-sm text-white/50 mt-1">最新分數</div>
                           </div>
                           <div className="px-5 py-3 bg-green-500/20 rounded-xl border border-green-500/30 ml-2">
                             <div className="text-green-400 font-bold text-2xl">+{star.improvement}</div>
-                            <div className="text-green-400/60 text-xs mt-1">進步分數</div>
+                            <div className="text-green-400/60 text-sm mt-1">進步分數</div>
                           </div>
                         </div>
                         <div className="text-white/50 text-sm mt-4">已掃描 {star.scan_count} 次</div>
@@ -368,7 +368,7 @@ export default function Showcase() {
                         <div className="flex items-center gap-2">
                           <span className="text-white font-medium truncate">{site.name}</span>
                         </div>
-                        <div className="text-white/40 text-xs truncate">{site.url}</div>
+                        <div className="text-white/40 text-sm truncate">{site.url}</div>
                       </div>
 
                       {/* AI 友善度：顯示 SEO + AEO + GEO 三欄 */}
@@ -377,7 +377,7 @@ export default function Showcase() {
                           {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
                             <div key={label} className="text-center hidden sm:block">
                               <div className={`text-sm font-bold ${scoreColor(score)}`}>{score}</div>
-                              <div className="text-xs text-white/40">{label}</div>
+                              <div className="text-sm text-white/40">{label}</div>
                             </div>
                           ))}
                           <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(site.total_score)}`}>
@@ -391,11 +391,11 @@ export default function Showcase() {
                         <div className="flex items-center gap-3 flex-shrink-0">
                           <div className="text-center hidden sm:block">
                             <div className={`text-sm font-bold ${scoreColor(site.aeo_score)}`}>{site.aeo_score}</div>
-                            <div className="text-xs text-white/40">AEO</div>
+                            <div className="text-sm text-white/40">AEO</div>
                           </div>
                           <div className="text-center hidden sm:block">
                             <div className={`text-sm font-bold ${scoreColor(site.geo_score)}`}>{site.geo_score}</div>
-                            <div className="text-xs text-white/40">GEO</div>
+                            <div className="text-sm text-white/40">GEO</div>
                           </div>
                           <div className={`text-2xl font-bold ml-2 flex-shrink-0 ${scoreColor(Math.round((site.aeo_score + site.geo_score) / 2))}`}>
                             {Math.round((site.aeo_score + site.geo_score) / 2)}
@@ -419,7 +419,7 @@ export default function Showcase() {
                       {leaderTab === 'crawled' && (
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className="text-orange-400 font-bold">{site.scan_count}</span>
-                          <span className="text-white/40 text-xs">次掃描</span>
+                          <span className="text-white/40 text-sm">次掃描</span>
                         </div>
                       )}
                     </div>
@@ -445,16 +445,16 @@ export default function Showcase() {
                         <div key={idx}
                           className="flex-shrink-0 w-72 p-6 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10">
                           <div className="text-white font-semibold mb-1 truncate">{site.name}</div>
-                          <div className="text-white/40 text-xs mb-5 truncate">{site.url}</div>
+                          <div className="text-white/40 text-sm mb-5 truncate">{site.url}</div>
                           <div className="flex items-center gap-3 mb-5">
                             <div className="text-center">
                               <div className="text-xl font-bold text-white/40">{site.first_total_score}</div>
-                              <div className="text-xs text-white/50 mt-1">首次</div>
+                              <div className="text-sm text-white/50 mt-1">首次</div>
                             </div>
                             <div className="text-white/30 text-lg">→</div>
                             <div className="text-center">
                               <div className={`text-xl font-bold ${scoreColor(site.total_score)}`}>{site.total_score}</div>
-                              <div className="text-xs text-white/50 mt-1">現在</div>
+                              <div className="text-sm text-white/50 mt-1">現在</div>
                             </div>
                             <div className="ml-auto px-3 py-1.5 bg-green-500/20 rounded-lg border border-green-500/30 flex-shrink-0">
                               <span className="text-green-400 font-bold text-lg">+{site.improvement}</span>
@@ -463,7 +463,7 @@ export default function Showcase() {
                           <div className="flex gap-2 flex-wrap">
                             {[['SEO', site.seo_score], ['AEO', site.aeo_score], ['GEO', site.geo_score]].map(([label, score]) => (
                               <span key={label}
-                                className={`text-xs px-2 py-1 rounded-full font-medium ${score >= 70
+                                className={`text-sm px-2 py-1 rounded-full font-medium ${score >= 70
                                   ? 'bg-green-500/20 text-green-400'
                                   : score >= 40
                                   ? 'bg-yellow-500/20 text-yellow-400'
@@ -498,7 +498,7 @@ export default function Showcase() {
 
                 <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden">
                   {/* 表頭 */}
-                  <div className="grid grid-cols-12 gap-2 px-6 py-3 border-b border-white/10 text-white/40 text-xs font-medium uppercase tracking-wide">
+                  <div className="grid grid-cols-12 gap-2 px-6 py-3 border-b border-white/10 text-white/40 text-sm font-medium uppercase tracking-wide">
                     <div className="col-span-1">#</div>
                     <div className="col-span-4">網站</div>
                     <div className="col-span-2 text-center">SEO</div>
@@ -518,7 +518,7 @@ export default function Showcase() {
                           <span className="text-white font-medium text-sm truncate">{site.name}</span>
                         </div>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-orange-500/15 text-orange-300 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 bg-orange-500/15 text-orange-300 rounded-full">
                             🤖 AI 已讀取 {timeAgo(site.last_scanned_at)}
                           </span>
                         </div>

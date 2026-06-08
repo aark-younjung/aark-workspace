@@ -112,13 +112,13 @@ export default function WebsiteSummary() {
           <>
             {/* 標題區 */}
             <div className="mb-8 text-center">
-              <p className="text-slate-400 text-xs uppercase tracking-widest mb-2">AI 能見度公開摘要</p>
+              <p className="text-slate-400 text-sm uppercase tracking-widest mb-2">AI 能見度公開摘要</p>
               <h1 className="text-3xl font-bold mb-1" style={{ color: T.text }}>{website.name || hostname}</h1>
               <a href={website.url} target="_blank" rel="noopener noreferrer"
                 className="text-slate-500 text-sm hover:text-orange-400 transition-colors">
                 {hostname} →
               </a>
-              <p className="text-slate-600 text-xs mt-3">
+              <p className="text-slate-600 text-sm mt-3">
                 累計掃描 <strong className="text-slate-400">{scanCount}</strong> 次
               </p>
             </div>
@@ -127,11 +127,11 @@ export default function WebsiteSummary() {
             {totalScore != null && (
               <div className="mb-8 flex justify-center">
                 <GlassCard style={{ padding: 28, textAlign: 'center', maxWidth: 280 }}>
-                  <p className="text-slate-500 text-xs uppercase tracking-widest mb-2">綜合 AI 能見度</p>
+                  <p className="text-slate-500 text-sm uppercase tracking-widest mb-2">綜合 AI 能見度</p>
                   <div className="text-7xl font-black mb-1" style={{ color: scoreColor(totalScore) }}>
                     {totalScore}
                   </div>
-                  <p className="text-slate-500 text-xs">／ 100 分</p>
+                  <p className="text-slate-500 text-sm">／ 100 分</p>
                 </GlassCard>
               </div>
             )}
@@ -142,11 +142,11 @@ export default function WebsiteSummary() {
                 const s = scores[face.id]
                 return (
                   <GlassCard key={face.id} style={{ padding: 18, textAlign: 'center' }}>
-                    <p className="text-xs font-semibold mb-2" style={{ color: face.color }}>{face.name}</p>
+                    <p className="text-sm font-semibold mb-2" style={{ color: face.color }}>{face.name}</p>
                     <div className="text-3xl font-black mb-1" style={{ color: scoreColor(s) }}>
                       {s != null ? s : '—'}
                     </div>
-                    <p className="text-slate-600 text-[10px] leading-tight">{face.desc}</p>
+                    <p className="text-slate-600 text-sm leading-tight">{face.desc}</p>
                   </GlassCard>
                 )
               })}
@@ -157,7 +157,7 @@ export default function WebsiteSummary() {
               <p className="text-slate-300 text-sm mb-2">
                 🔒 這是公開摘要頁，<strong>只顯示總分</strong>，不公開具體哪些檢測項通過或未通過。
               </p>
-              <p className="text-slate-500 text-xs mb-5">
+              <p className="text-slate-500 text-sm mb-5">
                 完整分析報告（含 30+ 檢測項、修復建議、修復碼）只有網主登入後可看
               </p>
               <Link

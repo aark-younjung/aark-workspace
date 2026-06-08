@@ -122,9 +122,9 @@ export default function AdminSeed() {
           <div className="grid grid-cols-2 gap-2 text-sm text-slate-400 mb-4">
             {SEED_SITES.map((s, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-slate-600 font-mono text-xs w-4">{i + 1}</span>
+                <span className="text-slate-600 font-mono text-sm w-4">{i + 1}</span>
                 <span className="text-white">{s.name}</span>
-                <span className="text-slate-500 text-xs">{s.category}</span>
+                <span className="text-slate-500 text-sm">{s.category}</span>
               </div>
             ))}
           </div>
@@ -139,7 +139,7 @@ export default function AdminSeed() {
         </button>
 
         {log.length > 0 && (
-          <div className="bg-black rounded-xl p-4 font-mono text-xs max-h-96 overflow-y-auto">
+          <div className="bg-black rounded-xl p-4 font-mono text-sm max-h-96 overflow-y-auto">
             {log.map((l, i) => (
               <div key={i} className={`mb-0.5 ${l.type === 'success' ? 'text-green-400' : l.type === 'error' ? 'text-red-400' : 'text-slate-400'}`}>
                 <span className="text-slate-600 mr-2">{l.ts}</span>{l.msg}

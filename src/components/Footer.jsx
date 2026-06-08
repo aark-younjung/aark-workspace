@@ -53,7 +53,7 @@ export default function Footer({ dark = false }) {
           {/* 第 3 欄：商家資訊 — NewebPay 商家審核要求揭露 */}
           <div>
             <h4 className={`text-sm font-semibold ${t.heading} mb-3`}>商家資訊</h4>
-            <ul className={`space-y-1.5 text-xs ${t.body} leading-relaxed`}>
+            <ul className={`space-y-1.5 text-sm ${t.body} leading-relaxed`}>
               <li><span className={t.sub}>營運單位：</span>優勢方舟數位行銷</li>
               <li><span className={t.sub}>負責人：</span>陳泓翔</li>
               <li><span className={t.sub}>地址：</span>701 台南市東區<br />　　　怡東路 86 巷 10 號</li>
@@ -74,7 +74,7 @@ export default function Footer({ dark = false }) {
               </svg>
               aark.younjung@gmail.com
             </a>
-            <p className={`text-xs ${t.sub} mt-2`}>我們通常在 1–2 個工作天內回覆</p>
+            <p className={`text-sm ${t.sub} mt-2`}>我們通常在 1–2 個工作天內回覆</p>
           </div>
 
         </div>
@@ -94,8 +94,8 @@ export default function Footer({ dark = false }) {
 
         {/* 底部版權 */}
         <div className={`border-t ${t.divider} pt-6 flex flex-col sm:flex-row items-center justify-between gap-2`}>
-          <p className={`text-xs ${t.sub}`}>© {new Date().getFullYear()} 優勢方舟數位行銷. All rights reserved.</p>
-          <p className={`text-xs ${t.sub}`}>AI 雷達 — 由優勢方舟數位行銷營運</p>
+          <p className={`text-sm ${t.sub}`}>© {new Date().getFullYear()} 優勢方舟數位行銷. All rights reserved.</p>
+          <p className={`text-sm ${t.sub}`}>AI 雷達 — 由優勢方舟數位行銷營運</p>
         </div>
       </div>
     </footer>

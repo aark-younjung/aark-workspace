@@ -96,11 +96,11 @@ export default function EarlybirdBanner() {
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
                   <span>早鳥優惠</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${urgent ? 'bg-red-500/30 text-red-100' : 'bg-orange-500/30 text-orange-100'}`}>
+                  <span className={`text-sm px-2 py-0.5 rounded-full font-semibold ${urgent ? 'bg-red-500/30 text-red-100' : 'bg-orange-500/30 text-orange-100'}`}>
                     限前 {TOTAL_SLOTS} 名
                   </span>
                 </div>
-                <div className="text-xs text-white/80 mt-0.5 leading-relaxed">
+                <div className="text-sm text-white/80 mt-0.5 leading-relaxed">
                   Pro 首年 <strong className="text-amber-200">NT$ {PRICE_EARLYBIRD.toLocaleString()}</strong>
                   <span className="text-white/40 line-through ml-1.5">NT$ {PRICE_REGULAR.toLocaleString()}</span>
                   {showCounter && (
@@ -118,7 +118,7 @@ export default function EarlybirdBanner() {
             {/* CTA */}
             <Link
               to="/pricing"
-              className={`flex-shrink-0 inline-flex items-center gap-1 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md ${
+              className={`flex-shrink-0 inline-flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-md ${
                 urgent
                   ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white'
                   : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white'

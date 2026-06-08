@@ -943,7 +943,7 @@ function AivisHero({ isPro, websiteName, overallScore }) {
           </span>
         </div>
         <p className="text-base text-white/65 mb-1">追蹤你在 ChatGPT / Claude / Perplexity / Gemini / GLM 的真實提及率</p>
-        <p className="text-sm text-white/45 mb-6"><span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-semibold text-xs">LLMO 結果驗證層</span> · 跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分</p>
+        <p className="text-sm text-white/45 mb-6"><span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-semibold text-sm">LLMO 結果驗證層</span> · 跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分</p>
 
         {/* 5 AI 引擎 chips（中性、不掛假數據）— 純展示「我們追蹤這 5 個 AI 引擎」這件事 */}
         <div className="grid grid-cols-5 gap-2 mb-6">
@@ -1145,7 +1145,7 @@ function BadgeCell({ badge }) {
           <div className="text-sm font-bold text-white mb-1">
             {badge.unlocked ? '✓ ' : '🔒 '}{badge.label}
           </div>
-          <div className="text-xs text-white/65 leading-relaxed">
+          <div className="text-sm text-white/65 leading-relaxed">
             <span className="text-white/40">達標：</span>{badge.criteria}
           </div>
           {/* 小三角箭頭指向徽章 */}
@@ -1354,7 +1354,7 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">📊 站點體檢</h2>
             {/* P1 同步：LLMO 訊號層的 4+1 標籤、表明這 5 個 tab 是 LLMO 的子訊號層 */}
-            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-semibold">
+            <span className="text-sm px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-semibold">
               LLMO 4 訊號層 + aivis 結果驗證
             </span>
           </div>
@@ -2074,7 +2074,7 @@ function ToolModal({ tool, websiteId, userId, onClose }) {
         </div>
 
         {/* 小提醒 */}
-        <p className="mt-5 pt-4 border-t border-white/8 text-xs text-white/40 leading-relaxed">
+        <p className="mt-5 pt-4 border-t border-white/8 text-sm text-white/40 leading-relaxed">
           💡 「我已修好」會記錄一筆修復事件、給你 +5 XP。記得修完後回 Dashboard 按「重新檢測」、看新分數有沒有跳。
         </p>
       </div>

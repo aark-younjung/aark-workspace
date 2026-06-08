@@ -63,7 +63,7 @@ function addDismissed(key) {
 function CTA({ url, text, kindStyle }) {
   if (!url) return null
   const label = text || '了解更多'
-  const className = `inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${kindStyle.cta}`
+  const className = `inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${kindStyle.cta}`
   if (/^https?:\/\//i.test(url)) {
     return <a href={url} target="_blank" rel="noopener noreferrer" className={className}>{label} →</a>
   }
@@ -173,7 +173,7 @@ export default function AnnouncementBanner() {
               }`}
             />
           ))}
-          <span className="ml-2 text-[10px] text-white/30">
+          <span className="ml-2 text-sm text-white/30">
             {paused ? '已暫停 · 移開繼續' : `${currentIndex + 1} / ${visible.length}`}
           </span>
         </div>
@@ -201,7 +201,7 @@ function AnnouncementCard({ a, onDismiss }) {
           <p className={`font-semibold text-sm ${style.titleText}`}>{a.title}</p>
           {/* 改 whitespace-normal — admin 打的換行不會被當斷行，只在容器寬度滿時自然 wrap。
               要強制換行讓 admin 在文案裡打 "\n"（後續若要支援可改 dangerouslySetInnerHTML + safe replace） */}
-          <p className={`text-xs mt-0.5 whitespace-normal ${style.text}`}>{a.content}</p>
+          <p className={`text-sm mt-0.5 whitespace-normal ${style.text}`}>{a.content}</p>
         </div>
         {a.link_url && (
           <div className="flex-shrink-0">

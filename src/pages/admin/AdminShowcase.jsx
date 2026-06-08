@@ -163,7 +163,7 @@ export default function AdminShowcase() {
 
           {/* 列表 */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider">
               <div className="col-span-4">網站</div>
               <div className="col-span-3">提交用戶</div>
               <div className="col-span-2">提交時間</div>
@@ -180,7 +180,7 @@ export default function AdminShowcase() {
                   {tab === 'rejected' && '還沒有拒絕過任何網站'}
                 </p>
                 {tab === 'pending' && (
-                  <p className="text-slate-500 text-xs">用戶在 Dashboard 點「提交至排行榜」後會出現在這裡</p>
+                  <p className="text-slate-500 text-sm">用戶在 Dashboard 點「提交至排行榜」後會出現在這裡</p>
                 )}
               </div>
             ) : (
@@ -189,16 +189,16 @@ export default function AdminShowcase() {
                   <div key={r.id} className="grid grid-cols-12 px-6 py-4 items-start hover:bg-slate-800/50 transition-colors">
                     <div className="col-span-4 pr-4">
                       <p className="text-slate-200 text-sm font-medium truncate">{r.name || '(未命名)'}</p>
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-slate-500 text-xs truncate block hover:text-orange-400">
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-slate-500 text-sm truncate block hover:text-orange-400">
                         {r.url}
                       </a>
                       {tab === 'rejected' && r.rejection_reason && (
-                        <p className="text-red-300/80 text-xs mt-1.5 px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">
+                        <p className="text-red-300/80 text-sm mt-1.5 px-2 py-1 bg-red-500/10 border border-red-500/20 rounded">
                           拒絕原因：{r.rejection_reason}
                         </p>
                       )}
                     </div>
-                    <div className="col-span-3 text-slate-300 text-xs">
+                    <div className="col-span-3 text-slate-300 text-sm">
                       {r._user ? (
                         <>
                           <p className="truncate">{r._user.name || '(無姓名)'}</p>
@@ -208,7 +208,7 @@ export default function AdminShowcase() {
                         <p className="text-slate-500">(載入中...)</p>
                       )}
                     </div>
-                    <div className="col-span-2 text-slate-400 text-xs">
+                    <div className="col-span-2 text-slate-400 text-sm">
                       <p>提交：{fmtDate(r.submitted_at)}</p>
                       <p className="text-slate-500">建立：{fmtDate(r.created_at)}</p>
                     </div>
@@ -217,7 +217,7 @@ export default function AdminShowcase() {
                         href={`/dashboard/${r.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs px-2.5 py-1.5 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded-lg font-medium transition-colors"
+                        className="text-sm px-2.5 py-1.5 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded-lg font-medium transition-colors"
                       >
                         查看儀表板
                       </a>
@@ -225,13 +225,13 @@ export default function AdminShowcase() {
                         <>
                           <button
                             onClick={() => handleApprove(r)}
-                            className="text-xs px-2.5 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg font-medium transition-colors"
+                            className="text-sm px-2.5 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg font-medium transition-colors"
                           >
                             ✓ 核准
                           </button>
                           <button
                             onClick={() => openReject(r)}
-                            className="text-xs px-2.5 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 rounded-lg font-medium transition-colors"
+                            className="text-sm px-2.5 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 rounded-lg font-medium transition-colors"
                           >
                             ✕ 拒絕
                           </button>
@@ -240,7 +240,7 @@ export default function AdminShowcase() {
                       {tab === 'approved' && (
                         <button
                           onClick={() => openReject(r)}
-                          className="text-xs px-2.5 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 rounded-lg font-medium transition-colors"
+                          className="text-sm px-2.5 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 rounded-lg font-medium transition-colors"
                         >
                           下架（拒絕）
                         </button>
@@ -248,7 +248,7 @@ export default function AdminShowcase() {
                       {tab === 'rejected' && (
                         <button
                           onClick={() => handleReopen(r)}
-                          className="text-xs px-2.5 py-1.5 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg font-medium transition-colors"
+                          className="text-sm px-2.5 py-1.5 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg font-medium transition-colors"
                         >
                           ↻ 重新審核
                         </button>
@@ -273,7 +273,7 @@ export default function AdminShowcase() {
               <div className="px-6 py-5 space-y-4">
                 <div className="text-slate-300 text-sm">
                   <p className="font-medium">{rejectModal.name}</p>
-                  <p className="text-slate-500 text-xs truncate">{rejectModal.url}</p>
+                  <p className="text-slate-500 text-sm truncate">{rejectModal.url}</p>
                 </div>
 
                 <div>
@@ -287,7 +287,7 @@ export default function AdminShowcase() {
                     placeholder="例如：競品惡意刷榜 / 內容不符品牌調性 / 測試 URL 非真實品牌"
                     className="w-full bg-slate-800 border border-slate-600 text-slate-200 placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 resize-y"
                   />
-                  <p className="text-slate-500 text-xs mt-1">用戶看不到此原因，僅作為 admin 端稽核軌跡用</p>
+                  <p className="text-slate-500 text-sm mt-1">用戶看不到此原因，僅作為 admin 端稽核軌跡用</p>
                 </div>
 
                 {rejectError && (

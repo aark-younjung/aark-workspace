@@ -39,7 +39,7 @@ export default function AdminLayout({ children }) {
             </span>
             <div>
               <p className="text-white text-sm font-bold leading-none">後臺管理</p>
-              <p className="text-slate-500 text-xs mt-0.5">Admin Panel</p>
+              <p className="text-slate-500 text-sm mt-0.5">Admin Panel</p>
             </div>
           </div>
         </div>
@@ -67,17 +67,17 @@ export default function AdminLayout({ children }) {
         </nav>
 
         <div className="px-4 py-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500 mb-2 truncate">{userName}</p>
+          <p className="text-sm text-slate-500 mb-2 truncate">{userName}</p>
           <div className="flex gap-2">
             <Link
               to="/"
-              className="flex-1 text-center text-xs px-2 py-1.5 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+              className="flex-1 text-center text-sm px-2 py-1.5 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
             >
               前臺
             </Link>
             <button
               onClick={handleSignOut}
-              className="flex-1 text-xs px-2 py-1.5 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
+              className="flex-1 text-sm px-2 py-1.5 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition-colors"
             >
               登出
             </button>

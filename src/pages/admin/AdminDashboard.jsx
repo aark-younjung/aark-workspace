@@ -133,13 +133,13 @@ export default function AdminDashboard() {
                 <div key={u.id} className="px-6 py-3 flex items-center justify-between">
                   <div>
                     <p className="text-slate-200 text-sm font-medium">{u.name || '—'}</p>
-                    <p className="text-slate-500 text-xs">{u.email}</p>
+                    <p className="text-slate-500 text-sm">{u.email}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.is_pro ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-700 text-slate-400'}`}>
+                    <span className={`text-sm px-2 py-0.5 rounded-full font-medium ${u.is_pro ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-700 text-slate-400'}`}>
                       {u.is_pro ? 'Pro' : 'Free'}
                     </span>
-                    <span className="text-slate-500 text-xs">
+                    <span className="text-slate-500 text-sm">
                       {new Date(u.created_at).toLocaleDateString('zh-TW')}
                     </span>
                   </div>

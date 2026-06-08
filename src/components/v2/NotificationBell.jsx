@@ -172,7 +172,7 @@ export default function NotificationBell() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
         </svg>
         {/* 紅點 badge */}
-        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-black/60">
+        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-sm font-bold flex items-center justify-center border-2 border-black/60">
           {unreadCount > 9 ? '9+' : unreadCount}
         </span>
       </button>
@@ -223,7 +223,7 @@ export default function NotificationBell() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-2 mb-0.5">
                         <span className="text-sm font-bold text-white truncate">{b.title}</span>
-                        <span className="text-[10px] font-mono whitespace-nowrap flex-shrink-0" style={{ color: style.dot }}>
+                        <span className="text-sm font-mono whitespace-nowrap flex-shrink-0" style={{ color: style.dot }}>
                           {style.label}
                         </span>
                       </div>
@@ -244,7 +244,7 @@ export default function NotificationBell() {
 
           {/* Panel footer — 未來可接 /changelog 完整紀錄頁 */}
           <div className="px-4 py-2.5 border-t border-white/8 text-center flex-shrink-0">
-            <span className="text-[11px] text-white/35">
+            <span className="text-sm text-white/35">
               更新由 <span className="text-white/50 font-mono">Aark</span> 團隊發布
             </span>
           </div>
@@ -256,7 +256,7 @@ export default function NotificationBell() {
 
 // link 內部 / 外部判斷
 function BriefingLink({ link, text }) {
-  const className = 'inline-block mt-1.5 text-[11px] font-bold text-orange-300 hover:text-orange-200 hover:underline'
+  const className = 'inline-block mt-1.5 text-sm font-bold text-orange-300 hover:text-orange-200 hover:underline'
   if (/^https?:\/\//i.test(link)) {
     return <a href={link} target="_blank" rel="noopener noreferrer" className={className}>{text} →</a>
   }

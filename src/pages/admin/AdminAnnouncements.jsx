@@ -176,7 +176,7 @@ export default function AdminAnnouncements() {
 
           {/* 公告列表 */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider">
               <div className="col-span-5">標題與內容</div>
               <div className="col-span-2">類型 / 對象</div>
               <div className="col-span-2">期間</div>
@@ -189,7 +189,7 @@ export default function AdminAnnouncements() {
             ) : list.length === 0 ? (
               <div className="px-6 py-12 text-center">
                 <p className="text-slate-400 text-sm mb-2">還沒有任何公告</p>
-                <p className="text-slate-500 text-xs">點右上「新增公告」開始第一則訊息</p>
+                <p className="text-slate-500 text-sm">點右上「新增公告」開始第一則訊息</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-700">
@@ -203,30 +203,30 @@ export default function AdminAnnouncements() {
                           <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
                           <p className="text-slate-200 text-sm font-medium truncate">{a.title}</p>
                         </div>
-                        <p className="text-slate-500 text-xs line-clamp-2 whitespace-pre-wrap">{a.content}</p>
+                        <p className="text-slate-500 text-sm line-clamp-2 whitespace-pre-wrap">{a.content}</p>
                         {a.link_url && (
-                          <p className="text-orange-400/70 text-xs mt-1 truncate">→ {a.link_text || '了解更多'}：{a.link_url}</p>
+                          <p className="text-orange-400/70 text-sm mt-1 truncate">→ {a.link_text || '了解更多'}：{a.link_url}</p>
                         )}
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium border ${meta.chip}`}>
+                        <span className={`inline-block text-sm px-2 py-0.5 rounded-full font-medium border ${meta.chip}`}>
                           {meta.emoji} {meta.label}
                         </span>
-                        <p className="text-slate-500 text-xs">{TARGET_LABEL[a.target]}</p>
+                        <p className="text-slate-500 text-sm">{TARGET_LABEL[a.target]}</p>
                       </div>
-                      <div className="col-span-2 text-slate-400 text-xs">
+                      <div className="col-span-2 text-slate-400 text-sm">
                         <p>從：{a.starts_at ? new Date(a.starts_at).toLocaleString('zh-TW', { dateStyle: 'short', timeStyle: 'short' }) : '立即'}</p>
                         <p>到：{a.ends_at ? new Date(a.ends_at).toLocaleString('zh-TW', { dateStyle: 'short', timeStyle: 'short' }) : '無期限'}</p>
                       </div>
                       <div className="col-span-1">
-                        <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${status.color}`}>
+                        <span className={`inline-block text-sm px-2 py-0.5 rounded-full font-medium ${status.color}`}>
                           {status.label}
                         </span>
                       </div>
                       <div className="col-span-2 flex justify-end gap-2 flex-wrap">
                         <button
                           onClick={() => toggleActive(a)}
-                          className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
+                          className={`text-sm px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                             a.is_active
                               ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                               : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
@@ -236,13 +236,13 @@ export default function AdminAnnouncements() {
                         </button>
                         <button
                           onClick={() => openEdit(a)}
-                          className="text-xs px-2.5 py-1.5 bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 rounded-lg font-medium transition-colors"
+                          className="text-sm px-2.5 py-1.5 bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 rounded-lg font-medium transition-colors"
                         >
                           編輯
                         </button>
                         <button
                           onClick={() => handleDelete(a)}
-                          className="text-xs px-2.5 py-1.5 bg-slate-700 text-slate-400 hover:bg-red-900/40 hover:text-red-400 rounded-lg font-medium transition-colors"
+                          className="text-sm px-2.5 py-1.5 bg-slate-700 text-slate-400 hover:bg-red-900/40 hover:text-red-400 rounded-lg font-medium transition-colors"
                         >
                           刪除
                         </button>
@@ -367,7 +367,7 @@ export default function AdminAnnouncements() {
                       onChange={e => setForm(f => ({ ...f, starts_at: e.target.value }))}
                       className="w-full bg-slate-800 border border-slate-600 text-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
                     />
-                    <p className="text-slate-500 text-xs mt-1">空白 = 立刻顯示</p>
+                    <p className="text-slate-500 text-sm mt-1">空白 = 立刻顯示</p>
                   </div>
                   <div>
                     <label className="block text-slate-300 text-sm font-medium mb-1.5">結束時間（選填）</label>
@@ -377,7 +377,7 @@ export default function AdminAnnouncements() {
                       onChange={e => setForm(f => ({ ...f, ends_at: e.target.value }))}
                       className="w-full bg-slate-800 border border-slate-600 text-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500"
                     />
-                    <p className="text-slate-500 text-xs mt-1">空白 = 永不過期</p>
+                    <p className="text-slate-500 text-sm mt-1">空白 = 永不過期</p>
                   </div>
                 </div>
 
