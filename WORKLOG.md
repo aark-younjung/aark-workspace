@@ -6,6 +6,27 @@
 
 ---
 
+### 2026-06-08（LLMO 6 週清單 PDF 改成真文字版 / pdfmake）
+
+**問題：** 客戶想複製 PDF 內的 robots.txt / Schema 程式碼、但原本 PDF 是整頁 html2canvas 圖片、不能選取/搜尋/複製。
+
+**修法：** 換 PDF 引擎、從 jsPDF + html2canvas（raster）改為 pdfmake JSON DSL（真文字）。
+- 新檔 [src/services/pdfMakeLoader.js](src/services/pdfMakeLoader.js)：pdfmake + Noto Sans TC 字體 lazy load + module-level cache
+- 重寫 [src/services/llmo6WeekChecklistPDF.js](src/services/llmo6WeekChecklistPDF.js)：把原本 11 個 HTML section 重寫為 pdfmake content array、保留 Aark 品牌綠 + 訊號層配色 + 警告框 / 驗收框 / 程式碼框
+- 中文字體：[public/fonts/NotoSansTC-Regular.ttf](public/fonts/NotoSansTC-Regular.ttf) (Noto Sans TC VF、SIL OFL、12 MB)
+- 字體只在使用者按下「📋 6 週清單」時才 fetch、之後 session cache
+
+**Vite chunk 分離：** pdfmake 自動切成獨立 chunk（973 KB / 346 KB gzip）、不影響主 bundle、首次匯出 PDF 才下載。
+
+**Trade-off / 已知限制：**
+- 字體 12 MB 進 git repo（之後可考慮 git-lfs 或 CDN 載入）
+- pdfmake 不真支援 VF font axis、bold 暫時用 color + size 區分而非 fontWeight
+- 視覺較原 html 版簡化（無漸層封面）、但換來「真文字、可搜尋、可複製」
+
+**未動：** exportClientProposalPDF（仍是 html2canvas 版）— 等使用者確認 LLMO 清單新版 OK 後再同樣處理。
+
+---
+
 ### 2026-06-08（LLMO 6 週執行清單 PDF — 平台級代理商交付物）
 
 **動機：** LLMO 是抽象概念、代理商交付給客戶時很難講具體要做什麼。把它包成「6 週逐週執行清單」、含 robots.txt / llms.txt / Schema 完整模板 + 每週驗收標準、做為 Pro / Agency 用戶可重用的交付物。
