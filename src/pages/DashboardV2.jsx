@@ -2000,13 +2000,27 @@ function ToolModal({ tool, websiteId, userId, onClose }) {
           >
             去用這個工具 → 新分頁開
           </Link>
+          {/* 2026-06-07：idle 用琥珀色（待辦感）、done 用綠色（完成感）— 跟 BulkScan FixDoneButton 一致 */}
           <button
             onClick={handleDone}
             disabled={state !== 'idle'}
-            className="px-5 py-3 rounded-xl font-bold text-base text-white border transition disabled:opacity-60"
+            className="px-5 py-3 rounded-xl font-bold text-base border transition disabled:opacity-60"
             style={{
-              background: state === 'done' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
-              borderColor: state === 'done' ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.15)',
+              background:
+                state === 'done'  ? 'rgba(34,197,94,0.18)'
+              : state === 'error' ? 'rgba(239,68,68,0.15)'
+              : state === 'recording' ? 'rgba(255,255,255,0.04)'
+              : 'rgba(251,191,36,0.18)', // idle 琥珀
+              borderColor:
+                state === 'done'  ? 'rgba(34,197,94,0.5)'
+              : state === 'error' ? 'rgba(239,68,68,0.5)'
+              : state === 'recording' ? 'rgba(255,255,255,0.15)'
+              : 'rgba(251,191,36,0.45)',
+              color:
+                state === 'done'  ? '#86efac'
+              : state === 'error' ? '#fca5a5'
+              : state === 'recording' ? 'rgba(255,255,255,0.7)'
+              : '#fcd34d', // idle 琥珀文字
             }}
           >
             {state === 'idle' && '✓ 我已修好 (+5 XP)'}

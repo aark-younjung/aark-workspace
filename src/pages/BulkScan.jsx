@@ -1498,6 +1498,7 @@ function StaleSnapshotBanner({ finishedAt, onRescan, starting, isSample }) {
 }
 
 // B5: 我已修好按鈕 — 三狀態（待修 / 修復中 / 已修復）+ 浮起 +5 XP 動畫 + 粒子放射
+// 2026-06-07 改：idle 從 teal 青綠 → 琥珀（待辦感）、跟 fixed 綠色拉開色相、避免用戶分不清狀態
 // isFixed：DB 已寫入完成、按鈕變綠色「已記錄修復 +5 XP」
 // isFixing：點完還在 await insert、按鈕變 disable + 文字「記錄中...」
 // showPop：剛剛 insert 成功、播放 1.6s 的 +5 XP 浮起動畫 + 同步 12 顆粒子四散
@@ -1527,9 +1528,9 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
               ? 'rgba(34,197,94,0.18)'
               : isFixing
                 ? 'rgba(255,255,255,0.08)'
-                : 'linear-gradient(135deg, rgba(20,184,166,0.18), rgba(20,184,166,0.08))',
-            color: isFixed ? '#86efac' : isFixing ? T.textMid : '#5eead4',
-            border: `1px solid ${isFixed ? 'rgba(34,197,94,0.5)' : 'rgba(20,184,166,0.4)'}`,
+                : 'linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,191,36,0.08))',
+            color: isFixed ? '#86efac' : isFixing ? T.textMid : '#fcd34d',
+            border: `1px solid ${isFixed ? 'rgba(34,197,94,0.5)' : isFixing ? 'rgba(255,255,255,0.15)' : 'rgba(251,191,36,0.45)'}`,
             borderRadius: 6,
             cursor: (isFixed || isFixing) ? 'default' : 'pointer',
             fontFamily: T.font,

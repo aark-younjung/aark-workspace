@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-06-08（修「我已修好」按鈕顏色 + PDF 分段渲染、避免跨頁切字）
+
+**問題 1：** 「我已修好（+5 XP）」按鈕修改前/修改後都顯示綠色、看不出狀態差異。
+
+**修法：** idle 改琥珀色（amber `#fcd34d` text / `rgba(251,191,36,0.22)` bg）、done 維持綠（`#86efac` / `rgba(34,197,94,0.18)`）、error 紅、recording 中性灰。BulkScan.jsx FixDoneButton + DashboardV2 ToolModal 「我已修好」按鈕同步更新。
+
+**問題 2：** 客戶提案 PDF 經常切到文字中間（例如「總體 AI 能見度分析」標題下一行就斷掉跑到下一頁、看起來不專業）。
+
+**根因：** 舊版用單一 HTML 渲染到單一 canvas、再用 jsPDF slice 切 A4 頁、`page-break-before` CSS 被 html2canvas 完全忽略。
+
+**修法：** [src/services/pdfExport.js](src/services/pdfExport.js) 重構為 4 個 section builder（buildCoverHTML / buildSummaryHTML / buildRecommendationsHTML / buildDetailedAuditHTML），exportClientProposalPDF 改成 loop 每個 section 各自 render 到獨立 canvas、各自 `pdf.addPage()`。section 內若超過 A4 才會 slice、但至少 section 標題不會被切。舊 `buildClientProposalHTML`（244 行）整段刪除。
+
+**檔案：** [src/pages/BulkScan.jsx](src/pages/BulkScan.jsx)、[src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx)、[src/services/pdfExport.js](src/services/pdfExport.js)。
+
+---
+
 ### 2026-06-06（DashboardV2 上線：補 3 缺口 + 主路由切換）
 
 **用戶決策路線：補完 3 缺口 → 切換 `/dashboard/:id` 主路由 → 舊版改 `/dashboard-legacy/:id` 緩衝。**
