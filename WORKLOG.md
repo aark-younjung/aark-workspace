@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-06-08（revert pdfmake 版、暫時維持 html2canvas 圖片版 PDF）
+
+**為什麼 revert：** 早上嘗試把 LLMO 6 週清單 PDF 從 html2canvas（圖片版）改成 pdfmake（真文字版）、想讓 PDF 內的 robots.txt / Schema 程式碼可以被選取複製。但實測客戶生成時卡超過 60 秒沒完成、原因是 pdfmake 在瀏覽器 embed 12 MB Noto Sans TC CJK 字體時、子集化解析非常慢（已知 CJK 通病）。
+
+**根本解：** build-time 字體子集化（300 KB 字體、< 2 秒生成）— 40 分鐘工作。
+**但今天決定：** 先 revert、之後再做。客戶當下要能用 > 完美。
+
+**revert commit：** `e057ccd` 撤銷 `0896445`、自動：
+- 刪掉 public/fonts/NotoSansTC-Regular.ttf（12 MB）
+- 刪掉 src/services/pdfMakeLoader.js
+- 從 package.json 移除 pdfmake
+- 還原 llmo6WeekChecklistPDF.js 為 html2canvas 版
+
+**已知後遺症：** 12 MB 字體還在 git history 裡（之後想真正清乾淨要 git-filter-repo / BFG）。功能面 0 影響。
+
+---
+
 ### 2026-06-08（LLMO 6 週執行清單 PDF — 平台級代理商交付物）
 
 **動機：** LLMO 是抽象概念、代理商交付給客戶時很難講具體要做什麼。把它包成「6 週逐週執行清單」、含 robots.txt / llms.txt / Schema 完整模板 + 每週驗收標準、做為 Pro / Agency 用戶可重用的交付物。
