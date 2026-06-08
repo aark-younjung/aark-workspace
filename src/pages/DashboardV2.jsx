@@ -26,6 +26,8 @@ import SiteHeader from '../components/v2/SiteHeader'
 // 2026-06-06：公告從 BriefingCard 改成 SiteHeader 右上角 NotificationBell、Dashboard 不再單獨放卡片
 // 2026-06-06：本週 AI 趨勢卡 — 用 aivis 累積資料反推「跨用戶 AI 提及 Top 5」、創造每週回訪動機
 import WeeklyAITrendsCard from '../components/v2/WeeklyAITrendsCard'
+// 2026-06-07：客戶提案 PDF 產生器（白標）— 代理商賺錢角度（5 AI 共識最大缺口）
+import ClientReportModal from '../components/v2/ClientReportModal'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
@@ -203,6 +205,8 @@ export default function DashboardV2() {
   const [loading, setLoading] = useState(true)
   // Gap 1（2026-06-05）— 新用戶 onboarding 空狀態用、按下「開始第一次檢測」時用
   const [scanning, setScanning] = useState(false)
+  // 2026-06-07：客戶提案 PDF Modal 開關
+  const [pdfModalOpen, setPdfModalOpen] = useState(false)
 
   // 5 Tab nav active
   const [activeFace, setActiveFace] = useState('seo')
@@ -409,7 +413,7 @@ export default function DashboardV2() {
         )}
 
         {/* ─── 頁面 TopBar：返回 + 網站名 + 動作按鈕 ─── */}
-        <TopBar website={website} navigate={navigate} />
+        <TopBar website={website} navigate={navigate} onExportPdf={() => setPdfModalOpen(true)} />
 
         {/* Gap 1（2026-06-05）— 還沒掃過任何網站 = 顯示 onboarding 空狀態、不渲染下方所有資料卡
             觸發條件：4 大 audit + content 全部 null（新用戶剛建 website 還沒跑分析） */}
@@ -477,6 +481,13 @@ export default function DashboardV2() {
           onDone={delta.dismissBadgeUnlock}
         />
       )}
+
+      {/* 客戶提案 PDF Modal（2026-06-07）— TopBar「📄 匯出 PDF」按鈕觸發 */}
+      <ClientReportModal
+        open={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        data={{ website, seoAudit, aeoAudit, geoAudit, eeatAudit }}
+      />
     </PageBg>
   )
 }
@@ -802,7 +813,7 @@ function PageBg({ children }) {
 }
 
 // 頁面 TopBar — 返回 + 網站名 + 重新檢測 / 匯出 PDF
-function TopBar({ website, navigate }) {
+function TopBar({ website, navigate, onExportPdf }) {
   return (
     <div className="mb-5 flex items-center justify-between gap-4 flex-wrap">
       <div className="flex items-center gap-3 min-w-0">
@@ -833,7 +844,9 @@ function TopBar({ website, navigate }) {
           🔄 重新檢測
         </button>
         <button
+          onClick={onExportPdf}
           className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
+          title="產生客戶提案 PDF（白標、可填代理商署名）"
         >
           📄 匯出 PDF
         </button>
