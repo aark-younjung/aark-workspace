@@ -413,7 +413,13 @@ export default function DashboardV2() {
         )}
 
         {/* ─── 頁面 TopBar：返回 + 網站名 + 動作按鈕 ─── */}
-        <TopBar website={website} navigate={navigate} onExportPdf={() => setPdfModalOpen(true)} />
+        <TopBar
+          website={website}
+          navigate={navigate}
+          onExportPdf={() => setPdfModalOpen(true)}
+          onRescan={handleFirstScan}
+          rescanning={scanning}
+        />
 
         {/* Gap 1（2026-06-05）— 還沒掃過任何網站 = 顯示 onboarding 空狀態、不渲染下方所有資料卡
             觸發條件：4 大 audit + content 全部 null（新用戶剛建 website 還沒跑分析） */}
@@ -813,7 +819,9 @@ function PageBg({ children }) {
 }
 
 // 頁面 TopBar — 返回 + 網站名 + 重新檢測 / 匯出 PDF
-function TopBar({ website, navigate, onExportPdf }) {
+// 2026-06-08：原本「重新檢測」按鈕沒掛 onClick、點下去沒反應 — 接上 handleFirstScan
+// （同一個 4-analyzer + insert + reload 流程、與 EmptyState 的初次掃描共用）
+function TopBar({ website, navigate, onExportPdf, onRescan, rescanning }) {
   return (
     <div className="mb-5 flex items-center justify-between gap-4 flex-wrap">
       <div className="flex items-center gap-3 min-w-0">
@@ -839,9 +847,19 @@ function TopBar({ website, navigate, onExportPdf }) {
           ← 切回舊版
         </button>
         <button
-          className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
+          onClick={onRescan}
+          disabled={rescanning}
+          className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+          title="重跑 SEO / AEO / GEO / E-E-A-T 4 大 audit、寫入新一筆紀錄"
         >
-          🔄 重新檢測
+          {rescanning ? (
+            <>
+              <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              檢測中…
+            </>
+          ) : (
+            <>🔄 重新檢測</>
+          )}
         </button>
         <button
           onClick={onExportPdf}

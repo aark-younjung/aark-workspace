@@ -6,6 +6,16 @@
 
 ---
 
+### 2026-06-08（DashboardV2 TopBar「重新檢測」按鈕修復）
+
+**問題：** DashboardV2 TopBar 的 🔄 重新檢測按鈕點下去沒反應。
+
+**根因：** TopBar 內這顆按鈕從來沒掛 `onClick`、純擺裝飾。
+
+**修法：** [src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx) — 把 EmptyState 已經在用的 `handleFirstScan`（4-analyzer + DB insert + reload）也傳進 TopBar、加上載入狀態 spinner + disabled。兩處共用同一個函式、邏輯一致。
+
+---
+
 ### 2026-06-08（修「我已修好」按鈕顏色 + PDF 分段渲染、避免跨頁切字）
 
 **問題 1：** 「我已修好（+5 XP）」按鈕修改前/修改後都顯示綠色、看不出狀態差異。
