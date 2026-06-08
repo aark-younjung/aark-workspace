@@ -28,6 +28,7 @@ import SiteHeader from '../components/v2/SiteHeader'
 import WeeklyAITrendsCard from '../components/v2/WeeklyAITrendsCard'
 // 2026-06-07：客戶提案 PDF 產生器（白標）— 代理商賺錢角度（5 AI 共識最大缺口）
 import ClientReportModal from '../components/v2/ClientReportModal'
+import LLMOChecklistModal from '../components/v2/LLMOChecklistModal'
 import Footer from '../components/Footer'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
@@ -207,6 +208,8 @@ export default function DashboardV2() {
   const [scanning, setScanning] = useState(false)
   // 2026-06-07：客戶提案 PDF Modal 開關
   const [pdfModalOpen, setPdfModalOpen] = useState(false)
+  // 2026-06-08：LLMO 6 週執行清單 PDF modal 狀態（TopBar「📋 6 週清單」按鈕觸發）
+  const [checklistModalOpen, setChecklistModalOpen] = useState(false)
 
   // 5 Tab nav active
   const [activeFace, setActiveFace] = useState('seo')
@@ -417,6 +420,7 @@ export default function DashboardV2() {
           website={website}
           navigate={navigate}
           onExportPdf={() => setPdfModalOpen(true)}
+          onChecklist={() => setChecklistModalOpen(true)}
           onRescan={handleFirstScan}
           rescanning={scanning}
         />
@@ -493,6 +497,20 @@ export default function DashboardV2() {
         open={pdfModalOpen}
         onClose={() => setPdfModalOpen(false)}
         data={{ website, seoAudit, aeoAudit, geoAudit, eeatAudit }}
+      />
+
+      {/* LLMO 6 週執行清單 Modal（2026-06-08）— TopBar「📋 6 週清單」按鈕觸發 */}
+      {/* 把當下 4 大 audit 分數傳進去當 Week 0 起跑點、PDF 封面會顯示 */}
+      <LLMOChecklistModal
+        open={checklistModalOpen}
+        onClose={() => setChecklistModalOpen(false)}
+        data={{ website }}
+        baselineScores={{
+          seo: seoAudit?.score || 0,
+          aeo: aeoAudit?.score || 0,
+          geo: geoAudit?.score || 0,
+          eeat: eeatAudit?.score || 0,
+        }}
       />
     </PageBg>
   )
@@ -818,10 +836,10 @@ function PageBg({ children }) {
   )
 }
 
-// 頁面 TopBar — 返回 + 網站名 + 重新檢測 / 匯出 PDF
+// 頁面 TopBar — 返回 + 網站名 + 重新檢測 / 匯出 PDF / 6 週清單
 // 2026-06-08：原本「重新檢測」按鈕沒掛 onClick、點下去沒反應 — 接上 handleFirstScan
-// （同一個 4-analyzer + insert + reload 流程、與 EmptyState 的初次掃描共用）
-function TopBar({ website, navigate, onExportPdf, onRescan, rescanning }) {
+// 2026-06-08：新增「📋 6 週清單」按鈕、產 LLMO 執行清單 PDF（代理商交付物）
+function TopBar({ website, navigate, onExportPdf, onChecklist, onRescan, rescanning }) {
   return (
     <div className="mb-5 flex items-center justify-between gap-4 flex-wrap">
       <div className="flex items-center gap-3 min-w-0">
@@ -867,6 +885,13 @@ function TopBar({ website, navigate, onExportPdf, onRescan, rescanning }) {
           title="產生客戶提案 PDF（白標、可填代理商署名）"
         >
           📄 匯出 PDF
+        </button>
+        <button
+          onClick={onChecklist}
+          className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
+          title="產生 LLMO 6 週執行清單 PDF — 把抽象 LLMO 概念轉成客戶可照做的 6 週清單、含 robots.txt / llms.txt / Schema 模板"
+        >
+          📋 6 週清單
         </button>
       </div>
     </div>

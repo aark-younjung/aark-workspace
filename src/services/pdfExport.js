@@ -1,7 +1,8 @@
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
-function scoreColor(score) {
+// 分數對應顏色：≥70 綠 / ≥40 琥珀 / 否則紅 — export 出去給其他 PDF 服務（如 LLMO 6 週清單）共用
+export function scoreColor(score) {
   if (score >= 70) return '#16a34a'
   if (score >= 40) return '#d97706'
   return '#dc2626'
@@ -197,7 +198,8 @@ function buildReportHTML({ website, seoAudit, aeoAudit, geoAudit, eeatAudit }) {
 // ════════════════════════════════════════════════════════════════
 
 // Aark Direction C radar mark 內嵌 SVG — 在 html2canvas 中可正確 render
-const AARK_MARK_SVG = `
+// export 出去給其他 PDF 服務（如 LLMO 6 週清單）共用品牌標記
+export const AARK_MARK_SVG = `
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style="vertical-align:middle;">
   <circle cx="32" cy="32" r="26" stroke="#18c590" stroke-width="3"/>
   <path d="M 32 32 L 32 6 L 51 16 Z" fill="#18c590" fill-opacity="0.85"/>
@@ -246,7 +248,8 @@ function buildActionItems({ seoAudit, aeoAudit, geoAudit, eeatAudit }) {
   return items.sort((a, b) => b.priority - a.priority).slice(0, 5)
 }
 
-const LAYER_COLOR = {
+// 4 大訊號層代表色 — 與 v2-tokens.js 對齊；export 給其他 PDF 服務共用
+export const LAYER_COLOR = {
   SEO: '#3b82f6', AEO: '#8b5cf6', GEO: '#10b981', 'E-E-A-T': '#f59e0b',
 }
 

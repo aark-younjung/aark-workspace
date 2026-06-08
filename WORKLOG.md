@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-06-08（LLMO 6 週執行清單 PDF — 平台級代理商交付物）
+
+**動機：** LLMO 是抽象概念、代理商交付給客戶時很難講具體要做什麼。把它包成「6 週逐週執行清單」、含 robots.txt / llms.txt / Schema 完整模板 + 每週驗收標準、做為 Pro / Agency 用戶可重用的交付物。
+
+**新檔：**
+- [src/services/llmo6WeekChecklistPDF.js](src/services/llmo6WeekChecklistPDF.js) — 10 個 section builder（封面 / 序章 / Week 1-6 / 附錄 A 工具 / 附錄 B 常見錯覺）+ 主 export 函式。分段渲染、每 section 各自 1 canvas → 1 PDF 頁、不切字。
+- [src/components/v2/LLMOChecklistModal.jsx](src/components/v2/LLMOChecklistModal.jsx) — 表單 modal、收 clientName / agencyName / agencyContact / startDate。agency info 跟 ClientReportModal 共用同一個 localStorage（aark_agency_info）。
+
+**Dashboard 接線：** [src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx) TopBar 加「📋 6 週清單」按鈕（在「📄 匯出 PDF」右側）。把當下 4 大 audit 分數帶入當 Week 0 起跑點、PDF 封面 + Week 6 驗收表會顯示。
+
+**檔案文案：** 完整 markdown 版備存於 [docs/llmo-6week-checklist.md](docs/llmo-6week-checklist.md)。
+
+**附帶：** pdfExport.js 把 `AARK_MARK_SVG` / `LAYER_COLOR` / `scoreColor` export 出去、讓新 PDF service 重用品牌資產、不需要拷貝。
+
+---
+
 ### 2026-06-08（DashboardV2 TopBar「重新檢測」按鈕修復）
 
 **問題：** DashboardV2 TopBar 的 🔄 重新檢測按鈕點下去沒反應。
