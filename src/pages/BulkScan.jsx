@@ -194,14 +194,14 @@ export default function BulkScan() {
       {/* Hero — 網站資訊 + 主動作按鈕 */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-          <Link to={`/dashboard/${websiteId}`} style={{ color: T.textMid, fontSize: 13, textDecoration: 'none' }}>← 回 Dashboard</Link>
+          <Link to={`/dashboard/${websiteId}`} style={{ color: T.textMid, fontSize: 14, textDecoration: 'none' }}>← 回 Dashboard</Link>
         </div>
         <h1 style={{ fontSize: 28, fontWeight: 800, color: T.text, marginBottom: 4 }}>批次文章掃描</h1>
         <p style={{ fontSize: 14, color: T.textMid }}>{website?.url}</p>
       </div>
 
       {error && (
-        <div style={{ padding: 14, background: 'rgba(239,68,68,0.1)', border: `1px solid ${T.fail}55`, borderRadius: 8, color: '#fca5a5', fontSize: 13, marginBottom: 16 }}>
+        <div style={{ padding: 14, background: 'rgba(239,68,68,0.1)', border: `1px solid ${T.fail}55`, borderRadius: 8, color: '#fca5a5', fontSize: 14, marginBottom: 16 }}>
           ⚠️ {error}
         </div>
       )}
@@ -214,13 +214,13 @@ export default function BulkScan() {
             <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>
               {job ? '重新批次掃描' : '開始批次掃描'}
             </h3>
-            <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
               我們會抓你網站的 sitemap.xml，找出所有文章 URL（最多 200 篇，依 sitemap lastmod 倒序、最新先掃），
               逐篇分析 7 項文章層級檢測：H1 / Meta 標題 / Meta 描述 / Open Graph / JSON-LD schema / 字數 / canonical。
               預估時長 25-30 分鐘，過程中可關閉視窗，掃完回來看結果。
             </p>
             {job?.status === 'failed' && job?.error_message && (
-              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 12, color: '#fca5a5' }}>
+              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 14, color: '#fca5a5' }}>
                 上次失敗：{job.error_message}
               </div>
             )}
@@ -237,21 +237,21 @@ export default function BulkScan() {
                 免費掃出你最近 3 篇文章的 SEO 漏洞
               </h3>
               <span style={{
-                fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+                fontSize: 14, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
                 background: 'rgba(168,85,247,0.25)', color: '#e9d5ff', letterSpacing: '.05em',
               }}>免費</span>
             </div>
-            <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 14 }}>
+            <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 14 }}>
               我們會抓你網站 sitemap、找出你網站的全部文章 → 挑最近發布的 3 篇免費跑完整檢測。
               你會看到：
             </p>
-            <ul style={{ fontSize: 12, color: T.textMid, lineHeight: 1.8, marginBottom: 16, paddingLeft: 18 }}>
+            <ul style={{ fontSize: 14, color: T.textMid, lineHeight: 1.8, marginBottom: 16, paddingLeft: 18 }}>
               <li>📊 <strong style={{ color: T.text }}>你網站總共幾篇文章</strong>（sitemap 自動發現）</li>
               <li>🔍 那 3 篇實際缺了哪些 SEO 要素（H1 / Meta / Schema / OG / 字數 / canonical）</li>
               <li>🛠 每個問題對應的修法步驟 — 不論你用 WordPress / Shopify / Wix / 自架 HTML</li>
             </ul>
             {job?.status === 'failed' && job?.error_message && (
-              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 12, color: '#fca5a5' }}>
+              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 14, color: '#fca5a5' }}>
                 上次失敗：{job.error_message}
               </div>
             )}
@@ -263,7 +263,7 @@ export default function BulkScan() {
                 ...secondaryButtonStyle, textDecoration: 'none', display: 'inline-block',
               }}>升級 Pro 一次掃完全部 →</Link>
             </div>
-            <p style={{ fontSize: 11, color: T.textLow, marginTop: 12 }}>
+            <p style={{ fontSize: 14, color: T.textLow, marginTop: 12 }}>
               ℹ️ 每個網站僅可免費試跑 1 次。想看完整 200 篇結果請升級 Pro。
             </p>
           </GlassCard>
@@ -283,12 +283,12 @@ export default function BulkScan() {
           {job.status === 'scanning' && (
             <>
               <ProgressBar scanned={job.scanned_count} failed={job.failed_count} total={job.total_urls} />
-              <div style={{ display: 'flex', gap: 16, marginTop: 16, fontSize: 12, color: T.textMid, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 16, marginTop: 16, fontSize: 14, color: T.textMid, flexWrap: 'wrap' }}>
                 <span>✅ 已掃描 <strong style={{ color: T.text }}>{job.scanned_count}</strong> / {job.total_urls}</span>
                 {job.failed_count > 0 && <span>❌ 失敗 <strong style={{ color: T.fail }}>{job.failed_count}</strong></span>}
                 {job.capped > 0 && <span style={{ color: T.warn }}>⚠️ 你網站文章超過 200，本次只掃前 200（少 {job.capped} 筆）</span>}
               </div>
-              <p style={{ fontSize: 11, color: T.textLow, marginTop: 12 }}>
+              <p style={{ fontSize: 14, color: T.textLow, marginTop: 12 }}>
                 提示：每分鐘掃 ~8 篇，剩餘約 {Math.max(1, Math.ceil((job.total_urls - job.scanned_count - job.failed_count) / 8))} 分鐘。可關閉視窗稍後回來看結果。
               </p>
             </>
@@ -399,7 +399,7 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId, webs
         return (
           <>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>🔥 最需要修的 {offenderResults.length} 篇</h2>
-            <p style={{ fontSize: 12, color: T.textLow, marginBottom: 12 }}>
+            <p style={{ fontSize: 14, color: T.textLow, marginBottom: 12 }}>
               點開每一列展開 finding 詳細 + 修復建議 + 一鍵複製 HTML，修完按「✓ 我已修好」記錄 +5 XP
             </p>
             <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
@@ -437,7 +437,7 @@ function SampleUpsellBanner({ discoveredCount, scanned, locked }) {
           <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 4 }}>
             你網站總共 <span style={{ color: '#c4b5fd' }}>{discoveredCount}</span> 篇文章 — 還有 <span style={{ color: '#fbbf24' }}>{locked}</span> 篇待解鎖
           </div>
-          <div style={{ fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
             目前你看到的是 <strong style={{ color: T.text }}>{scanned} 篇樣本</strong>的分析結果。升級 Pro 可一次掃描全部 {discoveredCount > 200 ? '200' : discoveredCount} 篇（{discoveredCount > 200 ? '上限' : '完整'}），找出每篇的具體問題 + 完整修法。
           </div>
         </div>
@@ -461,7 +461,7 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
       borderRadius: T.rL, padding: 24,
     }}>
       <div style={{
-        fontSize: 10, color: T.textLow, letterSpacing: '.1em',
+        fontSize: 14, color: T.textLow, letterSpacing: '.1em',
         textTransform: 'uppercase', marginBottom: 14, fontWeight: 700,
       }}>
         問題分佈拆解
@@ -489,9 +489,9 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
                   display: 'flex', justifyContent: 'space-between',
                   alignItems: 'baseline', marginBottom: 5,
                 }}>
-                  <span style={{ fontSize: 11.5, color: T.text }}>{p.label}</span>
+                  <span style={{ fontSize: 14.5, color: T.text }}>{p.label}</span>
                   <span style={{
-                    fontSize: 11, color: T.text, fontFamily: T.mono, fontWeight: 700,
+                    fontSize: 14, color: T.text, fontFamily: T.mono, fontWeight: 700,
                   }}>{p.count} 篇</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -505,7 +505,7 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
                     }} />
                   </div>
                   <span style={{
-                    fontSize: 9.5, color: T.textLow, minWidth: 70, textAlign: 'right',
+                    fontSize: 14.5, color: T.textLow, minWidth: 70, textAlign: 'right',
                   }}>{pct}% 篇受影響</span>
                 </div>
               </div>
@@ -540,10 +540,10 @@ function UrlRow({ result, websiteId, userId }) {
       }}
       onClick={() => hasProblems && setExpanded(v => !v)}>
         <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{
-          fontSize: 11, color: T.textMid, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          fontSize: 14, color: T.textMid, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           textDecoration: 'none', marginRight: 8,
         }}>{result.url}</a>
-        <span style={{ fontSize: 11, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontSize: 14, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
           {!isDone ? (
             <span style={{ color: T.fail }}>❌ {result.error_message || '失敗'}</span>
           ) : probs.length === 0 ? (
@@ -551,7 +551,7 @@ function UrlRow({ result, websiteId, userId }) {
           ) : (
             <>
               <span style={{ color: T.warn }}>⚠️ {probs.length} 問題</span>
-              <span style={{ color: T.textLow, fontSize: 10 }}>{expanded ? '▾' : '▸'}</span>
+              <span style={{ color: T.textLow, fontSize: 14 }}>{expanded ? '▾' : '▸'}</span>
             </>
           )}
         </span>
@@ -563,7 +563,7 @@ function UrlRow({ result, websiteId, userId }) {
       {hasProblems && expanded && (
         <ul style={{
           margin: '8px 0 4px 16px', padding: 0, listStyle: 'none',
-          fontSize: 11, color: T.textMid, lineHeight: 1.6,
+          fontSize: 14, color: T.textMid, lineHeight: 1.6,
         }}>
           {probs.map((p, i) => {
             const tip = PROBLEM_FIX_TIPS[p.id]
@@ -606,7 +606,7 @@ function UrlRow({ result, websiteId, userId }) {
                 {tip && (
                   <div style={{
                     marginTop: 4, marginLeft: 20,
-                    fontSize: 11, color: T.textMid, lineHeight: 1.65,
+                    fontSize: 14, color: T.textMid, lineHeight: 1.65,
                     padding: '6px 10px',
                     background: 'rgba(236,72,153,0.06)',          // 粉紅微底（呼應文章分析家族色）
                     borderLeft: '2px solid rgba(236,72,153,0.4)',
@@ -680,16 +680,16 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
         }}
       >
         <span style={{ flex: 1, textAlign: 'left' }}>
-          <strong style={{ color: '#fca5a5', fontSize: 12 }}>🔴 偵測到主題級重複問題</strong>
-          <span style={{ marginLeft: 8, color: T.textMid, fontSize: 11 }}>
+          <strong style={{ color: '#fca5a5', fontSize: 14 }}>🔴 偵測到主題級重複問題</strong>
+          <span style={{ marginLeft: 8, color: T.textMid, fontSize: 14 }}>
             {affectedCount} 個 H1 受影響、來源相同
           </span>
         </span>
-        <span style={{ color: T.textLow, fontSize: 11 }}>{open ? '▴ 收起如何處理' : '▾ 展開如何處理'}</span>
+        <span style={{ color: T.textLow, fontSize: 14 }}>{open ? '▴ 收起如何處理' : '▾ 展開如何處理'}</span>
       </button>
 
       {open && (
-        <div style={{ marginTop: 8, fontSize: 11, color: T.textMid, lineHeight: 1.65 }}>
+        <div style={{ marginTop: 8, fontSize: 14, color: T.textMid, lineHeight: 1.65 }}>
           {/* 1. 症狀 */}
           <div style={{ marginBottom: 8 }}>
             <strong style={{ color: '#fca5a5' }}>📝 症狀說明：</strong>
@@ -715,9 +715,9 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
                   <div key={i} style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.25)', borderRadius: 4 }}>
                     <div style={{ fontWeight: 700, color: T.text, marginBottom: 2 }}>
                       {opt.option}
-                      {opt.effort && <span style={{ marginLeft: 8, color: T.textLow, fontSize: 10, fontWeight: 400 }}>({opt.effort})</span>}
+                      {opt.effort && <span style={{ marginLeft: 8, color: T.textLow, fontSize: 14, fontWeight: 400 }}>({opt.effort})</span>}
                     </div>
-                    <div style={{ whiteSpace: 'pre-line', color: T.textMid, fontSize: 10.5 }}>{opt.detail}</div>
+                    <div style={{ whiteSpace: 'pre-line', color: T.textMid, fontSize: 14.5 }}>{opt.detail}</div>
                   </div>
                 ))}
               </div>
@@ -736,7 +736,7 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
                     setTimeout(() => setTicketCopied(false), 1800)
                   }}
                   style={{
-                    padding: '2px 8px', fontSize: 10, fontWeight: 700,
+                    padding: '2px 8px', fontSize: 14, fontWeight: 700,
                     background: ticketCopied ? 'rgba(34,197,94,0.2)' : 'rgba(139,92,246,0.15)',
                     color: ticketCopied ? '#86efac' : '#c4b5fd',
                     border: `1px solid ${ticketCopied ? 'rgba(34,197,94,0.5)' : 'rgba(139,92,246,0.4)'}`,
@@ -749,7 +749,7 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
                 background: 'rgba(0,0,0,0.35)',
                 borderRadius: 4,
                 fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                fontSize: 10.5,
+                fontSize: 14.5,
                 color: '#e2e8f0',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
@@ -789,25 +789,25 @@ function H1DetailCard({ detail, hideGuide }) {
       background: actionStyle.bg,
       borderLeft: `2px solid ${actionStyle.border}`,
       borderRadius: 4,
-      fontSize: 11,
+      fontSize: 14,
       lineHeight: 1.6,
     }}>
       {/* 標頭：H1#N + 分類 chip + 重複 chip（若 is_duplicate） + 建議動作 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
         <span style={{ fontWeight: 700, color: T.text }}>H1#{index}</span>
         <span style={{
-          fontSize: 10, padding: '1px 6px', borderRadius: 3,
+          fontSize: 14, padding: '1px 6px', borderRadius: 3,
           background: kindChip.bg, color: kindChip.color,
         }}>{kindChip.text}</span>
         {is_duplicate && (
           <span style={{
-            fontSize: 10, padding: '1px 6px', borderRadius: 3,
+            fontSize: 14, padding: '1px 6px', borderRadius: 3,
             background: cross_container_duplicate ? 'rgba(239,68,68,0.20)' : 'rgba(251,191,36,0.18)',
             color: cross_container_duplicate ? '#fca5a5' : '#fcd34d',
             fontWeight: 700,
           }}>{cross_container_duplicate ? '🔴 主題級重複' : '🔁 內容重複'}</span>
         )}
-        <span style={{ fontWeight: 600, color: actionStyle.color, fontSize: 11 }}>{actionStyle.label}</span>
+        <span style={{ fontWeight: 600, color: actionStyle.color, fontSize: 14 }}>{actionStyle.label}</span>
       </div>
       {/* 內容預覽（空 H1 不顯示）— 用 monospace 強調是原 HTML 的可辨識片段 */}
       {kind !== 'empty' && (
@@ -817,7 +817,7 @@ function H1DetailCard({ detail, hideGuide }) {
           borderRadius: 3,
           fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
           color: T.textMid,
-          fontSize: 10.5,
+          fontSize: 14.5,
           marginBottom: 4,
           wordBreak: 'break-all',
         }}>
@@ -825,7 +825,7 @@ function H1DetailCard({ detail, hideGuide }) {
         </div>
       )}
       {/* 原因說明（plain language）*/}
-      <div style={{ color: T.textLow, fontSize: 10.5, marginBottom: fix_guide ? 6 : 0 }}>{reason}</div>
+      <div style={{ color: T.textLow, fontSize: 14.5, marginBottom: fix_guide ? 6 : 0 }}>{reason}</div>
 
       {/* 主題級重複時、給「如何處理」可展開區塊 — 4 段：症狀 / 驗證 / 修法 / 給工程師的訊息
           多 H1 共享同一個 guide 時、只在 SharedFixGuideBanner 顯示、卡片內就略過避免重複 */}
@@ -836,15 +836,15 @@ function H1DetailCard({ detail, hideGuide }) {
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between',
               background: 'transparent', border: 'none', cursor: 'pointer',
-              color: '#fca5a5', fontSize: 11, fontWeight: 700, fontFamily: T.font,
+              color: '#fca5a5', fontSize: 14, fontWeight: 700, fontFamily: T.font,
             }}
           >
             <span>🔧 如何處理（找什麼、改什麼、怎麼跟工程師講）</span>
-            <span style={{ fontSize: 10 }}>{guideOpen ? '▴' : '▾'}</span>
+            <span style={{ fontSize: 14 }}>{guideOpen ? '▴' : '▾'}</span>
           </button>
 
           {guideOpen && (
-            <div style={{ marginTop: 8, fontSize: 11, color: T.textMid, lineHeight: 1.65 }}>
+            <div style={{ marginTop: 8, fontSize: 14, color: T.textMid, lineHeight: 1.65 }}>
               {/* 1. 症狀 */}
               <div style={{ marginBottom: 8 }}>
                 <strong style={{ color: '#fca5a5' }}>📝 症狀說明：</strong>
@@ -870,9 +870,9 @@ function H1DetailCard({ detail, hideGuide }) {
                       <div key={i} style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.25)', borderRadius: 4 }}>
                         <div style={{ fontWeight: 700, color: T.text, marginBottom: 2 }}>
                           {opt.option}
-                          {opt.effort && <span style={{ marginLeft: 8, color: T.textLow, fontSize: 10, fontWeight: 400 }}>({opt.effort})</span>}
+                          {opt.effort && <span style={{ marginLeft: 8, color: T.textLow, fontSize: 14, fontWeight: 400 }}>({opt.effort})</span>}
                         </div>
-                        <div style={{ whiteSpace: 'pre-line', color: T.textMid, fontSize: 10.5 }}>{opt.detail}</div>
+                        <div style={{ whiteSpace: 'pre-line', color: T.textMid, fontSize: 14.5 }}>{opt.detail}</div>
                       </div>
                     ))}
                   </div>
@@ -891,7 +891,7 @@ function H1DetailCard({ detail, hideGuide }) {
                         setTimeout(() => setTicketCopied(false), 1800)
                       }}
                       style={{
-                        padding: '2px 8px', fontSize: 10, fontWeight: 700,
+                        padding: '2px 8px', fontSize: 14, fontWeight: 700,
                         background: ticketCopied ? 'rgba(34,197,94,0.2)' : 'rgba(139,92,246,0.15)',
                         color: ticketCopied ? '#86efac' : '#c4b5fd',
                         border: `1px solid ${ticketCopied ? 'rgba(34,197,94,0.5)' : 'rgba(139,92,246,0.4)'}`,
@@ -904,7 +904,7 @@ function H1DetailCard({ detail, hideGuide }) {
                     background: 'rgba(0,0,0,0.35)',
                     borderRadius: 4,
                     fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-                    fontSize: 10.5,
+                    fontSize: 14.5,
                     color: '#e2e8f0',
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
@@ -915,10 +915,10 @@ function H1DetailCard({ detail, hideGuide }) {
               {/* 5. 工程師專用 — debug 用的 parent_class 細節（折疊在最下方）*/}
               {parent_class && (
                 <details style={{ marginTop: 8 }}>
-                  <summary style={{ cursor: 'pointer', color: T.textLow, fontSize: 10 }}>
+                  <summary style={{ cursor: 'pointer', color: T.textLow, fontSize: 14 }}>
                     🔬 工程師專用：技術細節（父容器 class）
                   </summary>
-                  <div style={{ marginTop: 4, fontSize: 10, color: T.textLow, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
+                  <div style={{ marginTop: 4, fontSize: 14, color: T.textLow, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
                     parent class: <code style={{ color: '#a7f3d0' }}>{parent_class.length > 100 ? parent_class.slice(0, 100) + '…' : parent_class}</code>
                   </div>
                 </details>
@@ -931,11 +931,11 @@ function H1DetailCard({ detail, hideGuide }) {
       {/* 工程師專用 parent_class（沒有 inline guide 才顯示 — 否則 guide 內已有同樣資訊）*/}
       {!showInlineGuide && parent_class && (
         <details style={{ marginTop: 4 }}>
-          <summary style={{ cursor: 'pointer', color: T.textLow, fontSize: 10 }}>
+          <summary style={{ cursor: 'pointer', color: T.textLow, fontSize: 14 }}>
             🔬 工程師專用：父容器 class
           </summary>
           <div style={{
-            marginTop: 2, fontSize: 10, color: T.textLow,
+            marginTop: 2, fontSize: 14, color: T.textLow,
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
           }}>
             <code style={{ color: '#a7f3d0' }}>{parent_class.length > 100 ? parent_class.slice(0, 100) + '…' : parent_class}</code>
@@ -978,7 +978,7 @@ function ClientReportButton({ website, results, job }) {
         onClick={() => setOpen(true)}
         style={{
           padding: '10px 20px',
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: 700,
           background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(124,58,237,0.10))',
           color: '#c4b5fd',
@@ -1023,7 +1023,7 @@ function ClientReportButton({ website, results, job }) {
               }}>×</button>
             </div>
             {/* 說明 */}
-            <p style={{ fontSize: 12, color: T.textMid, marginBottom: 12, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 14, color: T.textMid, marginBottom: 12, lineHeight: 1.6 }}>
               把這次掃描結果整理成<strong style={{ color: 'white' }}>客戶能讀懂的 markdown 報告</strong>。
               已自動分類「客戶要 WP 後台處理」「需寫內容」「我們已用 SEO 外掛處理」三段、不需技術背景就能看。
             </p>
@@ -1036,7 +1036,7 @@ function ClientReportButton({ website, results, job }) {
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 8,
               fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              fontSize: 11.5,
+              fontSize: 14.5,
               lineHeight: 1.7,
               color: '#e2e8f0',
               whiteSpace: 'pre-wrap',
@@ -1049,7 +1049,7 @@ function ClientReportButton({ website, results, job }) {
                 onClick={handleDownload}
                 style={{
                   padding: '10px 16px',
-                  fontSize: 13, fontWeight: 700,
+                  fontSize: 14, fontWeight: 700,
                   background: 'rgba(255,255,255,0.05)',
                   color: T.text,
                   border: `1px solid ${T.cardBorder}`,
@@ -1062,7 +1062,7 @@ function ClientReportButton({ website, results, job }) {
                 onClick={handleCopy}
                 style={{
                   padding: '10px 18px',
-                  fontSize: 13, fontWeight: 700,
+                  fontSize: 14, fontWeight: 700,
                   background: copied
                     ? 'linear-gradient(135deg, #22c55e, #16a34a)'
                     : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
@@ -1110,7 +1110,7 @@ function FixOwnerChip({ owner }) {
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(v => !v) }}
         style={{
-          fontSize: 10, padding: '2px 8px', borderRadius: 999,
+          fontSize: 14, padding: '2px 8px', borderRadius: 999,
           background: meta.bg, color: meta.color,
           border: `1px solid ${meta.border}`,
           fontWeight: 600,
@@ -1120,7 +1120,7 @@ function FixOwnerChip({ owner }) {
         }}
       >
         {meta.label}
-        <span style={{ fontSize: 9, opacity: 0.7 }}>{open ? '▴' : '▾'}</span>
+        <span style={{ fontSize: 14, opacity: 0.7 }}>{open ? '▴' : '▾'}</span>
       </button>
       {/* 點開後的浮動說明小框 — absolutely positioned 避免擠壓行內排版 */}
       {open && (
@@ -1135,7 +1135,7 @@ function FixOwnerChip({ owner }) {
             background: 'rgba(0,0,0,0.95)',
             border: `1px solid ${meta.border}`,
             borderRadius: 8,
-            fontSize: 11,
+            fontSize: 14,
             color: T.text,
             lineHeight: 1.6,
             zIndex: 50,
@@ -1206,7 +1206,7 @@ function CommonMisunderstandingsPanel() {
       background: 'rgba(139,92,246,0.06)',
       border: '1px solid rgba(139,92,246,0.25)',
       borderRadius: 10,
-      fontSize: 13,
+      fontSize: 14,
     }}>
       <div
         onClick={() => setOpen(v => !v)}
@@ -1215,9 +1215,9 @@ function CommonMisunderstandingsPanel() {
         <span style={{ fontSize: 18 }}>🤔</span>
         <span style={{ flex: 1, color: T.text }}>
           <strong>掃描結果跟我看到的不一樣？</strong>
-          <span style={{ color: T.textLow, marginLeft: 8, fontSize: 12 }}>5 種常見狀況、開啟前先確認</span>
+          <span style={{ color: T.textLow, marginLeft: 8, fontSize: 14 }}>5 種常見狀況、開啟前先確認</span>
         </span>
-        <span style={{ color: T.textLow, fontSize: 11 }}>{open ? '▾ 收起' : '▸ 展開'}</span>
+        <span style={{ color: T.textLow, fontSize: 14 }}>{open ? '▾ 收起' : '▸ 展開'}</span>
       </div>
       {open && (
         <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(139,92,246,0.2)' }}>
@@ -1226,7 +1226,7 @@ function CommonMisunderstandingsPanel() {
               <summary style={{ cursor: 'pointer', color: T.text, fontWeight: 600, padding: '4px 0' }}>
                 {i + 1}. {c.symptom}
               </summary>
-              <div style={{ marginLeft: 16, padding: '6px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 12, whiteSpace: 'pre-line' }}>
+              <div style={{ marginLeft: 16, padding: '6px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14, whiteSpace: 'pre-line' }}>
                 <div style={{ marginBottom: 4, color: T.textMid }}>
                   <strong style={{ color: '#c4b5fd' }}>原因：</strong>{c.cause}
                 </div>
@@ -1255,7 +1255,7 @@ function WpAdminHintBanner({ hint }) {
       background: 'rgba(59,130,246,0.08)',
       border: '1px solid rgba(59,130,246,0.3)',
       borderRadius: 6,
-      fontSize: 11,
+      fontSize: 14,
       color: T.textMid,
       lineHeight: 1.6,
     }}>
@@ -1268,7 +1268,7 @@ function WpAdminHintBanner({ hint }) {
           <strong style={{ color: '#93c5fd' }}>WP 後台位置：</strong>{hint.where}
           {hint.plugin && <span style={{ color: T.textLow }}> · 需要 {hint.plugin}</span>}
         </span>
-        <span style={{ color: T.textLow, fontSize: 10 }}>{open ? '▾ 收起步驟' : '▸ 展開步驟'}</span>
+        <span style={{ color: T.textLow, fontSize: 14 }}>{open ? '▾ 收起步驟' : '▸ 展開步驟'}</span>
       </div>
       {open && (
         <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(59,130,246,0.15)' }}>
@@ -1283,7 +1283,7 @@ function WpAdminHintBanner({ hint }) {
                 display: 'inline-block',
                 marginBottom: 8,
                 padding: '6px 12px',
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: 700,
                 background: 'rgba(59,130,246,0.25)',
                 color: '#dbeafe',
@@ -1308,7 +1308,7 @@ function WpAdminHintBanner({ hint }) {
                 display: 'inline-block',
                 marginTop: 8,
                 padding: '4px 10px',
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: 700,
                 background: 'rgba(139,92,246,0.15)',
                 color: '#c4b5fd',
@@ -1325,7 +1325,7 @@ function WpAdminHintBanner({ hint }) {
               background: 'rgba(251,191,36,0.08)',
               border: '1px solid rgba(251,191,36,0.25)',
               borderRadius: 4,
-              fontSize: 10,
+              fontSize: 14,
               color: '#fcd34d',
             }}>💡 {hint.note}</div>
           )}
@@ -1349,7 +1349,7 @@ function FullResultsList({ results, websiteId, userId }) {
           onClick={() => setExpanded(v => !v)}
           style={{
             padding: '6px 14px',
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 600,
             background: 'rgba(255,255,255,0.05)',
             color: T.textMid,
@@ -1371,7 +1371,7 @@ function FullResultsList({ results, websiteId, userId }) {
           </div>
         </GlassCard>
       ) : (
-        <p style={{ fontSize: 12, color: T.textLow, marginBottom: 20, padding: '12px 14px', background: 'rgba(255,255,255,0.02)', border: `1px dashed ${T.cardBorder}`, borderRadius: 8 }}>
+        <p style={{ fontSize: 14, color: T.textLow, marginBottom: 20, padding: '12px 14px', background: 'rgba(255,255,255,0.02)', border: `1px dashed ${T.cardBorder}`, borderRadius: 8 }}>
           💡 先聚焦上面的 Top 20、修完按「重新掃描」會顯示下一輪 Top 20。要看全部 {total} 篇按右上「展開」
         </p>
       )}
@@ -1416,7 +1416,7 @@ function RescanHintBanner({ websiteId, userId, finishedAt, onRescan, starting, i
       flexWrap: 'wrap',
     }}>
       <span style={{ fontSize: 22 }}>🎉</span>
-      <div style={{ flex: 1, minWidth: 240, fontSize: 13, color: T.text, lineHeight: 1.6 }}>
+      <div style={{ flex: 1, minWidth: 240, fontSize: 14, color: T.text, lineHeight: 1.6 }}>
         你已經修了 <strong style={{ color: '#86efac' }}>{recentFixCount} 個 finding</strong>！
         <strong style={{ color: T.text }}>重新掃描</strong>確認效果、並看下一輪 Top 20 該修什麼。
       </div>
@@ -1425,7 +1425,7 @@ function RescanHintBanner({ websiteId, userId, finishedAt, onRescan, starting, i
         disabled={starting}
         style={{
           padding: '8px 16px',
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: 700,
           background: 'linear-gradient(135deg, #22c55e, #16a34a)',
           color: 'white',
@@ -1468,7 +1468,7 @@ function StaleSnapshotBanner({ finishedAt, onRescan, starting, isSample }) {
       flexWrap: 'wrap',
     }}>
       <span style={{ fontSize: 18 }}>📸</span>
-      <div style={{ flex: 1, minWidth: 240, fontSize: 13, color: T.textMid, lineHeight: 1.6 }}>
+      <div style={{ flex: 1, minWidth: 240, fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
         這是 <strong style={{ color: T.text }}>{ago}</strong> 跑的掃描快照、可能與你網站上的<strong style={{ color: T.text }}>當前狀態不一致</strong>。
         如果你已經修了某些 finding、按右邊重新掃描才能確認修復生效。
       </div>
@@ -1478,7 +1478,7 @@ function StaleSnapshotBanner({ finishedAt, onRescan, starting, isSample }) {
           disabled={starting}
           style={{
             padding: '8px 14px',
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 700,
             background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
             color: '#000',
@@ -1522,7 +1522,7 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
           disabled={isFixed || isFixing}
           style={{
             padding: '6px 14px',
-            fontSize: 11,
+            fontSize: 14,
             fontWeight: 700,
             background: isFixed
               ? 'rgba(34,197,94,0.18)'
@@ -1544,7 +1544,7 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
         </button>
         {/* 提示：避免用戶誤以為「按下去 = 自動驗證」、特別是 multiple_h1 這種「修了部分」case */}
         <span style={{
-          fontSize: 10,
+          fontSize: 14,
           color: T.textLow,
           fontStyle: 'italic',
         }}>
@@ -1643,7 +1643,7 @@ function SuggestionBlock({ suggestion }) {
       <button
         onClick={() => handleCopy('text', value)}
         style={{
-          padding: '1px 6px', fontSize: 9.5, fontWeight: 600,
+          padding: '1px 6px', fontSize: 14.5, fontWeight: 600,
           background: copiedFlag ? 'rgba(16,185,129,0.25)' : 'rgba(16,185,129,0.12)',
           color: copiedFlag ? '#86efac' : '#a7f3d0',
           border: `1px solid ${copiedFlag ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.35)'}`,
@@ -1660,33 +1660,33 @@ function SuggestionBlock({ suggestion }) {
       background: 'rgba(20,184,166,0.08)',           // 青綠微底（呼應主題色）
       borderLeft: '2px solid rgba(20,184,166,0.4)',
       borderRadius: 4,
-      fontSize: 11,
+      fontSize: 14,
       lineHeight: 1.6,
     }}>
       {/* 改前 / 改後對照（只有 current+suggested 都存在才顯示） */}
       {current && suggested && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
           <div>
-            <span style={{ color: T.textLow, fontSize: 10 }}>改前 {current_len ? `(${current_len} 字)` : ''}</span>
+            <span style={{ color: T.textLow, fontSize: 14 }}>改前 {current_len ? `(${current_len} 字)` : ''}</span>
             <div style={{
               padding: '3px 8px', borderRadius: 3,
               background: 'rgba(239,68,68,0.08)',
               color: T.textMid,
               fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              fontSize: 10.5,
+              fontSize: 14.5,
               marginTop: 2,
               wordBreak: 'break-all',
             }}>{current}</div>
           </div>
           <div>
-            <span style={{ color: '#86efac', fontSize: 10 }}>
+            <span style={{ color: '#86efac', fontSize: 14 }}>
               改後 {suggested_len ? `(${suggested_len} 字)` : ''}
               {/* 自動建議仍低於下限時、顯示橘色「仍嫌短」警告 chip — 提醒用戶需手動再延伸 */}
               {still_too_short && (
                 <span style={{
                   marginLeft: 6,
                   padding: '1px 6px',
-                  fontSize: 9,
+                  fontSize: 14,
                   background: 'rgba(251,191,36,0.18)',
                   color: '#fcd34d',
                   border: '1px solid rgba(251,191,36,0.4)',
@@ -1701,7 +1701,7 @@ function SuggestionBlock({ suggestion }) {
               background: still_too_short ? 'rgba(251,191,36,0.08)' : 'rgba(16,185,129,0.10)',
               color: T.text,
               fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-              fontSize: 10.5,
+              fontSize: 14.5,
               marginTop: 2,
               wordBreak: 'break-all',
               border: still_too_short ? '1px dashed rgba(251,191,36,0.3)' : 'none',
@@ -1712,7 +1712,7 @@ function SuggestionBlock({ suggestion }) {
       {/* 純建議（無 current 對照、例如 missing_meta_desc / missing_canonical） */}
       {!current && suggested && (
         <div style={{ marginBottom: 6 }}>
-          <span style={{ color: '#86efac', fontSize: 10 }}>
+          <span style={{ color: '#86efac', fontSize: 14 }}>
             建議內容 {suggested_len ? `(${suggested_len} 字)` : ''}
             <MiniCopyBtn value={suggested} copiedFlag={copiedKey === 'text'} />
           </span>
@@ -1721,7 +1721,7 @@ function SuggestionBlock({ suggestion }) {
             background: 'rgba(16,185,129,0.10)',
             color: T.text,
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: 10.5,
+            fontSize: 14.5,
             marginTop: 2,
             wordBreak: 'break-all',
           }}>{suggested}</div>
@@ -1731,11 +1731,11 @@ function SuggestionBlock({ suggestion }) {
       {code_snippet && (
         <div style={{ marginBottom: note ? 6 : 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-            <span style={{ color: T.textLow, fontSize: 10 }}>{'複製這段貼到 <head>'}</span>
+            <span style={{ color: T.textLow, fontSize: 14 }}>{'複製這段貼到 <head>'}</span>
             <button
               onClick={() => handleCopy('code', code_snippet)}
               style={{
-                padding: '2px 8px', fontSize: 10, fontWeight: 600,
+                padding: '2px 8px', fontSize: 14, fontWeight: 600,
                 background: copiedKey === 'code' ? 'rgba(16,185,129,0.25)' : 'rgba(20,184,166,0.18)',
                 color: copiedKey === 'code' ? '#86efac' : '#5eead4',
                 border: `1px solid ${copiedKey === 'code' ? 'rgba(16,185,129,0.5)' : 'rgba(20,184,166,0.5)'}`,
@@ -1752,7 +1752,7 @@ function SuggestionBlock({ suggestion }) {
             background: 'rgba(0,0,0,0.35)',
             color: '#a7f3d0',
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
-            fontSize: 10.5,
+            fontSize: 14.5,
             // 多行模板（OG / Schema）保留換行 + 縮排；單行短 tag 也能正常顯示
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
@@ -1769,14 +1769,14 @@ function SuggestionBlock({ suggestion }) {
           background: 'rgba(251,191,36,0.10)',
           borderRadius: 3,
           color: '#fcd34d',
-          fontSize: 10,
+          fontSize: 14,
           lineHeight: 1.55,
         }}>
           💡 兩個複製按鈕<strong>擇一使用</strong>：用 SEO 外掛（Rank Math / Yoast）的話複製「文字」貼進外掛欄位；自己改主題 HTML 的話複製「整段 HTML」貼到 {'<head>'}。<strong>不要兩個都做</strong>會產生重複的 tag
         </div>
       )}
       {/* 說明文字 */}
-      {note && <div style={{ color: T.textLow, fontSize: 10.5 }}>{note}</div>}
+      {note && <div style={{ color: T.textLow, fontSize: 14.5 }}>{note}</div>}
     </div>
   )
 }
@@ -1821,12 +1821,12 @@ const primaryButtonStyle = {
   color: 'white', border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: T.font,
 }
 const secondaryButtonStyle = {
-  padding: '10px 20px', fontSize: 13, fontWeight: 600,
+  padding: '10px 20px', fontSize: 14, fontWeight: 600,
   background: 'rgba(255,255,255,0.05)', color: T.text,
   border: `1px solid ${T.cardBorder}`, borderRadius: 8, cursor: 'pointer', fontFamily: T.font,
 }
 const cancelButtonStyle = {
-  padding: '6px 14px', fontSize: 12,
+  padding: '6px 14px', fontSize: 14,
   background: 'rgba(239,68,68,0.1)', color: '#fca5a5',
   border: `1px solid ${T.fail}55`, borderRadius: 6, cursor: 'pointer', fontFamily: T.font,
 }

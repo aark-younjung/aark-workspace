@@ -300,7 +300,7 @@ function SectionTitle({ title, sub }) {
         fontSize: 20, fontWeight: 800, color: T.text, letterSpacing: '-.01em',
         marginBottom: 4, fontFamily: T.font,
       }}>{title}</h2>
-      <div style={{ fontSize: 12, color: T.textLow }}>{sub}</div>
+      <div style={{ fontSize: 14, color: T.textLow }}>{sub}</div>
     </div>
   )
 }
@@ -351,20 +351,20 @@ function RoadmapColumn({ level, tone, title, subtitle, items = [], extras = [], 
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <span style={{
-          width: 28, height: 28, borderRadius: 8, fontSize: 11, fontWeight: 800,
+          width: 28, height: 28, borderRadius: 8, fontSize: 14, fontWeight: 800,
           background: tone, color: '#fff', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: `0 4px 12px ${tone}55`,
         }}>{level}</span>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{title}</div>
-          <div style={{ fontSize: 11, color: T.textLow, marginTop: 1 }}>{subtitle}</div>
+          <div style={{ fontSize: 14, color: T.textLow, marginTop: 1 }}>{subtitle}</div>
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {allItems.length === 0 ? (
           <div style={{
-            fontSize: 12, color: T.pass, padding: '10px 12px',
+            fontSize: 14, color: T.pass, padding: '10px 12px',
             background: T.pass + '0d', border: `1px solid ${T.pass}28`, borderRadius: 7,
           }}>{fallback}</div>
         ) : (
@@ -373,10 +373,10 @@ function RoadmapColumn({ level, tone, title, subtitle, items = [], extras = [], 
               background: 'rgba(255,255,255,.02)', border: `1px solid rgba(255,255,255,.06)`,
               borderRadius: 7, padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'flex-start',
             }}>
-              <span style={{ color: tone, fontSize: 13, lineHeight: 1.5, flexShrink: 0 }}>•</span>
+              <span style={{ color: tone, fontSize: 14, lineHeight: 1.5, flexShrink: 0 }}>•</span>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 2 }}>{item.name}</div>
-                <div style={{ fontSize: 11, color: T.textLow, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 2 }}>{item.name}</div>
+                <div style={{ fontSize: 14, color: T.textLow, lineHeight: 1.5 }}>
                   {item.recommendation || item.description}
                 </div>
               </div>
@@ -401,13 +401,13 @@ function RoadmapLockOverlay() {
         <div style={{ fontSize: 17, fontWeight: 700, color: T.text, marginBottom: 8 }}>
           解鎖完整優化路線圖
         </div>
-        <div style={{ fontSize: 13, color: T.textMid, marginBottom: 18, lineHeight: 1.7 }}>
+        <div style={{ fontSize: 14, color: T.textMid, marginBottom: 18, lineHeight: 1.7 }}>
           升級 Pro 取得依你網站現況量身排序的 P1 / P2 / P3 修復順序，搭配每項目的詳細修復步驟與程式碼。
         </div>
         <Link to="/pricing" style={{
           display: 'inline-block',
           background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`,
-          color: '#fff', fontSize: 13, fontWeight: 700,
+          color: '#fff', fontSize: 14, fontWeight: 700,
           padding: '12px 24px', borderRadius: 9, textDecoration: 'none',
           boxShadow: `0 6px 18px ${ACCENT}55`, fontFamily: T.font,
         }}>升級 Pro 解鎖路線圖</Link>

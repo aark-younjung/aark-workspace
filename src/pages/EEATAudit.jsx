@@ -226,7 +226,7 @@ export default function EEATAudit() {
           {/* 詳細檢測項目（看板式 IssueBoard）— 與 SEO 同款 */}
           <div style={{ marginBottom: 14 }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 4 }}>詳細檢測項目</h2>
-            <div style={{ fontSize: 12, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
+            <div style={{ fontSize: 14, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
           </div>
           <div style={{ marginBottom: 32 }}>
             {!eeatAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={EEAT_ACCENT} accentGlow={`${EEAT_ACCENT}28`} />}

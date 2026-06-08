@@ -223,7 +223,7 @@ export default function GEOAudit() {
           {/* 詳細檢測項目（看板式 IssueBoard）— 與 SEO 同款 */}
           <div style={{ marginBottom: 14 }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 4 }}>詳細檢測項目</h2>
-            <div style={{ fontSize: 12, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
+            <div style={{ fontSize: 14, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
           </div>
           <div style={{ marginBottom: 32 }}>
             {!geoAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={GEO_ACCENT} accentGlow={`${GEO_ACCENT}28`} />}
@@ -369,11 +369,11 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
           llms.txt 自動生成（已根據你的最新檢測資料）
         </h3>
         <span style={{
-          fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+          fontSize: 14, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
           background: T.geo + '26', color: T.geo, border: `1px solid ${T.geo}55`,
         }}>免費功能</span>
       </div>
-      <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
+      <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
         我們已自動生成符合 <a href="https://llmstxt.org/" target="_blank" rel="noopener noreferrer" style={{ color: T.geo, textDecoration: 'underline' }}>llmstxt.org 標準</a> 的 llms.txt 給你 — 這份檔案告訴 ChatGPT、Claude、Perplexity 等 AI 引擎你的網站結構、歡迎哪些 AI 爬蟲、可引用內容在哪。下方有兩種接到你網站的方式。
       </p>
 
@@ -383,16 +383,16 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
         borderRadius: T.rM, padding: '10px 14px', marginBottom: 14,
         display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
       }}>
-        <span style={{ fontSize: 11, color: T.textLow, letterSpacing: '.05em' }}>代管 URL</span>
+        <span style={{ fontSize: 14, color: T.textLow, letterSpacing: '.05em' }}>代管 URL</span>
         <code style={{
-          flex: 1, minWidth: 200, fontSize: 12, fontFamily: T.mono, color: T.text,
+          flex: 1, minWidth: 200, fontSize: 14, fontFamily: T.mono, color: T.text,
           overflow: 'auto', whiteSpace: 'nowrap',
         }}>{hostedUrl}</code>
         <button
           type="button"
           onClick={() => copyToClipboard(hostedUrl, 'url')}
           style={{
-            fontSize: 11, fontWeight: 600, padding: '5px 12px', borderRadius: 5,
+            fontSize: 14, fontWeight: 600, padding: '5px 12px', borderRadius: 5,
             background: copied === 'url' ? T.pass + '33' : 'rgba(255,255,255,0.05)',
             color: copied === 'url' ? T.pass : T.text,
             border: `1px solid ${copied === 'url' ? T.pass + '55' : T.cardBorder}`,
@@ -408,7 +408,7 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
         maxHeight: 280, overflow: 'auto',
       }}>
         <pre style={{
-          margin: 0, fontSize: 11, lineHeight: 1.65,
+          margin: 0, fontSize: 14, lineHeight: 1.65,
           color: T.textMid, fontFamily: T.mono, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
         }}>{loading ? '載入中...' : content}</pre>
       </div>
@@ -420,7 +420,7 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
           onClick={downloadFile}
           disabled={loading || !content}
           style={{
-            fontSize: 13, fontWeight: 700, padding: '10px 18px', borderRadius: T.rM,
+            fontSize: 14, fontWeight: 700, padding: '10px 18px', borderRadius: T.rM,
             background: `linear-gradient(135deg, ${T.geo}, #14b8a6)`,
             color: 'white', border: 'none', cursor: 'pointer', fontFamily: T.font,
             opacity: loading ? 0.5 : 1,
@@ -431,7 +431,7 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
           onClick={() => copyToClipboard(content, 'content')}
           disabled={loading || !content}
           style={{
-            fontSize: 13, fontWeight: 600, padding: '10px 18px', borderRadius: T.rM,
+            fontSize: 14, fontWeight: 600, padding: '10px 18px', borderRadius: T.rM,
             background: copied === 'content' ? T.pass + '22' : 'rgba(255,255,255,0.05)',
             color: copied === 'content' ? T.pass : T.text,
             border: `1px solid ${copied === 'content' ? T.pass + '55' : T.cardBorder}`,
@@ -445,7 +445,7 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
           onClick={handleVerify}
           disabled={verify.status === 'checking' || !websiteUrl}
           style={{
-            fontSize: 13, fontWeight: 600, padding: '10px 18px', borderRadius: T.rM,
+            fontSize: 14, fontWeight: 600, padding: '10px 18px', borderRadius: T.rM,
             background: 'rgba(255,255,255,0.05)',
             color: T.text,
             border: `1px solid ${T.cardBorder}`,
@@ -462,7 +462,7 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
       {verify.status !== 'idle' && verify.status !== 'checking' && (
         <div style={{
           marginBottom: 18, padding: '12px 14px', borderRadius: T.rM,
-          fontSize: 12, lineHeight: 1.6,
+          fontSize: 14, lineHeight: 1.6,
           background: verify.status === 'live'
             ? `${T.pass}15`
             : verify.status === 'invalid' || verify.status === 'not_found'
@@ -484,7 +484,7 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
             {verify.status === 'error' && <>🔴 驗證時發生錯誤</>}
           </div>
           <div style={{ color: T.textMid }}>
-            檢測 URL：<code style={{ fontFamily: T.mono, fontSize: 11 }}>{websiteUrl?.replace(/\/$/, '')}/llms.txt</code>
+            檢測 URL：<code style={{ fontFamily: T.mono, fontSize: 14 }}>{websiteUrl?.replace(/\/$/, '')}/llms.txt</code>
           </div>
           <div style={{ color: T.textMid, marginTop: 4 }}>{verify.detail}</div>
           {(verify.status === 'not_found' || verify.status === 'invalid') && (
@@ -496,28 +496,28 @@ function LlmsTxtSection({ websiteId, websiteUrl }) {
       )}
 
       {/* 怎麼接到網站的兩種方式 */}
-      <details style={{ fontSize: 13, color: T.textMid, lineHeight: 1.75 }}>
+      <details style={{ fontSize: 14, color: T.textMid, lineHeight: 1.75 }}>
         <summary style={{ cursor: 'pointer', color: T.text, fontWeight: 600, marginBottom: 8 }}>
           ▶ 怎麼把這個 llms.txt 接到我的網站？
         </summary>
         <div style={{ paddingLeft: 16, paddingTop: 8 }}>
           <p style={{ marginBottom: 12 }}>
             <strong style={{ color: T.text }}>方法 1：下載 → 上傳到網站 root（推薦，標準做法）</strong><br />
-            按上方「⬇ 下載 llms.txt」拿到檔案，透過 FTP / cPanel / WP-FTP 等工具上傳到你網站根目錄。完成後訪客和爬蟲都能透過 <code style={{ background: 'rgba(0,0,0,0.4)', padding: '1px 6px', borderRadius: 3, fontFamily: T.mono, fontSize: 11 }}>你的網域/llms.txt</code> 存取。
+            按上方「⬇ 下載 llms.txt」拿到檔案，透過 FTP / cPanel / WP-FTP 等工具上傳到你網站根目錄。完成後訪客和爬蟲都能透過 <code style={{ background: 'rgba(0,0,0,0.4)', padding: '1px 6px', borderRadius: 3, fontFamily: T.mono, fontSize: 14 }}>你的網域/llms.txt</code> 存取。
           </p>
           <p style={{ marginBottom: 12 }}>
             <strong style={{ color: T.text }}>方法 2：在 robots.txt 加 LLM-Sitemap 指向（不用改網站內容）</strong><br />
             在你網站的 robots.txt 加一行：
           </p>
           <pre style={{
-            margin: '0 0 12px 0', padding: 10, fontSize: 11, lineHeight: 1.5,
+            margin: '0 0 12px 0', padding: 10, fontSize: 14, lineHeight: 1.5,
             background: 'rgba(0,0,0,0.5)', border: `1px solid ${T.cardBorder}`,
             borderRadius: 6, color: '#cbd5e1', fontFamily: T.mono, overflow: 'auto',
           }}>{`LLM-Sitemap: ${hostedUrl}`}</pre>
           <p style={{ marginBottom: 12 }}>
             這是 emerging convention — 越來越多 AI 工具會讀 robots.txt 的這欄找 llms.txt。優點：不用改你網站內容，連結指向我們代管的 URL，未來 audit 跑新版自動跟進更新。
           </p>
-          <p style={{ color: T.textLow, fontSize: 12, paddingTop: 8, borderTop: `1px solid ${T.cardBorder}` }}>
+          <p style={{ color: T.textLow, fontSize: 14, paddingTop: 8, borderTop: `1px solid ${T.cardBorder}` }}>
             💡 兩種方式可以並行 — 方法 1 確保 LLM 直接讀到，方法 2 是備援 + 自動更新。每次你在 AI 雷達重跑 audit，這份 llms.txt 都會自動帶入最新資料。
           </p>
         </div>
@@ -580,11 +580,11 @@ function CrawlerVisitsSection({ websiteId }) {
           AI 爬蟲訪問日誌
         </h3>
         <span style={{
-          fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+          fontSize: 14, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
           background: T.geo + '26', color: T.geo, border: `1px solid ${T.geo}55`,
         }}>每 60 秒更新</span>
       </div>
-      <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
+      <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
         顯示誰來讀過你的代管 llms.txt。AI 引擎（GPTBot / ClaudeBot / PerplexityBot 等）會自動標彩色 chip。
         {totalCount === 0 && (
           <><br /><strong style={{ color: T.warn }}>目前還沒有訪問紀錄</strong> — 把 llms.txt 接到你網站（用上方教學「方法 2」最快），AI 引擎下次來爬就會被記錄。</>
@@ -602,7 +602,7 @@ function CrawlerVisitsSection({ websiteId }) {
 
       {/* Visit timeline */}
       {loading ? (
-        <p style={{ fontSize: 13, color: T.textLow }}>載入中...</p>
+        <p style={{ fontSize: 14, color: T.textLow }}>載入中...</p>
       ) : visits && visits.length > 0 ? (
         <div style={{
           background: 'rgba(0,0,0,0.4)', border: `1px solid ${T.cardBorder}`,
@@ -614,7 +614,7 @@ function CrawlerVisitsSection({ websiteId }) {
               display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
             }}>
               <span style={{
-                fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+                fontSize: 14, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
                 background: v.is_ai_bot ? T.geo + '26' : 'rgba(255,255,255,0.05)',
                 color: v.is_ai_bot ? T.geo : T.textLow,
                 border: `1px solid ${v.is_ai_bot ? T.geo + '55' : T.cardBorder}`,
@@ -623,17 +623,17 @@ function CrawlerVisitsSection({ websiteId }) {
                 {v.is_ai_bot ? '🤖 AI BOT' : '👤 OTHER'}
               </span>
               {v.is_ai_bot && (
-                <span style={{ fontSize: 12, color: T.text, fontWeight: 600 }}>
+                <span style={{ fontSize: 14, color: T.text, fontWeight: 600 }}>
                   {v.bot_name}
                 </span>
               )}
               <span style={{
-                fontSize: 11, color: T.textLow, fontFamily: T.mono,
+                fontSize: 14, color: T.textLow, fontFamily: T.mono,
                 flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }} title={v.user_agent}>
                 {v.user_agent || '(no user agent)'}
               </span>
-              <span style={{ fontSize: 11, color: T.textLow, fontFamily: T.mono }}>
+              <span style={{ fontSize: 14, color: T.textLow, fontFamily: T.mono }}>
                 {formatRelativeTime(v.created_at)}
               </span>
             </div>
@@ -641,7 +641,7 @@ function CrawlerVisitsSection({ websiteId }) {
         </div>
       ) : (
         <div style={{
-          padding: 28, textAlign: 'center', fontSize: 13, color: T.textLow,
+          padding: 28, textAlign: 'center', fontSize: 14, color: T.textLow,
           background: 'rgba(0,0,0,0.4)', border: `1px dashed ${T.cardBorder}`,
           borderRadius: T.rM,
         }}>
@@ -649,7 +649,7 @@ function CrawlerVisitsSection({ websiteId }) {
         </div>
       )}
 
-      <p style={{ fontSize: 11, color: T.textLow, lineHeight: 1.6, marginTop: 12, fontStyle: 'italic' }}>
+      <p style={{ fontSize: 14, color: T.textLow, lineHeight: 1.6, marginTop: 12, fontStyle: 'italic' }}>
         ⓘ 此日誌只記錄對「我們代管的 llms.txt」的訪問。要追蹤對你整個網站的訪問，需要在伺服器端裝 log forwarder（Pro 功能規劃中）。
       </p>
     </GlassCard>
@@ -663,7 +663,7 @@ function KPIChip({ label, value, color }) {
       background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.cardBorder}`,
       display: 'flex', alignItems: 'baseline', gap: 8,
     }}>
-      <span style={{ fontSize: 11, color: T.textMid }}>{label}</span>
+      <span style={{ fontSize: 14, color: T.textMid }}>{label}</span>
       <span style={{ fontSize: 18, fontWeight: 800, color, fontFamily: T.font }}>{value}</span>
     </div>
   )

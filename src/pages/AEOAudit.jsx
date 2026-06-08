@@ -213,7 +213,7 @@ export default function AEOAudit() {
           {/* 詳細檢測項目（看板式 IssueBoard）— 與 SEO 同款 */}
           <div style={{ marginBottom: 14 }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, marginBottom: 4 }}>詳細檢測項目</h2>
-            <div style={{ fontSize: 12, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
+            <div style={{ fontSize: 14, color: T.textLow }}>依優先度分組：立即修復 / 本月內 / 季度規劃 / 已通過。點任一卡可展開修復步驟</div>
           </div>
           <div style={{ marginBottom: 32 }}>
             {!aeoAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={AEO_ACCENT} accentGlow={`${AEO_ACCENT}28`} />}
@@ -236,15 +236,15 @@ export default function AEOAudit() {
             }}>
               <span style={{ fontSize: 22 }}>🔬</span>
               <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 2 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 2 }}>
                   想看你網站上所有 Schema 一覽？
                 </div>
-                <div style={{ fontSize: 11, color: T.textLow, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 14, color: T.textLow, lineHeight: 1.5 }}>
                   AEO 這頁列出 8 項關鍵 schema；Schema 健檢工具會掃出你網站**所有** JSON-LD，列出 type / 來源 / 對 AI 引用的意義
                 </div>
               </div>
               <Link to={`/schema-check?url=${encodeURIComponent(website.url)}`} style={{
-                fontSize: 12, fontWeight: 700, padding: '8px 14px', borderRadius: 6,
+                fontSize: 14, fontWeight: 700, padding: '8px 14px', borderRadius: 6,
                 background: T.aeo + '22', color: T.aeo,
                 border: `1px solid ${T.aeo}55`, textDecoration: 'none',
                 whiteSpace: 'nowrap',

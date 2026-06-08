@@ -6,6 +6,25 @@
 
 ---
 
+### 2026-06-08（audit 頁字體統一拉到 Dashboard 標準 — Stage 1）
+
+**問題：** 6 個 audit 頁（BulkScan / GEOAudit / CrawlCheck / SEOAudit / AEOAudit / EEATAudit）早期用 inline `fontSize: 10/11/12/13`、比 Dashboard V2 的 text-sm（14px）小 14-50%、用戶反映「文字小、看不清」。BulkScan 最痛（35 處 fontSize: 10 / 4 處 fontSize: 9）。
+
+**修法：** 寫一支 Node 機械替換腳本、把 6 個檔案內所有 inline `fontSize: 9-13` 統一拉到 `fontSize: 14`（= Dashboard 基準）。大標題（fontSize 18+）保持不動。
+
+**處理量：**
+- BulkScan: 88 處
+- GEOAudit: 26 處
+- CrawlCheck: 12 處
+- SEOAudit: 9 處
+- AEOAudit: 4 處
+- EEATAudit: 1 處
+- **合計 140 處**
+
+**Stage 2（暫緩）：** 其他頁面少數 `text-xs` chip/badge 等。Dashboard 本身也用 text-xs、不一定要動、等 Stage 1 看實際效果再決定。
+
+---
+
 ### 2026-06-08（revert pdfmake 版、暫時維持 html2canvas 圖片版 PDF）
 
 **為什麼 revert：** 早上嘗試把 LLMO 6 週清單 PDF 從 html2canvas（圖片版）改成 pdfmake（真文字版）、想讓 PDF 內的 robots.txt / Schema 程式碼可以被選取複製。但實測客戶生成時卡超過 60 秒沒完成、原因是 pdfmake 在瀏覽器 embed 12 MB Noto Sans TC CJK 字體時、子集化解析非常慢（已知 CJK 通病）。

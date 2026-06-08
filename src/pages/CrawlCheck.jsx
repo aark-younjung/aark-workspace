@@ -247,8 +247,8 @@ export default function CrawlCheck() {
           AI 雷達
         </Link>
         <div style={{ display: 'flex', gap: 12 }}>
-          <Link to="/login" style={{ color: T.textMid, textDecoration: 'none', fontSize: 13 }}>登入</Link>
-          <Link to="/register" style={{ color: T.text, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>免費註冊</Link>
+          <Link to="/login" style={{ color: T.textMid, textDecoration: 'none', fontSize: 14 }}>登入</Link>
+          <Link to="/register" style={{ color: T.text, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>免費註冊</Link>
         </div>
       </header>
 
@@ -297,7 +297,7 @@ export default function CrawlCheck() {
             </button>
           </div>
           {errorMsg && (
-            <p style={{ color: T.fail, fontSize: 13, marginTop: 10 }}>⚠️ {errorMsg}</p>
+            <p style={{ color: T.fail, fontSize: 14, marginTop: 10 }}>⚠️ {errorMsg}</p>
           )}
         </form>
 
@@ -313,9 +313,9 @@ export default function CrawlCheck() {
             border: `1px solid ${T.cardBorder}`,
             borderRadius: T.rL,
             padding: 20, marginBottom: 24,
-            fontFamily: T.mono, fontSize: 13,
+            fontFamily: T.mono, fontSize: 14,
           }}>
-            <div style={{ color: T.textMid, marginBottom: 12, fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase' }}>
+            <div style={{ color: T.textMid, marginBottom: 12, fontSize: 14, letterSpacing: '.1em', textTransform: 'uppercase' }}>
               ── 4 輪爬蟲身份模擬 ──
             </div>
             {animatedRounds.map((r, i) => (
@@ -325,10 +325,10 @@ export default function CrawlCheck() {
                   <span style={{ color: T.text }}>嘗試 {r.label}</span>{' '}
                   <span style={{ color: statusColor(r.status) }}>{statusBadge(r.status)}</span>
                 </div>
-                <div style={{ color: T.textMid, paddingLeft: 16, fontSize: 12 }}>
+                <div style={{ color: T.textMid, paddingLeft: 16, fontSize: 14 }}>
                   {r.detail}
                 </div>
-                <div style={{ color: T.textLow, paddingLeft: 16, fontSize: 11 }}>
+                <div style={{ color: T.textLow, paddingLeft: 16, fontSize: 14 }}>
                   {r.hint}
                 </div>
               </div>
@@ -355,7 +355,7 @@ export default function CrawlCheck() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
               <div style={{ fontSize: 36 }}>{verdict.icon}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: T.textLow, letterSpacing: '.1em', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: 14, color: T.textLow, letterSpacing: '.1em', textTransform: 'uppercase' }}>
                   檢測結論
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: verdict.color }}>
@@ -370,7 +370,7 @@ export default function CrawlCheck() {
               padding: 12, borderRadius: T.rM,
               background: 'rgba(255,255,255,0.03)',
               border: `1px solid ${T.cardBorder}`,
-              fontSize: 13, color: T.textMid, lineHeight: 1.6,
+              fontSize: 14, color: T.textMid, lineHeight: 1.6,
             }}>
               <strong style={{ color: T.text }}>對 AI 引用率的影響：</strong><br />
               {verdict.aiImpact}
@@ -404,7 +404,7 @@ export default function CrawlCheck() {
             }}>
               免費註冊 → 看完整報告
             </Link>
-            <div style={{ marginTop: 12, fontSize: 11, color: T.textLow }}>
+            <div style={{ marginTop: 12, fontSize: 14, color: T.textLow }}>
               30 秒註冊・不需信用卡・3 個免費網站額度
             </div>
           </section>
@@ -417,7 +417,7 @@ export default function CrawlCheck() {
           border: `1px solid ${T.cardBorder}`,
           borderRadius: T.rL,
           padding: 20, marginTop: 32,
-          color: T.textMid, fontSize: 13, lineHeight: 1.7,
+          color: T.textMid, fontSize: 14, lineHeight: 1.7,
         }}>
           <h3 style={{ color: T.text, fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
             為什麼 Ahrefs / SEMrush 都不檢這個？
@@ -436,7 +436,7 @@ export default function CrawlCheck() {
       {/* DESIGN: minimal footer — 不放完整連結，只放版權跟主要法律頁 */}
       <footer style={{
         padding: '24px', textAlign: 'center',
-        color: T.textLow, fontSize: 12,
+        color: T.textLow, fontSize: 14,
         borderTop: '1px solid rgba(255,255,255,0.06)',
       }}>
         AI 雷達 · 由優勢方舟數位行銷營運 ·{' '}
