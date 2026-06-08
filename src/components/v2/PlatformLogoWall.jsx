@@ -23,7 +23,7 @@ export default function PlatformLogoWall() {
       textAlign: 'center',
     }}>
       <div style={{
-        fontSize: 11, color: T.textLow, letterSpacing: '0.15em',
+        fontSize: 14, color: T.textLow, letterSpacing: '0.15em',
         textTransform: 'uppercase', marginBottom: 24, fontWeight: 600,
       }}>
         不論你用什麼平台 · 我們都有對應修法步驟
@@ -41,7 +41,7 @@ export default function PlatformLogoWall() {
       </div>
 
       <p style={{
-        fontSize: 12, color: T.textLow, marginTop: 24, lineHeight: 1.6, maxWidth: 540, margin: '24px auto 0',
+        fontSize: 14, color: T.textLow, marginTop: 24, lineHeight: 1.6, maxWidth: 540, margin: '24px auto 0',
       }}>
         Pro 版的「修復碼產生器」會依你的平台給對應指引 — 不會只給你一段 code 叫你自己猜要塞哪。
       </p>
@@ -117,7 +117,7 @@ function LogoFrame({ children, label }) {
     >
       {icon}
       <div style={{
-        fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600, letterSpacing: '.02em',
+        fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: 600, letterSpacing: '.02em',
       }}>
         {text}
       </div>

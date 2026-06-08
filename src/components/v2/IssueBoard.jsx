@@ -70,23 +70,23 @@ function IssueLane({ lane, expandedId, onToggle, isPro, printMode }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
         <span style={{
-          fontSize: 10, fontWeight: 800, letterSpacing: '.08em',
+          fontSize: 14, fontWeight: 800, letterSpacing: '.08em',
           padding: '4px 8px', borderRadius: 5,
           background: lane.c + '26', color: lane.c, border: `1px solid ${lane.c}55`,
         }}>{lane.id}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{lane.title}</div>
-          <div style={{ fontSize: 10, color: T.textLow }}>{lane.sub}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{lane.title}</div>
+          <div style={{ fontSize: 14, color: T.textLow }}>{lane.sub}</div>
         </div>
         <span style={{
-          fontSize: 12, fontWeight: 800, color: lane.c, fontFamily: T.font,
+          fontSize: 14, fontWeight: 800, color: lane.c, fontFamily: T.font,
           minWidth: 22, textAlign: 'right',
         }}>{lane.items.length}</span>
       </div>
 
       {lane.items.length === 0 ? (
         <div style={{
-          fontSize: 11, color: T.textLow, textAlign: 'center',
+          fontSize: 14, color: T.textLow, textAlign: 'center',
           padding: '20px 8px', border: `1px dashed ${T.cardBorder}`,
           borderRadius: 10, lineHeight: 1.55,
         }}>{lane.id === 'OK' ? '尚無通過項目' : '此優先度無待修項'}</div>
@@ -127,7 +127,7 @@ function IssueCard({ check, lane, isOpen, onToggle, isPro }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 16 }}>{check.icon}</span>
           <span style={{
-            fontSize: 13, fontWeight: 700, color: T.text,
+            fontSize: 14, fontWeight: 700, color: T.text,
             flex: 1, minWidth: 0,
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>{check.name}</span>
@@ -141,7 +141,7 @@ function IssueCard({ check, lane, isOpen, onToggle, isPro }) {
         </div>
         {check.detail && (
           <div style={{
-            fontSize: 11, color: T.textMid, lineHeight: 1.55,
+            fontSize: 14, color: T.textMid, lineHeight: 1.55,
             paddingLeft: 24,
           }}>{check.detail}</div>
         )}
@@ -187,7 +187,7 @@ function IssueFixPanel({ check, lane }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{
-        fontSize: 12, color: T.textMid, lineHeight: 1.7,
+        fontSize: 14, color: T.textMid, lineHeight: 1.7,
         padding: '10px 12px', background: 'rgba(255,255,255,.03)',
         border: `1px solid ${T.cardBorder}`, borderRadius: 8,
       }}>
@@ -198,7 +198,7 @@ function IssueFixPanel({ check, lane }) {
       {/* featured 推薦自家工具 — 比較吸睛的綠色底色，鼓勵用戶用內建工具取代複雜外掛流程 */}
       {guide?.featured && (
         <div style={{
-          fontSize: 12, color: T.textMid, lineHeight: 1.75,
+          fontSize: 14, color: T.textMid, lineHeight: 1.75,
           padding: '10px 12px',
           background: 'rgba(16,185,129,0.08)',      // 翠綠微底（呼應 GEO 主色但更淺）
           border: '1px solid rgba(16,185,129,0.3)',
@@ -214,7 +214,7 @@ function IssueFixPanel({ check, lane }) {
       {/* 排查線索區塊 — 用戶若回報「我明明已經修好卻被判失敗」，提供 3 種常見假陰性情境 */}
       {guide?.troubleshooting && (
         <div style={{
-          fontSize: 12, color: T.textMid, lineHeight: 1.75,
+          fontSize: 14, color: T.textMid, lineHeight: 1.75,
           padding: '10px 12px',
           background: 'rgba(251,191,36,0.06)',     // 琥珀色微底
           border: '1px solid rgba(251,191,36,0.25)',
@@ -241,7 +241,7 @@ function IssueFixPanel({ check, lane }) {
               <button key={p.id} type="button"
                 onClick={() => setActivePlatform(p.id)}
                 style={{
-                  fontSize: 11, fontWeight: 600,
+                  fontSize: 14, fontWeight: 600,
                   padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
                   background: activePlatform === p.id ? lane.c + '22' : 'rgba(255,255,255,.03)',
                   color: activePlatform === p.id ? lane.c : T.textMid,
@@ -254,7 +254,7 @@ function IssueFixPanel({ check, lane }) {
           {/* scenario 標題（拆情境的 check 才有，例如 H1 missing/too_many） */}
           {scenarioTitle && (
             <div style={{
-              fontSize: 12, fontWeight: 700, color: lane.c,
+              fontSize: 14, fontWeight: 700, color: lane.c,
               padding: '8px 12px',
               background: lane.c + '12',
               borderLeft: `3px solid ${lane.c}`,
@@ -265,7 +265,7 @@ function IssueFixPanel({ check, lane }) {
           {platformData?.steps && (
             <ol style={{
               margin: 0, paddingLeft: 22,
-              fontSize: 12, color: T.textMid, lineHeight: 1.75,
+              fontSize: 14, color: T.textMid, lineHeight: 1.75,
               display: 'flex', flexDirection: 'column', gap: 4,
             }}>
               {platformData.steps.map((s, i) => <li key={i}>{s}</li>)}
@@ -274,7 +274,7 @@ function IssueFixPanel({ check, lane }) {
 
           {platformData?.code && (
             <pre style={{
-              margin: 0, padding: 12, fontSize: 11, lineHeight: 1.6,
+              margin: 0, padding: 12, fontSize: 14, lineHeight: 1.6,
               background: 'rgba(0,0,0,.45)', border: `1px solid ${T.cardBorder}`,
               borderRadius: 8, color: '#cbd5e1', fontFamily: T.mono,
               overflow: 'auto', whiteSpace: 'pre',
@@ -284,7 +284,7 @@ function IssueFixPanel({ check, lane }) {
       )}
 
       {availablePlatforms.length === 0 && (
-        <div style={{ fontSize: 11, color: T.textLow, fontStyle: 'italic' }}>
+        <div style={{ fontSize: 14, color: T.textLow, fontStyle: 'italic' }}>
           目前無平台別操作步驟，可參考上方建議自行調整。
         </div>
       )}
@@ -304,15 +304,15 @@ function IssueLockCTA({ lane }) {
       onMouseEnter={e => { e.currentTarget.style.background = lane.c + '12' }}
       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,.3)' }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: T.text, marginBottom: 2 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 2 }}>
           🔒 升級 Pro 解鎖修復指南
         </div>
-        <div style={{ fontSize: 10, color: T.textLow, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 14, color: T.textLow, lineHeight: 1.5 }}>
           含 WordPress / Shopify / Wix / 自架 HTML 平台別操作步驟與程式碼
         </div>
       </div>
       <span style={{
-        fontSize: 10, fontWeight: 700, padding: '5px 10px', borderRadius: 5,
+        fontSize: 14, fontWeight: 700, padding: '5px 10px', borderRadius: 5,
         background: T.orange + '26', color: '#fdba74', whiteSpace: 'nowrap',
         border: `1px solid ${T.orange}40`,
       }}>升級 →</span>

@@ -172,12 +172,12 @@ export default function AdminMonitoring() {
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={trend7}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} allowDecimals={false} />
+                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 14 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                   />
-                  <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
+                  <Legend wrapperStyle={{ fontSize: 14, color: '#94a3b8' }} />
                   <Line type="monotone" dataKey="掃描次數" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4 }} />
                   <Line type="monotone" dataKey="被提及" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 4 }} />
                 </LineChart>
@@ -197,12 +197,12 @@ export default function AdminMonitoring() {
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={trend30}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} interval={3} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} allowDecimals={false} />
+                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 14 }} interval={3} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                   />
-                  <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
+                  <Legend wrapperStyle={{ fontSize: 14, color: '#94a3b8' }} />
                   <Line type="monotone" dataKey="掃描次數" stroke="#3b82f6" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="被提及" stroke="#10b981" strokeWidth={2} dot={false} />
                 </LineChart>

@@ -24,7 +24,7 @@ export function AuditTopBar({ websiteId, face, websiteUrl, onReanalyze, analyzin
         display: 'inline-flex', alignItems: 'center', gap: 12,
         background: 'rgba(0,0,0,.45)', border: `1px solid ${T.cardBorder}`,
         padding: '9px 16px 9px 10px', borderRadius: 12,
-        color: T.textMid, textDecoration: 'none', fontSize: 13, fontFamily: T.font,
+        color: T.textMid, textDecoration: 'none', fontSize: 14, fontFamily: T.font,
       }}>
         <span style={{
           width: 26, height: 26, borderRadius: 8,
@@ -38,7 +38,7 @@ export function AuditTopBar({ websiteId, face, websiteUrl, onReanalyze, analyzin
         {websiteUrl && (
           <>
             <span style={{ color: T.textLow }}>/</span>
-            <span style={{ color: T.text, fontFamily: T.mono, fontSize: 12 }}>{websiteUrl}</span>
+            <span style={{ color: T.text, fontFamily: T.mono, fontSize: 14 }}>{websiteUrl}</span>
           </>
         )}
       </Link>
@@ -47,12 +47,12 @@ export function AuditTopBar({ websiteId, face, websiteUrl, onReanalyze, analyzin
         <button onClick={onReanalyze} disabled={analyzing} style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           background: 'rgba(0,0,0,.45)', border: `1px solid ${T.cardBorder}`,
-          color: T.text, fontSize: 13, fontWeight: 600,
+          color: T.text, fontSize: 14, fontWeight: 600,
           padding: '10px 18px', borderRadius: 12, cursor: analyzing ? 'not-allowed' : 'pointer',
           fontFamily: T.font, opacity: analyzing ? 0.6 : 1,
         }}>
           <span style={{
-            fontSize: 13, display: 'inline-block',
+            fontSize: 14, display: 'inline-block',
             animation: analyzing ? 'spin .9s linear infinite' : 'none',
           }}>↻</span>
           {analyzing ? '檢測中…' : '重新檢測'}
@@ -61,7 +61,7 @@ export function AuditTopBar({ websiteId, face, websiteUrl, onReanalyze, analyzin
           <button onClick={() => window.print()} style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             background: `linear-gradient(135deg, ${accent}, ${accent2 || accent})`,
-            border: 'none', color: '#fff', fontSize: 13, fontWeight: 700,
+            border: 'none', color: '#fff', fontSize: 14, fontWeight: 700,
             padding: '10px 18px', borderRadius: 12, cursor: 'pointer',
             fontFamily: T.font, boxShadow: `0 4px 14px ${accent}55`,
           }}>
@@ -71,7 +71,7 @@ export function AuditTopBar({ websiteId, face, websiteUrl, onReanalyze, analyzin
           <button onClick={() => navigate('/pricing')} style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             background: 'rgba(255,255,255,.05)', border: '1px solid rgba(251,146,60,.3)',
-            color: '#fdba74', fontSize: 13, fontWeight: 600,
+            color: '#fdba74', fontSize: 14, fontWeight: 600,
             padding: '10px 18px', borderRadius: 12, cursor: 'pointer',
             fontFamily: T.font,
           }} title="升級 Pro 解鎖匯出 PDF">
@@ -111,20 +111,20 @@ export function ScoreHero({
       <div>
         <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
           <span style={{
-            fontSize: 10, fontWeight: 700, color: accent, letterSpacing: '.08em',
+            fontSize: 14, fontWeight: 700, color: accent, letterSpacing: '.08em',
             background: accent + '1f', border: `1px solid ${accent}38`,
             padding: '3px 8px', borderRadius: 5,
           }}>{face}</span>
           {subChip && (
             <span style={{
-              fontSize: 10, fontWeight: 600, color: T.textMid, letterSpacing: '.04em',
+              fontSize: 14, fontWeight: 600, color: T.textMid, letterSpacing: '.04em',
               background: 'rgba(255,255,255,.04)', border: `1px solid ${T.cardBorder}`,
               padding: '3px 8px', borderRadius: 5,
             }}>{subChip}</span>
           )}
         </div>
         {tagline && (
-          <div style={{ fontSize: 13, color: T.textMid, lineHeight: 1.55 }}>
+          <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.55 }}>
             {tagline}
           </div>
         )}
@@ -134,7 +134,7 @@ export function ScoreHero({
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         <ScoreCircle score={score} color={scoreColor} />
         <div style={{ flex: 1, minWidth: 140 }}>
-          <div style={{ fontSize: 11, color: T.textLow, marginBottom: 4, letterSpacing: '.06em' }}>7 日趨勢</div>
+          <div style={{ fontSize: 14, color: T.textLow, marginBottom: 4, letterSpacing: '.06em' }}>7 日趨勢</div>
           <div style={{
             fontSize: 22, fontWeight: 800, color: deltaColor,
             marginBottom: 8, fontFamily: T.font, letterSpacing: '-.01em',
@@ -154,10 +154,10 @@ export function ScoreHero({
           background: T.pass + '14', border: `1px solid ${T.pass}33`,
           borderRadius: 12, padding: '12px 14px',
         }}>
-          <div style={{ fontSize: 11, color: T.textMid, marginBottom: 4 }}>已通過</div>
+          <div style={{ fontSize: 14, color: T.textMid, marginBottom: 4 }}>已通過</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
             <span style={{ fontSize: 24, fontWeight: 800, color: T.pass, fontFamily: T.font }}>{passedCount}</span>
-            <span style={{ fontSize: 12, color: T.textLow }}>/ {total}</span>
+            <span style={{ fontSize: 14, color: T.textLow }}>/ {total}</span>
           </div>
         </div>
         <div style={{
@@ -165,14 +165,14 @@ export function ScoreHero({
           border: `1px solid ${failedCount > 0 ? T.fail + '33' : T.cardBorder}`,
           borderRadius: 12, padding: '12px 14px',
         }}>
-          <div style={{ fontSize: 11, color: T.textMid, marginBottom: 4 }}>需修復</div>
+          <div style={{ fontSize: 14, color: T.textMid, marginBottom: 4 }}>需修復</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
             <span style={{
               fontSize: 24, fontWeight: 800,
               color: failedCount > 0 ? T.fail : T.textMid,
               fontFamily: T.font,
             }}>{failedCount}</span>
-            <span style={{ fontSize: 12, color: T.textLow }}>
+            <span style={{ fontSize: 14, color: T.textLow }}>
               {failedCount > 0 ? '項待處理' : '項，全部達標'}
             </span>
           </div>
@@ -214,7 +214,7 @@ function ScoreCircle({ score, color }) {
           fontSize: 38, fontWeight: 800, color: T.text,
           letterSpacing: '-.02em', fontFamily: T.font, lineHeight: 1,
         }}>{score}</div>
-        <div style={{ fontSize: 10, color: T.textLow, marginTop: 2 }}>/ 100</div>
+        <div style={{ fontSize: 14, color: T.textLow, marginTop: 2 }}>/ 100</div>
       </div>
     </div>
   )

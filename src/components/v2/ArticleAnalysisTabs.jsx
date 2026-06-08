@@ -37,7 +37,7 @@ export default function ArticleAnalysisTabs({ active, websiteId }) {
     }}>
       <div style={{ display: 'flex', gap: 4, paddingBottom: 0, alignItems: 'flex-end' }}>
         <div style={{
-          fontSize: 11, color: T.textLow, letterSpacing: '0.05em',
+          fontSize: 14, color: T.textLow, letterSpacing: '0.05em',
           marginRight: 12, paddingBottom: 12, fontWeight: 600,
         }}>
           文章分析
@@ -51,8 +51,8 @@ export default function ArticleAnalysisTabs({ active, websiteId }) {
                 background: 'transparent', cursor: 'not-allowed',
                 opacity: 0.4,
               }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: T.textMid }}>{t.label}</div>
-                <div style={{ fontSize: 10, color: T.textLow, marginTop: 2 }}>{t.sub}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.textMid }}>{t.label}</div>
+                <div style={{ fontSize: 14, color: T.textLow, marginTop: 2 }}>{t.sub}</div>
               </div>
             )
           }
@@ -63,8 +63,8 @@ export default function ArticleAnalysisTabs({ active, websiteId }) {
               borderBottom: isActive ? '2px solid #ec4899' : '2px solid transparent',
               transition: 'all .15s',
             }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? T.text : T.textMid }}>{t.label}</div>
-              <div style={{ fontSize: 10, color: T.textLow, marginTop: 2 }}>{t.sub}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: isActive ? T.text : T.textMid }}>{t.label}</div>
+              <div style={{ fontSize: 14, color: T.textLow, marginTop: 2 }}>{t.sub}</div>
             </Link>
           )
         })}

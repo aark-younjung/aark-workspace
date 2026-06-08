@@ -41,7 +41,7 @@ export function AEOSignature({ audit, brandName }) {
         marginBottom: 10,
       }}>
         <SectionLabel inline>AI 引用模擬</SectionLabel>
-        <span style={{ fontSize: 9, color: T.textLow, fontStyle: 'italic' }}>示意</span>
+        <span style={{ fontSize: 14, color: T.textLow, fontStyle: 'italic' }}>示意</span>
       </div>
       <div style={{
         background: 'rgba(139,92,246,.06)', border: '1px solid rgba(139,92,246,.22)',
@@ -56,24 +56,24 @@ export function AEOSignature({ audit, brandName }) {
               <path d="M6 1L9 4.5V11H3V4.5L6 1Z" fill="#fff" />
             </svg>
           </div>
-          <span style={{ fontSize: 10, color: T.textMid }}>Perplexity 對「台南網頁設計推薦」的回答</span>
+          <span style={{ fontSize: 14, color: T.textMid }}>Perplexity 對「台南網頁設計推薦」的回答</span>
         </div>
-        <div style={{ fontSize: 12, color: T.text, lineHeight: 1.7, marginBottom: 10 }}>
+        <div style={{ fontSize: 14, color: T.text, lineHeight: 1.7, marginBottom: 10 }}>
           台南優質的網頁設計公司包含
           <span style={{
             background: '#8b5cf625', borderBottom: '1px dashed #8b5cf6',
             padding: '0 2px', borderRadius: 2,
           }}>{brand}</span>
           ，提供結合 AI 能見度分析的服務
-          <sup style={{ color: '#8b5cf6', fontSize: 9, fontWeight: 700, marginLeft: 2 }}>[1]</sup>
+          <sup style={{ color: '#8b5cf6', fontSize: 14, fontWeight: 700, marginLeft: 2 }}>[1]</sup>
           ，以及…
         </div>
         <div style={{
           paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.05)',
           display: 'flex', gap: 6, alignItems: 'center',
         }}>
-          <span style={{ fontSize: 9, color: T.textLow, fontFamily: T.mono }}>SOURCE [1]</span>
-          <span style={{ fontSize: 10, color: '#93c5fd', fontFamily: T.mono }}>a-ark.com.tw</span>
+          <span style={{ fontSize: 14, color: T.textLow, fontFamily: T.mono }}>SOURCE [1]</span>
+          <span style={{ fontSize: 14, color: '#93c5fd', fontFamily: T.mono }}>a-ark.com.tw</span>
         </div>
       </div>
       <div style={{
@@ -81,7 +81,7 @@ export function AEOSignature({ audit, brandName }) {
         marginBottom: 10,
       }}>
         <SectionLabel inline>各 AI 引擎引用率</SectionLabel>
-        <span style={{ fontSize: 9, color: T.textLow, fontStyle: 'italic' }}>技術估算</span>
+        <span style={{ fontSize: 14, color: T.textLow, fontStyle: 'italic' }}>技術估算</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {engines.map((e) => (
@@ -90,13 +90,13 @@ export function AEOSignature({ audit, brandName }) {
               display: 'flex', justifyContent: 'space-between',
               alignItems: 'baseline', marginBottom: 4,
             }}>
-              <span style={{ fontSize: 11, color: T.text, fontWeight: 600 }}>{e.name}</span>
+              <span style={{ fontSize: 14, color: T.text, fontWeight: 600 }}>{e.name}</span>
               <span style={{
-                fontSize: 11, color: T.text, fontFamily: T.mono, fontWeight: 700,
+                fontSize: 14, color: T.text, fontFamily: T.mono, fontWeight: 700,
                 fontVariantNumeric: 'tabular-nums',
               }}>
                 {e.rate}
-                <span style={{ color: T.textLow, fontWeight: 400, fontSize: 9 }}>%</span>
+                <span style={{ color: T.textLow, fontWeight: 400, fontSize: 14 }}>%</span>
               </span>
             </div>
             <div style={{ height: 5, background: 'rgba(255,255,255,.05)', borderRadius: 3 }}>
@@ -168,7 +168,7 @@ export function GEOSignature({ audit, isPro }) {
         <SectionLabel inline>引用矩陣 — 引擎 × 關鍵字類型</SectionLabel>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          fontSize: 9, color: T.textLow,
+          fontSize: 14, color: T.textLow,
         }}>
           <span>低</span>
           <div style={{
@@ -189,7 +189,7 @@ export function GEOSignature({ audit, isPro }) {
           <div />
           {topics.map((t) => (
             <div key={t} style={{
-              fontSize: 9.5, color: T.textMid, textAlign: 'center', fontWeight: 600,
+              fontSize: 14.5, color: T.textMid, textAlign: 'center', fontWeight: 600,
             }}>{t}</div>
           ))}
         </div>
@@ -198,7 +198,7 @@ export function GEOSignature({ audit, isPro }) {
             display: 'grid', gridTemplateColumns: '90px repeat(5, 1fr)',
             gap: 6, marginBottom: 6, alignItems: 'center',
           }}>
-            <div style={{ fontSize: 11, color: T.text, fontWeight: 600 }}>{e.name}</div>
+            <div style={{ fontSize: 14, color: T.text, fontWeight: 600 }}>{e.name}</div>
             {e.vals.map((v, i) => {
               const col = colorAt(v)
               return (
@@ -208,7 +208,7 @@ export function GEOSignature({ audit, isPro }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <span style={{
-                    fontSize: 11, color: col, fontWeight: 700,
+                    fontSize: 14, color: col, fontWeight: 700,
                     fontFamily: T.mono, fontVariantNumeric: 'tabular-nums',
                   }}>{v}</span>
                 </div>
@@ -219,7 +219,7 @@ export function GEOSignature({ audit, isPro }) {
       </div>
       <div style={{
         marginTop: 14, display: 'flex', gap: 14,
-        fontSize: 10.5, color: T.textMid, flexWrap: 'wrap',
+        fontSize: 14.5, color: T.textMid, flexWrap: 'wrap',
       }}>
         <div>
           <span style={{ color: T.textLow }}>強項類型</span>{' '}
@@ -236,10 +236,10 @@ export function GEOSignature({ audit, isPro }) {
           marginTop: 12, padding: '8px 12px',
           background: 'rgba(24,197,144,.06)', border: '1px solid rgba(24,197,144,.18)',
           borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 10, fontSize: 11,
+          gap: 10, fontSize: 14,
         }}>
           <span style={{ color: T.textMid }}>
-            <span style={{ color: T.textLow, fontSize: 9.5, marginRight: 6 }}>技術估算</span>
+            <span style={{ color: T.textLow, fontSize: 14.5, marginRight: 6 }}>技術估算</span>
             升級 Pro 啟用 AI 曝光監測，得到實測引用矩陣
           </span>
           <Link to="/pricing" style={{
@@ -319,10 +319,10 @@ export function EEATSignature({ audit }) {
               letterSpacing: '-.05em',
             }}>{p.letter}</div>
             <div style={{ position: 'relative' }}>
-              <div style={{ fontSize: 11, color: '#fcd34d', fontWeight: 700, letterSpacing: '.04em' }}>
+              <div style={{ fontSize: 14, color: '#fcd34d', fontWeight: 700, letterSpacing: '.04em' }}>
                 {p.name}
               </div>
-              <div style={{ fontSize: 10, color: T.textLow, marginBottom: 8 }}>{p.zh}</div>
+              <div style={{ fontSize: 14, color: T.textLow, marginBottom: 8 }}>{p.zh}</div>
               <div style={{
                 display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 9,
               }}>
@@ -330,13 +330,13 @@ export function EEATSignature({ audit }) {
                   fontSize: 24, fontWeight: 800, color: T.text,
                   fontFamily: T.font, fontVariantNumeric: 'tabular-nums', lineHeight: 1,
                 }}>{p.score}</span>
-                <span style={{ fontSize: 10, color: T.textLow }}>/100</span>
+                <span style={{ fontSize: 14, color: T.textLow }}>/100</span>
               </div>
               {p.subs.map((s, j) => (
                 <div key={j} style={{ marginBottom: j === p.subs.length - 1 ? 0 : 6 }}>
                   <div style={{
                     display: 'flex', justifyContent: 'space-between',
-                    fontSize: 9.5, marginBottom: 2,
+                    fontSize: 14.5, marginBottom: 2,
                   }}>
                     <span style={{ color: T.textMid }}>{s.n}</span>
                     <span style={{ color: T.textMid, fontFamily: T.mono }}>{s.v}</span>
@@ -424,9 +424,9 @@ export function ContentSignature({ result }) {
                 display: 'flex', justifyContent: 'space-between',
                 alignItems: 'baseline', marginBottom: 5,
               }}>
-                <span style={{ fontSize: 11.5, color: T.text }}>{d.name}</span>
+                <span style={{ fontSize: 14.5, color: T.text }}>{d.name}</span>
                 <span style={{
-                  fontSize: 11, color: T.text, fontFamily: T.mono, fontWeight: 700,
+                  fontSize: 14, color: T.text, fontFamily: T.mono, fontWeight: 700,
                 }}>{d.val}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -440,7 +440,7 @@ export function ContentSignature({ result }) {
                   }} />
                 </div>
                 <span style={{
-                  fontSize: 9.5, color: T.textLow, minWidth: 80, textAlign: 'right',
+                  fontSize: 14.5, color: T.textLow, minWidth: 80, textAlign: 'right',
                 }}>目標 {d.target}</span>
               </div>
             </div>
@@ -457,7 +457,7 @@ export function ContentSignature({ result }) {
 function SectionLabel({ children, inline }) {
   return (
     <div style={{
-      fontSize: 10, fontWeight: 700, color: T.textMid, letterSpacing: '.12em',
+      fontSize: 14, fontWeight: 700, color: T.textMid, letterSpacing: '.12em',
       marginBottom: inline ? 0 : 10, textTransform: 'uppercase',
     }}>{children}</div>
   )

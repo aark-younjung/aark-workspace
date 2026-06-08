@@ -47,7 +47,7 @@ export default function Btn({ children, variant = 'primary', onClick, style, typ
       background: 'transparent',
       color: T.textMid,
       border: `1px solid rgba(255,255,255,${hov ? .1 : .06})`,
-      fontSize: 12,
+      fontSize: 14,
       padding: '7px 14px',
     },
   }

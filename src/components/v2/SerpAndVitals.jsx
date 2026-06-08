@@ -35,7 +35,7 @@ export default function SerpAndVitals({ website, audit, loadTime }) {
         {/* SERP 預覽 */}
         <div>
           <div style={{
-            fontSize: 11, fontWeight: 700, color: T.textMid,
+            fontSize: 14, fontWeight: 700, color: T.textMid,
             letterSpacing: '.12em', marginBottom: 12,
           }}>GOOGLE SERP 預覽</div>
           <div style={{
@@ -47,17 +47,17 @@ export default function SerpAndVitals({ website, audit, loadTime }) {
                 width: 28, height: 28, borderRadius: '50%',
                 background: T.orange, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 700, color: '#fff',
+                fontSize: 14, fontWeight: 700, color: '#fff',
               }}>
                 {(siteName || '?').charAt(0).toUpperCase()}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{
-                  fontSize: 12, fontWeight: 600, color: T.text,
+                  fontSize: 14, fontWeight: 600, color: T.text,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>{siteName}</div>
                 <div style={{
-                  fontSize: 11, color: T.textLow, fontFamily: T.mono,
+                  fontSize: 14, color: T.textLow, fontFamily: T.mono,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>{url || '—'}</div>
               </div>
@@ -69,7 +69,7 @@ export default function SerpAndVitals({ website, audit, loadTime }) {
               overflow: 'hidden',
             }}>{title}</div>
             <div style={{
-              fontSize: 12, color: T.textMid, lineHeight: 1.55,
+              fontSize: 14, color: T.textMid, lineHeight: 1.55,
               display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
             }}>{description}</div>
@@ -79,7 +79,7 @@ export default function SerpAndVitals({ website, audit, loadTime }) {
         {/* Core Web Vitals */}
         <div>
           <div style={{
-            fontSize: 11, fontWeight: 700, color: T.textMid,
+            fontSize: 14, fontWeight: 700, color: T.textMid,
             letterSpacing: '.12em', marginBottom: 12,
           }}>CORE WEB VITALS</div>
           <div className="v2-cwv-grid">
@@ -114,11 +114,11 @@ function CWVMetric({ label, value, target, status, color, fillRatio, note }) {
         marginBottom: 6,
       }}>
         <span style={{
-          fontSize: 11, fontWeight: 700, color: T.textMid, letterSpacing: '.1em',
+          fontSize: 14, fontWeight: 700, color: T.textMid, letterSpacing: '.1em',
         }}>{label}</span>
         {status && (
           <span style={{
-            fontSize: 13, fontWeight: 700,
+            fontSize: 14, fontWeight: 700,
             color: status === 'pass' ? T.pass : T.fail, lineHeight: 1,
           }}>{status === 'pass' ? '✓' : '×'}</span>
         )}
@@ -127,7 +127,7 @@ function CWVMetric({ label, value, target, status, color, fillRatio, note }) {
         fontSize: 22, fontWeight: 800, color: T.text,
         letterSpacing: '-.02em', marginBottom: 4, fontFamily: T.font, lineHeight: 1.1,
       }}>{value}</div>
-      <div style={{ fontSize: 10, color: T.textLow, marginBottom: 8 }}>
+      <div style={{ fontSize: 14, color: T.textLow, marginBottom: 8 }}>
         {note ? `${target} · ${note}` : target}
       </div>
       <div style={{

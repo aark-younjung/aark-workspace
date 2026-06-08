@@ -134,7 +134,7 @@ export default function HelpRankMath() {
       }}>
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <a href="javascript:history.back()" style={{ color: T.textMid, fontSize: 13, textDecoration: 'none' }}>← 返回</a>
+          <a href="javascript:history.back()" style={{ color: T.textMid, fontSize: 14, textDecoration: 'none' }}>← 返回</a>
           <h1 style={{ fontSize: 32, fontWeight: 800, marginTop: 16, marginBottom: 8 }}>
             📖 Rank Math 速查表
           </h1>
@@ -147,7 +147,7 @@ export default function HelpRankMath() {
         {/* TOC */}
         <Card>
           <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: T.text }}>📋 目錄</h3>
-          <ol style={{ paddingLeft: 20, color: T.textMid, fontSize: 13, lineHeight: 1.9 }}>
+          <ol style={{ paddingLeft: 20, color: T.textMid, fontSize: 14, lineHeight: 1.9 }}>
             <li><a href="#s0" style={{ color: '#93c5fd' }}><strong style={{ color: '#fcd34d' }}>⚡ Finding → 修哪裡 對照表（一眼看出該去哪）</strong></a></li>
             <li><a href="#s1" style={{ color: '#93c5fd' }}>怎麼找到 Rank Math meta box</a></li>
             <li><a href="#s2" style={{ color: '#93c5fd' }}>General 分頁的 4 個必填欄位</a></li>
@@ -174,7 +174,7 @@ export default function HelpRankMath() {
             <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 8, color: '#86efac', display: 'flex', alignItems: 'center', gap: 6 }}>
               🏷️ Rank Math meta box（下方紫色區）
             </h3>
-            <div style={{ fontSize: 12, color: T.textLow, marginBottom: 10 }}>
+            <div style={{ fontSize: 14, color: T.textLow, marginBottom: 10 }}>
               訪客看不到、只有 Google / AI 看到。對應 chip <strong style={{ color: '#86efac' }}>🛠️ SEO 外掛可解</strong>
             </div>
             <MappingRow finding="missing_meta_title / short_meta_title / long_meta_title" go="General → SEO Title" />
@@ -189,7 +189,7 @@ export default function HelpRankMath() {
             <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 8, color: '#fcd34d', display: 'flex', alignItems: 'center', gap: 6 }}>
               📝 文章/商品內容本體（上方編輯器）
             </h3>
-            <div style={{ fontSize: 12, color: T.textLow, marginBottom: 10 }}>
+            <div style={{ fontSize: 14, color: T.textLow, marginBottom: 10 }}>
               訪客直接看到的文字。對應 chip <strong style={{ color: '#fcd34d' }}>🔑 需 WP 後台</strong> 或 <strong style={{ color: '#f9a8d4' }}>✍️ 需要寫內容</strong>
             </div>
             <MappingRow finding="missing_h1" go="進內容編輯器 → 加 H1 標題 block（缺通常是主題問題）" />
@@ -207,7 +207,7 @@ export default function HelpRankMath() {
             <div style={{ fontWeight: 800, color: '#fca5a5', marginBottom: 4 }}>
               multiple_h1 + 🔴 主題級重複 chip
             </div>
-            <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.7 }}>
+            <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7 }}>
               這個重複 H1 來自主題在多個位置渲染同份內容（不是用戶寫的）→ 需要修主題 PHP code、不在 WP 後台。
               展開該 H1 看「🔧 如何處理」會給你具體步驟跟「給工程師的訊息」（可直接複製）。
             </div>
@@ -216,7 +216,7 @@ export default function HelpRankMath() {
             <div style={{ fontWeight: 800, color: '#fdba74', marginBottom: 4 }}>
               multiple_h1 在 /product/ 商品頁 + 內容相同
             </div>
-            <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.7 }}>
+            <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7 }}>
               通常是 WooCommerce「商品簡述」+「商品說明」兩個欄位都貼了同份內容 →
               清空「商品簡述」(Short Description) 即可。在商品編輯頁下方、可能要從右上「螢幕選項」打開。
             </div>
@@ -230,7 +230,7 @@ export default function HelpRankMath() {
         {SECTION_FINDING_BOX.steps.map((s, i) => (
           <Card key={i}>
             <div style={{ fontWeight: 700, color: T.text, marginBottom: 4, fontSize: 14 }}>{s.label}</div>
-            <div style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7 }}>{s.detail}</div>
+            <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7 }}>{s.detail}</div>
           </Card>
         ))}
 
@@ -241,8 +241,8 @@ export default function HelpRankMath() {
           <Card key={i}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: T.text }}>{f.name}</span>
-              <span style={{ fontSize: 12, color: T.textLow }}>·</span>
-              <span style={{ fontSize: 12, color: T.textMid }}>{f.what}</span>
+              <span style={{ fontSize: 14, color: T.textLow }}>·</span>
+              <span style={{ fontSize: 14, color: T.textMid }}>{f.what}</span>
             </div>
             <FieldRow label="該填什麼" value={f.fill_what} color="#86efac" />
             <FieldRow label="✅ 好範例" value={f.example_good} color="#86efac" />
@@ -256,7 +256,7 @@ export default function HelpRankMath() {
         <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 32, marginBottom: 12 }}>{SECTION_SCHEMA.title}</h2>
         <p style={{ fontSize: 14, color: T.textMid, marginBottom: 14, lineHeight: 1.7 }}>{SECTION_SCHEMA.intro}</p>
         <Card>
-          <table style={{ width: '100%', fontSize: 13, color: T.text, borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', fontSize: 14, color: T.text, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
                 <th style={{ padding: '8px 10px', textAlign: 'left', color: T.textLow }}>頁面類型</th>
@@ -288,9 +288,9 @@ export default function HelpRankMath() {
             }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
                 <span style={{ fontWeight: 800, color: T.text }}>{o.name}</span>
-                <span style={{ fontSize: 12, color: o.default.includes('✅') ? '#86efac' : '#fca5a5' }}>{o.default}</span>
+                <span style={{ fontSize: 14, color: o.default.includes('✅') ? '#86efac' : '#fca5a5' }}>{o.default}</span>
               </div>
-              <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.65 }}>
+              <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.65 }}>
                 <strong>意思：</strong>{o.meaning} · <strong>什麼情況才該改：</strong>{o.when_to_change}
               </div>
             </div>
@@ -304,8 +304,8 @@ export default function HelpRankMath() {
         {SECTION_GLOBAL.fields.map((f, i) => (
           <Card key={i}>
             <div style={{ fontWeight: 800, color: T.text, marginBottom: 4, fontSize: 14 }}>{f.name}</div>
-            <div style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 4 }}>{f.explain}</div>
-            <div style={{ fontSize: 13, lineHeight: 1.7 }}>
+            <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 4 }}>{f.explain}</div>
+            <div style={{ fontSize: 14, lineHeight: 1.7 }}>
               <strong style={{ color: '#86efac' }}>推薦設定：</strong>
               <span style={{ color: T.text }}>{f.recommended}</span>
             </div>
@@ -313,7 +313,7 @@ export default function HelpRankMath() {
         ))}
 
         {/* Footer */}
-        <div style={{ marginTop: 48, padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.cardBorder}`, borderRadius: 10, fontSize: 12, color: T.textLow }}>
+        <div style={{ marginTop: 48, padding: '16px 20px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.cardBorder}`, borderRadius: 10, fontSize: 14, color: T.textLow }}>
           📌 看完還是不懂某個欄位？回到 BulkScan 結果頁、展開對應的 finding、按「📤 給客戶報告」、把整段複製給你的客戶 / 工程師
           看就好、不用自己一個個解釋。
         </div>
@@ -358,7 +358,7 @@ function SectionAnchor({ id }) {
 
 function FieldRow({ label, value, color }) {
   return (
-    <div style={{ fontSize: 13, lineHeight: 1.7, marginTop: 4 }}>
+    <div style={{ fontSize: 14, lineHeight: 1.7, marginTop: 4 }}>
       <strong style={{ color }}>{label}：</strong>
       <span style={{ color: T.text }}>{value}</span>
     </div>
@@ -371,12 +371,12 @@ function MappingRow({ finding, go }) {
     <div style={{
       padding: '6px 0',
       borderTop: '1px solid rgba(255,255,255,0.06)',
-      fontSize: 12,
+      fontSize: 14,
     }}>
       <code style={{
         fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
         color: '#a7f3d0',
-        fontSize: 11,
+        fontSize: 14,
         wordBreak: 'break-word',
       }}>{finding}</code>
       <div style={{ color: T.textMid, marginTop: 3, lineHeight: 1.55 }}>→ {go}</div>

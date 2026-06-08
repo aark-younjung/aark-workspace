@@ -99,7 +99,7 @@ export default function HomeShowcaseSection() {
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3" style={{
           background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)',
         }}>
-          <span style={{ color: '#fbbf24', fontSize: 13, fontWeight: 700 }}>🏆 SOCIAL PROOF</span>
+          <span style={{ color: '#fbbf24', fontSize: 14, fontWeight: 700 }}>🏆 SOCIAL PROOF</span>
         </div>
         <h2 className="text-3xl font-bold mb-3" style={{ color: T.text }}>
           其他品牌的 AI 能見度長這樣

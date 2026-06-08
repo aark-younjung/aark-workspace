@@ -207,11 +207,11 @@ export default function SchemaCheck() {
         <Link to="/" style={{ color: T.text, textDecoration: 'none', fontWeight: 700 }}>AI 雷達</Link>
         <div style={{ display: 'flex', gap: 12 }}>
           {user ? (
-            <Link to="/" style={{ color: T.text, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>回首頁 →</Link>
+            <Link to="/" style={{ color: T.text, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>回首頁 →</Link>
           ) : (
             <>
-              <Link to="/login" style={{ color: T.textMid, textDecoration: 'none', fontSize: 13 }}>登入</Link>
-              <Link to="/register" style={{ color: T.text, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>免費註冊</Link>
+              <Link to="/login" style={{ color: T.textMid, textDecoration: 'none', fontSize: 14 }}>登入</Link>
+              <Link to="/register" style={{ color: T.text, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>免費註冊</Link>
             </>
           )}
         </div>
@@ -254,7 +254,7 @@ export default function SchemaCheck() {
               }}
             >{scanning ? '掃描中...' : '開始檢測'}</button>
           </div>
-          {errorMsg && <p style={{ color: T.fail, fontSize: 13, marginTop: 10 }}>⚠️ {errorMsg}</p>}
+          {errorMsg && <p style={{ color: T.fail, fontSize: 14, marginTop: 10 }}>⚠️ {errorMsg}</p>}
         </form>
 
         {/* DESIGN: 終端機式掃描動畫 */}
@@ -262,9 +262,9 @@ export default function SchemaCheck() {
           <section style={{
             background: 'rgba(0,0,0,0.55)', border: `1px solid ${T.cardBorder}`,
             borderRadius: T.rL, padding: 20, marginBottom: 24,
-            fontFamily: T.mono, fontSize: 13,
+            fontFamily: T.mono, fontSize: 14,
           }}>
-            <div style={{ color: T.textMid, marginBottom: 12, fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase' }}>
+            <div style={{ color: T.textMid, marginBottom: 12, fontSize: 14, letterSpacing: '.1em', textTransform: 'uppercase' }}>
               ── Schema 掃描中 ──
             </div>
             {logs.map((line, i) => (
@@ -287,7 +287,7 @@ export default function SchemaCheck() {
               border: `1px solid ${result.foundTypeDetail.length > 0 ? T.aeo : T.warn}55`,
               borderRadius: T.rL, padding: 24, marginBottom: 20,
             }}>
-              <div style={{ fontSize: 11, color: T.textLow, letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+              <div style={{ fontSize: 14, color: T.textLow, letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 6 }}>
                 檢測結論
               </div>
               <div style={{ fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 8 }}>
@@ -295,7 +295,7 @@ export default function SchemaCheck() {
                 {result.totalScripts > 0 && <span style={{ fontSize: 14, color: T.textLow, fontWeight: 400 }}>（共 {result.totalScripts} 個 JSON-LD script）</span>}
               </div>
               {result.invalidCount > 0 && (
-                <div style={{ color: T.warn, fontSize: 13, marginBottom: 6 }}>
+                <div style={{ color: T.warn, fontSize: 14, marginBottom: 6 }}>
                   ⚠️ {result.invalidCount} 個 script 解析失敗（可能 JSON 語法錯，AI 引擎抓不到）
                 </div>
               )}
@@ -303,7 +303,7 @@ export default function SchemaCheck() {
                 <div style={{
                   marginTop: 12, padding: 12, borderRadius: T.rM,
                   background: T.warn + '15', border: `1px solid ${T.warn}55`,
-                  fontSize: 13, lineHeight: 1.6,
+                  fontSize: 14, lineHeight: 1.6,
                 }}>
                   <strong style={{ color: T.warn }}>⚠️ 你的頁面有 FAQ 區塊但沒包成 FAQPage schema</strong><br />
                   <span style={{ color: T.textMid }}>對人類訪客可見，但 ChatGPT / Claude / Perplexity 抓不到。建議把 Q&A 包成 JSON-LD。</span>
@@ -328,24 +328,24 @@ export default function SchemaCheck() {
                       border: `1px solid ${T.cardBorder}`,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: T.aeo, fontFamily: T.mono }}>{t.name}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: T.aeo, fontFamily: T.mono }}>{t.name}</span>
                         {t.meta && (
                           <span style={{
-                            fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                            fontSize: 14, padding: '2px 6px', borderRadius: 4,
                             background: T.aeo + '22', color: T.aeo,
                           }}>{t.meta.label}</span>
                         )}
                         {!t.meta && (
                           <span style={{
-                            fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                            fontSize: 14, padding: '2px 6px', borderRadius: 4,
                             background: 'rgba(255,255,255,0.05)', color: T.textLow,
                           }}>非常見 type</span>
                         )}
                       </div>
                       {t.meta && (
-                        <div style={{ fontSize: 11, color: T.textMid, marginTop: 4, lineHeight: 1.5 }}>{t.meta.purpose}</div>
+                        <div style={{ fontSize: 14, color: T.textMid, marginTop: 4, lineHeight: 1.5 }}>{t.meta.purpose}</div>
                       )}
-                      <div style={{ fontSize: 10, color: T.textLow, marginTop: 4, fontFamily: T.mono }}>
+                      <div style={{ fontSize: 14, color: T.textLow, marginTop: 4, fontFamily: T.mono }}>
                         位置：{t.sources.join(' · ')}
                       </div>
                     </div>
@@ -369,8 +369,8 @@ export default function SchemaCheck() {
                       padding: '10px 12px', borderRadius: T.rM,
                       background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.cardBorder}`,
                     }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: T.text, fontFamily: T.mono }}>{m.name}</div>
-                      <div style={{ fontSize: 11, color: T.textMid, marginTop: 4, lineHeight: 1.5 }}>{m.meta.purpose}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.text, fontFamily: T.mono }}>{m.name}</div>
+                      <div style={{ fontSize: 14, color: T.textMid, marginTop: 4, lineHeight: 1.5 }}>{m.meta.purpose}</div>
                     </div>
                   ))}
                 </div>
@@ -404,7 +404,7 @@ export default function SchemaCheck() {
                 borderRadius: T.rM, textDecoration: 'none',
               }}>{user ? '回首頁掃描你的網站 →' : '免費註冊 → 看完整修法'}</Link>
               {!user && (
-                <div style={{ marginTop: 12, fontSize: 11, color: T.textLow }}>
+                <div style={{ marginTop: 12, fontSize: 14, color: T.textLow }}>
                   30 秒註冊・不需信用卡・3 個免費網站額度
                 </div>
               )}
@@ -416,7 +416,7 @@ export default function SchemaCheck() {
         <section style={{
           background: 'rgba(0,0,0,0.3)', border: `1px solid ${T.cardBorder}`,
           borderRadius: T.rL, padding: 24, marginTop: 32,
-          color: T.textMid, fontSize: 13, lineHeight: 1.75,
+          color: T.textMid, fontSize: 14, lineHeight: 1.75,
         }}>
           <h3 style={{ color: T.text, fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
             🧐 為什麼缺 Organization Schema = AI 把你當「不存在的品牌」？
@@ -441,7 +441,7 @@ export default function SchemaCheck() {
           <div style={{
             marginTop: 16, padding: '12px 14px',
             background: T.aeo + '15', border: `1px solid ${T.aeo}33`,
-            borderRadius: T.rM, fontSize: 12,
+            borderRadius: T.rM, fontSize: 14,
             color: T.text, lineHeight: 1.65,
           }}>
             💡 <strong>3 分鐘修好</strong>：免費註冊 → 跑 AEO 分析 → 拿到 Organization Schema 的修法 code →
@@ -451,7 +451,7 @@ export default function SchemaCheck() {
       </main>
 
       <footer style={{
-        padding: '24px', textAlign: 'center', color: T.textLow, fontSize: 12,
+        padding: '24px', textAlign: 'center', color: T.textLow, fontSize: 14,
         borderTop: '1px solid rgba(255,255,255,0.06)',
       }}>
         AI 雷達 · 由優勢方舟數位行銷營運 ·{' '}

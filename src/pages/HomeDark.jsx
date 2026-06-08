@@ -644,7 +644,7 @@ export default function HomeDark() {
             animation: 'antiBotPulse 2.5s ease-in-out infinite',
             padding: '6px 0',
             textAlign: 'center',
-            fontSize: 11, fontWeight: 800, letterSpacing: '.15em',
+            fontSize: 14, fontWeight: 800, letterSpacing: '.15em',
             color: 'white', textTransform: 'uppercase',
           }}>
             🚨 CRITICAL · 爬蟲可達性 0 分 · AI 隱形警報
@@ -682,7 +682,7 @@ export default function HomeDark() {
                 background: 'rgba(0,0,0,0.4)',
                 border: '1px solid rgba(239,68,68,0.3)',
                 borderRadius: 6,
-                fontSize: 12,
+                fontSize: 14,
                 color: '#fca5a5',
                 fontFamily: 'JetBrains Mono, monospace',
               }}>{antiBotModal.url}</code>
@@ -703,7 +703,7 @@ export default function HomeDark() {
               代表 <strong style={{ color: '#fff' }}>ChatGPT、Claude、Perplexity</strong> 等 AI 引擎**也讀不到你的網站**。
               當用戶問 AI「推薦哪一家」時 — <strong style={{ color: '#fca5a5' }}>AI 根本看不見你的存在</strong>。
               <br /><br />
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
                 這是 Cloudflare 等 anti-bot 設定太嚴造成的「AI 隱形殺手」，台灣很多中小企業中招而不自知。
               </span>
             </div>
@@ -742,7 +742,7 @@ export default function HomeDark() {
             </div>
 
             {/* footer：小字社會證明 / 緊迫感 */}
-            <div className="text-center mt-5" style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
+            <div className="text-center mt-5" style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
               💡 修復通常需要請工程師調 Cloudflare 設定或加 robots.txt 白名單，<br />
               詳情頁有完整的「平台別」修法指引（WordPress / Shopify / 自架 HTML）
             </div>

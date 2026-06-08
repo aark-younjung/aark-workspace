@@ -513,7 +513,7 @@ export default function AIVisibilityDashboard() {
       <header style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 24px 0' }}>
         <Link to="/ai-visibility" style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
-          fontSize: 13, color: T.textMid, textDecoration: 'none', fontFamily: T.font,
+          fontSize: 14, color: T.textMid, textDecoration: 'none', fontFamily: T.font,
         }}>
           ← 返回品牌列表
         </Link>
@@ -531,11 +531,11 @@ export default function AIVisibilityDashboard() {
           <div style={{ flex: 1, minWidth: 280 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               <span style={{
-                fontSize: 11, fontWeight: 700, letterSpacing: '.12em',
+                fontSize: 14, fontWeight: 700, letterSpacing: '.12em',
                 color: AIVIS_TEAL, textTransform: 'uppercase',
               }}>aivis · phase 2</span>
               <span style={{ width: 4, height: 4, borderRadius: '50%', background: T.textLow }}></span>
-              <span style={{ fontSize: 11, color: T.textLow }}>每日定時 02:00 自動掃描</span>
+              <span style={{ fontSize: 14, color: T.textLow }}>每日定時 02:00 自動掃描</span>
             </div>
             <h1 style={{
               fontSize: 34, fontWeight: 800, color: T.text, letterSpacing: '-.02em',
@@ -645,7 +645,7 @@ export default function AIVisibilityDashboard() {
               <div style={{ fontSize: 17, fontWeight: 700, color: T.text, marginBottom: 4 }}>
                 立即執行掃描
               </div>
-              <div style={{ fontSize: 13, color: T.textMid }}>
+              <div style={{ fontSize: 14, color: T.textMid }}>
                 手動觸發一次 {activeCount} prompt × {SCAN_RUNS} 次的 Claude 詢問 · 約耗時 {activeCount * 8} 秒
               </div>
             </div>
@@ -712,7 +712,7 @@ function BrandSwitcher({ brands, activeId, open, setOpen, onSelect, onAddNew }) 
   return (
     <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
       <div style={{
-        fontSize: 10, fontWeight: 700, color: T.textLow, letterSpacing: '.14em',
+        fontSize: 14, fontWeight: 700, color: T.textLow, letterSpacing: '.14em',
         marginBottom: 6, textTransform: 'uppercase',
       }}>監測中的品牌</div>
       <button onClick={() => setOpen(!open)} style={{
@@ -725,12 +725,12 @@ function BrandSwitcher({ brands, activeId, open, setOpen, onSelect, onAddNew }) 
         <span style={{
           width: 28, height: 28, borderRadius: 8,
           background: `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`,
-          color: '#011520', fontSize: 12, fontWeight: 800,
+          color: '#011520', fontSize: 14, fontWeight: 800,
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>{active.name.slice(0, 1)}</span>
         <div style={{ flex: 1, textAlign: 'left' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>{active.name}</div>
-          <div style={{ fontSize: 10, color: T.textLow, marginTop: 2 }}>{active.industry || '未指定產業'}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>{active.name}</div>
+          <div style={{ fontSize: 14, color: T.textLow, marginTop: 2 }}>{active.industry || '未指定產業'}</div>
         </div>
         <svg width="11" height="11" viewBox="0 0 11 11" style={{
           transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform .2s',
@@ -762,12 +762,12 @@ function BrandSwitcher({ brands, activeId, open, setOpen, onSelect, onAddNew }) 
                 <span style={{
                   width: 24, height: 24, borderRadius: 6,
                   background: `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`,
-                  color: '#011520', fontSize: 11, fontWeight: 800,
+                  color: '#011520', fontSize: 14, fontWeight: 800,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>{b.name.slice(0, 1)}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{b.name}</div>
-                  <div style={{ fontSize: 10, color: T.textLow, marginTop: 1 }}>{b.industry || '未指定產業'}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{b.name}</div>
+                  <div style={{ fontSize: 14, color: T.textLow, marginTop: 1 }}>{b.industry || '未指定產業'}</div>
                 </div>
                 {isActive && (
                   <svg width="12" height="12" viewBox="0 0 12 12">
@@ -781,7 +781,7 @@ function BrandSwitcher({ brands, activeId, open, setOpen, onSelect, onAddNew }) 
           <div style={{ borderTop: '1px dashed rgba(255,255,255,.08)', marginTop: 4, paddingTop: 6 }}>
             <button onClick={onAddNew} style={{
               width: '100%', background: 'transparent', border: 'none',
-              color: AIVIS_TEAL, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+              color: AIVIS_TEAL, fontSize: 14, fontWeight: 600, cursor: 'pointer',
               padding: '8px', fontFamily: T.font,
             }}>＋ 新增品牌</button>
           </div>
@@ -806,7 +806,7 @@ function OverviewCard({ icon, label, value, sub, color, prefix = '', suffix = ''
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <span style={{ fontSize: 18 }}>{icon}</span>
-        <span style={{ fontSize: 11, color: T.textMid, fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 14, color: T.textMid, fontWeight: 500 }}>{label}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
         {prefix && <span style={{ fontSize: 14, color: T.textMid, fontWeight: 600 }}>{prefix}</span>}
@@ -816,7 +816,7 @@ function OverviewCard({ icon, label, value, sub, color, prefix = '', suffix = ''
         }}>{value}</span>
         {suffix && <span style={{ fontSize: 14, color: T.textMid, fontWeight: 600 }}>{suffix}</span>}
       </div>
-      <div style={{ fontSize: 11, color: T.textLow, marginTop: 6, lineHeight: 1.45 }}>{sub}</div>
+      <div style={{ fontSize: 14, color: T.textLow, marginTop: 6, lineHeight: 1.45 }}>{sub}</div>
     </div>
   )
 }
@@ -883,8 +883,8 @@ function TrendSkeleton() {
           }} />
         ))}
       </div>
-      <div style={{ fontSize: 13, color: T.textMid, fontWeight: 500 }}>載入中…</div>
-      <div style={{ fontSize: 11, color: T.textLow, marginTop: 6 }}>正在從 Supabase 取回 30 天資料</div>
+      <div style={{ fontSize: 14, color: T.textMid, fontWeight: 500 }}>載入中…</div>
+      <div style={{ fontSize: 14, color: T.textLow, marginTop: 6 }}>正在從 Supabase 取回 30 天資料</div>
     </div>
   )
 }
@@ -922,9 +922,9 @@ function OverviewEmpty({ label }) {
       background: 'rgba(1,8,14,.4)', border: '1px dashed rgba(255,255,255,.1)',
       borderRadius: T.rL, padding: '18px 18px 16px',
     }}>
-      <div style={{ fontSize: 11, color: T.textLow, fontWeight: 500, marginBottom: 10 }}>{label}</div>
+      <div style={{ fontSize: 14, color: T.textLow, fontWeight: 500, marginBottom: 10 }}>{label}</div>
       <div style={{ fontSize: 30, fontWeight: 800, color: T.textLow, letterSpacing: '-.02em', fontFamily: T.font, lineHeight: 1 }}>— —</div>
-      <div style={{ fontSize: 11, color: T.textLow, marginTop: 8, lineHeight: 1.45 }}>
+      <div style={{ fontSize: 14, color: T.textLow, marginTop: 8, lineHeight: 1.45 }}>
         需要先產生 prompt 並執行掃描
       </div>
     </div>
@@ -941,12 +941,12 @@ function PromptsEmpty({ onGenerate }) {
     }}>
       <div style={{ fontSize: 38, marginBottom: 14 }}>✨</div>
       <div style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 8 }}>還沒有 prompt</div>
-      <div style={{ fontSize: 13, color: T.textMid, marginBottom: 22, maxWidth: 340, lineHeight: 1.7 }}>
+      <div style={{ fontSize: 14, color: T.textMid, marginBottom: 22, maxWidth: 340, lineHeight: 1.7 }}>
         Claude 會根據品牌的產業與定位，自動產生 5 條中性的 prompt 用來追蹤 AI 曝光。
       </div>
       <button onClick={onGenerate} style={{
         background: `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`,
-        border: 'none', color: '#011520', fontWeight: 700, fontSize: 13,
+        border: 'none', color: '#011520', fontWeight: 700, fontSize: 14,
         padding: '12px 22px', borderRadius: 9, cursor: 'pointer',
         boxShadow: `0 6px 18px ${AIVIS_TEAL}44`, fontFamily: T.font,
       }}>✨ 用 AI 自動產生 5 條 prompt</button>
@@ -963,11 +963,11 @@ function RecentEmpty() {
     }}>
       <div style={{ fontSize: 32, marginBottom: 12 }}>📭</div>
       <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 6 }}>還沒有掃描紀錄</div>
-      <div style={{ fontSize: 12, color: T.textMid, marginBottom: 18 }}>
+      <div style={{ fontSize: 14, color: T.textMid, marginBottom: 18 }}>
         建立 prompts 後，點擊上方「立即執行掃描」即可開始追蹤。
       </div>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 8, fontSize: 12,
+        display: 'flex', alignItems: 'center', gap: 8, fontSize: 14,
         color: AIVIS_TEAL, fontWeight: 600,
       }}>
         <span style={{ animation: 'pulse 1.4s infinite' }}>↑</span>
@@ -998,12 +998,12 @@ function ErrorCard({ title, message, onRetry }) {
         background: T.fail + '10', border: `1px solid ${T.fail}30`, borderRadius: 8,
         padding: '14px 16px', marginBottom: 14,
       }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: T.fail, marginBottom: 4 }}>載入失敗</div>
-        <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.6 }}>{message}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.fail, marginBottom: 4 }}>載入失敗</div>
+        <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>{message}</div>
       </div>
       <button onClick={onRetry} style={{
         alignSelf: 'flex-start', background: 'transparent', border: `1px solid ${T.fail}66`,
-        color: T.fail, fontSize: 12, fontWeight: 600,
+        color: T.fail, fontSize: 14, fontWeight: 600,
         padding: '8px 16px', borderRadius: 7, cursor: 'pointer', fontFamily: T.font,
       }}>↻ 重試</button>
     </div>
@@ -1028,23 +1028,23 @@ function PromptsPanel({
       }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>
-            Prompts 管理 <span style={{ fontSize: 11, color: T.textLow, fontWeight: 500 }}>
+            Prompts 管理 <span style={{ fontSize: 14, color: T.textLow, fontWeight: 500 }}>
               · 啟用中 {activeCount}/{prompts.length}（上限 {PROMPT_CAP} 條）
             </span>
           </div>
-          <div style={{ fontSize: 12, color: T.textMid, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
             這些問題會被定期送進 Claude，每條重複 {SCAN_RUNS} 次取平均。
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
           <button onClick={onRegenerate} style={{
             background: `linear-gradient(135deg, ${T.orange}, #b91c1c)`,
-            border: 'none', color: '#fff', fontSize: 12, fontWeight: 700,
+            border: 'none', color: '#fff', fontSize: 14, fontWeight: 700,
             padding: '9px 16px', borderRadius: 8, cursor: 'pointer',
             boxShadow: `0 4px 12px ${T.orange}55`, whiteSpace: 'nowrap', fontFamily: T.font,
           }}>✨ 重新產生 5 條</button>
           <span style={{
-            fontSize: 10, color: T.textLow, lineHeight: 1.4, textAlign: 'right', maxWidth: 180,
+            fontSize: 14, color: T.textLow, lineHeight: 1.4, textAlign: 'right', maxWidth: 180,
           }}>會將原本 auto 產生的 prompts 設為停用</span>
         </div>
       </div>
@@ -1072,7 +1072,7 @@ function PromptsPanel({
             </button>
 
             <span style={{
-              fontSize: 11, fontWeight: 700, color: T.textLow, minWidth: 18,
+              fontSize: 14, fontWeight: 700, color: T.textLow, minWidth: 18,
               fontFamily: T.mono, marginTop: editingId === p.id ? 3 : 0,
             }}>{idx + 1}.</span>
 
@@ -1084,7 +1084,7 @@ function PromptsPanel({
                   style={{
                     width: '100%', background: 'rgba(0,6,10,.6)',
                     border: `1px solid ${AIVIS_TEAL}55`, borderRadius: 6, color: T.text,
-                    padding: '8px 10px', fontSize: 13, fontFamily: T.font, resize: 'vertical',
+                    padding: '8px 10px', fontSize: 14, fontFamily: T.font, resize: 'vertical',
                   }} />
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={onSave} style={btnSm(AIVIS_TEAL)}>儲存</button>
@@ -1093,12 +1093,12 @@ function PromptsPanel({
               </div>
             ) : (
               <span style={{
-                flex: 1, fontSize: 13, color: p.is_active ? T.text : T.textMid,
+                flex: 1, fontSize: 14, color: p.is_active ? T.text : T.textMid,
                 lineHeight: 1.55, minWidth: 0, wordBreak: 'break-word',
               }}>
                 {p.text}
                 {p.generated_by === 'user' && <span style={{
-                  fontSize: 9, fontWeight: 700, color: AIVIS_TEAL, letterSpacing: '.06em',
+                  fontSize: 14, fontWeight: 700, color: AIVIS_TEAL, letterSpacing: '.06em',
                   background: AIVIS_TEAL + '1c', padding: '1px 5px', borderRadius: 3,
                   marginLeft: 8, verticalAlign: 'middle',
                 }}>USER</span>}
@@ -1134,7 +1134,7 @@ function AddPromptButton({ atCap, onAdd }) {
           border: '1px dashed rgba(255,255,255,.2)',
           color: atCap ? T.textLow : T.textMid,
           padding: '10px 12px', borderRadius: 8,
-          fontSize: 13, cursor: atCap ? 'not-allowed' : 'pointer',
+          fontSize: 14, cursor: atCap ? 'not-allowed' : 'pointer',
           fontFamily: T.font, opacity: atCap ? 0.55 : 1,
         }}>
         ＋ 自己加一條 prompt {atCap && '（已達上限）'}
@@ -1144,7 +1144,7 @@ function AddPromptButton({ atCap, onAdd }) {
           position: 'absolute', bottom: 'calc(100% + 6px)', left: '50%',
           transform: 'translateX(-50%)',
           background: 'rgba(0,6,10,.96)', border: `1px solid ${T.fail}55`,
-          color: T.text, fontSize: 11, fontWeight: 500,
+          color: T.text, fontSize: 14, fontWeight: 500,
           padding: '7px 11px', borderRadius: 6, whiteSpace: 'nowrap',
           boxShadow: '0 6px 18px rgba(0,0,0,.5)', zIndex: 5, animation: 'fadeUp .18s ease',
         }}>
@@ -1160,7 +1160,7 @@ function btnSm(bg, color) {
     background: bg === 'transparent' ? 'transparent' : bg,
     border: `1px solid ${bg === 'transparent' ? 'rgba(255,255,255,.18)' : bg}`,
     color: color || (bg === 'transparent' ? T.textMid : '#011520'),
-    fontSize: 11, fontWeight: 700, padding: '5px 12px', borderRadius: 5,
+    fontSize: 14, fontWeight: 700, padding: '5px 12px', borderRadius: 5,
     cursor: 'pointer', fontFamily: T.font,
   }
 }
@@ -1168,7 +1168,7 @@ function iconBtn() {
   return {
     background: 'transparent', border: '1px solid rgba(255,255,255,.1)',
     color: T.textMid, padding: '4px 9px', borderRadius: 5,
-    fontSize: 11, cursor: 'pointer', fontFamily: T.font,
+    fontSize: 14, cursor: 'pointer', fontFamily: T.font,
   }
 }
 
@@ -1218,11 +1218,11 @@ function TrendChart({ data }) {
       }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>30 天提及率趨勢</div>
-          <div style={{ fontSize: 11, color: T.textLow }}>每日 02:00 自動掃描</div>
+          <div style={{ fontSize: 14, color: T.textLow }}>每日 02:00 自動掃描</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 11, color: T.textMid }}>近 30 日</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: delta >= 0 ? AIVIS_TEAL : T.fail }}>
+          <div style={{ fontSize: 14, color: T.textMid }}>近 30 日</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: delta >= 0 ? AIVIS_TEAL : T.fail }}>
             {delta >= 0 ? '↑' : '↓'} {Math.abs(delta)}% {delta >= 0 ? '成長' : '下降'}
           </div>
         </div>
@@ -1295,22 +1295,22 @@ function TrendChart({ data }) {
               transform: flipX ? 'translate(-100%, -100%)' : 'translate(0, -100%)',
               background: 'rgba(0,6,10,.92)', border: `1px solid ${AIVIS_TEAL}66`,
               borderRadius: 7, padding: '7px 10px',
-              fontSize: 11, color: T.text, whiteSpace: 'nowrap',
+              fontSize: 14, color: T.text, whiteSpace: 'nowrap',
               boxShadow: `0 4px 14px rgba(0,0,0,.5), 0 0 0 1px ${AIVIS_TEAL}22`,
               animation: 'fadeUp .18s ease', pointerEvents: 'none', zIndex: 5,
             }}>
-              <div style={{ color: T.textMid, fontSize: 10, fontFamily: T.mono, marginBottom: 2 }}>
+              <div style={{ color: T.textMid, fontSize: 14, fontFamily: T.mono, marginBottom: 2 }}>
                 {data[hoverIdx].month}/{data[hoverIdx].day}
               </div>
               <div style={{ fontWeight: 700, color: AIVIS_TEAL }}>提及率 {data[hoverIdx].val}%</div>
-              <div style={{ fontSize: 10, color: T.textLow }}>{data[hoverIdx].total} 次掃描</div>
+              <div style={{ fontSize: 14, color: T.textLow }}>{data[hoverIdx].total} 次掃描</div>
             </div>
           )
         })()}
       </div>
 
       <div style={{
-        fontSize: 11, color: T.textLow, marginTop: 10, paddingTop: 10,
+        fontSize: 14, color: T.textLow, marginTop: 10, paddingTop: 10,
         borderTop: '1px dashed rgba(255,255,255,.08)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
       }}>
@@ -1338,7 +1338,7 @@ function RecentResults({
       {/* 歷史 chip 列 */}
       <div style={{ marginBottom: 18 }}>
         <div style={{
-          fontSize: 10, fontWeight: 700, color: T.textLow, letterSpacing: '.14em',
+          fontSize: 14, fontWeight: 700, color: T.textLow, letterSpacing: '.14em',
           marginBottom: 8, textTransform: 'uppercase',
         }}>最近 {history.length} 次掃描</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1349,7 +1349,7 @@ function RecentResults({
                 background: isActive ? AIVIS_TEAL + '14' : 'rgba(0,6,10,.5)',
                 border: isActive ? `1px solid ${AIVIS_TEAL}80` : '1px solid rgba(255,255,255,.08)',
                 borderRadius: 6, padding: '6px 11px',
-                fontSize: 11, fontFamily: T.mono,
+                fontSize: 14, fontFamily: T.mono,
                 color: isActive ? AIVIS_TEAL : T.textMid,
                 fontWeight: isActive ? 700 : 500, cursor: 'pointer',
                 boxShadow: isActive ? `0 0 0 3px ${AIVIS_TEAL}10` : 'none', transition: 'all .2s',
@@ -1365,7 +1365,7 @@ function RecentResults({
       }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>掃描結果</div>
-          <div style={{ fontSize: 12, color: T.textMid }}>
+          <div style={{ fontSize: 14, color: T.textMid }}>
             最後一次掃描：<span style={{ color: T.text, fontWeight: 600 }}>{active ? relativeTime(active.ts) : '—'}</span>
             <span style={{ color: T.textLow }}> · </span>
             {active?.activeCount || 0} prompt × {active?.runs || 0} 次 = {totalRuns} 次回應
@@ -1373,7 +1373,7 @@ function RecentResults({
         </div>
         {totalRuns > 0 && (
           <span style={{
-            fontSize: 11, fontWeight: 600, color: AIVIS_TEAL,
+            fontSize: 14, fontWeight: 600, color: AIVIS_TEAL,
             background: AIVIS_TEAL + '15', border: `1px solid ${AIVIS_TEAL}30`,
             padding: '4px 10px', borderRadius: 20,
           }}>提及率 {mentionsTotal}/{totalRuns} = {Math.round(mentionsTotal / totalRuns * 100)}%</span>
@@ -1398,9 +1398,9 @@ function RecentResults({
                   alignItems: 'center', gap: 12, color: T.text, fontFamily: T.font,
                 }}>
                 <span style={{ fontSize: 14 }}>📋</span>
-                <span style={{ flex: 1, fontSize: 13, color: T.text, lineHeight: 1.5 }}>「{r.promptText}」</span>
+                <span style={{ flex: 1, fontSize: 14, color: T.text, lineHeight: 1.5 }}>「{r.promptText}」</span>
                 <span style={{
-                  fontSize: 11, fontWeight: 700,
+                  fontSize: 14, fontWeight: 700,
                   color: mentions >= 2 ? AIVIS_TEAL : (mentions === 1 ? T.warn : T.fail),
                   background: (mentions >= 2 ? AIVIS_TEAL : (mentions === 1 ? T.warn : T.fail)) + '18',
                   padding: '3px 9px', borderRadius: 5, whiteSpace: 'nowrap',
@@ -1427,11 +1427,11 @@ function RecentResults({
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                           <span style={{
-                            fontSize: 11, fontWeight: 700,
+                            fontSize: 14, fontWeight: 700,
                             color: run.mentioned ? AIVIS_TEAL : T.fail,
                           }}>{run.mentioned ? '✓' : '✕'}</span>
-                          <span style={{ fontSize: 12, color: T.textMid, fontWeight: 600 }}>第 {run.run_index} 次</span>
-                          <span style={{ fontSize: 12, color: T.text }}>
+                          <span style={{ fontSize: 14, color: T.textMid, fontWeight: 600 }}>第 {run.run_index} 次</span>
+                          <span style={{ fontSize: 14, color: T.text }}>
                             {run.mentioned
                               ? <>有提到「<span style={{ color: AIVIS_TEAL, fontWeight: 700 }}>{brandHighlight}</span>」{run.position && <> · 出現位置 #{run.position}</>}</>
                               : '未提及'}
@@ -1439,7 +1439,7 @@ function RecentResults({
                           <button onClick={() => toggleRunExpand(r.promptId, i)} style={{
                             marginLeft: 'auto', background: 'transparent',
                             border: '1px solid rgba(255,255,255,.12)', color: T.textMid,
-                            fontSize: 10, padding: '3px 9px', borderRadius: 4, cursor: 'pointer',
+                            fontSize: 14, padding: '3px 9px', borderRadius: 4, cursor: 'pointer',
                             fontFamily: T.font,
                           }}>{open ? '收合 ▲' : '展開原文 ▼'}</button>
                         </div>
@@ -1448,7 +1448,7 @@ function RecentResults({
                             marginTop: 10, padding: '10px 12px',
                             background: 'rgba(0,0,0,.3)', borderRadius: 6,
                             borderLeft: `2px solid ${run.mentioned ? AIVIS_TEAL : 'rgba(255,255,255,.15)'}`,
-                            fontSize: 12, color: T.textMid, lineHeight: 1.7,
+                            fontSize: 14, color: T.textMid, lineHeight: 1.7,
                             whiteSpace: 'pre-wrap', maxHeight: 280, overflowY: 'auto',
                           }}>
                             {highlightBrandAuto(run.snippet, brandHighlight)}
@@ -1515,14 +1515,14 @@ function ScanOverlay({ phase, total, prompts }) {
 
       <div style={{ width: 540, maxWidth: '92vw' }}>
         <div style={{
-          fontSize: 11, fontWeight: 700, color: AIVIS_TEAL,
+          fontSize: 14, fontWeight: 700, color: AIVIS_TEAL,
           letterSpacing: '.14em', textAlign: 'center', marginBottom: 6,
         }}>SCANNING</div>
         <div style={{
           fontSize: 18, fontWeight: 700, color: T.text,
           textAlign: 'center', marginBottom: 18,
         }}>AI 曝光監測掃描中</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontFamily: T.mono, fontSize: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontFamily: T.mono, fontSize: 14 }}>
           {phases.map((ph, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 10,
@@ -1558,7 +1558,7 @@ function Toast({ kind, msg }) {
       display: 'flex', alignItems: 'center', gap: 10,
       animation: 'fadeUp .3s ease',
     }}>
-      <span style={{ fontSize: 13, color: T.text, fontWeight: 500, fontFamily: T.font }}>{msg}</span>
+      <span style={{ fontSize: 14, color: T.text, fontWeight: 500, fontFamily: T.font }}>{msg}</span>
     </div>
   )
 }
@@ -1615,7 +1615,7 @@ function UsageBanner({ used, quota, remaining, atSoftLimit, atHardCap, hardCap, 
           <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 4 }}>
             {title}
           </div>
-          <div style={{ fontSize: 12, color: T.textMid, marginBottom: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 14, color: T.textMid, marginBottom: 8, lineHeight: 1.5 }}>
             {hint}
           </div>
           {/* 進度條 — 鎖在 100%，超量時尾端顯示橘色「+N Top-up」標記 */}
@@ -1634,7 +1634,7 @@ function UsageBanner({ used, quota, remaining, atSoftLimit, atHardCap, hardCap, 
       {/* 右：CTA — 硬上限狀態下不引導加購（無解），其他兩段都導去 TopupModal */}
       <button onClick={onTopupClick}
         style={{
-          fontSize: 13, padding: '10px 18px', whiteSpace: 'nowrap',
+          fontSize: 14, padding: '10px 18px', whiteSpace: 'nowrap',
           border: `1px solid ${mainColor}88`, borderRadius: 8, fontWeight: 700,
           fontFamily: T.font, background: `${mainColor}1a`, color: mainColor,
           cursor: 'pointer', transition: 'all .2s',
@@ -1747,7 +1747,7 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
           <div style={{ fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 6 }}>
             {isHard ? '已達每月查詢硬上限' : `本月內含 ${quota} 次已用完`}
           </div>
-          <div style={{ fontSize: 13, color: T.textMid }}>
+          <div style={{ fontSize: 14, color: T.textMid }}>
             {isHard
               ? `本月已使用 ${used.toLocaleString()} / ${hardCap.toLocaleString()} 次 · 為保護毛利結構，已暫停查詢`
               : `本月已使用 ${used} 次 · 加購 Top-up 次數包，繼續監測 AI 對你的引用`}
@@ -1760,7 +1760,7 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
             <div style={{
               padding: 18, borderRadius: T.rM,
               background: `${T.fail}10`, border: `1px solid ${T.fail}33`,
-              marginBottom: 20, fontSize: 13, color: T.text, lineHeight: 1.7,
+              marginBottom: 20, fontSize: 14, color: T.text, lineHeight: 1.7,
             }}>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>為什麼有 1,000 次硬上限？</div>
               每月查詢上限為內含 + Top-up 合計 {hardCap.toLocaleString()} 次。
@@ -1803,24 +1803,24 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
                         position: 'absolute', top: -10, right: 12,
                         padding: '3px 10px', borderRadius: 12,
                         background: AIVIS_TEAL, color: '#001b12',
-                        fontSize: 10, fontWeight: 800, letterSpacing: '0.05em',
+                        fontSize: 14, fontWeight: 800, letterSpacing: '0.05em',
                       }}>🔥 最划算</div>
                     )}
-                    <div style={{ fontSize: 12, color: T.textMid, marginBottom: 6, fontWeight: 600 }}>
+                    <div style={{ fontSize: 14, color: T.textMid, marginBottom: 6, fontWeight: 600 }}>
                       Top-up {pack.label}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
                       <span style={{ fontSize: 28, fontWeight: 800, color: T.text }}>
                         NT${pack.price}
                       </span>
-                      <span style={{ fontSize: 13, color: T.textMid }}>
+                      <span style={{ fontSize: 14, color: T.textMid }}>
                         / +{pack.quota} 次
                       </span>
                     </div>
-                    <div style={{ fontSize: 11, color: AIVIS_TEAL, marginBottom: 10, fontWeight: 600 }}>
+                    <div style={{ fontSize: 14, color: AIVIS_TEAL, marginBottom: 10, fontWeight: 600 }}>
                       每次 NT${pack.perCall.toFixed(2)}
                     </div>
-                    <div style={{ fontSize: 11, color: T.textMid, lineHeight: 1.5, marginBottom: 14 }}>
+                    <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.5, marginBottom: 14 }}>
                       {pack.hint}
                     </div>
                     <button
@@ -1836,7 +1836,7 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
                             ? `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`
                             : `${AIVIS_TEAL}22`),
                         color: !agreed ? T.textMid : (idx === 1 ? '#fff' : AIVIS_TEAL),
-                        fontWeight: 700, fontSize: 13,
+                        fontWeight: 700, fontSize: 14,
                         boxShadow: (idx === 1 && agreed) ? `0 6px 18px ${AIVIS_TEAL}44` : 'none',
                         opacity: !agreed ? 0.6 : 1,
                       }}>
@@ -1851,7 +1851,7 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
             <div style={{
               padding: 14, borderRadius: T.rM,
               background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-              marginBottom: 10, fontSize: 12, color: T.textMid, lineHeight: 1.7,
+              marginBottom: 10, fontSize: 14, color: T.textMid, lineHeight: 1.7,
             }}>
               <div style={{ fontWeight: 700, color: T.text, marginBottom: 6 }}>規則說明 — 購買前請詳閱</div>
               · 一次性購買、不過期、用完為止、不綁訂閱<br />
@@ -1882,7 +1882,7 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
                   accentColor: AIVIS_TEAL, cursor: 'pointer',
                 }}
               />
-              <span style={{ fontSize: 12, color: T.text, lineHeight: 1.6 }}>
+              <span style={{ fontSize: 14, color: T.text, lineHeight: 1.6 }}>
                 我已閱讀並同意：Top-up 加購屬於「一經提供即完成之線上服務」（消保法第 19 條第 2 項第 5 款），
                 credits 入帳後 <strong style={{ color: '#fbbf24' }}>不適用 7 天無條件解除權、亦不退款</strong>。
               </span>
@@ -1892,7 +1892,7 @@ function TopupModal({ kind, used, quota, hardCap, user, onClose }) {
               <div style={{
                 padding: 12, borderRadius: T.rM,
                 background: `${T.fail}14`, border: `1px solid ${T.fail}44`,
-                fontSize: 12, color: '#fca5a5', lineHeight: 1.6,
+                fontSize: 14, color: '#fca5a5', lineHeight: 1.6,
               }}>
                 ⚠️ {buyError}
               </div>

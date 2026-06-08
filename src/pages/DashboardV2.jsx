@@ -657,7 +657,7 @@ function LevelUpOverlay({ newLevel, newLevelName, newEmoji, onDone }) {
           {newLevelName} · Lv.{newLevel}
         </div>
         <div style={{
-          fontSize: 13, color: 'rgba(255,255,255,0.6)',
+          fontSize: 14, color: 'rgba(255,255,255,0.6)',
           marginTop: 14,
           background: 'rgba(255,255,255,0.05)',
           padding: '8px 16px',
@@ -774,7 +774,7 @@ function BadgeUnlockOverlay({ badges, onDone }) {
 
       <div style={{
         marginTop: 36,
-        fontSize: 13, color: 'rgba(255,255,255,0.6)',
+        fontSize: 14, color: 'rgba(255,255,255,0.6)',
         background: 'rgba(255,255,255,0.05)',
         padding: '8px 16px',
         borderRadius: 20,
@@ -1468,7 +1468,7 @@ function PentaRadar({ scores, size = 220 }) {
               )
             }}
           />
-          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.4)' }} />
+          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 14, fill: 'rgba(255,255,255,0.4)' }} />
           {/* 100 分外框 — 顯式外圈、把雷達圖視覺框起來 */}
           <Radar name="100 分滿分線" dataKey="fullMark"
             stroke="rgba(255,255,255,0.5)" fill="none" strokeWidth={1} dot={false} isAnimationActive={false}
@@ -1488,7 +1488,7 @@ function PentaRadar({ scores, size = 220 }) {
             }}
           />
           <Tooltip
-            contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 12, color: '#fff' }}
+            contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 14, color: '#fff' }}
             formatter={(v) => [`${v} 分`, '得分']}
           />
         </RadarChart>
@@ -2099,7 +2099,7 @@ function TrendChart({ trendData }) {
             <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" fontSize={11} />
             <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} domain={[0, 100]} />
             <Tooltip
-              contentStyle={{ background: '#000', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: 12 }}
+              contentStyle={{ background: '#000', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: 14 }}
               labelStyle={{ color: '#fff' }}
             />
             <Line type="monotone" dataKey="SEO"     stroke={FACE_COLORS.seo}  strokeWidth={2} dot={{ r: 3 }} />

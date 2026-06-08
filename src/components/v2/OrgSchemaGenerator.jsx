@@ -160,21 +160,21 @@ export default function OrgSchemaGenerator() {
             個人化 Organization Schema 產生器
           </h3>
           <span style={{
-            fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+            fontSize: 14, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
             background: T.orange + '26', color: T.orange, border: `1px solid ${T.orange}55`,
           }}>Pro 限定</span>
         </div>
-        <p style={{ fontSize: 13, color: T.textMid, lineHeight: 1.7, marginBottom: 14 }}>
+        <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 14 }}>
           填一次品牌資料（公司名 / 網址 / 聯絡方式 / 社群連結等）→ 永久存著 →
           自動產出**客製化** Organization JSON-LD code →一鍵複製貼網站 head。
         </p>
-        <p style={{ fontSize: 12, color: T.textLow, lineHeight: 1.65, marginBottom: 16 }}>
+        <p style={{ fontSize: 14, color: T.textLow, lineHeight: 1.65, marginBottom: 16 }}>
           免費版可看通用範本（要自己填空），Pro 版自動帶入你的資料、未來都用同一份、不必每次重填。
         </p>
         <Link to="/pricing" style={{
           display: 'inline-block', padding: '10px 20px',
           background: `linear-gradient(135deg, ${T.orange}, #f59e0b)`,
-          color: 'white', fontSize: 13, fontWeight: 700,
+          color: 'white', fontSize: 14, fontWeight: 700,
           borderRadius: T.rM, textDecoration: 'none',
         }}>升級 Pro 解鎖 →</Link>
       </GlassCard>
@@ -190,16 +190,16 @@ export default function OrgSchemaGenerator() {
           個人化 Organization Schema 產生器
         </h3>
         <span style={{
-          fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+          fontSize: 14, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
           background: T.aeo + '26', color: T.aeo, border: `1px solid ${T.aeo}55`,
         }}>Pro</span>
       </div>
-      <p style={{ fontSize: 12, color: T.textMid, lineHeight: 1.65, marginBottom: 16 }}>
+      <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.65, marginBottom: 16 }}>
         填一次品牌資料、永久儲存。產生的 JSON-LD 貼到網站 <code style={{ background: 'rgba(0,0,0,0.4)', padding: '1px 5px', borderRadius: 3 }}>&lt;head&gt;</code> 裡，AI 引擎就能正確辨識你的品牌。
       </p>
 
       {loading ? (
-        <p style={{ fontSize: 13, color: T.textLow }}>載入中...</p>
+        <p style={{ fontSize: 14, color: T.textLow }}>載入中...</p>
       ) : editMode ? (
         /* ─── 編輯模式：表單 ─── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -246,7 +246,7 @@ export default function OrgSchemaGenerator() {
               onClick={handleSave}
               disabled={saving}
               style={{
-                fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: T.rM,
+                fontSize: 14, fontWeight: 700, padding: '10px 20px', borderRadius: T.rM,
                 background: `linear-gradient(135deg, ${T.aeo}, #a855f7)`,
                 color: 'white', border: 'none', cursor: saving ? 'wait' : 'pointer', fontFamily: T.font,
               }}
@@ -256,7 +256,7 @@ export default function OrgSchemaGenerator() {
                 type="button"
                 onClick={() => setEditMode(false)}
                 style={{
-                  fontSize: 13, padding: '10px 20px', borderRadius: T.rM,
+                  fontSize: 14, padding: '10px 20px', borderRadius: T.rM,
                   background: 'rgba(255,255,255,0.05)',
                   color: T.text,
                   border: `1px solid ${T.cardBorder}`,
@@ -265,7 +265,7 @@ export default function OrgSchemaGenerator() {
               >取消</button>
             )}
             {saveMessage && (
-              <span style={{ fontSize: 12, color: saveMessage.startsWith('✅') ? T.pass : T.warn }}>{saveMessage}</span>
+              <span style={{ fontSize: 14, color: saveMessage.startsWith('✅') ? T.pass : T.warn }}>{saveMessage}</span>
             )}
           </div>
         </div>
@@ -273,7 +273,7 @@ export default function OrgSchemaGenerator() {
         /* ─── 預覽模式：顯示產生的 code + 複製按鈕 ─── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <pre style={{
-            margin: 0, padding: 14, fontSize: 11, lineHeight: 1.65,
+            margin: 0, padding: 14, fontSize: 14, lineHeight: 1.65,
             background: 'rgba(0,0,0,0.55)', border: `1px solid ${T.cardBorder}`,
             borderRadius: 8, color: '#cbd5e1', fontFamily: T.mono,
             overflow: 'auto', maxHeight: 360,
@@ -284,7 +284,7 @@ export default function OrgSchemaGenerator() {
               type="button"
               onClick={handleCopy}
               style={{
-                fontSize: 13, fontWeight: 700, padding: '10px 20px', borderRadius: T.rM,
+                fontSize: 14, fontWeight: 700, padding: '10px 20px', borderRadius: T.rM,
                 background: copied ? T.pass + '33' : `linear-gradient(135deg, ${T.aeo}, #a855f7)`,
                 color: copied ? T.pass : 'white',
                 border: copied ? `1px solid ${T.pass}` : 'none',
@@ -295,7 +295,7 @@ export default function OrgSchemaGenerator() {
               type="button"
               onClick={() => setEditMode(true)}
               style={{
-                fontSize: 13, padding: '10px 20px', borderRadius: T.rM,
+                fontSize: 14, padding: '10px 20px', borderRadius: T.rM,
                 background: 'rgba(255,255,255,0.05)',
                 color: T.text,
                 border: `1px solid ${T.cardBorder}`,
@@ -304,7 +304,7 @@ export default function OrgSchemaGenerator() {
             >✏️ 編輯品牌資料</button>
           </div>
 
-          <details style={{ fontSize: 12, color: T.textMid, lineHeight: 1.7, marginTop: 6 }}>
+          <details style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginTop: 6 }}>
             <summary style={{ cursor: 'pointer', color: T.text, fontWeight: 600 }}>
               ▶ 怎麼把這段 code 加到我的網站？
             </summary>
@@ -313,7 +313,7 @@ export default function OrgSchemaGenerator() {
               <p><strong style={{ color: T.text }}>Shopify：</strong> 後台 → Online Store → Themes → Actions → Edit code → theme.liquid，在 &lt;head&gt; 結尾貼上。</p>
               <p><strong style={{ color: T.text }}>Wix：</strong> Settings → Custom Code → Add Custom Code → 選「Head」位置貼上。</p>
               <p><strong style={{ color: T.text }}>自架 HTML：</strong> 把整段 code 貼到每頁 HTML 的 &lt;/head&gt; 之前。</p>
-              <p style={{ marginTop: 8, color: T.textLow, fontSize: 11 }}>
+              <p style={{ marginTop: 8, color: T.textLow, fontSize: 14 }}>
                 💡 貼完用 <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener noreferrer" style={{ color: T.aeo }}>Google Rich Results Test</a> 驗證有抓到 Organization。
               </p>
             </div>
@@ -329,7 +329,7 @@ export default function OrgSchemaGenerator() {
 function FieldRow({ label, required, children }) {
   return (
     <div>
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: T.textMid, marginBottom: 4 }}>
+      <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: T.textMid, marginBottom: 4 }}>
         {label}
         {required && <span style={{ color: T.fail, marginLeft: 4 }}>*</span>}
       </label>
@@ -346,7 +346,7 @@ function Input({ value, onChange, placeholder, type = 'text' }) {
       onBlur={e => onChange(e.target.value)}
       placeholder={placeholder}
       style={{
-        width: '100%', padding: '8px 12px', fontSize: 13,
+        width: '100%', padding: '8px 12px', fontSize: 14,
         background: 'rgba(0,0,0,0.4)',
         border: `1px solid ${T.cardBorder}`,
         borderRadius: 6, color: T.text, outline: 'none',
@@ -364,7 +364,7 @@ function Textarea({ value, onChange, placeholder }) {
       placeholder={placeholder}
       rows={3}
       style={{
-        width: '100%', padding: '8px 12px', fontSize: 13,
+        width: '100%', padding: '8px 12px', fontSize: 14,
         background: 'rgba(0,0,0,0.4)',
         border: `1px solid ${T.cardBorder}`,
         borderRadius: 6, color: T.text, outline: 'none',

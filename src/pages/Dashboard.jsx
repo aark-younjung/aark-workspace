@@ -1045,7 +1045,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     )
                   }}
                 />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.5)' }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 14, fill: 'rgba(255,255,255,0.5)' }} />
                 {/* 100 分外框 — 額外加一條明顯的最外圈，視覺上把雷達圖框起來
                     （PolarGrid 預設的灰線太淡，用 Radar 顯式畫一條 stroke 較深的外框）*/}
                 <Radar
@@ -1083,7 +1083,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   }}
                 />
                 <Tooltip
-                  contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 12, color: '#fff' }}
+                  contentStyle={{ background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 14, color: '#fff' }}
                   formatter={(v) => [`${v} 分`, '得分']}
                 />
               </RadarChart>
@@ -1163,10 +1163,10 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                     <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={11} tickLine={false} />
                     <YAxis stroke="rgba(255,255,255,0.5)" fontSize={11} domain={[0, 100]} tickLine={false} axisLine={false} />
                     <Tooltip
-                      contentStyle={{ background: 'rgba(0,0,0,0.85)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', fontSize: 12, color: '#fff' }}
+                      contentStyle={{ background: 'rgba(0,0,0,0.85)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.15)', fontSize: 14, color: '#fff' }}
                       formatter={(v, name) => [`${v} 分`, name]}
                     />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12, color: 'rgba(255,255,255,0.7)' }} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 14, paddingTop: 12, color: 'rgba(255,255,255,0.7)' }} />
                     <Line type="monotone" dataKey="SEO"    stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                     <Line type="monotone" dataKey="AEO"    stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                     <Line type="monotone" dataKey="GEO"    stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />

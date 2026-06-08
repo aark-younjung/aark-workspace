@@ -6,6 +6,25 @@
 
 ---
 
+### 2026-06-08（Stage 2：全站殘存 inline fontSize 9-13 → 14、共 228 處）
+
+**動機：** Stage 1 處理完 6 個 audit 頁後、再次全 src/ 掃描、發現還有 18 個檔案、228 處 inline fontSize 9-13 沒處理（包含 AIVisibilityDashboard 71 處、共享 components 像 MetricSignatures / IssueBoard / AuditHero、甚至 Dashboard V2 本身也有 5 處）。
+
+**處理量（合計 18 檔 / 228 處）：**
+- AIVisibilityDashboard: 71
+- MetricSignatures: 25
+- SchemaCheck / IssueBoard / OrgSchemaGenerator / HelpRankMath: 18-20 各
+- AuditHero: 15
+- SerpAndVitals: 9
+- AdminMonitoring / ArticleAnalysisTabs / DashboardV2: 5-6 各
+- 其他 ≤ 4 處：Dashboard / HomeDark / PlatformLogoWall / AdminRevenue / ContentAudit / Btn / HomeShowcaseSection
+
+**手法：** 同 Stage 1、Node 腳本機械替換 `fontSize: 9-13` → `fontSize: 14`。大標題（18+）保持不動。
+
+**累計：** Stage 1 + Stage 2 共處理 24 個檔案、368 處 inline fontSize 拉到 14px 基準。
+
+---
+
 ### 2026-06-08（audit 頁字體統一拉到 Dashboard 標準 — Stage 1）
 
 **問題：** 6 個 audit 頁（BulkScan / GEOAudit / CrawlCheck / SEOAudit / AEOAudit / EEATAudit）早期用 inline `fontSize: 10/11/12/13`、比 Dashboard V2 的 text-sm（14px）小 14-50%、用戶反映「文字小、看不清」。BulkScan 最痛（35 處 fontSize: 10 / 4 處 fontSize: 9）。
