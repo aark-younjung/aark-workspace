@@ -1349,19 +1349,21 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
                   ? '搶早鳥首年 NT$990／月'
                   : `立即升級 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`}
           </button>
-          {/* 2026-06-08：未試用過用戶也提供「跳過試用、直接付費」次要入口 — 解決
-              「我想付錢卻只看到試用按鈕、按下去結果是免費試用」的客戶疑惑。
+          {/* 2026-06-08：未試用過用戶也給「跳過試用、直接付費」入口、避免「我想付錢卻只看到試用」的客戶疑惑。
+              2026-06-08 update：原本做成小灰字連結（B2C 漏斗作法、保留「試用為主」的視覺權重），
+              但目標客戶是代理商/品牌主、購買意圖明確、改為「等高同色彩權重」雙按鈕、清楚 > 漏斗優化。
               已試用過的用戶上方主按鈕就是付費、不再重複顯示。 */}
           {!hasTrialedBefore && (
             <button
               onClick={() => onUpgrade(isYearly ? (earlybirdAvailable ? 'earlybird' : 'yearly') : 'monthly')}
               disabled={upgrading || startingTrial}
-              className="w-full py-2 text-sm font-medium transition-colors disabled:opacity-50 underline-offset-2 hover:underline"
-              style={isDark ? { color: T.textLow } : { color: '#64748b' }}
+              className="w-full py-3 text-white rounded-xl transition-all font-semibold shadow-lg disabled:opacity-50 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 shadow-yellow-500/25"
             >
-              {isYearly && earlybirdAvailable
-                ? '不用試用、直接鎖定早鳥 NT$990／月 →'
-                : `不用試用、直接付費 NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月 →`}
+              {upgrading
+                ? '處理中...'
+                : isYearly && earlybirdAvailable
+                  ? '🐣 直接鎖定早鳥 NT$990／月'
+                  : `直接付費 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`}
             </button>
           )}
           {/* A7+C8: 信任兩件組 + 退款情緒承諾（原「🔒 不收信用卡」已下線 — NewebPay 上線後我們有收信用卡） */}
