@@ -6,6 +6,27 @@
 
 ---
 
+### 2026-06-08（🔥 P0 金流 bug：試用中用戶無法升級早鳥 + UX 修補）
+
+**問題：** 用戶想付 990 早鳥年繳、Pricing 頁只看到「免費試用 7 天」按鈕、按下去自動啟動試用、變成「✨ 試用中・剩 7 天」、找不到付款入口卡關。
+
+**根因 (Pricing.jsx line 269)：**
+```js
+if (isPro) { navigate('/account'); return }  // ❌ 試用中 isPro=true、也被擋掉
+```
+試用中用戶 `isPro=true && isTrial=true`、但這條 guard 把所有 `isPro` 都導去 /account、試用用戶按付款按鈕也跳不到 NewebPay。
+
+**修法：**
+1. **Fix 1（根因）：** [src/pages/Pricing.jsx:269](src/pages/Pricing.jsx#L269) guard 改 `if (isPro && !isTrial)`、試用用戶可走付款流程把試用轉成早鳥年繳。
+2. **Fix 2（UX）：** 試用中 UI 加上明顯的「🐣 立即升級鎖定早鳥 NT$990／月」橘黃漸層大按鈕、不再只靠「管理訂閱 →」灰字小連結。
+3. **Fix 3（UX）：** 未試用過 UI 在「免費試用 7 天」主按鈕下方加「不用試用、直接鎖定早鳥 NT$990／月 →」次要連結、避免「想付錢卻被引導到免費試用」的認知落差。
+
+**檔案：** [src/pages/Pricing.jsx](src/pages/Pricing.jsx)。
+
+**影響：** 試用中客戶（包含已被卡住的真實案例）部署後即可直接從 Pricing 頁升級到付費年繳、不需另外聯絡客服。
+
+---
+
 ### 2026-06-08（Stage 3：Tailwind `text-xs` + `text-[9-13px]` → `text-sm`、共 311 處）
 
 **動機：** Stage 1+2 處理完 inline fontSize 後、Tailwind class 還有 `text-xs`（12px）和少數 `text-[10px]/[11px]/[12px]/[13px]` 散落 26 個檔。再次拉到 Dashboard 基準（text-sm = 14px）。

@@ -266,7 +266,10 @@ export default function Pricing() {
 
   const handleUpgrade = async (priceType = 'yearly') => {
     if (!user) { navigate('/register'); return }
-    if (isPro) { navigate('/account'); return }  // 已是 Pro 就引導到帳號頁管理
+    // 2026-06-08 bugfix：原本 `if (isPro)` 連試用中用戶也擋掉（trial 也算 isPro）、
+    // 導致想轉成付費 Pro 的試用用戶按按鈕就跳 /account、永遠拿不到早鳥價。
+    // 改成只擋「已付費 Pro 且不在試用中」、試用中用戶可走付款流程把試用轉成早鳥年繳。
+    if (isPro && !isTrial) { navigate('/account'); return }
     // earlybird/yearly = MPG 一次性；monthly = NPA 定期定額（後端走 /MPG/period）
     const plan = priceType === 'earlybird' ? 'earlybird' : (priceType === 'monthly' ? 'monthly' : 'yearly')
     setUpgrading(true)
@@ -1273,7 +1276,9 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
       </div>
 
       {isPro && isTrial ? (
-        // 試用中 — 顯示倒數 + 引導到 Account 管理（轉訂閱）
+        // 試用中 — 倒數膠囊 + 主要付款 CTA + 管理訂閱 link
+        // 2026-06-08：原本只有「管理訂閱 →」灰字、客戶找不到付款入口卡關。
+        // 加上「立即升級鎖定早鳥／年繳」主要按鈕、讓試用中客戶能直接轉訂閱。
         <div className="space-y-2">
           <div
             className="w-full py-3 text-center rounded-xl font-semibold border"
@@ -1281,6 +1286,22 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
           >
             ✨ 試用中・剩 {trialDaysRemaining ?? 0} 天
           </div>
+          {/* 試用中也能升級 — 早鳥仍有名額時走 earlybird endpoint、否則走 yearly/monthly */}
+          <button
+            onClick={() => onUpgrade(isYearly ? (earlybirdAvailable ? 'earlybird' : 'yearly') : 'monthly')}
+            disabled={upgrading}
+            className={`w-full py-3 text-white rounded-xl transition-all font-semibold shadow-lg disabled:opacity-50 ${
+              isYearly && earlybirdAvailable
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 shadow-yellow-500/25'
+                : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 shadow-purple-500/25'
+            }`}
+          >
+            {upgrading
+              ? '處理中...'
+              : isYearly && earlybirdAvailable
+                ? '🐣 立即升級鎖定早鳥 NT$990／月'
+                : `立即升級 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`}
+          </button>
           <Link
             to="/account"
             className="block w-full py-2 text-center text-sm transition-colors"
@@ -1328,6 +1349,21 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
                   ? '搶早鳥首年 NT$990／月'
                   : `立即升級 Pro · NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月`}
           </button>
+          {/* 2026-06-08：未試用過用戶也提供「跳過試用、直接付費」次要入口 — 解決
+              「我想付錢卻只看到試用按鈕、按下去結果是免費試用」的客戶疑惑。
+              已試用過的用戶上方主按鈕就是付費、不再重複顯示。 */}
+          {!hasTrialedBefore && (
+            <button
+              onClick={() => onUpgrade(isYearly ? (earlybirdAvailable ? 'earlybird' : 'yearly') : 'monthly')}
+              disabled={upgrading || startingTrial}
+              className="w-full py-2 text-sm font-medium transition-colors disabled:opacity-50 underline-offset-2 hover:underline"
+              style={isDark ? { color: T.textLow } : { color: '#64748b' }}
+            >
+              {isYearly && earlybirdAvailable
+                ? '不用試用、直接鎖定早鳥 NT$990／月 →'
+                : `不用試用、直接付費 NT$${(isYearly ? proYearlyPerMonth : proMonthly).toLocaleString()}／月 →`}
+            </button>
+          )}
           {/* A7+C8: 信任兩件組 + 退款情緒承諾（原「🔒 不收信用卡」已下線 — NewebPay 上線後我們有收信用卡） */}
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>
             <span className="inline-flex items-center gap-1">⚡ 60 秒開通</span>
