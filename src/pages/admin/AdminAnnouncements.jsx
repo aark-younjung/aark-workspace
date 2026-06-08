@@ -175,8 +175,8 @@ export default function AdminAnnouncements() {
           </div>
 
           {/* 公告列表 */}
-          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
+            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider min-w-[800px]">
               <div className="col-span-5">標題與內容</div>
               <div className="col-span-2">類型 / 對象</div>
               <div className="col-span-2">期間</div>
@@ -197,7 +197,7 @@ export default function AdminAnnouncements() {
                   const meta = KIND_META[a.kind]
                   const status = getStatus(a)
                   return (
-                    <div key={a.id} className="grid grid-cols-12 px-6 py-4 items-start hover:bg-slate-800/50 transition-colors">
+                    <div key={a.id} className="grid grid-cols-12 px-6 py-4 items-start hover:bg-slate-800/50 transition-colors min-w-[800px]">
                       <div className="col-span-5 pr-4">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`w-2 h-2 rounded-full ${meta.dot}`} />

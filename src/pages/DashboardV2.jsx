@@ -856,10 +856,13 @@ function TopBar({ website, navigate, onExportPdf, onChecklist, onRescan, rescann
           </a>
         </div>
       </div>
+      {/* 2026-06-09 手機 QA：4 顆按鈕在 375px 寬會把整個 TopBar 撐到第二行很醜。
+          手機（< sm = 640px）只顯示 emoji + tooltip、桌面才補完整文字。
+          「切回舊版」是最低用率、手機直接隱藏（用 URL /dashboard-legacy/:id 也可進去）。 */}
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={() => navigate(`/dashboard-legacy/${website.id}`)}
-          className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
+          className="hidden sm:inline-block px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
           title="切回舊版 Dashboard（不適應新版時用）"
         >
           ← 切回舊版
@@ -873,10 +876,10 @@ function TopBar({ website, navigate, onExportPdf, onChecklist, onRescan, rescann
           {rescanning ? (
             <>
               <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              檢測中…
+              <span className="hidden sm:inline">檢測中…</span>
             </>
           ) : (
-            <>🔄 重新檢測</>
+            <>🔄<span className="hidden sm:inline ml-1">重新檢測</span></>
           )}
         </button>
         <button
@@ -884,14 +887,14 @@ function TopBar({ website, navigate, onExportPdf, onChecklist, onRescan, rescann
           className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
           title="產生客戶提案 PDF（白標、可填代理商署名）"
         >
-          📄 匯出 PDF
+          📄<span className="hidden sm:inline ml-1">匯出 PDF</span>
         </button>
         <button
           onClick={onChecklist}
           className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
           title="產生 LLMO 6 週執行清單 PDF — 把抽象 LLMO 概念轉成客戶可照做的 6 週清單、含 robots.txt / llms.txt / Schema 模板"
         >
-          📋 6 週清單
+          📋<span className="hidden sm:inline ml-1">6 週清單</span>
         </button>
       </div>
     </div>

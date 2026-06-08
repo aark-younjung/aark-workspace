@@ -179,8 +179,8 @@ export default function AdminWebsites() {
           </div>
 
           {/* 列表 */}
-          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
+            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider min-w-[800px]">
               <div className="col-span-3">網站</div>
               {/* 分析欄：點擊按鈕另開新分頁查看完整儀表板 */}
               <div className="col-span-1 text-center">分析</div>
@@ -209,7 +209,7 @@ export default function AdminWebsites() {
             ) : (
               <div className="divide-y divide-slate-700">
                 {filtered.map(site => (
-                  <div key={site.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-700/30 transition-colors">
+                  <div key={site.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-slate-700/30 transition-colors min-w-[800px]">
                     <div className="col-span-3">
                       {/* 網站名稱 + 測試標記 chip（可點切換） */}
                       <div className="flex items-center gap-2 flex-wrap">

@@ -6,6 +6,25 @@
 
 ---
 
+### 2026-06-09（手機 QA 第一波：TopBar 收斂 + admin 密表 overflow）
+
+**問題 1：DashboardV2 TopBar 4 顆按鈕在手機爆版**
+- 「← 切回舊版」「🔄 重新檢測」「📄 匯出 PDF」「📋 6 週清單」+ 左側返回 + 網站名 + URL、375px 寬時 flex-wrap 醜。
+- **修法：** [src/pages/DashboardV2.jsx](src/pages/DashboardV2.jsx) — 手機（< sm = 640px）只顯示 emoji + tooltip、桌面才補完整文字。「切回舊版」是最低用率、手機直接 `hidden sm:inline-block`、低估了好像沒人會在手機切舊版。
+
+**問題 2：admin 4 個密表（CSS grid-cols-12）在手機爆寬**
+- AdminUsers / AdminWebsites / AdminShowcase / AdminAnnouncements 用 `grid grid-cols-12` 模擬表格、但沒 RWD、375px 視窗每格 ~31px 完全無法閱讀。
+- **修法：** 外層 `overflow-hidden` → `overflow-x-auto`、每個 grid-cols-12 row 加 `min-w-[800px]` 強制不縮。手機橫向滑動看密表、不撐爆整頁。
+
+**處理量：** DashboardV2 TopBar 1 處 + admin 4 檔（AdminUsers 手改、其他 3 檔 Node 腳本批次）= 5 個檔案。
+
+**未處理（觀察、無實證問題）：**
+- MetricSignatures 6 欄格（90px + 5×1fr）— 375px 下擠但能塞、等實測再說
+- BulkScan 大量 inline flex — Stage 1 字體拉大後可能更擠、等手機實測再針對性處理
+- AuditHero `1fr 1fr` — 該自動縮、不動
+
+---
+
 ### 2026-06-08（🔥 P0 金流 bug：試用中用戶無法升級早鳥 + UX 修補）
 
 **問題：** 用戶想付 990 早鳥年繳、Pricing 頁只看到「免費試用 7 天」按鈕、按下去自動啟動試用、變成「✨ 試用中・剩 7 天」、找不到付款入口卡關。

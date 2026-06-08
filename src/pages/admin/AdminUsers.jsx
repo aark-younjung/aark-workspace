@@ -717,8 +717,10 @@ export default function AdminUsers() {
           </div>
 
           {/* 用戶列表 */}
-          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider">
+          {/* 2026-06-09 手機 QA：grid-cols-12 在 < 800px 會壓爛無法閱讀。
+              改 overflow-x-auto + 內層 min-w-[800px] 讓密表在窄螢幕橫向滑動、不撐爆整頁。 */}
+          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
+            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider min-w-[800px]">
               <div className="col-span-4">用戶</div>
               <div className="col-span-2">方案</div>
               <div className="col-span-3">註冊時間</div>
@@ -726,7 +728,7 @@ export default function AdminUsers() {
             </div>
 
             {loading ? (
-              <div className="divide-y divide-slate-700">
+              <div className="divide-y divide-slate-700 min-w-[800px]">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="px-6 py-4 animate-pulse">
                     <div className="h-4 bg-slate-700 rounded w-1/3 mb-2" />
@@ -737,7 +739,7 @@ export default function AdminUsers() {
             ) : filtered.length === 0 ? (
               <p className="px-6 py-10 text-slate-500 text-sm text-center">沒有符合條件的用戶</p>
             ) : (
-              <div className="divide-y divide-slate-700">
+              <div className="divide-y divide-slate-700 min-w-[800px]">
                 {paged.map(u => (
                   <div key={u.id}>
                     {/* 用戶列 */}

@@ -162,8 +162,8 @@ export default function AdminShowcase() {
           </div>
 
           {/* 列表 */}
-          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
+            <div className="grid grid-cols-12 px-6 py-3 bg-slate-900 text-sm text-slate-500 font-semibold uppercase tracking-wider min-w-[800px]">
               <div className="col-span-4">網站</div>
               <div className="col-span-3">提交用戶</div>
               <div className="col-span-2">提交時間</div>
@@ -186,7 +186,7 @@ export default function AdminShowcase() {
             ) : (
               <div className="divide-y divide-slate-700">
                 {rows.map(r => (
-                  <div key={r.id} className="grid grid-cols-12 px-6 py-4 items-start hover:bg-slate-800/50 transition-colors">
+                  <div key={r.id} className="grid grid-cols-12 px-6 py-4 items-start hover:bg-slate-800/50 transition-colors min-w-[800px]">
                     <div className="col-span-4 pr-4">
                       <p className="text-slate-200 text-sm font-medium truncate">{r.name || '(未命名)'}</p>
                       <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-slate-500 text-sm truncate block hover:text-orange-400">
