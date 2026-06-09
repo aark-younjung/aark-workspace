@@ -520,16 +520,94 @@ export const FIX_GUIDES = {
     summary: '在網站根目錄建立 llms.txt，讓 AI 爬蟲快速了解你的網站內容',
     platforms: {
       wordpress: {
-        steps: [
-          '【最簡單】登入 Hostinger hPanel / cPanel / Plesk 等主機後台 → 點「檔案管理員」',
-          '進入 public_html/ 資料夾（這就是「網站根目錄」、與 wp-config.php 同一層）',
-          '上方點「新增檔案」、檔名輸入「llms.txt」（注意：是 .txt、整個小寫）',
-          '雙擊新建的 llms.txt 開啟編輯器、貼入右方程式碼範本（替換成你的品牌資訊）',
-          '右上角「儲存」',
-          '打開瀏覽器、輸入 https://你的網址.com/llms.txt — 看到內容 = 成功',
-          '【或】裝外掛：搜尋並安裝「WPCode」或「Code Snippets」、新增 PHP snippet 攔截 /llms.txt 路由（適合沒主機管理權限的情境）',
+        // 2026-06-09：拆成兩種做法、tab 切換
+        //   方法 A：WPCode 外掛 — 給「只有 WP admin 權限、沒主機後台」的代理商客戶
+        //   方法 B：主機面板新增檔案 — 給「有 Hostinger / cPanel 等主機後台權限」的自管站
+        methods: [
+          {
+            label: 'WPCode 外掛（推薦）',
+            hint: '只要有 WordPress admin 權限就能做、不用碰伺服器或 FTP。約 5 分鐘。',
+            steps: [
+              'WordPress 後台 → 外掛 → 安裝外掛',
+              '搜尋「WPCode」（藍色 logo、開發者 Syed Balkhi、Lite 版免費）→ 安裝 → 啟用',
+              '左側選單會新增「Code Snippets」→ 點「+ Add Snippet」→ 選「Add Your Custom Code (New Snippet)」',
+              'Title 填「llms.txt 路由」（任意命名）',
+              'Code Type 選「PHP Snippet」',
+              '把右方程式碼整段（含 <?php）貼入 Code 編輯框、並把品牌資訊改成你的（heredoc 內容）',
+              'Insertion 選「Auto Insert」、Location 選「Frontend Only」',
+              '右上角開關切到「Active」',
+              '按「Save Snippet」儲存',
+              '用瀏覽器無痕視窗開 https://你的網址.com/llms.txt — 看到純文字內容 = 成功',
+            ],
+            codeLabel: 'WPCode PHP Snippet（含 llms.txt 內容、直接複製貼上）',
+            code: `<?php
+// llms.txt 路由 — 把網址列改成 /llms.txt 時、回傳 LLMO 標準格式
+add_action('init', function () {
+    $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+    if (rtrim(strtok($request_uri, '?'), '/') !== '/llms.txt') return;
+
+    header('Content-Type: text/plain; charset=UTF-8');
+    header('Cache-Control: public, max-age=3600');
+    echo <<<LLMS
+# 你的品牌名稱
+
+> 一句話描述你做什麼、賣什麼、給誰
+
+## 核心產品 / 服務
+
+- [產品 A](https://你的網址.com/product-a) — 一句話描述
+- [產品 B](https://你的網址.com/product-b) — 一句話描述
+
+## 重要內容
+
+- [首頁](https://你的網址.com/)
+- [常見問題](https://你的網址.com/faq)
+- [關於我們](https://你的網址.com/about)
+
+## 聯絡方式
+
+- 電話：02-xxxx-xxxx
+- Email：contact@你的網址.com
+- LINE：@你的官方帳號
+LLMS;
+    exit;
+});`,
+          },
+          {
+            label: '主機面板新增檔案',
+            hint: '有 Hostinger hPanel / cPanel / Plesk 等主機後台權限才能做、最直接、不用裝外掛。',
+            steps: [
+              '登入你的主機後台（Hostinger hPanel / cPanel / Plesk 等）',
+              '進入「檔案管理員」→ public_html/ 資料夾（與 wp-config.php 同一層）',
+              '上方點「新增檔案」、檔名輸入 llms.txt（注意：是 .txt、整個小寫）',
+              '雙擊剛建好的 llms.txt 開啟編輯器',
+              '把右方範本貼入、替換成你的品牌資訊',
+              '右上角「儲存」',
+              '用瀏覽器無痕視窗開 https://你的網址.com/llms.txt — 看到內容 = 成功',
+            ],
+            codeLabel: 'llms.txt 純文字檔內容（貼進剛建好的檔案）',
+            code: `# 你的品牌名稱
+
+> 一句話描述你做什麼、賣什麼、給誰
+
+## 核心產品 / 服務
+
+- [產品 A](https://你的網址.com/product-a) — 一句話描述
+- [產品 B](https://你的網址.com/product-b) — 一句話描述
+
+## 重要內容
+
+- [首頁](https://你的網址.com/)
+- [常見問題](https://你的網址.com/faq)
+- [關於我們](https://你的網址.com/about)
+
+## 聯絡方式
+
+- 電話：02-xxxx-xxxx
+- Email：contact@你的網址.com
+- LINE：@你的官方帳號`,
+          },
         ],
-        code: `# 你的品牌名稱\n\n> 一句話描述你做什麼、賣什麼、給誰\n\n## 核心產品 / 服務\n\n- [產品 A 名稱](https://你的網址.com/product-a) — 一句話描述\n- [產品 B 名稱](https://你的網址.com/product-b) — 一句話描述\n\n## 重要內容\n\n- [服務據點 / 安裝點](https://你的網址.com/locations)\n- [常見問題](https://你的網址.com/faq)\n- [關於我們](https://你的網址.com/about)\n\n## 聯絡方式\n\n- 電話：02-xxxx-xxxx\n- Email：contact@你的網址.com\n- LINE：@你的官方帳號`,
       },
       shopify: {
         steps: [

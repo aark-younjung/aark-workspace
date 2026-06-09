@@ -6,6 +6,20 @@
 
 ---
 
+### 2026-06-09（FixGuide 升級：支援多做法 sub-tab、llms.txt 提供 WPCode + 主機面板兩條路）
+
+**動機：** 第一個付費客戶 kimbo3899 修 llms.txt 紅燈時、Aark 給的指引「在網站根目錄建立 llms.txt」沒講具體怎麼建、客戶踩到「沒主機後台權限不知怎麼辦」的痛點。
+
+**做的事：**
+1. **[src/components/FixGuide.jsx](src/components/FixGuide.jsx) 擴充 schema：** 同一個 platform 內支援多 `methods` 陣列（label / hint / steps / code / codeLabel）、UI 加 sub-tab 切換。向下相容單一 `steps + code` 的舊格式。
+2. **[src/data/fixGuides.js](src/data/fixGuides.js) `llms_txt.wordpress` 改寫為兩個 methods：**
+   - **方法 A（推薦）：WPCode 外掛** — 給「只有 WP admin、沒主機後台權限」的代理商客戶。完整 10 步驟 + 含 PHP heredoc 的 snippet 可直接複製。
+   - **方法 B：主機面板新增檔案** — 給「有 Hostinger / cPanel / Plesk 後台」的自管站。7 步驟 + 純文字 llms.txt 範本。
+
+**未動：** 其他 platform（Shopify / Wix / HTML）保持單 method、結構簡單沒必要拆。其他 fix 項目（FAQ Schema / Org Schema 等）schema 未升級、之後遇到「客戶不知怎麼做」的反饋再針對性處理。
+
+---
+
 ### 2026-06-09（🔥 P0：NPA notify webhook 漏寫 `pro_expires_at` — 第一個付費客戶踩到）
 
 **問題：** 第一個真實付費客戶 yuppy0912 完成早鳥年繳 NT$11,880、`is_pro=true` 有設、但 `pro_expires_at=NULL`。會變「終身 Pro」、明年到期不會自動降級、也不會觸發續訂提醒。
