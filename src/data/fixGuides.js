@@ -351,13 +351,60 @@ export const FIX_GUIDES = {
     },
     platforms: {
       wordpress: {
-        steps: [
-          '安裝「Schema Pro」或「Rank Math」外掛',
-          '後台 → Schema → 新增 Schema → 選擇「Organization」或「LocalBusiness」',
-          '填入公司名稱、網址、描述、Logo',
-          '儲存，外掛會自動注入到頁面',
+        methods: [
+          {
+            label: 'Rank Math 外掛（推薦）',
+            hint: '若你已裝 Rank Math（台灣 WP 最主流的 SEO 外掛）、走這條最快。不用碰程式碼。',
+            steps: [
+              'WordPress 後台 → Rank Math → Titles & Meta（標題和元）→ Local SEO（本地 SEO）',
+              '把「Person or Company（個人或公司）」設為 Company',
+              '填「Name（名稱）」「Logo」「Email」「Phone」「Address」「Type of Business」等欄位',
+              '滾到下方填「Social Profiles（社群連結）」— Facebook、Instagram、LINE 官方等',
+              '儲存後 Rank Math 會自動把 Organization Schema 注入每頁的 <head>',
+              '用 Google Rich Results Test（search.google.com/test/rich-results）貼網址驗證 Schema 抓得到',
+            ],
+            code: null,
+          },
+          {
+            label: 'WPCode PHP Snippet',
+            hint: '沒裝 Rank Math 也不想裝、或想要客製 Schema 內容。需 WP admin 權限、不需主機後台。',
+            steps: [
+              '裝 WPCode 外掛（搜尋「WPCode」、Syed Balkhi 開發、藍 logo）→ 啟用',
+              'WPCode → Code Snippets → + Add Snippet → Add Your Custom Code',
+              'Title 填「Organization Schema 注入」',
+              'Code Type 選「PHP Snippet」',
+              '把右方 PHP 整段貼入、替換成你的品牌資訊',
+              'Insertion 選「Auto Insert」、Location 選「Frontend Only」',
+              '右上角開「Active」、按「Save Snippet」',
+              '用 Google Rich Results Test 貼網址驗證 Schema 抓得到',
+            ],
+            codeLabel: 'WPCode PHP Snippet（自動把 Organization Schema 注入 <head>）',
+            code: `<?php
+// 把 Organization JSON-LD Schema 注入網站每頁的 <head>
+add_action('wp_head', function () {
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => '你的品牌名稱',
+        'url' => 'https://你的網址.com',
+        'logo' => 'https://你的網址.com/logo.png',
+        'description' => '一句話描述你做什麼、賣什麼、給誰',
+        'sameAs' => [
+            'https://www.facebook.com/你的粉專',
+            'https://www.instagram.com/你的IG',
         ],
-        code: null,
+        'contactPoint' => [
+            '@type' => 'ContactPoint',
+            'telephone' => '+886-2-xxxx-xxxx',
+            'contactType' => 'customer service',
+            'areaServed' => 'TW',
+            'email' => 'contact@你的網址.com',
+        ],
+    ];
+    echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
+}, 50);`,
+          },
+        ],
       },
       shopify: {
         steps: [
@@ -391,17 +438,70 @@ export const FIX_GUIDES = {
   },
 
   faq_schema: {
-    summary: '為常見問題頁面加入 FAQ Schema，讓 AI 問答引擎直接引用你的答案',
+    summary: '為常見問題頁面加入 FAQ Schema、讓 AI 問答引擎直接引用你的答案（AI 引用率最高的 Schema 類型）',
     platforms: {
       wordpress: {
-        steps: [
-          '安裝「Rank Math」外掛',
-          '編輯含有 FAQ 的頁面',
-          '在 Rank Math Schema 區塊選「FAQ Page」',
-          '逐一填入問題和答案',
-          '儲存',
+        methods: [
+          {
+            label: 'Rank Math 外掛（推薦）',
+            hint: '若你已裝 Rank Math、視覺化編輯 FAQ、不用碰程式碼。每頁可設不同的 FAQ Schema。',
+            steps: [
+              '編輯你想加 FAQ 的頁面 / 文章（例如服務介紹頁、商品頁）',
+              '右上角點 Rank Math 圖示開側欄、切「Schema」分頁',
+              '點「Schema Generator」→ 在 FAQ 區塊點「Use」加入',
+              '點「Edit」開始填、每個 Question / Answer 一組、按「+ Add」可加多組',
+              '建議 3-8 組常見問題、答案 50-150 字',
+              '點「Save for this Post」→ 更新頁面',
+              '用 Google Rich Results Test 貼這頁網址驗證 FAQ Schema 抓得到',
+            ],
+            code: null,
+          },
+          {
+            label: 'WPCode PHP Snippet（特定頁注入）',
+            hint: '沒裝 Rank Math 也不想裝、或想自訂注入位置。下方範例只把 FAQ 注入特定一頁、不全站套用（避免錯頁顯示）。',
+            steps: [
+              '裝 WPCode 外掛（搜尋「WPCode」、Syed Balkhi 開發、藍 logo）→ 啟用',
+              '先找出目標頁面的 page ID — WP 後台 → 頁面 → 編輯該頁、看網址列的 post=xxx 那個數字',
+              'WPCode → + Add Snippet → Add Your Custom Code',
+              'Title 填「FAQ Schema for page-xxx」（xxx 是 page ID）',
+              'Code Type 選「PHP Snippet」、把右方 PHP 整段貼入',
+              '把 $TARGET_PAGE_ID 改成你的 page ID、Q/A 改成實際問答（3-8 組）',
+              'Insertion 選「Auto Insert」、Location 選「Frontend Only」',
+              '右上 Active → 儲存',
+              '開該頁前台、View Source 搜 "FAQPage"、看得到 = 成功；再用 Google Rich Results Test 驗證',
+            ],
+            codeLabel: 'WPCode PHP Snippet（指定頁注入 FAQPage Schema）',
+            code: `<?php
+// 只在特定頁（page ID = $TARGET_PAGE_ID）的 <head> 注入 FAQ Schema
+// 多個頁面要分別建 snippet、或把 ID 改成陣列 + in_array 判斷
+add_action('wp_head', function () {
+    $TARGET_PAGE_ID = 123;  // ← 改成你的 page ID
+    if (!is_page($TARGET_PAGE_ID)) return;
+
+    $faqs = [
+        ['你的問題 1？', '對應的詳細答案 1。可寫 50-150 字、AI 會把這段當答案塞給用戶。'],
+        ['你的問題 2？', '對應的詳細答案 2。'],
+        ['你的問題 3？', '對應的詳細答案 3。'],
+    ];
+
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => array_map(function ($qa) {
+            return [
+                '@type' => 'Question',
+                'name' => $qa[0],
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $qa[1],
+                ],
+            ];
+        }, $faqs),
+    ];
+    echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
+}, 50);`,
+          },
         ],
-        code: null,
       },
       shopify: {
         steps: [

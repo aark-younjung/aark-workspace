@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-06-09（FixGuide 升級延伸：Organization Schema + FAQ Schema 也加 WPCode 路徑）
+
+**動機：** 延續上一輪 llms.txt 多 method 升級、把客訴次高的兩個 Schema 項目也升級。Schema 紅燈是代理商客戶最痛的修復項目（要嘛裝 SEO 外掛、要嘛要碰程式碼）、給客戶兩條路選擇大幅降低客服回覆量。
+
+**[src/data/fixGuides.js](src/data/fixGuides.js) 兩個升級：**
+
+1. **`json_ld`（Organization Schema）WP 兩條路：**
+   - **方法 A：Rank Math 外掛** — 後台 → Titles & Meta → Local SEO、視覺化填表單、自動注入。台灣 WP 站 70%+ 有裝 Rank Math、最高 CP 路線。
+   - **方法 B：WPCode PHP Snippet** — 給沒裝 SEO 外掛的站、附完整 `wp_head` hook + PHP array → JSON-LD 範本、UTF8 不轉義、可直接複製貼上。
+
+2. **`faq_schema` WP 兩條路：**
+   - **方法 A：Rank Math 視覺化** — 編輯文章 → Schema 側欄 → FAQ Generator → 視覺化加 Q/A、儲存自動注入。
+   - **方法 B：WPCode 指定頁注入** — 用 `is_page($TARGET_PAGE_ID)` 守衛限定特定頁、避免錯頁顯示。陣列結構讓改 Q/A 不用碰 JSON。
+
+**其他 platform 暫不動：** Shopify / Wix / HTML 結構簡單、單 method 就夠。下次客戶反饋哪個項目再針對性處理。
+
+---
+
 ### 2026-06-09（FixGuide 升級：支援多做法 sub-tab、llms.txt 提供 WPCode + 主機面板兩條路）
 
 **動機：** 第一個付費客戶 kimbo3899 修 llms.txt 紅燈時、Aark 給的指引「在網站根目錄建立 llms.txt」沒講具體怎麼建、客戶踩到「沒主機後台權限不知怎麼辦」的痛點。
