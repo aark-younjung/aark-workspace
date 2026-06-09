@@ -251,20 +251,29 @@ export default async function handler(req, res) {
     }
     console.log(`User ${pending.user_id} purchased NewebPay Top-up ${pending.pack} (+${pending.quota} 次, order=${merchantOrderNo})`)
   } else if (pending.kind === 'pro_yearly') {
-    // Phase 2 預留：Pro 年繳 — 寫 profiles.is_pro = true
+    // Pro 年繳（含早鳥）— 寫 profiles.is_pro = true + pro_expires_at = now + 365 天
+    // 2026-06-09 P0 bugfix：原本只寫 is_pro=true、漏掉 pro_expires_at、
+    // 導致客戶變「終身 Pro」、明年扣費 cron 不會自動降級也不會提醒續訂。
+    // 第一個付費客戶 yuppy0912 已踩到、手動補 pro_expires_at；之後新客戶走這條路徑就正確了。
+    const now = new Date()
+    const expiresAt = new Date(now)
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1)
     const { error: proErr } = await supabase
       .from('profiles')
       .update({
         is_pro: true,
+        is_trial: false,  // 試用轉付費時、要清掉試用旗標
+        trial_ends_at: null,
         payment_gateway: 'newebpay',
-        subscribed_at: new Date().toISOString(),
+        subscribed_at: now.toISOString(),
+        pro_expires_at: expiresAt.toISOString(),
       })
       .eq('id', pending.user_id)
     if (proErr) {
       console.error('Pro upgrade error:', proErr)
       return res.status(500).send(`Pro upgrade failed: ${proErr.message}`)
     }
-    console.log(`User ${pending.user_id} upgraded to Pro (yearly, NewebPay, order=${merchantOrderNo})`)
+    console.log(`User ${pending.user_id} upgraded to Pro (yearly, NewebPay, order=${merchantOrderNo}, expires=${expiresAt.toISOString()})`)
   } else {
     console.error(`Unknown pending kind: ${pending.kind}`)
     return res.status(400).send(`Unknown kind: ${pending.kind}`)

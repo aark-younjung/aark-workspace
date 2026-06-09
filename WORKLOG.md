@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-06-09（🔥 P0：NPA notify webhook 漏寫 `pro_expires_at` — 第一個付費客戶踩到）
+
+**問題：** 第一個真實付費客戶 yuppy0912 完成早鳥年繳 NT$11,880、`is_pro=true` 有設、但 `pro_expires_at=NULL`。會變「終身 Pro」、明年到期不會自動降級、也不會觸發續訂提醒。
+
+**根因：** [api/newebpay-notify.js:253-267](api/newebpay-notify.js#L253) `pro_yearly` 分支只寫 `is_pro / payment_gateway / subscribed_at`、漏寫 `pro_expires_at = paid_at + 1 年`。WORKLOG 期望「年繳 = paid_at + 365 天」但 webhook 沒實作。整個 codebase 沒有任何地方寫這欄位（除了客服工具手動延長 Pro 的 admin UI）。
+
+**修法：**
+1. **立即補這位客戶：** 用戶手動跑 SQL `UPDATE profiles SET pro_expires_at = '2027-06-09 06:24:47+00' WHERE email='yuppy0912@gmail.com'`
+2. **源頭修：** [api/newebpay-notify.js](api/newebpay-notify.js) `pro_yearly` 分支補上：
+   - `pro_expires_at: now + 1 year`
+   - 順便清試用旗標 `is_trial: false / trial_ends_at: null`（試用→付費轉換時應該清掉）
+
+**影響範圍：** 只有 yuppy0912 一位（這是第一個付費客戶）、無其他受影響用戶。下一個付費客戶起、webhook 自動寫 expires。
+
+**未動：** NPA 月繳分支（line 602+）`pro_expires_at` 邏輯 — 月繳是自動續扣、語意應該是「下次扣款日」、需要另設計（先記在這、不急）。
+
+---
+
 ### 2026-06-09（手機 QA 第一波：TopBar 收斂 + admin 密表 overflow）
 
 **問題 1：DashboardV2 TopBar 4 顆按鈕在手機爆版**
