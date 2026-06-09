@@ -537,13 +537,43 @@ add_action('wp_head', function () {
     summary: '加入 canonical 標籤，告訴搜尋引擎這個頁面的標準網址',
     platforms: {
       wordpress: {
-        steps: [
-          '安裝「Yoast SEO」或「Rank Math」其中一個（兩個都會自動加入 canonical，二選一即可）',
-          '【Yoast SEO】若需手動指定，編輯頁面/文章 → 滾到下方 Yoast 區塊 → 「進階」分頁 → 「標準 URL」欄位填入正確網址 → 更新',
-          '【Rank Math SEO】若需手動指定，編輯頁面/文章 → 右上 Rank Math 圖示開側欄（或下方 Rank Math 區塊）→ 「進階（Advanced）」分頁 → 「Canonical URL」欄位填入 → 更新',
-          '一般情況下兩個外掛預設都會自動加上 canonical，不用手動設定。要手動指定通常只發生在：(1) 多語系版本互指 (2) 分頁/篩選頁要指回主頁',
+        methods: [
+          {
+            label: 'Rank Math / Yoast 外掛（推薦）',
+            hint: '兩個 SEO 外掛都會自動加 canonical、99% 情境裝完就好、不用手動設。要手動指定通常只發生在多語系互指 / 分頁要指回主頁等少數情境。',
+            steps: [
+              'WordPress 後台 → 外掛 → 安裝外掛、搜尋「Rank Math」或「Yoast SEO」、二選一安裝啟用（免費版即可、台灣站 Rank Math 較主流）',
+              '啟用後預設會自動為每個頁面 / 文章加 canonical 標籤、不用任何設定',
+              '【需手動指定特定頁時】編輯該頁 / 文章：',
+              '・Rank Math：右上 Rank Math 圖示開側欄 → 「Advanced」分頁 → 「Canonical URL」填入 → 更新',
+              '・Yoast：滾到下方 Yoast 區塊 → 「進階」分頁 → 「標準 URL」填入 → 更新',
+              '驗證：用瀏覽器開該頁、檢視原始碼搜「canonical」、應看到 <link rel="canonical" href="..."> 標籤',
+            ],
+            code: null,
+          },
+          {
+            label: 'WPCode PHP Snippet',
+            hint: '沒裝 SEO 外掛、也不想裝。讓 WP 全站自動依當前頁面 URL 注入 canonical。',
+            steps: [
+              '裝 WPCode 外掛（搜尋「WPCode」、藍 logo）→ 啟用',
+              'WPCode → + Add Snippet → Add Your Custom Code',
+              'Title 填「Canonical Tag」',
+              'Code Type 選「PHP Snippet」、把右方整段貼入',
+              'Insertion 選「Auto Insert」、Location 選「Frontend Only」',
+              '右上 Active → Save Snippet',
+              '驗證：開任一頁、檢視原始碼搜「canonical」、看到 <link rel="canonical"> = 成功',
+            ],
+            codeLabel: 'WPCode PHP Snippet（自動加 canonical 到每頁 <head>）',
+            code: `<?php
+// 自動為每個頁面在 <head> 注入 canonical 標籤
+// 邏輯：用 WP 內建的 wp_get_canonical_url() 取當前頁面正規網址、避免分頁 / 查詢字串等變體被重複收錄
+add_action('wp_head', function () {
+    $canonical = wp_get_canonical_url();
+    if (!$canonical) return;
+    echo '<link rel="canonical" href="' . esc_url($canonical) . '" />' . PHP_EOL;
+}, 1);`,
+          },
         ],
-        code: null,
       },
       shopify: {
         steps: [
@@ -745,17 +775,69 @@ LLMS;
 
   // ─── E-E-A-T ────────────────────────────────────────────────
   author_info: {
-    summary: '在文章和頁面加入作者資訊，提升 AI 對你網站內容可信度的評估',
+    summary: '在文章和頁面加入作者資訊（bio、大頭照、Person Schema）、提升 AI 對你網站內容可信度（E-E-A-T 訊號）的評估',
     platforms: {
       wordpress: {
-        steps: [
-          '後台 → 使用者 → 你的帳號',
-          '填寫「簡介」欄位（100-200 字，說明你的專業背景）',
-          '上傳大頭照',
-          '文章使用「作者」區塊顯示（大多數主題支援）',
-          '或安裝「Simple Author Box」外掛顯示作者卡片',
+        methods: [
+          {
+            label: '內建 bio + Simple Author Box（推薦）',
+            hint: '不用碰程式碼、零成本。先填內建作者資料、再裝 Simple Author Box 自動在文章底顯示作者卡。',
+            steps: [
+              '【Step 1：填內建作者資料】',
+              'WordPress 後台 → 使用者 → 個人檔案（自己的帳號）',
+              '填「網路上的名稱」「網站」「Biographical Info（簡介）」— 簡介寫 100-200 字、強調專業背景 / 經歷 / 資格',
+              '若主題支援、上傳「Profile Picture（大頭照）」；不支援的話用 Gravatar（gravatar.com 註冊一次、全 WP 站通用）',
+              '儲存',
+              '【Step 2：裝外掛顯示作者卡】',
+              '外掛 → 安裝外掛、搜尋「Simple Author Box」（Mehdi Lahlou 開發、5 星）→ 安裝啟用',
+              '左側選單 → Simple Author Box → 設定外觀（位置：在文章底部 / 顏色 / Logo / 社群圖示）',
+              '儲存後每篇文章底部自動顯示作者卡 — 含大頭照 + 名稱 + 簡介 + 社群連結',
+              '驗證：開任一篇文章前台、滾到底、看到作者卡 = 成功',
+            ],
+            code: null,
+          },
+          {
+            label: 'WPCode Person Schema（進階）',
+            hint: '額外注入 Person JSON-LD Schema、明確告訴 AI「這篇文章的作者是這個人」、E-E-A-T 訊號更強。可與 Method A 並用。',
+            steps: [
+              '裝 WPCode 外掛（搜尋「WPCode」、藍 logo）→ 啟用',
+              'WPCode → + Add Snippet → Add Your Custom Code',
+              'Title 填「Person Schema for Author」',
+              'Code Type 選「PHP Snippet」、把右方 PHP 整段貼入',
+              '把 PHP 內的作者資訊改成你的（name / jobTitle / description / image / sameAs）',
+              'Insertion 選「Auto Insert」、Location 選「Frontend Only」',
+              '右上 Active → 儲存',
+              '驗證：用 Google Rich Results Test 貼任一篇文章網址、看 Schema 含 Person',
+            ],
+            codeLabel: 'WPCode PHP Snippet（在文章頁注入 Person JSON-LD）',
+            code: `<?php
+// 在單篇文章頁（is_single）的 <head> 注入作者 Person Schema
+// 與 Method A 的 Simple Author Box 互補：Author Box 給「人類訪客看」、Person Schema 給「AI 看」
+add_action('wp_head', function () {
+    if (!is_single()) return;
+
+    $person = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Person',
+        'name' => '你的姓名',
+        'jobTitle' => '你的職稱（例：資深 SEO 顧問）',
+        'description' => '100-200 字的專業背景介紹、強調經歷 / 資格 / 服務客戶數',
+        'image' => 'https://你的網址.com/author-photo.jpg',
+        'url' => 'https://你的網址.com/about',
+        'sameAs' => [
+            'https://www.linkedin.com/in/你的LinkedIn',
+            'https://www.facebook.com/你的粉專',
         ],
-        code: null,
+        'worksFor' => [
+            '@type' => 'Organization',
+            'name' => '你的公司名稱',
+            'url' => 'https://你的網址.com',
+        ],
+    ];
+    echo '<script type="application/ld+json">' . wp_json_encode($person, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
+}, 50);`,
+          },
+        ],
       },
       shopify: {
         steps: [

@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-06-09（FixGuide 升級第三波：canonical + author_info 也加 WPCode 路徑）
+
+**[src/data/fixGuides.js](src/data/fixGuides.js) 兩個再升：**
+
+1. **`canonical` WP 兩條路：**
+   - **方法 A：Rank Math / Yoast** — 雙外掛指南並列、註明「99% 情境裝完就好」、何時要手動指定（多語系互指 / 分頁回主頁）
+   - **方法 B：WPCode PHP Snippet** — 用 WP 內建 `wp_get_canonical_url()` 自動為每頁注入、12 行就搞定
+
+2. **`author_info` WP 兩條路：**
+   - **方法 A：內建 bio + Simple Author Box** — 兩階段步驟（先填個人檔案 bio + Gravatar、再裝外掛顯示作者卡）。零成本、零程式碼。
+   - **方法 B：WPCode Person Schema** — 額外注入 Person JSON-LD、給 AI 看（與 Method A 互補：Author Box 給人類、Schema 給 AI）。含 jobTitle / sameAs / worksFor 完整 E-E-A-T 訊號。
+
+**已升級 5 個 fix item：** llms_txt / json_ld / faq_schema / canonical / author_info。剩下的（meta_title / meta_desc / open_graph / contact_page / privacy_policy / h1_structure / alt_tags / mobile_compatible / page_speed / bot_accessibility）暫不動 — 內容已詳細或不適合多 method 拆分。
+
+---
+
 ### 2026-06-09（FixGuide 升級延伸：Organization Schema + FAQ Schema 也加 WPCode 路徑）
 
 **動機：** 延續上一輪 llms.txt 多 method 升級、把客訴次高的兩個 Schema 項目也升級。Schema 紅燈是代理商客戶最痛的修復項目（要嘛裝 SEO 外掛、要嘛要碰程式碼）、給客戶兩條路選擇大幅降低客服回覆量。
