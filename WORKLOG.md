@@ -6,6 +6,26 @@
 
 ---
 
+### 2026-06-10（Agency v0 Phase A — Foundation：limits.js + AuthContext + HomeDark 站數上限）
+
+**動機：** 用戶決定動工 Agency v0 多客戶工作區、不等候補名單上架（用戶自己就是代理商、需求 first-hand）。**商業上架延到「候補名單有訊號才上」**、code 先做好讓用戶 dogfood。
+
+**Schema 升級（用戶端跑完）：**
+- `profiles.subscription_tier` TEXT DEFAULT 'free' CHECK IN ('free', 'pro', 'agency_starter', 'agency_plus')
+- `websites.agency_managed_by` UUID REFERENCES profiles(id)
+- `websites.client_alias` TEXT
+- websites RLS 加 policy「代理商可存取自己代管的站」（OR existing owner policy）
+- `aark_agency_waitlist.invited_at` + `invite_status`（為 Phase 2「邀請候補試用」做準備）
+
+**Foundation code（這次 ship）：**
+- 新 [src/lib/limits.js](src/lib/limits.js)：TIER 常數 / SITE_LIMIT 對照 / `getTier(profile)` 向下相容 is_pro / `isAgencyTier` / `siteLimitForTier` / `tierLabel`。中央化方案邏輯、source of truth。
+- [src/context/AuthContext.jsx](src/context/AuthContext.jsx)：暴露 `tier / isAgency / siteLimit / tierName` 四個新欄位。
+- [src/pages/HomeDark.jsx](src/pages/HomeDark.jsx)：`WEBSITE_LIMIT = isPro ? 15 : 3` 改成讀 `siteLimit`。Agency 上來後 30/100 站自動生效、不用追改。
+
+**未動：** Phase B（MyClients 列表頁 + AddClientModal）+ Phase C（ClientSwitcher dropdown + DashboardV2 client_alias badge）下一輪 ship。
+
+---
+
 ### 2026-06-09（Agency 方案候補名單 — 上線同步收需求）
 
 **動機：** 正式上線時 Agency 方案還是「籌備中」、Pricing 頁原本是 disabled 按鈕、客戶按了沒反應。改為 modal 收候補、同步收集需求數據驅動 Agency 設計。

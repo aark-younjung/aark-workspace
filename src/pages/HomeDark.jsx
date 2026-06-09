@@ -281,7 +281,8 @@ export default function HomeDark() {
   // /api/public?action=stats 回 { brands, reports, mentions, scans, earlybird_taken }
   const [publicStats, setPublicStats] = useState(null)
   const navigate = useNavigate()
-  const { user, isPro, userName, signOut } = useAuth()
+  // 2026-06-10：加 siteLimit / tier 從 AuthContext、不再 hardcode 站數上限
+  const { user, isPro, userName, signOut, siteLimit, tier } = useAuth()
   const { setDark } = useTheme()
   useEffect(() => { setDark(true) }, [])
 
@@ -325,7 +326,9 @@ export default function HomeDark() {
     return () => clearTimeout(timer)
   }, [user, url])
 
-  const WEBSITE_LIMIT = isPro ? 15 : 3
+  // 2026-06-10：站數上限改吃 AuthContext.siteLimit（Free=3 / Pro=15 / Agency Starter=30 / Plus=100）
+  // 之前 hardcode isPro ? 15 : 3、Agency 上來後就不對；以後改方案上限只需動 src/lib/limits.js
+  const WEBSITE_LIMIT = siteLimit
 
   const fetchMyWebsites = async () => {
     if (!user) return

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { getTier, isAgencyTier, siteLimitForTier, tierLabel } from '../lib/limits'
 
 const AuthContext = createContext({})
 
@@ -148,11 +149,23 @@ export function AuthProvider({ children }) {
     : null
   const userName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || ''
 
+  // 2026-06-10 加入：訂閱方案輔助欄位（為 Agency v0 多客戶工作區做準備）
+  //   tier         — 'free' | 'pro' | 'agency_starter' | 'agency_plus'
+  //   isAgency     — bool、是否為 Agency 方案（兩階梯任一）
+  //   siteLimit    — 站數上限數字（Free=3 / Pro=15 / Starter=30 / Plus=100）
+  //   tierName     — 方案中文標籤（給 UI 顯示）
+  //   getTier 內部會向下相容 is_pro 欄位（沒設 subscription_tier 時推斷）
+  const tier = getTier(profile)
+  const isAgency = isAgencyTier(tier)
+  const siteLimit = siteLimitForTier(tier)
+  const tierName = tierLabel(tier)
+
   return (
     <AuthContext.Provider value={{
       user, profile, loading,
       isPro, isAdmin, userName,
       isTrial, trialEndsAt, trialDaysRemaining, hasTrialedBefore,
+      tier, isAgency, siteLimit, tierName,
       signIn, signUp, signOut, signInWithGoogle, refreshProfile, startTrial, fetchProfile,
     }}>
       {!loading && children}
