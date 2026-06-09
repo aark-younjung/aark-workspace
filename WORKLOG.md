@@ -6,6 +6,31 @@
 
 ---
 
+### 2026-06-09（🎉 正式上線、發佈公告 + 文案集）
+
+**動機：** CLAUDE.md 標的上線阻擋是「公告文案 + 客服通道」、今天起算正式上線。
+
+**做的事：**
+1. **NotificationBell 加上線公告**（HARDCODED_BRIEFINGS 頂端）：
+   - id: `hc-launch-2026-06-09`
+   - type: `promo`（橘色 🎉 標記）
+   - 內容：5 訊號層 LLMO、早鳥 100 名首年 NT$990／月、4 週限定
+2. **[docs/launch-copy.md](docs/launch-copy.md)** — 6 個版本文案集：
+   - NotificationBell 站內（已上）
+   - Email 上線通知（給註冊試用 / 免費用戶）
+   - Threads / FB 短版社群（180 字）
+   - LinkedIn 較長版（給代理商）
+   - X 超短版（quote tweet 用）
+   - 私訊認識代理商朋友版
+3. **發佈節奏建議表**（Day 0 / 1 / 2-3 / 7 / Week 2-4）
+4. **訊息一致性 checklist**（價格 / 期限 / URL / aivis 描述）
+
+**LINE OA：** 用戶詢問「一人可申請幾個」、回答無上限、暫緩申請 → 待用戶申請好 LINE ID 後再補 Footer / Hero / Email signature。
+
+**第一位早鳥（1/100）：** yuppy0912@gmail.com、2026-06-09 完成早鳥年繳 NT$11,880。
+
+---
+
 ### 2026-06-09（FixGuide 升級第三波：canonical + author_info 也加 WPCode 路徑）
 
 **[src/data/fixGuides.js](src/data/fixGuides.js) 兩個再升：**

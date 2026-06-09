@@ -20,7 +20,14 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 
 // 開發端 hardcoded 公告（產品變更紀錄）— admin DB 沒推時 fallback 用
+// 越前面越優先顯示
 const HARDCODED_BRIEFINGS = [
+  {
+    id: 'hc-launch-2026-06-09',
+    type: 'promo',
+    title: '🎉 方舟 AI 雷達正式上線、早鳥 100 名首年 NT$990／月',
+    body: '台灣第一個完整覆蓋 LLMO（5 訊號層）的監測平台正式對外開放。前 100 名付費用戶享早鳥首年 NT$990／月（年繳 NT$11,880、現省 22%）、4 週內或額滿截止。Pro 全功能 7 天免費試用 + 14 天無條件退款。',
+  },
   {
     id: 'hc-bell-launch',
     type: 'feature',
