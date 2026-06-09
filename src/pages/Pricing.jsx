@@ -7,6 +7,7 @@ import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
 import NotificationBell from '../components/v2/NotificationBell'
 import AarkMark from '../components/v2/AarkMark'
+import AgencyWaitlistModal from '../components/v2/AgencyWaitlistModal'
 
 const FEATURES_FREE = [
   '追蹤最多 3 個網站',
@@ -235,6 +236,8 @@ export default function Pricing() {
 
   const [upgrading, setUpgrading] = useState(false)
   const [startingTrial, setStartingTrial] = useState(false)
+  // 2026-06-09：Agency 方案籌備中、用 modal 收候補名單而非 disabled 按鈕（card button + 底部 CTA 都打開這個 modal）
+  const [agencyWaitlistOpen, setAgencyWaitlistOpen] = useState(false)
 
   // 啟動 7 天免費試用 — 只給「已登入但從未試用過、也不是 Pro」的用戶
   // 其他情境：未登入 → /register、已試用過 → 走付款流程、已是 Pro → 回首頁
@@ -936,12 +939,12 @@ export default function Pricing() {
               <p className="text-sm mb-6" style={isDark ? { color: T.textMid } : { color: '#64748b' }}>
                 白標報告 + 多客戶工作區 + 優先客服。預先洽談取得早期合作優惠。
               </p>
-              <a
-                href="mailto:hello@aark.com.tw?subject=Agency%20%E6%96%B9%E6%A1%88%E6%B4%BD%E8%AB%87"
+              <button
+                onClick={() => setAgencyWaitlistOpen(true)}
                 className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all shadow-lg shadow-purple-500/30"
               >
-                洽談 Agency 合作 →
-              </a>
+                🤝 加入 Agency 候補名單 →
+              </button>
             </div>
           </div>
         </div>
@@ -985,6 +988,12 @@ export default function Pricing() {
       )}
 
       <Footer />
+
+      {/* Agency 候補名單 modal — 2026-06-09 取代「即將推出」disabled 按鈕、收集需求數據 */}
+      <AgencyWaitlistModal
+        open={agencyWaitlistOpen}
+        onClose={() => setAgencyWaitlistOpen(false)}
+      />
     </div>
   )
 
@@ -1076,14 +1085,14 @@ export default function Pricing() {
         </ul>
 
         <button
-          disabled
-          className="w-full py-3 rounded-xl cursor-not-allowed font-medium border"
+          onClick={() => setAgencyWaitlistOpen(true)}
+          className="w-full py-3 rounded-xl font-medium border transition-colors"
           style={dark
-            ? { background: 'rgba(255,255,255,0.04)', borderColor: T.cardBorder, color: T.textLow }
-            : { background: '#ffedd5', borderColor: '#fed7aa', color: '#94a3b8' }
+            ? { background: 'rgba(139,92,246,0.10)', borderColor: T.aeo + '66', color: T.aeo }
+            : { background: '#f5f3ff', borderColor: 'rgba(139,92,246,0.4)', color: '#7c3aed' }
           }
         >
-          候補通知（即將推出）
+          🤝 加入候補名單（即將推出）
         </button>
       </>
     )

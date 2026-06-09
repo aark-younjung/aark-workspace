@@ -188,3 +188,51 @@ aark-workspace.vercel.app
 - [ ] URL 統一用 https://aark-workspace.vercel.app（之後切 app.a-ark.com.tw 時要全替換）
 - [ ] 不要寫「免費版有 aivis」（aivis 是 Pro-only、寫錯會引爭議）
 - [ ] 早鳥 1/100 已售（yuppy0912）— 對外文案可選擇強調 vs 不提
+- [ ] **Agency 方案要明確標「籌備中、候補開放」**、不要寫成「已上線」
+
+---
+
+## 7. Agency 候補引導段（給代理商朋友看的私訊版本加註）
+
+如果你私訊的對象是大代理商（管 15+ 個客戶站）、Pro 15 站限制不夠用、用這段引導他登記候補：
+
+```
+另外、如果你管很多客戶站、Pro 的 15 站限制可能不夠用。
+
+我們 Agency 方案（50 站 / 多客戶工作區 / 完整白標 / 優先客服）籌備中、
+預計 1-2 個月內推出。你可以先到 Pricing 頁登記候補名單、
+順便告訴我你最想要 Agency 解決什麼問題、我們會把方案設計成你想要的樣子。
+
+候補名單享早期優惠、推出時優先通知。
+
+aark-workspace.vercel.app/pricing
+```
+
+**重要：候補登記頁會問四件事**
+1. Email（必填）
+2. 公司 / 工作室名稱
+3. 預估管多少客戶站（1-5 / 6-15 / 16-30 / 30+）
+4. 最想用 Agency 解決什麼（這欄資料最珍貴、能直接影響 Agency 方案設計）
+
+候補名單可在 Supabase Dashboard 查 `aark_agency_waitlist` 表、做為 Agency 推出前的需求驗證。
+
+---
+
+## Agency 方案目前的設計狀態（給內部對齊用）
+
+**已實作的代理商交付物：**
+- ✅ 白標 PDF（ClientReportModal 可填代理商署名）
+- ✅ LLMO 6 週執行清單 PDF（白標、含 robots.txt / Schema 完整模板）
+
+**Agency 方案待開發：**
+- ❌ 多客戶工作區（一個帳號管多個客戶站、分組、切換）
+- ❌ 50 站追蹤（Pro 是 15、需提升）
+- ❌ NewebPay Agency SKU
+- ❌ Agency 訂閱類型欄位（profiles / pending / period 表）
+
+**Agency 推出時機判斷指標：**
+- 候補名單 ≥ 20 人 → 有市場驗證
+- 候補名單裡「30+ 個客戶」≥ 5 人 → 確認 50 站上限合理
+- Pro 用戶有人到 15 站上限 → 確認分層定價合理
+
+詳細討論見 [ideas-backlog.md](./ideas-backlog.md)。

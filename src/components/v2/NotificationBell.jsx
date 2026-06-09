@@ -29,6 +29,12 @@ const HARDCODED_BRIEFINGS = [
     body: '台灣第一個完整覆蓋 LLMO（5 訊號層）的監測平台正式對外開放。前 100 名付費用戶享早鳥首年 NT$990／月（年繳 NT$11,880、現省 22%）、4 週內或額滿截止。Pro 全功能 7 天免費試用 + 14 天無條件退款。',
   },
   {
+    id: 'hc-agency-waitlist-2026-06-09',
+    type: 'notice',
+    title: '🤝 Agency 方案候補名單開放登記',
+    body: '50 站追蹤 + 多客戶工作區 + 完整白標 + 優先客服。預計 1-2 個月內推出、候補名單享早期優惠。代理商 / 設計工作室可到 Pricing 頁登記、把你的需求告訴我們、幫我們把方案設計成你想要的樣子。',
+  },
+  {
     id: 'hc-bell-launch',
     type: 'feature',
     title: '公告改成鈴鐺通知',

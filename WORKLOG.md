@@ -6,6 +6,26 @@
 
 ---
 
+### 2026-06-09（Agency 方案候補名單 — 上線同步收需求）
+
+**動機：** 正式上線時 Agency 方案還是「籌備中」、Pricing 頁原本是 disabled 按鈕、客戶按了沒反應。改為 modal 收候補、同步收集需求數據驅動 Agency 設計。
+
+**做的事：**
+1. **新元件 [src/components/v2/AgencyWaitlistModal.jsx](src/components/v2/AgencyWaitlistModal.jsx)** — 4 欄表單（email* / 公司名 / 預估客戶數 4 區間 / 最想解決什麼）、寫入 `aark_agency_waitlist` 表。
+2. **[src/pages/Pricing.jsx](src/pages/Pricing.jsx) 兩處 CTA 接 modal：**
+   - Agency 卡按鈕「即將推出 disabled」→「🤝 加入候補名單（即將推出）」紫色 active 按鈕
+   - 底部「洽談 Agency 合作」mailto 連結 → 同 modal 入口
+3. **NotificationBell 加一則公告**（hc-agency-waitlist-2026-06-09、notice type）導引到 Pricing 頁登記
+4. **[docs/launch-copy.md](docs/launch-copy.md)** — 補版本 7（私訊代理商朋友的候補引導段）+ Agency 設計狀態對齊
+5. **[docs/ideas-backlog.md](docs/ideas-backlog.md)** — 新增「Agency 方案完整實作」設計討論：
+   - 已實作 vs 待開發功能清單（多客戶工作區 P0、50 站 P0、NewebPay Agency SKU P0 等）
+   - 4 個設計開放問題（客戶站隸屬模型 / 白標等級 / 定價結構 / 計費方式）
+   - 推出時機指標（候補名單 ≥ 20 人 + 30+ 客戶 ≥ 5 人）
+
+**待用戶側：** 跑 SQL 建 `aark_agency_waitlist` 表 + RLS policy（見回覆訊息）。
+
+---
+
 ### 2026-06-09（🎉 正式上線、發佈公告 + 文案集）
 
 **動機：** CLAUDE.md 標的上線阻擋是「公告文案 + 客服通道」、今天起算正式上線。
