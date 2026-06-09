@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-06-10（Agency v0 Phase B — MyClients 列表頁 + 新增代管 + 路由）
+
+**新檔：**
+- [src/pages/MyClients.jsx](src/pages/MyClients.jsx) — 「我的客戶」列表頁、列代理商代管的所有客戶站（`agency_managed_by = self`）、每張卡顯示 client_alias / URL / 5 訊號分數 / 進 Dashboard / 取消代管。Empty state 引導加第一位客戶。站數上限到時顯示升級 CTA。
+- [src/components/v2/AddClientModal.jsx](src/components/v2/AddClientModal.jsx) — 新增代管客戶站 modal、收 client_alias + URL、insert websites row (user_id + agency_managed_by = self, client_alias = alias)、跑站數上限檢查。
+
+**接線：**
+- [src/App.jsx](src/App.jsx) 加 `/clients` 路由
+- [src/components/v2/SiteHeader.jsx](src/components/v2/SiteHeader.jsx) Agency 用戶導覽列加「🤝 我的客戶」入口（非 Agency 不顯示）
+- 非 Agency 進 /clients → 自動 navigate('/pricing')
+
+**權限模型（v0 代管模式）：**
+- 客戶站的 `user_id = agency` 自己、`agency_managed_by = agency` 自己、`client_alias = '客戶 A'`
+- 「我的網站」（HomeDark）仍會看到所有站（agency 自己的 + 代管的混在一起）— Phase C 會在 Dashboard 加 client_alias badge 區分
+- 取消代管 = 清空 `agency_managed_by` + `client_alias`、不刪 site、客戶站回到一般列表
+
+---
+
 ### 2026-06-10（Agency v0 Phase A — Foundation：limits.js + AuthContext + HomeDark 站數上限）
 
 **動機：** 用戶決定動工 Agency v0 多客戶工作區、不等候補名單上架（用戶自己就是代理商、需求 first-hand）。**商業上架延到「候補名單有訊號才上」**、code 先做好讓用戶 dogfood。

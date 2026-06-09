@@ -8,7 +8,7 @@ import AarkMark from './AarkMark'
 // 全站共用暗色頂部導覽列：Logo + 桌機 nav + 登入 / 用戶區 + 手機 nav
 // 沿用 HomeDark 同款 — 黑色玻璃條 + 橘色強調 hover
 export default function SiteHeader() {
-  const { user, isPro, userName, signOut } = useAuth()
+  const { user, isPro, userName, signOut, isAgency } = useAuth()
 
   return (
     <header className="relative z-50 border-b border-white/8 bg-black/50 backdrop-blur-xl">
@@ -31,6 +31,10 @@ export default function SiteHeader() {
 
           {/* 桌機 nav */}
           <nav className="hidden md:flex items-center gap-5">
+            {/* 2026-06-10：Agency 用戶看到「我的客戶」入口、其他用戶不顯示 */}
+            {isAgency && (
+              <Link to="/clients" className="text-white hover:text-orange-300 transition-colors text-sm font-semibold">🤝 我的客戶</Link>
+            )}
             <Link to="/showcase" className="text-white hover:text-orange-300 transition-colors text-sm">排行榜</Link>
             <Link to="/compare" className="text-white hover:text-orange-300 transition-colors text-sm">競品比較</Link>
             <Link to="/pricing" className="text-white hover:text-orange-300 transition-colors text-sm">定價</Link>

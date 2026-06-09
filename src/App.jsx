@@ -32,6 +32,7 @@ import AdminShowcase from './pages/admin/AdminShowcase'
 import AdminMonitoring from './pages/admin/AdminMonitoring'
 import AIVisibility from './pages/AIVisibility'
 import AIVisibilityDashboard from './pages/AIVisibilityDashboard'
+import MyClients from './pages/MyClients'
 // 法律頁（NewebPay 商家審核必備）— 服務條款 / 隱私權 / 消費者權益保障
 import Terms from './pages/legal/Terms'
 import Privacy from './pages/legal/Privacy'
@@ -90,6 +91,8 @@ function AppInner() {
         <Route path="/register" element={<Register />} />
         <Route path="/showcase" element={<Showcase />} />
         <Route path="/compare" element={<Compare />} />
+        {/* Agency 多客戶工作區（v0、2026-06-10）— 非 Agency 用戶導去 /pricing */}
+        <Route path="/clients" element={<MyClients />} />
         {/* 主路由（2026-06-06 切換到 V2）— DashboardV2 = prototype-2b 實作完成版
             「← 切回舊版」按鈕會引導用戶到 /dashboard-legacy/:id（舊版保留 1-2 週做緩衝） */}
         <Route path="/dashboard/:id" element={<DashboardV2 />} />
