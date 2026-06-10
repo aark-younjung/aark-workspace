@@ -160,16 +160,14 @@ async function handleBrandMentions(req, res) {
       // 常見：API key 沒啟用 Custom Search API / cx(CSE ID) 錯 / key 限制錯 API
       let upstreamMessage = ''
       try { upstreamMessage = JSON.parse(text)?.error?.message || '' } catch { upstreamMessage = text.slice(0, 300) }
-      // 2026-06-10 診斷：遮罩顯示 runtime 實際用的 key 前綴 + cx、確認 Vercel env 到底讀到哪把 key
-      // 直接拼進 message、讓 UI 顯示得出來（debug 欄位藏 JSON 裡用戶看不到）
-      const keyPreview = apiKey ? `${apiKey.slice(0, 10)}…${apiKey.slice(-4)} (len ${apiKey.length})` : '(empty)'
+      // 2026-06-10：Brand Mentions 暫時 parked — Google Custom Search 403 卡關（key 來自 aark-api、
+      // API 已啟用、cx 正確、等 1hr 仍 PERMISSION_DENIED、疑似 Google 專案層級問題待查）。
+      // 對外給乾淨訊息、不洩漏內部 key/cx。debug 細節改記 server log。
+      console.error('Brand mentions upstream error:', resp.status, upstreamMessage)
       return res.status(502).json({
         error: 'upstream_error',
-        message: `Google 搜尋 API 錯誤（${resp.status}）：${upstreamMessage || '未知原因'}　【診斷｜key=${keyPreview}｜cx=${cseId}】`,
+        message: '品牌提及搜尋暫時無法使用（功能調整中），請稍後再試。',
         upstream_status: resp.status,
-        upstream_detail: upstreamMessage,
-        debug_key_preview: keyPreview,
-        debug_cx: cseId,
       })
     }
 
