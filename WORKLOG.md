@@ -6,6 +6,26 @@
 
 ---
 
+### 2026-06-10（aivis Gemini 整合 — 跨 LLM 監測從 1 個升 2 個）
+
+**動機：** CLAUDE.md 寫 aivis 監測「5 個 LLM」、實際 [api/aivis/fetch.js](api/aivis/fetch.js) 只接 Claude。配合用戶申請 Google API 一次性把 Gemini 加進去、aivis 從半成品升級為「Claude + Gemini」雙 LLM 監測。
+
+**做的事：**
+1. **[api/aivis/fetch.js](api/aivis/fetch.js)** 新增：
+   - `GEMINI_API_URL`、`GEMINI_MODEL`（gemini-2.0-flash）、定價常數
+   - `callGemini()` 函式（同 callClaude 結構、處理 Gemini 特殊回應格式 `candidates[0].content.parts[0].text`）
+   - 主 loop 改成 Claude + Gemini 並行呼叫（Promise.all）、Claude 失敗才擋整個 run、Gemini 失敗只 console.warn
+   - DB 寫兩筆 `aivis_responses`（model 欄區分）+ 兩筆 `aivis_mentions`（如有提及）
+   - Response 加 `by_engine` 物件、分項顯示 Claude / Gemini 提及率與成本
+
+2. **向下相容：** Gemini 為「選用」、沒設 `GEMINI_API_KEY` 就只跑 Claude、現有用戶不受影響。
+
+**配額：** Gemini 失敗不扣 quota（Claude 成功才算）、避免雙 LLM 模型用戶配額被吃兩倍。
+
+**待用戶端：** Vercel 環境變數 `GEMINI_API_KEY` 設好後、redeploy 即生效。
+
+---
+
 ### 2026-06-10（Brand Mentions MVP — 品牌外部提及搜尋 + SEO 速度升級規劃）
 
 **動機：** LLMO 訊號鏈缺一塊「外部曝光」— 客戶 audit 100 分但網路沒人提、AI 還是不推薦。這個 MVP 接 Google Custom Search API、給「品牌外部提及次數」+ 來源分類 + 操作建議、補完訊號鏈。

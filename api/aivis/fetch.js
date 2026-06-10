@@ -26,6 +26,14 @@ const MAX_TOKENS = 1024
 const PRICE_INPUT_PER_TOKEN = 1 / 1_000_000   // $1 / MTok
 const PRICE_OUTPUT_PER_TOKEN = 5 / 1_000_000  // $5 / MTok
 
+// ─── Gemini 整合（2026-06-10、跟著 Brand Mentions MVP 一起加） ───
+// 每次 run 同時打 Claude + Gemini、增加跨 LLM 覆蓋率；DB 用 model 欄位區分
+// Gemini 2.0 Flash 免費額度：1500 query/天、100 萬 tokens/天 — 100 用戶內幾乎用不到付費
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_PRICE_INPUT_PER_TOKEN = 0.10 / 1_000_000   // $0.10 / MTok
+const GEMINI_PRICE_OUTPUT_PER_TOKEN = 0.40 / 1_000_000  // $0.40 / MTok
+
 // 額度規則 — 與 [Pricing.jsx] 與 [AIVisibilityDashboard.jsx] 三邊同步
 const AIVIS_QUOTA_PER_MONTH = 150   // Pro 內含本月免費額度
 const AIVIS_HARD_CAP = 1000          // 每月查詢硬上限（內含 + Top-up 合計），Agency 推出後解除
@@ -50,6 +58,9 @@ export default async function handler(req, res) {
   const SUPABASE_URL = process.env.SUPABASE_URL
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
+  // Gemini 為「選用」— 沒設 GEMINI_API_KEY 就只跑 Claude（向下相容）
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+  const useGemini = !!GEMINI_API_KEY
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: 'Missing required environment variables' })
@@ -184,8 +195,14 @@ export default async function handler(req, res) {
         topupConsumedThisCall += 1
       }
 
-      // 呼叫 Claude Haiku
-      const claudeRes = await callClaude(prompt.text, ANTHROPIC_API_KEY)
+      // 2026-06-10：Claude + Gemini 並行呼叫、增加跨 LLM 覆蓋率
+      // Claude 失敗 → 整個 run 視為失敗、不扣 quota（保留向下相容）
+      // Gemini 失敗 → 只記錄、不影響 run（額外資料、不算錯）
+      const [claudeRes, geminiRes] = await Promise.all([
+        callClaude(prompt.text, ANTHROPIC_API_KEY),
+        useGemini ? callGemini(prompt.text, GEMINI_API_KEY) : Promise.resolve(null),
+      ])
+
       if (!claudeRes.ok) {
         return res.status(502).json({
           error: 'Claude API error',
@@ -194,16 +211,13 @@ export default async function handler(req, res) {
         })
       }
 
-      const { text, inputTokens, outputTokens } = claudeRes
-      const cost = inputTokens * PRICE_INPUT_PER_TOKEN + outputTokens * PRICE_OUTPUT_PER_TOKEN
+      // ─── 處理 Claude 結果（主、扣 quota） ───
+      const claudeCost = claudeRes.inputTokens * PRICE_INPUT_PER_TOKEN + claudeRes.outputTokens * PRICE_OUTPUT_PER_TOKEN
+      const claudeMentioned = detectMention(claudeRes.text, brandName)
+      const claudePosition = claudeMentioned ? findListPosition(claudeRes.text, brandName) : null
+      const claudeContext = claudeMentioned ? extractContext(claudeRes.text, brandName) : null
 
-      // 偵測品牌
-      const mentioned = detectMention(text, brandName)
-      const position = mentioned ? findListPosition(text, brandName) : null
-      const context = mentioned ? extractContext(text, brandName) : null
-
-      // 寫入 response
-      const { data: response, error: respErr } = await supabase
+      const { data: claudeRow, error: claudeErr } = await supabase
         .from('aivis_responses')
         .insert({
           user_id: prompt.user_id,
@@ -211,49 +225,117 @@ export default async function handler(req, res) {
           prompt_id: prompt.id,
           run_index: i,
           model: MODEL,
-          raw_response: text,
-          input_tokens: inputTokens,
-          output_tokens: outputTokens,
-          cost_usd: cost,
-          brand_mentioned: mentioned,
+          raw_response: claudeRes.text,
+          input_tokens: claudeRes.inputTokens,
+          output_tokens: claudeRes.outputTokens,
+          cost_usd: claudeCost,
+          brand_mentioned: claudeMentioned,
         })
         .select('id')
         .single()
 
-      if (respErr) {
-        return res.status(500).json({ error: 'Failed to save response', detail: respErr.message })
+      if (claudeErr) {
+        return res.status(500).json({ error: 'Failed to save Claude response', detail: claudeErr.message })
       }
 
-      // 寫入成功才算本次扣額成立（避免 Claude 失敗 / DB 失敗時誤扣）
+      // Claude 成功才算扣 quota（Gemini 額外資料、不影響配額）
       usedThisCall += 1
 
-      // 有提到才寫 mention
-      if (mentioned) {
+      if (claudeMentioned) {
         await supabase.from('aivis_mentions').insert({
           user_id: prompt.user_id,
           brand_id: prompt.brand_id,
-          response_id: response.id,
+          response_id: claudeRow.id,
           mentioned_name: brandName,
           is_target: true,
-          position,
-          context,
+          position: claudePosition,
+          context: claudeContext,
         })
       }
 
-      results.push({ run: i, mentioned, position, cost_usd: cost })
+      // ─── 處理 Gemini 結果（額外、不影響 quota） ───
+      // Gemini 失敗只 console log、不擋 response、保證向下相容
+      let geminiMentioned = null
+      let geminiCost = 0
+      if (geminiRes && geminiRes.ok) {
+        geminiCost = geminiRes.inputTokens * GEMINI_PRICE_INPUT_PER_TOKEN + geminiRes.outputTokens * GEMINI_PRICE_OUTPUT_PER_TOKEN
+        geminiMentioned = detectMention(geminiRes.text, brandName)
+        const geminiPosition = geminiMentioned ? findListPosition(geminiRes.text, brandName) : null
+        const geminiContext = geminiMentioned ? extractContext(geminiRes.text, brandName) : null
+
+        const { data: geminiRow, error: geminiInsertErr } = await supabase
+          .from('aivis_responses')
+          .insert({
+            user_id: prompt.user_id,
+            brand_id: prompt.brand_id,
+            prompt_id: prompt.id,
+            run_index: i,
+            model: GEMINI_MODEL,
+            raw_response: geminiRes.text,
+            input_tokens: geminiRes.inputTokens,
+            output_tokens: geminiRes.outputTokens,
+            cost_usd: geminiCost,
+            brand_mentioned: geminiMentioned,
+          })
+          .select('id')
+          .single()
+
+        if (!geminiInsertErr && geminiMentioned) {
+          await supabase.from('aivis_mentions').insert({
+            user_id: prompt.user_id,
+            brand_id: prompt.brand_id,
+            response_id: geminiRow.id,
+            mentioned_name: brandName,
+            is_target: true,
+            position: geminiPosition,
+            context: geminiContext,
+          })
+        }
+      } else if (geminiRes && !geminiRes.ok) {
+        console.warn(`Gemini call failed for run ${i}:`, geminiRes.error)
+      }
+
+      // results 同時記錄兩個 engine 的結果（給 client 顯示用）
+      results.push({
+        run: i,
+        claude: { mentioned: claudeMentioned, position: claudePosition, cost_usd: claudeCost },
+        gemini: geminiRes && geminiRes.ok
+          ? { mentioned: geminiMentioned, cost_usd: geminiCost }
+          : (useGemini ? { error: geminiRes?.error || 'failed' } : null),
+      })
     }
 
-    const mentionedCount = results.filter(r => r.mentioned).length
-    const totalCost = results.reduce((sum, r) => sum + r.cost_usd, 0)
+    // 2026-06-10：分別算 Claude / Gemini 的提及次數與成本
+    // results 每筆是一個 run、含 claude + gemini 兩個 sub-result
+    const claudeMentionedCount = results.filter(r => r.claude?.mentioned).length
+    const geminiMentionedCount = results.filter(r => r.gemini?.mentioned).length
+    const geminiSuccessRuns = results.filter(r => r.gemini && !r.gemini.error).length
+    const claudeCostTotal = results.reduce((sum, r) => sum + (r.claude?.cost_usd || 0), 0)
+    const geminiCostTotal = results.reduce((sum, r) => sum + (r.gemini?.cost_usd || 0), 0)
 
     return res.status(200).json({
       success: true,
       brand: brandName,
       prompt: prompt.text,
       runs,
-      mentioned_count: mentionedCount,
-      mention_rate: mentionedCount / runs,
-      total_cost_usd: totalCost,
+      // 主指標：Claude（向下相容、之前的 dashboard 看這兩個欄位）
+      mentioned_count: claudeMentionedCount,
+      mention_rate: claudeMentionedCount / runs,
+      total_cost_usd: claudeCostTotal + geminiCostTotal,
+      // 跨 LLM 分項（2026-06-10 新增、給 dashboard 顯示「Claude vs Gemini」對照）
+      by_engine: {
+        claude: {
+          mentioned_count: claudeMentionedCount,
+          mention_rate: claudeMentionedCount / runs,
+          cost_usd: claudeCostTotal,
+        },
+        gemini: useGemini ? {
+          mentioned_count: geminiMentionedCount,
+          mention_rate: geminiSuccessRuns > 0 ? geminiMentionedCount / geminiSuccessRuns : 0,
+          success_runs: geminiSuccessRuns,
+          cost_usd: geminiCostTotal,
+        } : null,
+      },
       results,
       // 額度資訊（給前端 banner 即時更新用，免再打一次 count 查詢）
       quota: {
@@ -272,6 +354,39 @@ export default async function handler(req, res) {
 }
 
 // ---------------------- 工具函式 ----------------------
+
+// 呼叫 Gemini API（2026-06-10）— 跟 Claude 同一個 prompt、增加跨 LLM 覆蓋率
+// 失敗回 {ok:false, error}、Gemini 失敗不會擋 Claude 主流程
+async function callGemini(promptText, apiKey) {
+  try {
+    const r = await fetch(`${GEMINI_API_URL}?key=${encodeURIComponent(apiKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: promptText }] }],
+        generationConfig: { maxOutputTokens: MAX_TOKENS },
+      }),
+      signal: AbortSignal.timeout(30000),
+    })
+
+    if (!r.ok) {
+      const errText = await r.text()
+      return { ok: false, error: `HTTP ${r.status}: ${errText.slice(0, 300)}` }
+    }
+
+    const data = await r.json()
+    // Gemini response 結構：candidates[0].content.parts[0].text
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    return {
+      ok: true,
+      text,
+      inputTokens: data.usageMetadata?.promptTokenCount || 0,
+      outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
+    }
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+}
 
 async function callClaude(promptText, apiKey) {
   try {
