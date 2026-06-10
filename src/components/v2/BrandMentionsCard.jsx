@@ -74,9 +74,10 @@ export default function BrandMentionsCard({ defaultBrand = '', defaultExcludeDom
     const cacheKey = `${brand}__${excludeDomain}`
 
     try {
-      const params = new URLSearchParams({ brand: brand.trim(), num: '10' })
+      // 2026-06-10：合併進 /api/public?action=brand-mentions（Vercel Hobby 12 function 上限）
+      const params = new URLSearchParams({ action: 'brand-mentions', brand: brand.trim(), num: '10' })
       if (excludeDomain.trim()) params.set('excludeDomain', excludeDomain.trim())
-      const resp = await fetch(`/api/brand-mentions?${params}`)
+      const resp = await fetch(`/api/public?${params}`)
       const data = await resp.json()
 
       if (!resp.ok) {

@@ -1,11 +1,13 @@
 /**
- * GET /api/public?action=stats           — Pricing 頁社會證明 KPI（取代 /api/public-stats）
- * GET /api/public?action=llms&id={uuid}  — llms.txt 代管 endpoint（取代 /api/llms-txt）
- * GET /api/public?action=aivis-trends    — Dashboard「本週 AI 趨勢」widget（2026-06-06 加）
+ * GET /api/public?action=stats             — Pricing 頁社會證明 KPI（取代 /api/public-stats）
+ * GET /api/public?action=llms&id={uuid}    — llms.txt 代管 endpoint（取代 /api/llms-txt）
+ * GET /api/public?action=aivis-trends      — Dashboard「本週 AI 趨勢」widget（2026-06-06 加）
+ * GET /api/public?action=brand-mentions    — 品牌外部提及搜尋（2026-06-10 加、原 /api/brand-mentions）
  *
  * 為什麼合併：Vercel Hobby plan 一個 deployment 最多 12 個 serverless functions。
  *   加 llms-txt 後超過上限導致 4 個 commit 連續 deploy fail。合併 public-stats + llms-txt
  *   為同一 endpoint（兩者都是公開讀 + service role + 無 auth），讓 function 數退回 12。
+ *   2026-06-10：再把 brand-mentions 也合進來（一樣是無 auth 公開讀）、function 數退回 12。
  *
  * 路由分流以 ?action= query param 為準。預設 / 未知 action → 400
  */
@@ -68,7 +70,149 @@ export default async function handler(req, res) {
   if (action === 'stats') return handleStats(req, res, supabase)
   if (action === 'llms') return handleLlms(req, res, supabase)
   if (action === 'aivis-trends') return handleAivisTrends(req, res, supabase)
-  return res.status(400).json({ error: 'Missing or invalid action (expected: stats | llms | aivis-trends)' })
+  if (action === 'brand-mentions') return handleBrandMentions(req, res)  // 不需 supabase、不傳
+  return res.status(400).json({ error: 'Missing or invalid action (expected: stats | llms | aivis-trends | brand-mentions)' })
+}
+
+// ───────────────────────────────────────────────────────────
+// action=brand-mentions — 品牌外部提及（Google Custom Search、2026-06-10 從 /api/brand-mentions 合併進來）
+//   Query: brand, excludeDomain, num
+//   Env: GOOGLE_CSE_API_KEY, GOOGLE_CSE_ID
+// ───────────────────────────────────────────────────────────
+const BRAND_MENTIONS_ALLOWED_NUM = [5, 10, 20]
+
+async function handleBrandMentions(req, res) {
+  const apiKey = process.env.GOOGLE_CSE_API_KEY
+  const cseId = process.env.GOOGLE_CSE_ID
+  if (!apiKey || !cseId) {
+    return res.status(503).json({
+      error: 'not_configured',
+      message: 'Brand mentions 功能未啟用、請在 Vercel 設定 GOOGLE_CSE_API_KEY 與 GOOGLE_CSE_ID',
+    })
+  }
+
+  const brand = (req.query.brand || '').trim()
+  const excludeDomain = (req.query.excludeDomain || '').trim()
+  const num = BRAND_MENTIONS_ALLOWED_NUM.includes(parseInt(req.query.num)) ? parseInt(req.query.num) : 10
+
+  if (!brand || brand.length < 2) return res.status(400).json({ error: 'Brand name required (≥ 2 chars)' })
+  if (brand.length > 50) return res.status(400).json({ error: 'Brand name too long (max 50 chars)' })
+
+  // 組 query：exact phrase + 排除自家網域、避免抓到自家頁面
+  // 例：`"金鉑先生" -site:kimbo3899.com.tw`
+  let query = `"${brand}"`
+  if (excludeDomain) {
+    const cleanDomain = excludeDomain
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .replace(/\/.*$/, '')
+    if (cleanDomain) query += ` -site:${cleanDomain}`
+  }
+
+  try {
+    const url = new URL('https://www.googleapis.com/customsearch/v1')
+    url.searchParams.set('key', apiKey)
+    url.searchParams.set('cx', cseId)
+    url.searchParams.set('q', query)
+    url.searchParams.set('num', String(num))
+    url.searchParams.set('hl', 'zh-TW')
+
+    const resp = await fetch(url.toString())
+    if (!resp.ok) {
+      const text = await resp.text()
+      console.error('Google CSE API error:', resp.status, text)
+      return res.status(502).json({
+        error: 'upstream_error',
+        message: 'Google 搜尋 API 暫時無法使用',
+        upstream_status: resp.status,
+      })
+    }
+
+    const data = await resp.json()
+    const totalResults = parseInt(data?.searchInformation?.totalResults || '0')
+    const items = (data?.items || []).map(it => ({
+      title: it.title,
+      link: it.link,
+      snippet: it.snippet,
+      displayLink: it.displayLink,
+      category: categorizeBrandSource(it.displayLink),
+    }))
+
+    return res.status(200).json({
+      brand,
+      excludeDomain: excludeDomain || null,
+      query,
+      totalResults,
+      items,
+      categoryCounts: countByBrandCategory(items),
+      recommendation: recommendBrand(totalResults),
+    })
+  } catch (err) {
+    console.error('brand-mentions error:', err)
+    return res.status(500).json({ error: 'internal_error', message: String(err.message || err) })
+  }
+}
+
+// 分類 domain 類型
+function categorizeBrandSource(displayLink) {
+  if (!displayLink) return 'other'
+  const d = displayLink.toLowerCase()
+  if (/(udn|ltn|cna|chinatimes|tvbs|ettoday|setn|nownews|storm|cw|bnext|inside|techorange|digitimes|ithome|appledaily|nextapple|epochtimes|epoch|cnabc|cnyes|moneydj)/i.test(d)) return 'news'
+  if (/(mobile01|ptt|dcard|gamer\.com\.tw|bahamut|techbang|kocpc|toy-people|niusnews)/i.test(d)) return 'forum'
+  if (/(facebook|instagram|twitter|x\.com|threads|tiktok|linkedin|youtube|reddit|medium)/i.test(d)) return 'social'
+  if (/(blogspot|wordpress\.com|pixnet|blog\b|substack)/i.test(d)) return 'blog'
+  if (/(wikipedia|wikidata|wiktionary)/i.test(d)) return 'wiki'
+  return 'other'
+}
+
+function countByBrandCategory(items) {
+  const counts = { news: 0, forum: 0, social: 0, blog: 0, wiki: 0, other: 0 }
+  for (const it of items) counts[it.category] = (counts[it.category] || 0) + 1
+  return counts
+}
+
+function recommendBrand(totalResults) {
+  if (totalResults === 0) {
+    return {
+      level: 'critical',
+      message: '網路完全沒人提到你的品牌、這是 AI 不推薦你的最大原因。',
+      actions: [
+        '投新聞稿（中央社 / 聯合新聞網 / TVBS / 中時 / 自由）',
+        '鋪論壇話題（Mobile01 / PTT 對應板 / Dcard）',
+        '建立 Wikipedia 條目（如果品牌符合條件）',
+        '找 KOL 開箱 / 評測',
+      ],
+    }
+  }
+  if (totalResults < 10) {
+    return {
+      level: 'warning',
+      message: `只有 ${totalResults} 處提到、外部曝光偏低。`,
+      actions: [
+        '主動投放 1-2 篇產業媒體（INSIDE / TechOrange / 數位時代）',
+        '社群定期發產品/案例分享',
+        '經營公司 Wikipedia / Google 商家',
+      ],
+    }
+  }
+  if (totalResults < 50) {
+    return {
+      level: 'fair',
+      message: `${totalResults} 處提及、已有起步、但還需要更多元的來源。`,
+      actions: [
+        '檢查來源是否多元（news / forum / social 都有）',
+        '針對缺乏的來源類型補強（例：沒新聞就投稿）',
+      ],
+    }
+  }
+  return {
+    level: 'good',
+    message: `${totalResults} 處提及、外部曝光健康。`,
+    actions: [
+      '持續維護 — 新聞稿、論壇互動、社群經營',
+      '可考慮監測競品提及次數做對比',
+    ],
+  }
 }
 
 // ───────────────────────────────────────────────────────────
