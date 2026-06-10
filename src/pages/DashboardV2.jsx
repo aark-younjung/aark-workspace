@@ -26,6 +26,7 @@ import SiteHeader from '../components/v2/SiteHeader'
 // 2026-06-06：公告從 BriefingCard 改成 SiteHeader 右上角 NotificationBell、Dashboard 不再單獨放卡片
 // 2026-06-06：本週 AI 趨勢卡 — 用 aivis 累積資料反推「跨用戶 AI 提及 Top 5」、創造每週回訪動機
 import WeeklyAITrendsCard from '../components/v2/WeeklyAITrendsCard'
+import LeadingLaggingGuide from '../components/v2/LeadingLaggingGuide'
 // 2026-06-07：客戶提案 PDF 產生器（白標）— 代理商賺錢角度（5 AI 共識最大缺口）
 import ClientReportModal from '../components/v2/ClientReportModal'
 import LLMOChecklistModal from '../components/v2/LLMOChecklistModal'
@@ -442,6 +443,11 @@ export default function DashboardV2() {
             </section>
 
             {/* ─── 公告改成 SiteHeader 鈴鐺、Dashboard 內不再放卡片（2026-06-06） ─── */}
+
+            {/* ─── Audit 達標引導卡（2026-06-10）— 4 個訊號層平均 ≥ 85 時觸發
+                  解決客戶痛點：「audit 100 但 AI 還是不提我」、明確說明 Leading vs Lagging 指標差異
+                  內部不顯示時 component 自己 return null、不用條件包 ─── */}
+            <LeadingLaggingGuide scores={scores} websiteName={website.name} />
 
             {/* ─── 本週 AI 趨勢卡（2026-06-06）— 用 aivis 跨用戶資料、創造每週回訪動機 ─── */}
             <WeeklyAITrendsCard />

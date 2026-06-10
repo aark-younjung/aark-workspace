@@ -6,6 +6,27 @@
 
 ---
 
+### 2026-06-10（Leading vs Lagging UX：Audit 達標引導卡 + ideas-backlog 加兩想法）
+
+**動機：** 第一位付費客戶 + yuppy0912 都遇到「audit 100 分了、但 aivis 引用率還是 0」的困惑。用戶曾考慮把分數天花板降到 95 留想像空間、但會引發更糟副作用（永遠拿不到滿分挫敗 / 跟業界標準不一致 / 沒解到根問題）。
+
+**真實問題本質：** 客戶把「audit 滿分」誤解成「業績滿分」 — Leading vs Lagging indicator 混淆。
+
+**新元件：** [src/components/v2/LeadingLaggingGuide.jsx](src/components/v2/LeadingLaggingGuide.jsx)
+- **顯示條件：** SEO + AEO + GEO + E-E-A-T 4 個 audit 平均 ≥ 85 時出現
+- **內容：** 左右雙欄
+  - 左（Leading）：「你做了什麼」— 列 4 個 audit 分數 + 「舞台搭好了」
+  - 右（Lagging）：「市場給你什麼」— aivis 引用率 + 媒體提及（即將推出）+ CTA「設定 aivis 監測」+ 「等觀眾入場」
+- **位置：** DashboardV2 公告區下、WeeklyAITrendsCard 上、視覺優先級高
+
+**ideas-backlog 新增兩個戰略級項目：**
+1. **分數天花板與 Leading vs Lagging UX 重新框定** — 完整論述為什麼不降天花板、應該做什麼替代
+2. **媒體提及（Brand Mentions）功能** — Google Custom Search API 接 Brand Mentions、做為「外部訊號儀表板」（跟 aivis 並列）。MVP 3-5 天、競品比較圖再 2-3 天
+
+**未動：** Agency v0 Phase C polish（client_alias badge / ClientSwitcher）暫緩、Brand Mentions MVP 等想法 1 跑一陣子收回饋再啟動。
+
+---
+
 ### 2026-06-10（Agency v0 Phase B — MyClients 列表頁 + 新增代管 + 路由）
 
 **新檔：**
