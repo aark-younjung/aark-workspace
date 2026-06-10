@@ -443,6 +443,8 @@ export default function AIVisibilityDashboard() {
     }
     setScanning(true); setScanPhase(0); setScanTotal(activePrompts.length)
     let totalMentioned = 0, totalRunsCount = 0, totalTopupConsumed = 0
+    // 2026-06-10：累計 Gemini 分項、掃描完 toast 直接顯示雙引擎結果
+    let geminiMentioned = 0, geminiRunsCount = 0, geminiActive = false
     try {
       for (let i = 0; i < activePrompts.length; i++) {
         const p = activePrompts[i]
@@ -454,6 +456,12 @@ export default function AIVisibilityDashboard() {
         }
         totalMentioned += json.mentioned_count
         totalRunsCount += json.runs
+        // Gemini 分項（by_engine.gemini 存在 = 後端有跑 Gemini）
+        if (json.by_engine?.gemini) {
+          geminiActive = true
+          geminiMentioned += json.by_engine.gemini.mentioned_count || 0
+          geminiRunsCount += json.by_engine.gemini.success_runs || 0
+        }
         // 即時用 fetch.js 回傳的 quota meta 更新 banner — 不等 loadAll() 完成才 refresh
         // 好處：跑多條 prompt 時 banner / 進度條會逐條前進，視覺即時感更強
         if (json.quota?.used_after !== undefined) {
@@ -462,11 +470,16 @@ export default function AIVisibilityDashboard() {
         totalTopupConsumed += json.quota?.topup_consumed_this_call || 0
       }
       const rate = totalRunsCount > 0 ? Math.round(totalMentioned / totalRunsCount * 100) : 0
+      const geminiRate = geminiRunsCount > 0 ? Math.round(geminiMentioned / geminiRunsCount * 100) : 0
       setScanning(false)
       const topupNote = totalTopupConsumed > 0 ? `（含 ${totalTopupConsumed} 次 Top-up）` : ''
+      // 有跑 Gemini → 顯示雙引擎對照；否則只顯示 Claude（向下相容、GEMINI_API_KEY 未設時）
+      const engineNote = geminiActive
+        ? `Claude 提及率 ${rate}% · Gemini 提及率 ${geminiRate}%`
+        : `平均提及率 ${rate}%`
       setToast({
         kind: 'success',
-        msg: `✅ 掃描完成 — ${activePrompts.length} prompt × ${SCAN_RUNS} 次 = ${totalRunsCount} 次呼叫${topupNote}，平均提及率 ${rate}%`,
+        msg: `✅ 掃描完成 — ${activePrompts.length} prompt × ${SCAN_RUNS} 次 = ${totalRunsCount} 次呼叫${topupNote}，${engineNote}`,
       })
       setTimeout(() => setToast(null), 5500)
       loadAll()
@@ -549,7 +562,7 @@ export default function AIVisibilityDashboard() {
               marginBottom: 8, lineHeight: 1.15,
             }}>AI 曝光監測</h1>
             <p style={{ fontSize: 15, color: T.textMid, lineHeight: 1.7, maxWidth: 680 }}>
-              當有人問 AI「我這個產業有哪些值得推薦的公司？」<strong style={{ color: T.text }}>{brand?.name || '…'}</strong> 會不會被提到、排第幾個 — 這個模組會用一組中性的產業 prompt，定期問 Claude，幫你追蹤答案。
+              當有人問 AI「我這個產業有哪些值得推薦的公司？」<strong style={{ color: T.text }}>{brand?.name || '…'}</strong> 會不會被提到、排第幾個 — 這個模組會用一組中性的產業 prompt，定期問 Claude + Gemini，幫你追蹤答案。
             </p>
           </div>
 
@@ -657,7 +670,7 @@ export default function AIVisibilityDashboard() {
                 立即執行掃描
               </div>
               <div style={{ fontSize: 14, color: T.textMid }}>
-                手動觸發一次 {activeCount} prompt × {SCAN_RUNS} 次的 Claude 詢問 · 約耗時 {activeCount * 8} 秒
+                手動觸發一次 {activeCount} prompt × {SCAN_RUNS} 次的 Claude + Gemini 詢問 · 約耗時 {activeCount * 8} 秒
               </div>
             </div>
           </div>
@@ -1044,7 +1057,7 @@ function PromptsPanel({
             </span>
           </div>
           <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
-            這些問題會被定期送進 Claude，每條重複 {SCAN_RUNS} 次取平均。
+            這些問題會被定期送進 Claude + Gemini，每條重複 {SCAN_RUNS} 次取平均。
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
