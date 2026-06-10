@@ -122,6 +122,7 @@ export default async function handler(req, res) {
       countSinceIso = monthStart.toISOString()
     }
 
+    // 額度 = aivis_responses 筆數（1 次掃描 1 筆、Gemini 結果存同筆的額外欄、不另開 row、不影響計數）
     const { count: monthCountRaw, error: countErr } = await supabase
       .from('aivis_responses')
       .select('id', { count: 'exact', head: true })
@@ -195,9 +196,10 @@ export default async function handler(req, res) {
         topupConsumedThisCall += 1
       }
 
-      // 2026-06-10：Claude + Gemini 並行呼叫、增加跨 LLM 覆蓋率
-      // Claude 失敗 → 整個 run 視為失敗、不扣 quota（保留向下相容）
-      // Gemini 失敗 → 只記錄、不影響 run（額外資料、不算錯）
+      // 2026-06-10：Claude + Gemini 並行呼叫、單寫一筆 row（Claude 主欄 + Gemini 額外欄）
+      // 設計：1 次掃描 = 1 筆 aivis_responses（維持「1 row = 1 scan」不變、dashboard / 額度全部沿用）
+      //   Claude 失敗 → 整個 run 視為失敗、不扣 quota（主引擎）
+      //   Gemini 失敗 → 只記 console、gemini_ 欄留 null（額外資料、不影響 run）
       const [claudeRes, geminiRes] = await Promise.all([
         callClaude(prompt.text, ANTHROPIC_API_KEY),
         useGemini ? callGemini(prompt.text, GEMINI_API_KEY) : Promise.resolve(null),
@@ -211,13 +213,26 @@ export default async function handler(req, res) {
         })
       }
 
-      // ─── 處理 Claude 結果（主、扣 quota） ───
+      // ─── Claude 結果（主、寫既有欄位、扣 quota） ───
       const claudeCost = claudeRes.inputTokens * PRICE_INPUT_PER_TOKEN + claudeRes.outputTokens * PRICE_OUTPUT_PER_TOKEN
       const claudeMentioned = detectMention(claudeRes.text, brandName)
       const claudePosition = claudeMentioned ? findListPosition(claudeRes.text, brandName) : null
       const claudeContext = claudeMentioned ? extractContext(claudeRes.text, brandName) : null
 
-      const { data: claudeRow, error: claudeErr } = await supabase
+      // ─── Gemini 結果（額外、寫 gemini_ 欄；失敗就留 null） ───
+      let geminiMentioned = null
+      let geminiCost = 0
+      let geminiText = null
+      if (geminiRes && geminiRes.ok) {
+        geminiCost = geminiRes.inputTokens * GEMINI_PRICE_INPUT_PER_TOKEN + geminiRes.outputTokens * GEMINI_PRICE_OUTPUT_PER_TOKEN
+        geminiMentioned = detectMention(geminiRes.text, brandName)
+        geminiText = geminiRes.text
+      } else if (geminiRes && !geminiRes.ok) {
+        console.warn(`Gemini call failed for run ${i}:`, geminiRes.error)
+      }
+
+      // 單寫一筆：Claude 在主欄、Gemini 在 gemini_ 欄
+      const { data: row, error: insErr } = await supabase
         .from('aivis_responses')
         .insert({
           user_id: prompt.user_id,
@@ -230,69 +245,32 @@ export default async function handler(req, res) {
           output_tokens: claudeRes.outputTokens,
           cost_usd: claudeCost,
           brand_mentioned: claudeMentioned,
+          // Gemini 額外欄（需先跑 ALTER TABLE 加這 3 欄；沒 useGemini 時全 null）
+          gemini_raw_response: geminiText,
+          gemini_brand_mentioned: geminiMentioned,
+          gemini_cost_usd: geminiCost || null,
         })
         .select('id')
         .single()
 
-      if (claudeErr) {
-        return res.status(500).json({ error: 'Failed to save Claude response', detail: claudeErr.message })
+      if (insErr) {
+        return res.status(500).json({ error: 'Failed to save response', detail: insErr.message })
       }
 
-      // Claude 成功才算扣 quota（Gemini 額外資料、不影響配額）
+      // 寫入成功才算扣 quota（1 row = 1 scan）
       usedThisCall += 1
 
+      // mention 表只記 Claude（主引擎、avgPos 等沿用既有邏輯不被 Gemini 汙染）
       if (claudeMentioned) {
         await supabase.from('aivis_mentions').insert({
           user_id: prompt.user_id,
           brand_id: prompt.brand_id,
-          response_id: claudeRow.id,
+          response_id: row.id,
           mentioned_name: brandName,
           is_target: true,
           position: claudePosition,
           context: claudeContext,
         })
-      }
-
-      // ─── 處理 Gemini 結果（額外、不影響 quota） ───
-      // Gemini 失敗只 console log、不擋 response、保證向下相容
-      let geminiMentioned = null
-      let geminiCost = 0
-      if (geminiRes && geminiRes.ok) {
-        geminiCost = geminiRes.inputTokens * GEMINI_PRICE_INPUT_PER_TOKEN + geminiRes.outputTokens * GEMINI_PRICE_OUTPUT_PER_TOKEN
-        geminiMentioned = detectMention(geminiRes.text, brandName)
-        const geminiPosition = geminiMentioned ? findListPosition(geminiRes.text, brandName) : null
-        const geminiContext = geminiMentioned ? extractContext(geminiRes.text, brandName) : null
-
-        const { data: geminiRow, error: geminiInsertErr } = await supabase
-          .from('aivis_responses')
-          .insert({
-            user_id: prompt.user_id,
-            brand_id: prompt.brand_id,
-            prompt_id: prompt.id,
-            run_index: i,
-            model: GEMINI_MODEL,
-            raw_response: geminiRes.text,
-            input_tokens: geminiRes.inputTokens,
-            output_tokens: geminiRes.outputTokens,
-            cost_usd: geminiCost,
-            brand_mentioned: geminiMentioned,
-          })
-          .select('id')
-          .single()
-
-        if (!geminiInsertErr && geminiMentioned) {
-          await supabase.from('aivis_mentions').insert({
-            user_id: prompt.user_id,
-            brand_id: prompt.brand_id,
-            response_id: geminiRow.id,
-            mentioned_name: brandName,
-            is_target: true,
-            position: geminiPosition,
-            context: geminiContext,
-          })
-        }
-      } else if (geminiRes && !geminiRes.ok) {
-        console.warn(`Gemini call failed for run ${i}:`, geminiRes.error)
       }
 
       // results 同時記錄兩個 engine 的結果（給 client 顯示用）

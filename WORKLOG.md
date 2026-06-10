@@ -24,6 +24,21 @@
 
 ---
 
+### 2026-06-10（aivis Gemini 改單寫架構 — 修額度雙重計算 bug）
+
+**問題：** 前一版 Gemini 整合「每次掃描雙寫 2 筆 aivis_responses（Claude + Gemini）」、但整個 dashboard + 額度系統建立在「1 row = 1 scan」假設上。雙寫導致：額度翻倍（150 次只能掃 75 次）、totalRuns / 曝光率 / avgPos / 本月提及 / 趨勢圖 / 歷史紀錄全部被多出的 row 汙染。對付費客戶是隱患。
+
+**重構：改單寫架構** — 1 次掃描寫 1 筆、Gemini 結果存在同一筆 row 的額外欄位：
+- `aivis_responses` 加 3 欄：`gemini_raw_response` / `gemini_brand_mentioned` / `gemini_cost_usd`（用戶端跑 SQL）
+- [api/aivis/fetch.js](api/aivis/fetch.js)：Claude + Gemini 並行呼叫、組成「1 筆 row」（Claude 主欄 + Gemini gemini_ 欄）。額度計數還原為數全部筆（1 row = 1 scan、正確）。mention 表只記 Claude（avgPos 等沿用不被汙染）。
+- [src/pages/AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：totalRuns / exposureRate / 額度計數全部還原（單寫後本來就對）。新增 `geminiExposureRate`（從 gemini_brand_mentioned 欄算）、品牌曝光率卡 sub 顯示「Claude X% · Gemini Y%」雙引擎對照。
+
+**為何單寫 > 雙寫：** 保住「1 row = 1 scan」不變式、dashboard 既有邏輯（趨勢/歷史/avgPos/額度）全部不用動、只「多顯示一個 Gemini 數字」。之後加 ChatGPT / Perplexity / Grok 也照這個 pattern 加欄、不會再撞計數。
+
+**待用戶：** 跑 `ALTER TABLE aivis_responses ADD COLUMN gemini_*`（見回覆）。
+
+---
+
 ### 2026-06-10（aivis Gemini 整合 — 跨 LLM 監測從 1 個升 2 個）
 
 **動機：** CLAUDE.md 寫 aivis 監測「5 個 LLM」、實際 [api/aivis/fetch.js](api/aivis/fetch.js) 只接 Claude。配合用戶申請 Google API 一次性把 Gemini 加進去、aivis 從半成品升級為「Claude + Gemini」雙 LLM 監測。

@@ -212,8 +212,9 @@ export default function AIVisibilityDashboard() {
       const since = new Date(Date.now() - 30 * 86400_000).toISOString()
       const monthStartIso = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
       const [respRes, mentRes, userMonthRes] = await Promise.all([
+        // 2026-06-10：多抓 gemini_brand_mentioned 欄、用來算 Gemini 引擎提及率（單寫架構、1 row = 1 scan）
         supabase.from('aivis_responses')
-          .select('id, prompt_id, run_index, raw_response, brand_mentioned, cost_usd, created_at')
+          .select('id, prompt_id, run_index, raw_response, brand_mentioned, cost_usd, created_at, gemini_brand_mentioned')
           .eq('brand_id', id).gte('created_at', since).order('created_at', { ascending: false }),
         supabase.from('aivis_mentions')
           .select('response_id, position, context, created_at')
@@ -258,10 +259,16 @@ export default function AIVisibilityDashboard() {
   const plannedRuns = activeCount * SCAN_RUNS                                        // 本次掃描預計花幾次
   const wouldExceedHard = userMonthQueries + plannedRuns > AIVIS_HARD_CAP            // 掃下去會破 1000
 
-  // 30 天內 mention rate 概況
+  // 30 天內 mention rate 概況（主指標 = Claude、既有欄位 brand_mentioned、1 row = 1 scan）
   const totalRuns = responses.length
   const mentionedRuns = responses.filter(r => r.brand_mentioned).length
   const exposureRate = totalRuns > 0 ? Math.round(mentionedRuns / totalRuns * 100) : 0
+  // 2026-06-10：Gemini 引擎提及率 — 從同筆 row 的 gemini_brand_mentioned 欄算（只含有跑 Gemini 的筆）
+  //   gemini_brand_mentioned 為 null = 那次沒跑 Gemini（舊資料 / Gemini 失敗）→ 不計入分母
+  const geminiRows = responses.filter(r => r.gemini_brand_mentioned !== null && r.gemini_brand_mentioned !== undefined)
+  const geminiRuns = geminiRows.length
+  const geminiMentioned = geminiRows.filter(r => r.gemini_brand_mentioned).length
+  const geminiExposureRate = geminiRuns > 0 ? Math.round(geminiMentioned / geminiRuns * 100) : null
 
   // 平均出現位置（mentions 表的 position）
   const positions = mentions.map(m => m.position).filter(p => p != null)
@@ -570,13 +577,17 @@ export default function AIVisibilityDashboard() {
             ))
           ) : (
             <>
+              {/* 2026-06-10：品牌曝光率主數字 = Claude；有 Gemini 資料時 sub 顯示雙引擎對照 */}
               <OverviewCard icon="📊" label="品牌曝光率" value={exposureRate} suffix="%"
-                sub={`過去 30 天提及 ${mentionedRuns}/${totalRuns} 次`} color={AIVIS_TEAL} highlight />
+                sub={geminiExposureRate !== null
+                  ? `Claude ${exposureRate}% · Gemini ${geminiExposureRate}%（過去 30 天）`
+                  : `過去 30 天提及 ${mentionedRuns}/${totalRuns} 次`}
+                color={AIVIS_TEAL} highlight />
               <OverviewCard icon="🥇" label="平均出現位置" value={avgPos > 0 ? avgPos : '—'}
                 prefix={avgPos > 0 ? '第 ' : ''} suffix={avgPos > 0 ? ' 名' : ''}
                 sub="被提到時通常的排名" color={AIVIS_TEAL} />
               <OverviewCard icon="🔄" label="已掃描次數" value={scanCount} suffix=" 次"
-                sub="累積 Claude API 呼叫量" color={T.textMid} />
+                sub={geminiRuns > 0 ? `跨 Claude + Gemini 雙引擎監測` : '累積掃描次數'} color={T.textMid} />
               <OverviewCard icon="✨" label="本月新增提及" value={monthMentions} suffix=" 次"
                 sub="AI 在本月回答中提到品牌的次數" color={T.orange} />
             </>
