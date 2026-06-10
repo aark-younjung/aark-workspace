@@ -6,6 +6,24 @@
 
 ---
 
+## ⚡ SEO 頁面速度升級為 Core Web Vitals（2026-06-10 加入）
+
+**動機：** 現有 [seoAnalyzer.js checkPageSpeed()](../src/services/seoAnalyzer.js) 只測 TTFB（拿到第一個 byte 的時間）、不測 Google 真正用來排名的 Core Web Vitals（LCP / CLS / INP / FCP）。客戶看到「SEO 速度 100 分」、其實不代表 Google 認可。
+
+**升級方案：** 接 Google PageSpeed Insights API
+- 免費配額 25,000 query/天、完全夠用
+- 回傳真實 CrUX（Chrome 用戶實測資料）+ Lighthouse 合成測試
+- 輸出完整 Web Vitals 數字 + 評分
+
+**工作量：** 半天
+- 後端 `/api/page-speed?url=` proxy 到 PSI API
+- 前端 SEOAudit 頁顯示 LCP / CLS / INP 三個主指標
+- 更新 score 計算邏輯（綜合 Web Vitals 而非單一 TTFB）
+
+**優先：** 不急、SEO 分數的 leading indicator 本來就不等於業績。等想法 2 媒體提及 MVP 跑完再做。
+
+---
+
 ## 🎯 分數天花板與「Leading vs Lagging」UX 重新框定（2026-06-10 加入）
 
 **動機：** 第一位付費客戶 + yuppy0912 都遇到「某些訊號層做到 100 分了、但 aivis 引用率還是 0、客戶質疑為什麼」。用戶曾考慮把分數降到 95 上限留想像空間、但會有副作用（永遠拿不到滿分的挫敗 / 與市場標準不一致 / 沒解決根問題）。

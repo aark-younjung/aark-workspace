@@ -6,6 +6,34 @@
 
 ---
 
+### 2026-06-10（Brand Mentions MVP — 品牌外部提及搜尋 + SEO 速度升級規劃）
+
+**動機：** LLMO 訊號鏈缺一塊「外部曝光」— 客戶 audit 100 分但網路沒人提、AI 還是不推薦。這個 MVP 接 Google Custom Search API、給「品牌外部提及次數」+ 來源分類 + 操作建議、補完訊號鏈。
+
+**新檔：**
+- [api/brand-mentions.js](api/brand-mentions.js) — Vercel Serverless Function、打 Google Custom Search API
+  - Query：`"品牌名" -site:自家網域`（exact phrase + 排除自家頁面）
+  - 回傳：totalResults、Top 10 items、categoryCounts、recommendation
+  - 來源分類：news / forum / social / blog / wiki / other（簡單啟發式 domain match）
+  - 建議行動依結果分級：critical（0 提及）/ warning（< 10）/ fair（< 50）/ good（≥ 50）
+- [src/components/v2/BrandMentionsCard.jsx](src/components/v2/BrandMentionsCard.jsx) — 前端 card
+  - 輸入品牌名 + 排除網域、按「🔍 查詢」打 API
+  - 顯示：總數 + 建議 + 來源分類聚合 + Top 10 結果列表
+  - localStorage cache 24 小時、避免重複打 API
+  - 透明展示查詢字串給用戶看
+
+**Mount 位置：** [DashboardV2.jsx](src/pages/DashboardV2.jsx) LeadingLaggingGuide 下方、WeeklyAITrendsCard 上方
+- defaultBrand 預填 website.name、defaultExcludeDomain 預填 website.url
+
+**Vercel 設定（用戶端要做）：**
+- GOOGLE_CSE_API_KEY — Google Cloud API key（啟用 Custom Search API）
+- GOOGLE_CSE_ID — Programmable Search Engine ID（設「搜尋整個網路」）
+- 未設時 API 回 503、UI 顯示「功能未啟用」訊息
+
+**ideas-backlog 同步加：** SEO 頁面速度升級 Core Web Vitals（PSI API、半天工作量、不急）
+
+---
+
 ### 2026-06-10（Leading vs Lagging UX：Audit 達標引導卡 + ideas-backlog 加兩想法）
 
 **動機：** 第一位付費客戶 + yuppy0912 都遇到「audit 100 分了、但 aivis 引用率還是 0」的困惑。用戶曾考慮把分數天花板降到 95 留想像空間、但會引發更糟副作用（永遠拿不到滿分挫敗 / 跟業界標準不一致 / 沒解到根問題）。

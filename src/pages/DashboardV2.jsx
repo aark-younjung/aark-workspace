@@ -27,6 +27,7 @@ import SiteHeader from '../components/v2/SiteHeader'
 // 2026-06-06：本週 AI 趨勢卡 — 用 aivis 累積資料反推「跨用戶 AI 提及 Top 5」、創造每週回訪動機
 import WeeklyAITrendsCard from '../components/v2/WeeklyAITrendsCard'
 import LeadingLaggingGuide from '../components/v2/LeadingLaggingGuide'
+import BrandMentionsCard from '../components/v2/BrandMentionsCard'
 // 2026-06-07：客戶提案 PDF 產生器（白標）— 代理商賺錢角度（5 AI 共識最大缺口）
 import ClientReportModal from '../components/v2/ClientReportModal'
 import LLMOChecklistModal from '../components/v2/LLMOChecklistModal'
@@ -448,6 +449,11 @@ export default function DashboardV2() {
                   解決客戶痛點：「audit 100 但 AI 還是不提我」、明確說明 Leading vs Lagging 指標差異
                   內部不顯示時 component 自己 return null、不用條件包 ─── */}
             <LeadingLaggingGuide scores={scores} websiteName={website.name} />
+
+            {/* ─── 品牌外部提及（2026-06-10 BETA）— LLMO 訊號鏈缺失的「外部曝光」維度
+                  用 Google Custom Search API、抓網路上「品牌名」被提及次數 + Top 10 來源 + 操作建議
+                  需 Vercel env 設 GOOGLE_CSE_API_KEY / GOOGLE_CSE_ID、未設時 API 回 503、UI 顯示「未啟用」訊息 ─── */}
+            <BrandMentionsCard defaultBrand={website.name || ''} defaultExcludeDomain={website.url || ''} />
 
             {/* ─── 本週 AI 趨勢卡（2026-06-06）— 用 aivis 跨用戶資料、創造每週回訪動機 ─── */}
             <WeeklyAITrendsCard />
