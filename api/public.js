@@ -160,11 +160,15 @@ async function handleBrandMentions(req, res) {
       // 常見：API key 沒啟用 Custom Search API / cx(CSE ID) 錯 / key 限制錯 API
       let upstreamMessage = ''
       try { upstreamMessage = JSON.parse(text)?.error?.message || '' } catch { upstreamMessage = text.slice(0, 300) }
+      // 2026-06-10 診斷：遮罩顯示 runtime 實際用的 key 前綴 + cx、確認 Vercel env 到底讀到哪把 key
+      const keyPreview = apiKey ? `${apiKey.slice(0, 10)}…${apiKey.slice(-4)} (len ${apiKey.length})` : '(empty)'
       return res.status(502).json({
         error: 'upstream_error',
         message: `Google 搜尋 API 錯誤（${resp.status}）：${upstreamMessage || '未知原因'}`,
         upstream_status: resp.status,
         upstream_detail: upstreamMessage,
+        debug_key_preview: keyPreview,
+        debug_cx: cseId,
       })
     }
 
