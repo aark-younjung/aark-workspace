@@ -156,10 +156,15 @@ async function handleBrandMentions(req, res) {
     if (!resp.ok) {
       const text = await resp.text()
       console.error('Google CSE API error:', resp.status, text)
+      // 2026-06-10：把 Google 真實錯誤訊息吐回前端、方便診斷設定問題
+      // 常見：API key 沒啟用 Custom Search API / cx(CSE ID) 錯 / key 限制錯 API
+      let upstreamMessage = ''
+      try { upstreamMessage = JSON.parse(text)?.error?.message || '' } catch { upstreamMessage = text.slice(0, 300) }
       return res.status(502).json({
         error: 'upstream_error',
-        message: 'Google 搜尋 API 暫時無法使用',
+        message: `Google 搜尋 API 錯誤（${resp.status}）：${upstreamMessage || '未知原因'}`,
         upstream_status: resp.status,
+        upstream_detail: upstreamMessage,
       })
     }
 
