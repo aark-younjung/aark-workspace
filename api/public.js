@@ -161,10 +161,11 @@ async function handleBrandMentions(req, res) {
       let upstreamMessage = ''
       try { upstreamMessage = JSON.parse(text)?.error?.message || '' } catch { upstreamMessage = text.slice(0, 300) }
       // 2026-06-10 診斷：遮罩顯示 runtime 實際用的 key 前綴 + cx、確認 Vercel env 到底讀到哪把 key
+      // 直接拼進 message、讓 UI 顯示得出來（debug 欄位藏 JSON 裡用戶看不到）
       const keyPreview = apiKey ? `${apiKey.slice(0, 10)}…${apiKey.slice(-4)} (len ${apiKey.length})` : '(empty)'
       return res.status(502).json({
         error: 'upstream_error',
-        message: `Google 搜尋 API 錯誤（${resp.status}）：${upstreamMessage || '未知原因'}`,
+        message: `Google 搜尋 API 錯誤（${resp.status}）：${upstreamMessage || '未知原因'}　【診斷｜key=${keyPreview}｜cx=${cseId}】`,
         upstream_status: resp.status,
         upstream_detail: upstreamMessage,
         debug_key_preview: keyPreview,
