@@ -505,6 +505,7 @@ export default function AIVisibilityDashboard() {
     let totalMentioned = 0, totalRunsCount = 0, totalTopupConsumed = 0
     // 2026-06-10：累計 Gemini 分項、掃描完 toast 直接顯示雙引擎結果
     let geminiMentioned = 0, geminiRunsCount = 0, geminiActive = false
+    let geminiStatus = null  // 後端診斷：key_present / attempts / ok / last_error
     try {
       for (let i = 0; i < activePrompts.length; i++) {
         const p = activePrompts[i]
@@ -516,6 +517,7 @@ export default function AIVisibilityDashboard() {
         }
         totalMentioned += json.mentioned_count
         totalRunsCount += json.runs
+        if (json.gemini_status) geminiStatus = json.gemini_status  // 後端 Gemini 診斷（取最後一條）
         // Gemini 分項（by_engine.gemini 存在 = 後端有跑 Gemini）
         if (json.by_engine?.gemini) {
           geminiActive = true
@@ -533,15 +535,27 @@ export default function AIVisibilityDashboard() {
       const geminiRate = geminiRunsCount > 0 ? Math.round(geminiMentioned / geminiRunsCount * 100) : 0
       setScanning(false)
       const topupNote = totalTopupConsumed > 0 ? `（含 ${totalTopupConsumed} 次 Top-up）` : ''
-      // 有跑 Gemini → 顯示雙引擎對照；否則只顯示 Claude（向下相容、GEMINI_API_KEY 未設時）
-      const engineNote = geminiActive
-        ? `Claude 提及率 ${rate}% · Gemini 提及率 ${geminiRate}%`
-        : `平均提及率 ${rate}%`
+      // 有跑 Gemini → 顯示雙引擎對照；否則顯示 Claude + 診斷原因（為什麼 Gemini 沒跑）
+      let engineNote, toastKind = 'success'
+      if (geminiActive) {
+        engineNote = `Claude 提及率 ${rate}% · Gemini 提及率 ${geminiRate}%`
+      } else {
+        // Gemini 沒產出結果 — 用後端診斷說明原因
+        let reason = ''
+        if (geminiStatus && !geminiStatus.key_present) {
+          reason = '（⚠️ Gemini 未啟用：後端讀不到 GEMINI_API_KEY）'
+          toastKind = 'warn'
+        } else if (geminiStatus && geminiStatus.last_error) {
+          reason = `（⚠️ Gemini 呼叫失敗：${String(geminiStatus.last_error).slice(0, 80)}）`
+          toastKind = 'warn'
+        }
+        engineNote = `平均提及率 ${rate}%${reason}`
+      }
       setToast({
-        kind: 'success',
+        kind: toastKind,
         msg: `✅ 掃描完成 — ${activePrompts.length} prompt × ${SCAN_RUNS} 次 = ${totalRunsCount} 次呼叫${topupNote}，${engineNote}`,
       })
-      setTimeout(() => setToast(null), 5500)
+      setTimeout(() => setToast(null), 7000)
       loadAll()
     } catch (err) {
       setScanning(false)

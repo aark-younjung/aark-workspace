@@ -150,6 +150,8 @@ export default async function handler(req, res) {
     const results = []
     let usedThisCall = 0           // 本次呼叫實際成功寫入幾筆，遞增後與 monthCount 合計判斷
     let topupConsumedThisCall = 0  // 本次呼叫從 Top-up 扣了幾次（給 client 顯示明細用）
+    // 2026-06-10 Gemini 診斷：追蹤後端到底有沒有讀到 key / 呼叫成功 / 錯誤
+    let geminiAttempts = 0, geminiOkCount = 0, geminiLastError = null
 
     for (let i = 1; i <= runs; i++) {
       // 額度判斷（per-run，每次跑前先看下一筆會不會破線）
@@ -224,12 +226,15 @@ export default async function handler(req, res) {
       let geminiCost = 0
       let geminiPosition = null
       let geminiText = null
+      if (useGemini) geminiAttempts += 1
       if (geminiRes && geminiRes.ok) {
+        geminiOkCount += 1
         geminiCost = geminiRes.inputTokens * GEMINI_PRICE_INPUT_PER_TOKEN + geminiRes.outputTokens * GEMINI_PRICE_OUTPUT_PER_TOKEN
         geminiMentioned = detectMention(geminiRes.text, brandName)
         geminiPosition = geminiMentioned ? findListPosition(geminiRes.text, brandName) : null
         geminiText = geminiRes.text
       } else if (geminiRes && !geminiRes.ok) {
+        geminiLastError = geminiRes.error
         console.warn(`Gemini call failed for run ${i}:`, geminiRes.error)
       }
 
@@ -344,6 +349,13 @@ export default async function handler(req, res) {
         hard_cap: hardCap,
         topup_consumed_this_call: topupConsumedThisCall,
         is_trial: isTrial,
+      },
+      // 2026-06-10 Gemini 診斷：key_present=後端有沒有讀到 GEMINI_API_KEY、attempts/ok=呼叫次數、last_error=最後錯誤
+      gemini_status: {
+        key_present: useGemini,
+        attempts: geminiAttempts,
+        ok: geminiOkCount,
+        last_error: geminiLastError,
       },
     })
 
