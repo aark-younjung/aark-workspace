@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototype #2 · 新 Dashboard（3 狀態對比）— AI 雷達</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+/*
+  ───────────────────────────────────────────────────────────
+  AI 雷達 · Dashboard Prototype #2
+  ───────────────────────────────────────────────────────────
+  3 狀態切換：
+    A. Pro 標準（有資料、aivis 在跑、Action Center 帶建議）
+    B. Pro 空狀態（剛升 Pro、還沒掃任何網站）
+    C. Free 視圖（aivis 鎖卡、Action Center 部分鎖、Free→Pro upsell）
+
+  關鍵新元素：
+    - Site Switcher（多網站切換、Gemini 提案）
+    - Pro Workspace Hub（aivis 顯眼，ChatGPT/Perplexity/Grok 共識）
+    - 4+1 分數拆分（4 站層級 audit + 1 文章層級內容品質）
+    - Action Center（今日優先修 + 預估提升）
+  ───────────────────────────────────────────────────────────
+*/
+
+/* ============== Brand Tokens ============== */
+:root {
+  --bg-base: #000;
+  --teal: #18c590;
+  --teal-dark: #0d7a58;
+  --emerald: #10b981;
+  --blue-deep: #084773;
+
+  --seo: #3b82f6;
+  --aeo: #8b5cf6;
+  --geo: #10b981;
+  --eeat: #f59e0b;
+  --content: #ec4899;
+
+  --orange: #fb923c;
+  --orange-dark: #f97316;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --aivis: #f97316;
+
+  --text: rgba(255,255,255,1);
+  --text-mid: rgba(255,255,255,0.7);
+  --text-low: rgba(255,255,255,0.45);
+  --text-faint: rgba(255,255,255,0.2);
+
+  --glass-bg: rgba(255,255,255,0.04);
+  --glass-border: rgba(255,255,255,0.1);
+  --card-radius: 14px;
+
+  --font-tc: 'Noto Sans TC', sans-serif;
+  --font-en: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ============== Base ============== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg-base);
+  color: var(--text);
+  font-family: var(--font-tc), var(--font-en), sans-serif;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.005em;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============== Background ============== */
+.bg-gradient-top {
+  position: fixed; top: 0; left: 0; right: 0; height: 3000px;
+  background: linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%);
+  mix-blend-mode: lighten;
+  pointer-events: none; z-index: 0;
+}
+.bg-gradient-bottom {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 4500px;
+  background: linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%);
+  mix-blend-mode: lighten;
+  pointer-events: none; z-index: 0;
+}
+.bg-noise {
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.12; mix-blend-mode: overlay;
+  pointer-events: none; z-index: 1;
+}
+
+/* ============== Tweaks ============== */
+.tweaks {
+  position: fixed; top: 16px; right: 16px; z-index: 100;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 14px;
+  background: rgba(10,15,20,0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  min-width: 220px;
+  font-size: 12px;
+}
+.tweaks .label {
+  color: var(--text-low); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 6px; font-weight: 600;
+}
+.tweaks button {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-mid);
+  font-family: var(--font-tc);
+  font-size: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+.tweaks button:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+.tweaks button.active {
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  border-color: var(--teal); color: white; font-weight: 600;
+}
+.tweaks .hint {
+  margin-top: 6px;
+  color: var(--text-faint);
+  font-size: 10px;
+  line-height: 1.5;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 8px;
+}
+
+/* ============== Site Header ============== */
+.site-header {
+  position: relative; z-index: 10;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(20px);
+}
+.header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: 16px;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.logo-mark {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  display: grid; place-items: center;
+  font-size: 13px;
+}
+
+/* Site Switcher Dropdown */
+.site-switcher {
+  position: relative;
+  flex-shrink: 0;
+}
+.switcher-trigger {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  font-family: var(--font-tc);
+  transition: all 0.15s;
+}
+.switcher-trigger:hover { background: rgba(255,255,255,0.08); }
+.switcher-icon {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--emerald);
+}
+.switcher-chevron {
+  color: var(--text-low);
+  font-size: 10px;
+}
+.switcher-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 320px;
+  background: rgba(10,15,20,0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 8px;
+  z-index: 50;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+.switcher-dropdown.open { display: block; }
+.switcher-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.switcher-item:hover { background: rgba(255,255,255,0.05); }
+.switcher-item.active { background: rgba(24,197,144,0.1); }
+.switcher-item-info { flex: 1; min-width: 0; }
+.switcher-item-name {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+.switcher-item-url {
+  font-size: 11px;
+  color: var(--text-low);
+  font-family: var(--font-mono);
+}
+.switcher-item-score {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-en);
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: var(--text);
+}
+.switcher-item-score.good { background: rgba(16,185,129,0.15); color: var(--emerald); }
+.switcher-item-score.mid { background: rgba(245,158,11,0.15); color: var(--amber); }
+.switcher-item-score.bad { background: rgba(239,68,68,0.15); color: var(--red); }
+.switcher-add {
+  padding: 10px 12px;
+  border-top: 1px solid var(--glass-border);
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--teal);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Main nav */
+.main-nav {
+  display: flex; gap: 24px;
+  margin-left: 24px;
+  font-size: 13px;
+  color: var(--text-mid);
+}
+.main-nav a {
+  color: inherit; text-decoration: none;
+  padding: 6px 4px;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.main-nav a:hover { color: white; }
+.main-nav a.current {
+  color: white;
+  border-bottom-color: var(--teal);
+}
+
+.header-spacer { flex: 1; }
+
+.plan-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-family: var(--font-en);
+}
+.plan-badge.pro {
+  background: linear-gradient(135deg, rgba(24,197,144,0.2), rgba(13,122,88,0.15));
+  border: 1px solid rgba(24,197,144,0.4);
+  color: var(--teal);
+}
+.plan-badge.free {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--glass-border);
+  color: var(--text-mid);
+}
+
+.user-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange), var(--amber));
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 13px;
+  cursor: pointer;
+}
+
+/* ============== Main Layout ============== */
+.dashboard {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 32px 80px;
+  position: relative; z-index: 10;
+}
+
+/* Page heading */
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.page-head h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+.page-head .meta {
+  font-size: 12px;
+  color: var(--text-low);
+  display: flex; gap: 14px;
+  align-items: center;
+}
+.page-head .meta-dot {
+  width: 6px; height: 6px;
+  background: var(--emerald);
+  border-radius: 50%;
+}
+.btn-primary {
+  padding: 11px 22px;
+  background: linear-gradient(135deg, var(--orange), var(--amber));
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-family: var(--font-tc);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(251,146,60,0.25);
+  transition: transform 0.15s;
+}
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-secondary {
+  padding: 11px 22px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-tc);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Section title */
+.section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  margin-top: 36px;
+}
+.section-title h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.section-title .sub {
+  font-size: 11px;
+  color: var(--text-low);
+  margin-top: 2px;
+}
+.section-title .meta {
+  font-size: 11px;
+  color: var(--text-low);
+}
+
+/* Pro Workspace Hub */
+.pro-hub {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* aivis featured card */
+.aivis-card {
+  background: linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(245,158,11,0.06) 50%, rgba(0,0,0,0.3) 100%);
+  border: 1px solid rgba(249,115,22,0.35);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.aivis-card::before {
+  content: '';
+  position: absolute;
+  top: -50%; right: -10%;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(249,115,22,0.25), transparent 70%);
+  pointer-events: none;
+}
+.aivis-card .label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.aivis-card .label-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: rgba(249,115,22,0.2);
+  color: #fdba74;
+  font-family: var(--font-en);
+}
+.aivis-card .label-pro-only {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: rgba(24,197,144,0.2);
+  color: var(--teal);
+}
+.aivis-card h3 {
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+.aivis-card .lead {
+  font-size: 13px;
+  color: var(--text-mid);
+  margin-bottom: 18px;
+  line-height: 1.6;
+}
+.aivis-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
+}
+.aivis-metric {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.aivis-metric .m-label {
+  font-size: 10px;
+  color: var(--text-low);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.aivis-metric .m-value {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-en);
+  color: var(--text);
+  line-height: 1.1;
+}
+.aivis-metric .m-delta {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+  font-family: var(--font-en);
+}
+.aivis-metric .m-delta.up { color: var(--emerald); }
+.aivis-metric .m-delta.down { color: var(--red); }
+
+.aivis-engines {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 2;
+}
+.engine-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--text-mid);
+  font-family: var(--font-en);
+}
+.engine-chip .dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--emerald);
+}
+.engine-chip.cold .dot { background: var(--red); }
+.aivis-card .cta-row {
+  display: flex;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+.aivis-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--orange), var(--amber));
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-family: var(--font-tc);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.aivis-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-tc);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* aivis locked state for Free */
+.aivis-card.locked {
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.3) 100%);
+  border: 1px dashed rgba(249,115,22,0.4);
+}
+.aivis-card.locked::before {
+  display: none;
+}
+.aivis-card.locked .locked-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+}
+.aivis-card.locked .lock-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+.aivis-card.locked .lock-msg {
+  font-size: 13px;
+  color: var(--text-mid);
+  text-align: center;
+  max-width: 360px;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+/* Pro tools grid (right column of hub) */
+.pro-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.tool-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 102px;
+}
+.tool-card:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.18);
+  transform: translateY(-1px);
+}
+.tool-card .icon-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.tool-card .icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.tool-card .tool-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.tool-card .tool-desc {
+  font-size: 11px;
+  color: var(--text-low);
+  line-height: 1.5;
+}
+.tool-card.locked {
+  border-style: dashed;
+  opacity: 0.7;
+}
+.tool-card .lock-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(249,115,22,0.2);
+  color: #fdba74;
+}
+
+/* ============== 4 Audit Score Grid (站層級) ============== */
+.audit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.audit-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+}
+.audit-card:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-2px);
+}
+.audit-card .audit-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  font-family: var(--font-en);
+}
+.audit-card.seo .audit-label { color: var(--seo); }
+.audit-card.aeo .audit-label { color: var(--aeo); }
+.audit-card.geo .audit-label { color: var(--geo); }
+.audit-card.eeat .audit-label { color: var(--eeat); }
+.audit-card .audit-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.audit-card .score-num {
+  font-size: 36px;
+  font-weight: 900;
+  font-family: var(--font-en);
+  line-height: 1;
+}
+.audit-card .score-max {
+  font-size: 14px;
+  color: var(--text-low);
+  font-family: var(--font-en);
+}
+.audit-card .audit-progress {
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.audit-card .audit-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s;
+}
+.audit-card.seo .audit-progress-fill { background: var(--seo); }
+.audit-card.aeo .audit-progress-fill { background: var(--aeo); }
+.audit-card.geo .audit-progress-fill { background: var(--geo); }
+.audit-card.eeat .audit-progress-fill { background: var(--eeat); }
+.audit-card .audit-meta {
+  font-size: 11px;
+  color: var(--text-low);
+  display: flex;
+  justify-content: space-between;
+}
+.audit-card .audit-passed {
+  color: var(--emerald);
+  font-weight: 600;
+  font-family: var(--font-en);
+}
+
+/* ============== Action Center + Mini Radar 兩欄 ============== */
+.middle-row {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.action-center {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 22px;
+}
+.action-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.action-head h3 {
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.action-badge {
+  background: rgba(249,115,22,0.15);
+  color: var(--orange);
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-family: var(--font-en);
+}
+.action-head .est {
+  font-size: 11px;
+  color: var(--text-low);
+}
+.action-head .est strong {
+  color: var(--emerald);
+  font-family: var(--font-en);
+  font-weight: 700;
+}
+
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  transition: all 0.15s;
+}
+.action-item:hover {
+  background: rgba(0,0,0,0.4);
+  border-color: rgba(255,255,255,0.12);
+}
+.action-priority {
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: var(--font-en);
+  flex-shrink: 0;
+}
+.action-priority.high {
+  background: rgba(239,68,68,0.15);
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,0.3);
+}
+.action-priority.med {
+  background: rgba(245,158,11,0.15);
+  color: var(--amber);
+  border: 1px solid rgba(245,158,11,0.3);
+}
+.action-priority.low {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-mid);
+  border: 1px solid var(--glass-border);
+}
+.action-info { flex: 1; min-width: 0; }
+.action-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.action-meta {
+  font-size: 11px;
+  color: var(--text-low);
+  display: flex;
+  gap: 10px;
+}
+.action-meta .face {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: var(--font-en);
+}
+.action-meta .face.seo { background: rgba(59,130,246,0.15); color: var(--seo); }
+.action-meta .face.aeo { background: rgba(139,92,246,0.15); color: var(--aeo); }
+.action-meta .face.geo { background: rgba(16,185,129,0.15); color: var(--geo); }
+.action-meta .face.eeat { background: rgba(245,158,11,0.15); color: var(--eeat); }
+.action-meta .face.content { background: rgba(236,72,153,0.15); color: var(--content); }
+.action-est {
+  font-size: 12px;
+  color: var(--emerald);
+  font-weight: 700;
+  font-family: var(--font-en);
+  white-space: nowrap;
+}
+.action-do {
+  padding: 7px 14px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--text);
+  font-family: var(--font-tc);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.action-do:hover { background: rgba(255,255,255,0.1); }
+
+.action-item.locked {
+  background: rgba(0,0,0,0.15);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.action-item.locked .action-do {
+  background: rgba(249,115,22,0.15);
+  color: var(--orange);
+  border-color: rgba(249,115,22,0.3);
+}
+
+/* Radar mini */
+.radar-mini {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+}
+.radar-mini h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.radar-svg {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  position: relative;
+  min-height: 240px;
+}
+.radar-svg svg {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+}
+.radar-center {
+  position: absolute;
+  text-align: center;
+  pointer-events: none;
+}
+.radar-center .num {
+  font-size: 36px;
+  font-weight: 900;
+  font-family: var(--font-en);
+  color: var(--teal);
+  line-height: 1;
+}
+.radar-center .label {
+  font-size: 10px;
+  color: var(--text-low);
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* ============== 第 5 卡 內容品質（文章層級）拆出 ============== */
+.content-section {
+  background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(0,0,0,0.3));
+  border: 1px solid rgba(236,72,153,0.25);
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 28px;
+  position: relative;
+}
+.content-section .layer-label {
+  position: absolute;
+  top: -10px; right: 18px;
+  background: var(--content);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--font-en);
+}
+.content-section .layer-explain {
+  position: absolute;
+  top: 14px; right: 100px;
+  font-size: 10px;
+  color: var(--text-low);
+  font-style: italic;
+}
+.content-section h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--content);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.content-section h3 .ico { font-size: 18px; }
+.content-section .lead {
+  font-size: 12px;
+  color: var(--text-mid);
+  margin-bottom: 16px;
+  line-height: 1.6;
+  max-width: 540px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  align-items: center;
+}
+.content-score-block {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.content-score-num {
+  font-size: 44px;
+  font-weight: 900;
+  font-family: var(--font-en);
+  color: var(--content);
+  line-height: 1;
+}
+.content-score-max {
+  font-size: 14px;
+  color: var(--text-low);
+  font-family: var(--font-en);
+}
+.content-articles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.content-article-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.content-article-row .url {
+  font-family: var(--font-mono);
+  color: var(--text-mid);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 12px;
+}
+.content-article-row .article-score {
+  font-family: var(--font-en);
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.content-article-row .article-score.good { background: rgba(16,185,129,0.15); color: var(--emerald); }
+.content-article-row .article-score.mid { background: rgba(245,158,11,0.15); color: var(--amber); }
+.content-article-row .article-score.bad { background: rgba(239,68,68,0.15); color: var(--red); }
+.content-cta-row {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+}
+.content-cta-link {
+  color: var(--content);
+  text-decoration: none;
+  font-weight: 600;
+}
+.content-cta-link:hover { text-decoration: underline; }
+
+/* ============== Empty State ============== */
+.empty-state {
+  text-align: center;
+  padding: 80px 32px 60px;
+  background: var(--glass-bg);
+  border: 1px dashed var(--glass-border);
+  border-radius: 16px;
+  margin-bottom: 28px;
+}
+.empty-state .icon {
+  font-size: 56px;
+  margin-bottom: 18px;
+}
+.empty-state h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+.empty-state .lead {
+  font-size: 14px;
+  color: var(--text-mid);
+  line-height: 1.7;
+  max-width: 500px;
+  margin: 0 auto 24px;
+}
+.empty-state .url-form {
+  display: flex;
+  gap: 8px;
+  max-width: 520px;
+  margin: 0 auto 16px;
+}
+.empty-state .url-input {
+  flex: 1;
+  background: rgba(255,255,255,0.92);
+  border: 2px solid rgba(255,255,255,0.4);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #0f172a;
+  font-family: var(--font-tc);
+  outline: none;
+}
+.empty-state .url-input:focus {
+  border-color: var(--orange);
+}
+.empty-state .hint {
+  font-size: 11px;
+  color: var(--text-low);
+}
+
+.empty-state-tour {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  max-width: 720px;
+  margin: 36px auto 0;
+  text-align: left;
+}
+.empty-tour-step {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.empty-tour-step .num {
+  display: inline-block;
+  width: 22px; height: 22px;
+  background: var(--teal);
+  color: black;
+  font-weight: 800;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 22px;
+  font-size: 11px;
+  margin-bottom: 10px;
+  font-family: var(--font-en);
+}
+.empty-tour-step h4 {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.empty-tour-step p {
+  font-size: 11px;
+  color: var(--text-low);
+  line-height: 1.5;
+}
+
+/* ============== Free Upsell Banner ============== */
+.free-upsell {
+  background: linear-gradient(135deg, rgba(251,146,60,0.15), rgba(245,158,11,0.08));
+  border: 1px solid rgba(251,146,60,0.4);
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.free-upsell .icon { font-size: 28px; flex-shrink: 0; }
+.free-upsell .copy { flex: 1; }
+.free-upsell h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.free-upsell .lead {
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.6;
+}
+
+/* ============== State Toggle ============== */
+.state-pro-loaded,
+.state-empty,
+.state-free { display: none; }
+.state-pro-loaded.active,
+.state-empty.active,
+.state-free.active { display: block; }
+
+/* ============== Responsive ============== */
+@media (max-width: 1024px) {
+  .pro-hub { grid-template-columns: 1fr; }
+  .pro-tools { grid-template-columns: repeat(4, 1fr); }
+  .middle-row { grid-template-columns: 1fr; }
+  .audit-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .main-nav { display: none; }
+  .pro-tools { grid-template-columns: 1fr 1fr; }
+  .aivis-metrics { grid-template-columns: 1fr 1fr; }
+  .empty-state-tour { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .audit-grid { grid-template-columns: 1fr 1fr; }
+  .header-inner { padding: 14px 16px; gap: 12px; }
+  .switcher-trigger { padding: 6px 10px; font-size: 12px; }
+  .switcher-dropdown { min-width: 280px; }
+  .dashboard { padding: 20px 16px; }
+  .tweaks {
+    top: auto; bottom: 16px; right: 16px;
+    min-width: 180px;
+    padding: 10px;
+  }
+}
+
+/* Prototype watermark */
+.proto-stamp {
+  position: fixed;
+  bottom: 16px; left: 16px;
+  z-index: 50;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text-low);
+  font-family: var(--font-mono);
+}
+.proto-stamp .live {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--orange);
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-gradient-top"></div>
+<div class="bg-gradient-bottom"></div>
+<div class="bg-noise"></div>
+
+<!-- Tweaks -->
+<div class="tweaks">
+  <div class="label">Dashboard 狀態切換</div>
+  <button data-state="pro-loaded" class="active">A. Pro 標準</button>
+  <button data-state="empty">B. 新 Pro 空狀態</button>
+  <button data-state="free">C. Free 用戶看到</button>
+  <div class="hint">3 種典型用戶情境</div>
+</div>
+
+<!-- Prototype watermark -->
+<div class="proto-stamp"><span class="live"></span>PROTOTYPE · 不是線上版</div>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">📡</div>
+      AI 雷達
+    </div>
+
+    <!-- Site Switcher（NEW IA）-->
+    <div class="site-switcher">
+      <div class="switcher-trigger" onclick="toggleSwitcher()">
+        <span class="switcher-icon"></span>
+        <span id="current-site">kimbo3899.com.tw</span>
+        <span class="switcher-chevron">▾</span>
+      </div>
+      <div class="switcher-dropdown" id="switcher-dropdown">
+        <div class="switcher-item active">
+          <div class="switcher-item-info">
+            <div class="switcher-item-name">金鉑汽車影音科技</div>
+            <div class="switcher-item-url">kimbo3899.com.tw</div>
+          </div>
+          <span class="switcher-item-score mid">68</span>
+        </div>
+        <div class="switcher-item">
+          <div class="switcher-item-info">
+            <div class="switcher-item-name">○○ 牙醫診所</div>
+            <div class="switcher-item-url">example-dental.com.tw</div>
+          </div>
+          <span class="switcher-item-score good">82</span>
+        </div>
+        <div class="switcher-item">
+          <div class="switcher-item-info">
+            <div class="switcher-item-name">XX 設計工作室</div>
+            <div class="switcher-item-url">xx-design.tw</div>
+          </div>
+          <span class="switcher-item-score bad">42</span>
+        </div>
+        <div class="switcher-add">+ 新增網站</div>
+      </div>
+    </div>
+
+    <nav class="main-nav">
+      <a href="#" class="current">總覽</a>
+      <a href="#">爬蟲追蹤</a>
+      <a href="#">優化工具</a>
+    </nav>
+
+    <div class="header-spacer"></div>
+
+    <span class="plan-badge pro" id="plan-badge">PRO</span>
+    <div class="user-avatar">M</div>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="dashboard">
+
+  <!-- ░░░░░░░░░░ STATE A: Pro 標準視圖 ░░░░░░░░░░ -->
+  <div class="state-pro-loaded active">
+    <div class="page-head">
+      <div>
+        <h1>kimbo3899.com.tw</h1>
+        <div class="meta">
+          <span><span class="meta-dot"></span>最後掃描 2 分鐘前</span>
+          <span>·</span>
+          <span>本月已掃 3 次</span>
+        </div>
+      </div>
+      <button class="btn-primary">🔄 重新檢測</button>
+    </div>
+
+    <!-- Pro Workspace Hub -->
+    <div class="section-title">
+      <div>
+        <h2>Pro 工作區</h2>
+        <div class="sub">你的 Pro 能力中心 · 持續追蹤 + 一鍵工具</div>
+      </div>
+      <div class="meta">本月 aivis 用量 47 / 150</div>
+    </div>
+    <div class="pro-hub">
+      <!-- aivis 主卡 -->
+      <div class="aivis-card">
+        <div class="label-row">
+          <span class="label-badge">AIVIS · 監測中</span>
+          <span class="label-pro-only">PRO 核心</span>
+        </div>
+        <h3>🤖 AI 曝光監測</h3>
+        <p class="lead">過去 30 天、ChatGPT 等 5 個 LLM 對你品牌的引用率變化</p>
+
+        <div class="aivis-metrics">
+          <div class="aivis-metric">
+            <div class="m-label">本月引用</div>
+            <div class="m-value">47</div>
+            <div class="m-delta up">▲ +12% WoW</div>
+          </div>
+          <div class="aivis-metric">
+            <div class="m-label">提及率</div>
+            <div class="m-value">31%</div>
+            <div class="m-delta up">▲ +5pp</div>
+          </div>
+          <div class="aivis-metric">
+            <div class="m-label">vs 競爭對手</div>
+            <div class="m-value">3 / 8</div>
+            <div class="m-delta down">▼ -1 名</div>
+          </div>
+        </div>
+
+        <div class="aivis-engines">
+          <span class="engine-chip"><span class="dot"></span>ChatGPT · 18</span>
+          <span class="engine-chip"><span class="dot"></span>Claude · 9</span>
+          <span class="engine-chip"><span class="dot"></span>Perplexity · 12</span>
+          <span class="engine-chip"><span class="dot"></span>Gemini · 6</span>
+          <span class="engine-chip cold"><span class="dot"></span>GLM · 2</span>
+        </div>
+
+        <div class="cta-row">
+          <a class="aivis-cta">查看完整報告 →</a>
+          <a class="aivis-cta-secondary">+ 新增監測 prompt</a>
+        </div>
+      </div>
+
+      <!-- Pro 工具網格 -->
+      <div class="pro-tools">
+        <a class="tool-card">
+          <div class="icon-row"><span class="icon">📋</span></div>
+          <div>
+            <div class="tool-name">批次文章掃描</div>
+            <div class="tool-desc">一鍵掃全站 200 篇</div>
+          </div>
+        </a>
+        <a class="tool-card">
+          <div class="icon-row"><span class="icon">🪪</span></div>
+          <div>
+            <div class="tool-name">品牌 Schema 產生器</div>
+            <div class="tool-desc">永久儲存、一鍵複製</div>
+          </div>
+        </a>
+        <a class="tool-card">
+          <div class="icon-row"><span class="icon">📈</span></div>
+          <div>
+            <div class="tool-name">歷史趨勢</div>
+            <div class="tool-desc">7 / 30 / 90 天分數</div>
+          </div>
+        </a>
+        <a class="tool-card">
+          <div class="icon-row"><span class="icon">📄</span></div>
+          <div>
+            <div class="tool-name">PDF 匯出</div>
+            <div class="tool-desc">客戶可看的報告</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 4 站層級 audit 分數 -->
+    <div class="section-title">
+      <div>
+        <h2>站點層級 · 4 大面向體檢</h2>
+        <div class="sub">SEO · AEO · GEO · E-E-A-T · 每個都是「全站」評分</div>
+      </div>
+      <div class="meta">點任一卡看詳情</div>
+    </div>
+    <div class="audit-grid">
+      <a class="audit-card seo">
+        <div class="audit-label">SEO</div>
+        <div class="audit-score">
+          <span class="score-num">78</span>
+          <span class="score-max">/ 100</span>
+        </div>
+        <div class="audit-progress">
+          <div class="audit-progress-fill" style="width: 78%;"></div>
+        </div>
+        <div class="audit-meta">
+          <span><span class="audit-passed">5 / 7</span> 通過</span>
+          <span>查看 →</span>
+        </div>
+      </a>
+      <a class="audit-card aeo">
+        <div class="audit-label">AEO</div>
+        <div class="audit-score">
+          <span class="score-num">45</span>
+          <span class="score-max">/ 100</span>
+        </div>
+        <div class="audit-progress">
+          <div class="audit-progress-fill" style="width: 45%;"></div>
+        </div>
+        <div class="audit-meta">
+          <span><span class="audit-passed">3 / 8</span> 通過</span>
+          <span>查看 →</span>
+        </div>
+      </a>
+      <a class="audit-card geo">
+        <div class="audit-label">GEO</div>
+        <div class="audit-score">
+          <span class="score-num">62</span>
+          <span class="score-max">/ 100</span>
+        </div>
+        <div class="audit-progress">
+          <div class="audit-progress-fill" style="width: 62%;"></div>
+        </div>
+        <div class="audit-meta">
+          <span><span class="audit-passed">5 / 8</span> 通過</span>
+          <span>查看 →</span>
+        </div>
+      </a>
+      <a class="audit-card eeat">
+        <div class="audit-label">E-E-A-T</div>
+        <div class="audit-score">
+          <span class="score-num">88</span>
+          <span class="score-max">/ 100</span>
+        </div>
+        <div class="audit-progress">
+          <div class="audit-progress-fill" style="width: 88%;"></div>
+        </div>
+        <div class="audit-meta">
+          <span><span class="audit-passed">7 / 8</span> 通過</span>
+          <span>查看 →</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Action Center + Mini Radar -->
+    <div class="middle-row">
+      <!-- Action Center -->
+      <div class="action-center">
+        <div class="action-head">
+          <h3>🎯 今日優先修復 <span class="action-badge">3 項</span></h3>
+          <div class="est">全修完預估提升 <strong>+18 分</strong></div>
+        </div>
+        <div class="action-list">
+          <div class="action-item">
+            <div class="action-priority high">P1</div>
+            <div class="action-info">
+              <div class="action-title">缺 Organization Schema（品牌報名表）</div>
+              <div class="action-meta">
+                <span class="face aeo">AEO</span>
+                <span>影響：AI 把你跟同名品牌搞混</span>
+              </div>
+            </div>
+            <span class="action-est">+8 分</span>
+            <button class="action-do">立即修 →</button>
+          </div>
+          <div class="action-item">
+            <div class="action-priority high">P1</div>
+            <div class="action-info">
+              <div class="action-title">Cloudflare 擋下 ChatGPTBot</div>
+              <div class="action-meta">
+                <span class="face seo">SEO</span>
+                <span>影響：AI 引擎完全抓不到你網站</span>
+              </div>
+            </div>
+            <span class="action-est">+7 分</span>
+            <button class="action-do">立即修 →</button>
+          </div>
+          <div class="action-item">
+            <div class="action-priority med">P2</div>
+            <div class="action-info">
+              <div class="action-title">缺 llms.txt 檔案</div>
+              <div class="action-meta">
+                <span class="face geo">GEO</span>
+                <span>影響：AI 爬蟲找不到你網站結構</span>
+              </div>
+            </div>
+            <span class="action-est">+3 分</span>
+            <button class="action-do">立即修 →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini Radar -->
+      <div class="radar-mini">
+        <h3>📊 4 大面向總覽</h3>
+        <div class="radar-svg">
+          <svg viewBox="0 0 240 240">
+            <!-- Background circles -->
+            <circle cx="120" cy="120" r="100" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <circle cx="120" cy="120" r="75" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <circle cx="120" cy="120" r="50" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <circle cx="120" cy="120" r="25" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+
+            <!-- Axes -->
+            <line x1="120" y1="20" x2="120" y2="220" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <line x1="20" y1="120" x2="220" y2="120" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+            <!-- 100 frame -->
+            <polygon points="120,20 220,120 120,220 20,120"
+              fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+
+            <!-- Data: SEO 78 (top), AEO 45 (right), GEO 62 (bottom), EEAT 88 (left) -->
+            <polygon points="120,42 165,120 120,182 8,120"
+              fill="rgba(24,197,144,0.18)"
+              stroke="#18c590" stroke-width="2.5"/>
+
+            <!-- Points -->
+            <circle cx="120" cy="42" r="4" fill="#3b82f6"/>
+            <circle cx="165" cy="120" r="4" fill="#8b5cf6"/>
+            <circle cx="120" cy="182" r="4" fill="#10b981"/>
+            <circle cx="8" cy="120" r="4" fill="#f59e0b"/>
+
+            <!-- Labels -->
+            <text x="120" y="14" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="11" font-family="Inter" font-weight="600">SEO 78</text>
+            <text x="234" y="124" text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="11" font-family="Inter" font-weight="600">AEO 45</text>
+            <text x="120" y="236" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="11" font-family="Inter" font-weight="600">GEO 62</text>
+            <text x="6" y="124" text-anchor="start" fill="rgba(255,255,255,0.7)" font-size="11" font-family="Inter" font-weight="600">EEAT 88</text>
+          </svg>
+          <div class="radar-center">
+            <div class="num">68</div>
+            <div class="label">站點總分</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第 5 卡內容品質（文章層級）— 視覺降權拆出 -->
+    <div class="content-section">
+      <span class="layer-label">文章層級</span>
+      <span class="layer-explain">不同於上方 4 大站點層級</span>
+
+      <h3>
+        <span class="ico">📝</span>
+        最新單篇抽查 · 內容品質
+      </h3>
+      <p class="lead">
+        從你網站抽 3 篇最近文章看內容品質（不是全站平均）。要看完整 200 篇分析、用上方 Pro 工具區的「批次文章掃描」。
+      </p>
+
+      <div class="content-grid">
+        <div>
+          <div class="content-score-block">
+            <span class="content-score-num">70</span>
+            <span class="content-score-max">/ 100</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-low); margin-top: 4px;">最近 3 篇平均</div>
+        </div>
+        <div class="content-articles">
+          <div class="content-article-row">
+            <span class="url">/product/suzuki-12-vitara</span>
+            <span class="article-score good">82</span>
+          </div>
+          <div class="content-article-row">
+            <span class="url">/blog/wrms14-installation-guide</span>
+            <span class="article-score mid">68</span>
+          </div>
+          <div class="content-article-row">
+            <span class="url">/about</span>
+            <span class="article-score bad">42</span>
+          </div>
+        </div>
+      </div>
+      <div class="content-cta-row">
+        <a class="content-cta-link">查看完整文章分析 →</a>
+        <span style="color: var(--text-faint);">|</span>
+        <a class="content-cta-link">一鍵批次掃 200 篇</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ░░░░░░░░░░ STATE B: 新 Pro 空狀態 ░░░░░░░░░░ -->
+  <div class="state-empty">
+    <div class="page-head">
+      <div>
+        <h1>歡迎來到 Pro 版 · 開始你的第一次掃描</h1>
+        <div class="meta">
+          <span>✨ Pro 試用 7 天 / aivis 50 次</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state">
+      <div class="icon">🚀</div>
+      <h2>來吧、輸入你的第一個網址</h2>
+      <p class="lead">
+        我們會 30 秒幫你跑完 5 大面向體檢 + 抓出全站文章 sitemap。掃完之後、Dashboard 會顯示你的分數、aivis 監測會啟動、優先修復清單會就位。
+      </p>
+      <form class="url-form" onsubmit="event.preventDefault(); alert('Demo only');">
+        <input type="text" class="url-input" placeholder="yourbrand.com.tw">
+        <button type="submit" class="btn-primary">立即掃描 →</button>
+      </form>
+      <div class="hint">不確定要掃哪個？看下面 3 步驟</div>
+
+      <div class="empty-state-tour">
+        <div class="empty-tour-step">
+          <span class="num">1</span>
+          <h4>輸入網址</h4>
+          <p>支援單頁網址或整站網域、我們自動抓 sitemap</p>
+        </div>
+        <div class="empty-tour-step">
+          <span class="num">2</span>
+          <h4>跑 30 秒體檢</h4>
+          <p>5 大維度 + 7-15 項檢測一次到位、即時看 ChatGPT 抓不抓到你</p>
+        </div>
+        <div class="empty-tour-step">
+          <span class="num">3</span>
+          <h4>看 Action Center 修</h4>
+          <p>我們列「今日優先修」3 項 + 預估提升分數、不懂程式碼也能照著修</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ░░░░░░░░░░ STATE C: Free 用戶看到 ░░░░░░░░░░ -->
+  <div class="state-free">
+    <div class="page-head">
+      <div>
+        <h1>kimbo3899.com.tw</h1>
+        <div class="meta">
+          <span><span class="meta-dot"></span>最後掃描 2 分鐘前</span>
+          <span>·</span>
+          <span style="color: var(--orange);">Free 方案 · 7 天試用 Pro 看完整功能</span>
+        </div>
+      </div>
+      <button class="btn-primary">🎁 7 天免費試 Pro</button>
+    </div>
+
+    <!-- Free upsell banner -->
+    <div class="free-upsell">
+      <span class="icon">🔓</span>
+      <div class="copy">
+        <h4>升級 Pro 解鎖完整能力</h4>
+        <div class="lead">aivis 持續監測 ChatGPT 等 5 個 LLM 引用率、批次掃 200 篇文章、平台別修復碼、PDF 匯出。早鳥首年 NT$11,880（剩 73 / 100 名）</div>
+      </div>
+      <button class="btn-primary">查看方案 →</button>
+    </div>
+
+    <!-- Pro Workspace Hub - LOCKED -->
+    <div class="section-title">
+      <div>
+        <h2>Pro 工作區</h2>
+        <div class="sub">升 Pro 看到「你在 ChatGPT 答案裡幾次」</div>
+      </div>
+    </div>
+    <div class="pro-hub">
+      <div class="aivis-card locked">
+        <div class="label-row">
+          <span class="label-badge">AIVIS · 升 Pro 解鎖</span>
+        </div>
+        <div class="locked-overlay">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-msg">
+            <strong style="color: var(--text); font-size: 15px; display: block; margin-bottom: 6px;">AI 曝光監測</strong>
+            持續監測 ChatGPT / Claude / Perplexity / Gemini / GLM 5 個 LLM 對你品牌的引用率 — 知道誰提到你、誰沒提、誰提你的競品
+          </div>
+          <a class="aivis-cta">升 Pro 解鎖 → NT$1,490 / 月</a>
+        </div>
+      </div>
+
+      <div class="pro-tools">
+        <a class="tool-card">
+          <div class="icon-row"><span class="icon">🪪</span><span class="lock-pill">FREE</span></div>
+          <div>
+            <div class="tool-name">Schema 範本</div>
+            <div class="tool-desc">通用版 · 自己填空</div>
+          </div>
+        </a>
+        <a class="tool-card locked">
+          <div class="icon-row"><span class="icon">📋</span><span class="lock-pill">PRO</span></div>
+          <div>
+            <div class="tool-name">批次文章掃描</div>
+            <div class="tool-desc">免費試掃 3 篇</div>
+          </div>
+        </a>
+        <a class="tool-card locked">
+          <div class="icon-row"><span class="icon">📈</span><span class="lock-pill">PRO</span></div>
+          <div>
+            <div class="tool-name">歷史趨勢</div>
+            <div class="tool-desc">7 / 30 / 90 天</div>
+          </div>
+        </a>
+        <a class="tool-card locked">
+          <div class="icon-row"><span class="icon">📄</span><span class="lock-pill">PRO</span></div>
+          <div>
+            <div class="tool-name">PDF 匯出</div>
+            <div class="tool-desc">給客戶看</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 4 audit 分數（Free 也看得到） -->
+    <div class="section-title">
+      <div>
+        <h2>站點層級 · 4 大面向體檢</h2>
+        <div class="sub">Free 看分數 + 通過/失敗清單 / Pro 看完整修復碼</div>
+      </div>
+    </div>
+    <div class="audit-grid">
+      <a class="audit-card seo">
+        <div class="audit-label">SEO</div>
+        <div class="audit-score"><span class="score-num">78</span><span class="score-max">/ 100</span></div>
+        <div class="audit-progress"><div class="audit-progress-fill" style="width: 78%;"></div></div>
+        <div class="audit-meta"><span><span class="audit-passed">5 / 7</span> 通過</span><span>查看 →</span></div>
+      </a>
+      <a class="audit-card aeo">
+        <div class="audit-label">AEO</div>
+        <div class="audit-score"><span class="score-num">45</span><span class="score-max">/ 100</span></div>
+        <div class="audit-progress"><div class="audit-progress-fill" style="width: 45%;"></div></div>
+        <div class="audit-meta"><span><span class="audit-passed">3 / 8</span> 通過</span><span>查看 →</span></div>
+      </a>
+      <a class="audit-card geo">
+        <div class="audit-label">GEO</div>
+        <div class="audit-score"><span class="score-num">62</span><span class="score-max">/ 100</span></div>
+        <div class="audit-progress"><div class="audit-progress-fill" style="width: 62%;"></div></div>
+        <div class="audit-meta"><span><span class="audit-passed">5 / 8</span> 通過</span><span>查看 →</span></div>
+      </a>
+      <a class="audit-card eeat">
+        <div class="audit-label">E-E-A-T</div>
+        <div class="audit-score"><span class="score-num">88</span><span class="score-max">/ 100</span></div>
+        <div class="audit-progress"><div class="audit-progress-fill" style="width: 88%;"></div></div>
+        <div class="audit-meta"><span><span class="audit-passed">7 / 8</span> 通過</span><span>查看 →</span></div>
+      </a>
+    </div>
+
+    <!-- Action Center 部分鎖 -->
+    <div class="middle-row">
+      <div class="action-center">
+        <div class="action-head">
+          <h3>🎯 今日優先修復 <span class="action-badge">3 項</span></h3>
+          <div class="est">全修完預估 <strong>+18 分</strong></div>
+        </div>
+        <div class="action-list">
+          <div class="action-item">
+            <div class="action-priority high">P1</div>
+            <div class="action-info">
+              <div class="action-title">缺 Organization Schema（品牌報名表）</div>
+              <div class="action-meta">
+                <span class="face aeo">AEO</span>
+                <span>免費看修法步驟</span>
+              </div>
+            </div>
+            <span class="action-est">+8 分</span>
+            <button class="action-do">立即修 →</button>
+          </div>
+          <div class="action-item locked">
+            <div class="action-priority high">P1</div>
+            <div class="action-info">
+              <div class="action-title">Cloudflare 擋下 ChatGPTBot 🔒</div>
+              <div class="action-meta">
+                <span class="face seo">SEO</span>
+                <span>升 Pro 看修法步驟</span>
+              </div>
+            </div>
+            <span class="action-est">+7 分</span>
+            <button class="action-do">🔒 升 Pro</button>
+          </div>
+          <div class="action-item locked">
+            <div class="action-priority med">P2</div>
+            <div class="action-info">
+              <div class="action-title">缺 llms.txt 檔案 🔒</div>
+              <div class="action-meta">
+                <span class="face geo">GEO</span>
+                <span>升 Pro 看修法步驟</span>
+              </div>
+            </div>
+            <span class="action-est">+3 分</span>
+            <button class="action-do">🔒 升 Pro</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="radar-mini">
+        <h3>📊 4 大面向總覽</h3>
+        <div class="radar-svg">
+          <svg viewBox="0 0 240 240">
+            <circle cx="120" cy="120" r="100" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <circle cx="120" cy="120" r="75" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <circle cx="120" cy="120" r="50" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <circle cx="120" cy="120" r="25" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <line x1="120" y1="20" x2="120" y2="220" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <line x1="20" y1="120" x2="220" y2="120" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <polygon points="120,20 220,120 120,220 20,120" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            <polygon points="120,42 165,120 120,182 8,120"
+              fill="rgba(24,197,144,0.18)" stroke="#18c590" stroke-width="2.5"/>
+            <circle cx="120" cy="42" r="4" fill="#3b82f6"/>
+            <circle cx="165" cy="120" r="4" fill="#8b5cf6"/>
+            <circle cx="120" cy="182" r="4" fill="#10b981"/>
+            <circle cx="8" cy="120" r="4" fill="#f59e0b"/>
+            <text x="120" y="14" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="11" font-family="Inter" font-weight="600">SEO 78</text>
+            <text x="234" y="124" text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="11" font-family="Inter" font-weight="600">AEO 45</text>
+            <text x="120" y="236" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="11" font-family="Inter" font-weight="600">GEO 62</text>
+            <text x="6" y="124" text-anchor="start" fill="rgba(255,255,255,0.7)" font-size="11" font-family="Inter" font-weight="600">EEAT 88</text>
+          </svg>
+          <div class="radar-center">
+            <div class="num">68</div>
+            <div class="label">站點總分</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第 5 卡內容品質 -->
+    <div class="content-section">
+      <span class="layer-label">文章層級</span>
+      <span class="layer-explain">Free 看 3 篇 / Pro 看 200 篇</span>
+      <h3><span class="ico">📝</span>最新單篇抽查 · 內容品質</h3>
+      <p class="lead">
+        Free 版每月免費抽 3 篇看品質、Pro 升級後可以一鍵掃全站 200 篇。
+      </p>
+      <div class="content-grid">
+        <div>
+          <div class="content-score-block">
+            <span class="content-score-num">70</span>
+            <span class="content-score-max">/ 100</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-low); margin-top: 4px;">最近 3 篇平均</div>
+        </div>
+        <div class="content-articles">
+          <div class="content-article-row">
+            <span class="url">/product/suzuki-12-vitara</span>
+            <span class="article-score good">82</span>
+          </div>
+          <div class="content-article-row">
+            <span class="url">/blog/wrms14-installation-guide</span>
+            <span class="article-score mid">68</span>
+          </div>
+          <div class="content-article-row">
+            <span class="url">/about</span>
+            <span class="article-score bad">42</span>
+          </div>
+        </div>
+      </div>
+      <div class="content-cta-row">
+        <a class="content-cta-link">查看 3 篇分析 →</a>
+        <span style="color: var(--text-faint);">|</span>
+        <a class="content-cta-link" style="opacity: 0.6;">🔒 Pro：一鍵掃 200 篇</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // State switcher
+  const stateBtns = document.querySelectorAll('.tweaks button[data-state]');
+  const states = ['pro-loaded', 'empty', 'free'];
+
+  stateBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.state;
+      stateBtns.forEach(b => b.classList.toggle('active', b.dataset.state === target));
+      states.forEach(s => {
+        const el = document.querySelector('.state-' + s);
+        if (el) el.classList.toggle('active', s === target);
+      });
+      // Update plan badge
+      const badge = document.getElementById('plan-badge');
+      if (target === 'free') {
+        badge.className = 'plan-badge free';
+        badge.textContent = 'FREE';
+      } else {
+        badge.className = 'plan-badge pro';
+        badge.textContent = 'PRO';
+      }
+    });
+  });
+
+  // Site Switcher dropdown
+  function toggleSwitcher() {
+    document.getElementById('switcher-dropdown').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.site-switcher')) {
+      document.getElementById('switcher-dropdown').classList.remove('open');
+    }
+  });
+</script>
+
+</body>
+</html>

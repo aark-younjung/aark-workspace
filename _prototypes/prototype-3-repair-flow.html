@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototype #3 · 修復任務流程動畫 — AI 雷達</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+/*
+  ───────────────────────────────────────────────────────────
+  AI 雷達 · Prototype #3 — 修復任務流程動畫
+  ───────────────────────────────────────────────────────────
+  展示：用戶按下「修復這個」→ 看到 score pop +5 → 進度條填滿 →
+        等級升等 (青銅→白銀) → 徽章解鎖 (初次修復) 一氣呵成的動畫
+
+  4 個關鍵動畫：
+    1. Score Pop — 數字浮起 + 粒子放射
+    2. Progress Fill — 等級進度條流暢填充
+    3. Level Up Overlay — 全螢光晕 + 徽章 flip
+    4. Badge Unlock — 鎖定狀態淡出 + emoji 彈跳 + 五彩粒子
+
+  Tweaks panel：
+    - 場景切換（Before / 修復中 / 升等中 / 完成）
+    - 動畫速度（0.5x / 1x / 2x）
+    - 重置 + 一鍵全跑
+  ───────────────────────────────────────────────────────────
+*/
+
+/* ============== Design Tokens（對齊 prototype-2b）============== */
+:root {
+  --bg-base: #000;
+  --teal: #18c590;
+  --teal-dark: #0d7a58;
+  --emerald: #10b981;
+  --blue-deep: #084773;
+
+  --aivis: #f97316;
+  --aivis-glow: #fb923c;
+  --aivis-deep: #c2410c;
+
+  --bronze: #cd7f32;
+  --silver: #b8c5d0;
+  --gold: #fbbf24;
+  --platinum: #67e8f9;
+  --diamond: #c4b5fd;
+
+  --orange: #fb923c;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --green: #22c55e;
+
+  --text: rgba(255,255,255,1);
+  --text-mid: rgba(255,255,255,0.7);
+  --text-low: rgba(255,255,255,0.45);
+  --text-faint: rgba(255,255,255,0.2);
+
+  --glass-bg: rgba(255,255,255,0.04);
+  --glass-border: rgba(255,255,255,0.1);
+  --card-radius: 14px;
+
+  --font-tc: 'Noto Sans TC', sans-serif;
+  --font-en: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* 動畫速度倍率 — JS 會改這個 */
+  --anim-speed: 1;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg-base);
+  color: var(--text);
+  font-family: var(--font-tc), var(--font-en), sans-serif;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.005em;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============== Background — 對齊 HomeDark 青綠雙漸層 ============== */
+.bg-layer {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+}
+.bg-top {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2400px;
+  background: linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%);
+  mix-blend-mode: lighten;
+}
+.bg-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3600px;
+  background: linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%);
+  mix-blend-mode: lighten;
+}
+.bg-grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+}
+
+/* ============== Layout ============== */
+.page {
+  position: relative; z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+  min-height: 100vh;
+}
+
+/* ============== Tweaks Panel ============== */
+.tweaks {
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.tweaks-label {
+  color: var(--text-low);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 700;
+}
+.tweaks-group {
+  display: flex; gap: 6px;
+  background: rgba(255,255,255,0.04);
+  padding: 3px;
+  border-radius: 8px;
+}
+.tweaks-btn {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--text-mid);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-tc);
+  transition: all 0.15s;
+}
+.tweaks-btn:hover { color: white; background: rgba(255,255,255,0.06); }
+.tweaks-btn.active {
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  color: white;
+  box-shadow: 0 2px 8px rgba(24,197,144,0.3);
+}
+.tweaks-play {
+  margin-left: auto;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--aivis), var(--aivis-deep));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-tc);
+  box-shadow: 0 4px 14px rgba(249,115,22,0.35);
+  transition: transform 0.15s;
+}
+.tweaks-play:hover { transform: translateY(-1px); }
+.tweaks-play:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ============== Header ============== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+}
+.brand-logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--teal), var(--emerald));
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: 18px;
+}
+.brand-text {
+  font-size: 16px;
+  font-weight: 800;
+}
+.brand-sub {
+  font-size: 11px;
+  color: var(--text-low);
+  margin-top: 1px;
+}
+.scene-tag {
+  font-size: 11px;
+  color: var(--text-low);
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+}
+
+/* ============== Main Grid ============== */
+.main-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+}
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+}
+
+/* ============== Left: Player Stats ============== */
+.stats-card {
+  background: linear-gradient(135deg, rgba(184,197,208,0.08), rgba(0,0,0,0.4));
+  border: 1px solid rgba(184,197,208,0.25);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.5s;
+}
+.stats-card.silver-tier {
+  background: linear-gradient(135deg, rgba(184,197,208,0.15), rgba(0,0,0,0.4));
+  border-color: rgba(184,197,208,0.45);
+}
+.stats-card::before {
+  content: '';
+  position: absolute;
+  top: -40%; right: -20%;
+  width: 240px; height: 240px;
+  background: radial-gradient(circle, rgba(205,127,50,0.18), transparent 60%);
+  pointer-events: none;
+  transition: all 0.6s;
+}
+.stats-card.silver-tier::before {
+  background: radial-gradient(circle, rgba(184,197,208,0.3), transparent 60%);
+}
+
+.level-head {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 18px;
+  position: relative; z-index: 2;
+}
+.level-emoji-big {
+  font-size: 52px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 16px rgba(205,127,50,0.5));
+  transition: all 0.4s;
+}
+.silver-tier .level-emoji-big {
+  filter: drop-shadow(0 4px 16px rgba(184,197,208,0.6));
+}
+.level-info { flex: 1; }
+.level-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: white;
+  display: flex; align-items: center; gap: 8px;
+}
+.level-name .tier-num {
+  font-size: 13px;
+  color: var(--bronze);
+  background: rgba(205,127,50,0.15);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-en);
+  font-weight: 700;
+  transition: all 0.4s;
+}
+.silver-tier .level-name .tier-num {
+  color: var(--silver);
+  background: rgba(184,197,208,0.18);
+}
+.level-sub {
+  font-size: 11px;
+  color: var(--text-low);
+  margin-top: 3px;
+}
+
+/* 等級進度條 */
+.level-progress {
+  height: 8px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  position: relative;
+}
+.level-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--bronze), #e0a16a);
+  border-radius: 4px;
+  width: 65%;
+  position: relative;
+  transition: width calc(0.8s / var(--anim-speed)) cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 12px rgba(205,127,50,0.4);
+}
+.silver-tier .level-progress-fill {
+  background: linear-gradient(90deg, var(--silver), white);
+  box-shadow: 0 0 14px rgba(184,197,208,0.5);
+}
+.level-progress-fill::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.level-progress-text {
+  display: flex; justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-mid);
+}
+.level-progress-text strong {
+  color: white;
+  font-family: var(--font-en);
+}
+
+/* 站點分數（會跑 score pop 動畫的位置）*/
+.score-block {
+  position: relative;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.score-row {
+  display: flex; align-items: baseline;
+  gap: 8px;
+  position: relative;
+}
+.score-num {
+  font-family: var(--font-en);
+  font-size: 36px;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  transition: color 0.3s;
+}
+.score-num.boosted {
+  color: var(--emerald);
+}
+.score-divider {
+  font-family: var(--font-en);
+  font-size: 18px;
+  color: var(--text-low);
+  font-weight: 600;
+}
+.score-total {
+  font-family: var(--font-en);
+  font-size: 16px;
+  color: var(--text-low);
+  font-weight: 600;
+}
+.score-label {
+  font-size: 11px;
+  color: var(--text-low);
+  margin-top: 4px;
+}
+
+/* score pop +5 浮起 */
+.score-pop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--font-en);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--emerald);
+  pointer-events: none;
+  opacity: 0;
+  text-shadow: 0 0 12px rgba(34,197,94,0.6);
+}
+.score-pop.fire {
+  animation: scorePop calc(1.6s / var(--anim-speed)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes scorePop {
+  0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+  15%  { transform: translateY(-8px) scale(1.2); opacity: 1; }
+  60%  { transform: translateY(-50px) scale(1.4); opacity: 1; }
+  100% { transform: translateY(-90px) scale(1); opacity: 0; }
+}
+
+/* 粒子放射（score pop 周圍）*/
+.particle-burst {
+  position: absolute; left: 30px; top: 30px;
+  width: 0; height: 0;
+  pointer-events: none;
+}
+.particle-burst .p {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--emerald);
+  box-shadow: 0 0 8px rgba(34,197,94,0.8);
+  opacity: 0;
+  --tx: 0px; --ty: 0px;
+}
+.particle-burst.fire .p {
+  animation: particleFly calc(1.2s / var(--anim-speed)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes particleFly {
+  0%   { transform: translate(0,0) scale(0); opacity: 0; }
+  20%  { transform: translate(0,0) scale(1.2); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* ============== Badges Grid ============== */
+.badges-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  padding: 18px;
+  margin-top: 14px;
+}
+.badges-head {
+  font-size: 11px;
+  color: var(--text-low);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex; justify-content: space-between;
+  align-items: center;
+}
+.badges-head .count {
+  font-family: var(--font-en);
+  color: var(--text-mid);
+  text-transform: none;
+  letter-spacing: 0;
+  transition: color 0.3s;
+}
+.badges-head .count.bumped {
+  color: var(--emerald);
+}
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.badge {
+  aspect-ratio: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  display: grid; place-items: center;
+  position: relative;
+  font-size: 28px;
+  transition: all 0.3s;
+  cursor: pointer;
+  overflow: hidden;
+}
+.badge:not(.locked):hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.08);
+}
+.badge.locked {
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+.badge .lock-overlay {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 14px;
+  background: rgba(0,0,0,0.45);
+  border-radius: 10px;
+  color: var(--text-faint);
+  transition: opacity 0.5s;
+}
+
+/* 徽章解鎖動畫 */
+.badge.unlocking {
+  z-index: 2;
+}
+.badge.unlocking .lock-overlay {
+  opacity: 0;
+}
+.badge.unlocking .emoji {
+  animation: badgeReveal calc(0.9s / var(--anim-speed)) cubic-bezier(0.16, 1.4, 0.3, 1) forwards;
+}
+@keyframes badgeReveal {
+  0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+  60%  { transform: scale(1.3) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.badge.unlocked {
+  opacity: 1;
+  filter: none;
+  background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05));
+  border-color: rgba(34,197,94,0.35);
+  box-shadow: 0 0 18px rgba(34,197,94,0.18);
+}
+.badge.unlocked.glow {
+  animation: badgeGlow calc(2s / var(--anim-speed)) ease-out;
+}
+@keyframes badgeGlow {
+  0%   { box-shadow: 0 0 32px rgba(34,197,94,0.6), 0 0 12px rgba(34,197,94,0.4); }
+  100% { box-shadow: 0 0 18px rgba(34,197,94,0.18); }
+}
+
+/* 徽章解鎖周圍五彩粒子 */
+.confetti {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.confetti.fire .c {
+  animation: confettiFly calc(1.2s / var(--anim-speed)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.confetti .c {
+  position: absolute;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  opacity: 0;
+  top: 50%; left: 50%;
+  --tx: 0px; --ty: 0px;
+  --bg: var(--emerald);
+  background: var(--bg);
+  box-shadow: 0 0 6px var(--bg);
+}
+@keyframes confettiFly {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  20%  { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0); opacity: 0; }
+}
+
+/* ============== Right: Finding 卡片 + 修復面板 ============== */
+.right-col {
+  display: flex; flex-direction: column;
+  gap: 14px;
+}
+
+.finding-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  padding: 18px;
+  transition: all 0.5s;
+  position: relative;
+  overflow: hidden;
+}
+.finding-card.checking {
+  background: linear-gradient(135deg, rgba(24,197,144,0.05), rgba(255,255,255,0.04));
+  border-color: rgba(24,197,144,0.25);
+}
+.finding-card.fixed {
+  background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04));
+  border-color: rgba(34,197,94,0.4);
+}
+.finding-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 14px;
+}
+.finding-url {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mid);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.finding-status {
+  font-size: 12px;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.finding-status.warning { color: var(--amber); }
+.finding-status.checking { color: var(--teal); }
+.finding-status.fixed { color: var(--green); }
+
+.finding-status .spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(24,197,144,0.2);
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.finding-detail {
+  font-size: 13px;
+  color: white;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+
+.finding-tip {
+  font-size: 11px;
+  color: var(--text-mid);
+  background: rgba(236,72,153,0.06);
+  border-left: 2px solid rgba(236,72,153,0.4);
+  padding: 8px 10px;
+  border-radius: 4px;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.finding-tip strong { color: #f9a8d4; }
+
+.finding-actions {
+  display: flex; gap: 8px;
+  margin-top: 4px;
+}
+.btn-fix {
+  padding: 9px 16px;
+  background: linear-gradient(135deg, var(--aivis), var(--aivis-deep));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-tc);
+  box-shadow: 0 4px 14px rgba(249,115,22,0.3);
+  transition: all 0.15s;
+}
+.btn-fix:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(249,115,22,0.4); }
+.btn-fix:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost {
+  padding: 9px 14px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text-mid);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-tc);
+  transition: all 0.15s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.08); color: white; }
+
+.fix-pulse {
+  position: absolute; inset: 0;
+  border-radius: var(--card-radius);
+  pointer-events: none;
+  opacity: 0;
+}
+.fix-pulse.fire {
+  animation: fixPulse calc(1s / var(--anim-speed)) ease-out;
+}
+@keyframes fixPulse {
+  0%   { box-shadow: inset 0 0 0 0 rgba(24,197,144,0.5); opacity: 1; }
+  100% { box-shadow: inset 0 0 0 80px rgba(24,197,144,0); opacity: 0; }
+}
+
+/* ============== Fix Modal ============== */
+.modal-mask {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  z-index: 50;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.modal-mask.open {
+  display: flex;
+  opacity: 1;
+}
+.modal {
+  background: linear-gradient(135deg, rgba(8,71,115,0.95), rgba(0,0,0,0.95));
+  border: 1px solid rgba(24,197,144,0.3);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 560px;
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-mask.open .modal {
+  transform: translateY(0);
+}
+.modal-head {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.modal-head .icon { font-size: 22px; }
+.modal-head h2 {
+  font-size: 17px;
+  font-weight: 800;
+}
+.modal-detail {
+  font-size: 13px;
+  color: var(--text-mid);
+  margin-bottom: 16px;
+  line-height: 1.7;
+}
+.modal-detail strong { color: white; }
+.modal-code {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #a7f3d0;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.modal-copy {
+  width: 100%;
+  padding: 10px;
+  background: rgba(20,184,166,0.15);
+  color: #5eead4;
+  border: 1px solid rgba(20,184,166,0.4);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-tc);
+  margin-bottom: 18px;
+  transition: all 0.15s;
+}
+.modal-copy:hover { background: rgba(20,184,166,0.25); }
+.modal-copy.copied {
+  background: rgba(34,197,94,0.2);
+  color: #86efac;
+  border-color: rgba(34,197,94,0.5);
+}
+.modal-cta {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--font-tc);
+  box-shadow: 0 6px 20px rgba(24,197,144,0.35);
+  transition: transform 0.15s;
+}
+.modal-cta:hover { transform: translateY(-1px); }
+.modal-cta:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.modal-hint {
+  font-size: 11px;
+  color: var(--text-low);
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ============== Level Up Overlay ============== */
+.levelup-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  opacity: 0;
+}
+.levelup-overlay.fire {
+  display: flex;
+  animation: levelupFade calc(3s / var(--anim-speed)) ease-out forwards;
+}
+@keyframes levelupFade {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.levelup-burst {
+  position: absolute;
+  width: 800px; height: 800px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184,197,208,0.4), transparent 60%);
+  opacity: 0;
+}
+.levelup-overlay.fire .levelup-burst {
+  animation: burstExpand calc(2s / var(--anim-speed)) ease-out forwards;
+}
+@keyframes burstExpand {
+  0%   { transform: scale(0); opacity: 0; }
+  30%  { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.levelup-emoji {
+  font-size: 140px;
+  filter: drop-shadow(0 8px 40px rgba(184,197,208,0.7));
+  margin-bottom: 16px;
+  z-index: 2;
+  transform-style: preserve-3d;
+  perspective: 800px;
+}
+.levelup-overlay.fire .levelup-emoji {
+  animation: emojiFlip calc(1.4s / var(--anim-speed)) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes emojiFlip {
+  0%   { transform: rotateY(0deg) scale(0); opacity: 0; }
+  20%  { transform: rotateY(0deg) scale(1.2); opacity: 1; }
+  50%  { transform: rotateY(180deg) scale(1.2); opacity: 1; }
+  60%  { transform: rotateY(360deg) scale(1.4); }
+  100% { transform: rotateY(360deg) scale(1); opacity: 1; }
+}
+
+.levelup-text {
+  z-index: 2;
+  text-align: center;
+}
+.levelup-title {
+  font-family: var(--font-en);
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--silver), white, var(--silver));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 6px;
+}
+.levelup-sub {
+  font-size: 18px;
+  color: var(--silver);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.levelup-detail {
+  font-size: 13px;
+  color: var(--text-mid);
+  margin-top: 14px;
+  background: rgba(255,255,255,0.05);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+/* ============== Toast ============== */
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(34,197,94,0.4);
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 13px;
+  color: white;
+  display: flex; align-items: center; gap: 10px;
+  opacity: 0;
+  z-index: 80;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast .ico { font-size: 16px; }
+
+</style>
+</head>
+<body>
+
+<!-- 背景層 -->
+<div class="bg-layer">
+  <div class="bg-top"></div>
+  <div class="bg-bottom"></div>
+  <div class="bg-grain"></div>
+</div>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-logo">📡</div>
+      <div>
+        <div class="brand-text">AI 雷達</div>
+        <div class="brand-sub">Prototype #3 · 修復任務流程動畫</div>
+      </div>
+    </div>
+    <div class="scene-tag" id="sceneTag">SCENE 1 / BEFORE</div>
+  </div>
+
+  <!-- Tweaks Panel -->
+  <div class="tweaks">
+    <span class="tweaks-label">場景</span>
+    <div class="tweaks-group" id="sceneTweaks">
+      <button class="tweaks-btn active" data-scene="before">1. Before</button>
+      <button class="tweaks-btn" data-scene="fixing">2. 修復中</button>
+      <button class="tweaks-btn" data-scene="leveling">3. 升等中</button>
+      <button class="tweaks-btn" data-scene="done">4. 完成</button>
+    </div>
+
+    <span class="tweaks-label">速度</span>
+    <div class="tweaks-group" id="speedTweaks">
+      <button class="tweaks-btn" data-speed="0.5">0.5×</button>
+      <button class="tweaks-btn active" data-speed="1">1×</button>
+      <button class="tweaks-btn" data-speed="2">2×</button>
+    </div>
+
+    <button class="tweaks-play" id="playAllBtn">▶ 一鍵全跑</button>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+
+    <!-- Left: Player Stats -->
+    <div>
+      <div class="stats-card" id="statsCard">
+        <div class="level-head">
+          <div class="level-emoji-big" id="levelEmoji">🥉</div>
+          <div class="level-info">
+            <div class="level-name">
+              <span id="levelName">青銅</span>
+              <span class="tier-num" id="levelTier">Lv.5</span>
+            </div>
+            <div class="level-sub" id="levelSub">下一級還差 35 分</div>
+          </div>
+        </div>
+
+        <div class="level-progress">
+          <div class="level-progress-fill" id="levelFill"></div>
+        </div>
+        <div class="level-progress-text">
+          <span id="levelProgressText">65 / 100 升級</span>
+          <span><strong id="levelPct">65</strong>%</span>
+        </div>
+
+        <!-- 站點分數 -->
+        <div class="score-block">
+          <div class="score-row">
+            <span class="score-num" id="scoreNum">65</span>
+            <span class="score-divider">/</span>
+            <span class="score-total">100</span>
+            <span class="score-pop" id="scorePop">+5</span>
+            <div class="particle-burst" id="particleBurst"></div>
+          </div>
+          <div class="score-label">本週站點分數</div>
+        </div>
+      </div>
+
+      <!-- 徽章 -->
+      <div class="badges-card">
+        <div class="badges-head">
+          <span>徽章收藏</span>
+          <span class="count" id="badgeCount">3 / 12</span>
+        </div>
+        <div class="badges-grid" id="badgesGrid">
+          <div class="badge" title="首次掃描"><span class="emoji">🚀</span></div>
+          <div class="badge" title="7 日連續登入"><span class="emoji">🔥</span></div>
+          <div class="badge" title="完成站點體檢"><span class="emoji">🩺</span></div>
+          <div class="badge locked" id="firstFixBadge" title="初次修復">
+            <span class="emoji">🔧</span>
+            <div class="lock-overlay">🔒</div>
+            <div class="confetti" id="badgeConfetti"></div>
+          </div>
+          <div class="badge locked"><span class="emoji">✨</span><div class="lock-overlay">🔒</div></div>
+          <div class="badge locked"><span class="emoji">🎯</span><div class="lock-overlay">🔒</div></div>
+          <div class="badge locked"><span class="emoji">📈</span><div class="lock-overlay">🔒</div></div>
+          <div class="badge locked"><span class="emoji">💎</span><div class="lock-overlay">🔒</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Finding Card -->
+    <div class="right-col">
+      <div class="finding-card" id="findingCard">
+        <div class="finding-head">
+          <span class="finding-url">https://kimbo3899.com.tw/skoda-mqbtpms-qa/</span>
+          <span class="finding-status warning" id="findingStatus">
+            <span id="findingStatusIcon">⚠️</span>
+            <span id="findingStatusText">1 個問題</span>
+          </span>
+        </div>
+        <div class="finding-detail" id="findingDetail">
+          <span>🟡</span>
+          <span>缺 canonical 標籤（告訴 Google「正版」網址、避免重複內容懲罰）</span>
+        </div>
+        <div class="finding-tip" id="findingTip">
+          <strong>💡 怎麼修：</strong>加進文章的 &lt;head&gt; 區。完整程式碼按右邊「修復這個」按鈕看
+        </div>
+        <div class="finding-actions" id="findingActions">
+          <button class="btn-fix" id="fixBtn">🔧 修復這個</button>
+          <button class="btn-ghost">略過</button>
+        </div>
+        <div class="fix-pulse" id="fixPulse"></div>
+      </div>
+
+      <!-- 修復完成後顯示的小提示卡 -->
+      <div class="finding-card" style="display:none; opacity:0; transform: translateY(8px); transition: all 0.4s;" id="successCard">
+        <div class="finding-head">
+          <span class="finding-url">🎉 已修復 1 項</span>
+          <span class="finding-status fixed">
+            <span>✅</span><span>+5 分</span>
+          </span>
+        </div>
+        <div class="finding-detail">
+          <span>✨</span>
+          <span>你剛剛修復了「<strong style="color:var(--green)">canonical 標籤</strong>」。AI 引擎下次來爬時會認得這頁是正版。</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- 修復 Modal -->
+<div class="modal-mask" id="fixModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="icon">🔧</span>
+      <h2>修復：補上 canonical 標籤</h2>
+    </div>
+    <div class="modal-detail">
+      把下面這段 HTML <strong>複製貼到網站的 &lt;head&gt; 區</strong>。WordPress 用戶：到「外觀 → 編輯主題 → header.php」找到 &lt;/head&gt; 那行、貼在它前面。
+    </div>
+    <div class="modal-code">&lt;link rel="canonical" href="https://kimbo3899.com.tw/skoda-mqbtpms-qa/" /&gt;</div>
+    <button class="modal-copy" id="modalCopyBtn">📋 複製整段 HTML</button>
+    <button class="modal-cta" id="iFixedBtn">✓ 我已修好 → 重新檢查</button>
+    <div class="modal-hint">系統會重新爬這頁、確認你修好了才會給分</div>
+  </div>
+</div>
+
+<!-- Level Up Overlay -->
+<div class="levelup-overlay" id="levelupOverlay">
+  <div class="levelup-burst"></div>
+  <div class="levelup-emoji">🥈</div>
+  <div class="levelup-text">
+    <div class="levelup-title">LEVEL UP!</div>
+    <div class="levelup-sub">白銀 · Lv.1</div>
+    <div class="levelup-detail">解鎖徽章：<strong style="color:white">初次修復 🔧</strong></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="ico">✅</span>
+  <span id="toastText">已複製到剪貼簿</span>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────
+   Prototype #3 動畫腳本
+   ───────────────────────────────────────────────────────── */
+
+// ── State ────────────────────────────────────────────────
+let isAnimating = false;
+let scene = 'before'; // before / fixing / leveling / done
+const ANIM = {
+  speed: 1,
+  setSpeed(s) {
+    this.speed = s;
+    document.documentElement.style.setProperty('--anim-speed', s);
+  }
+};
+
+// ── Helpers ──────────────────────────────────────────────
+function wait(ms) { return new Promise(r => setTimeout(r, ms / ANIM.speed)); }
+function $(id) { return document.getElementById(id); }
+function setSceneTag(label) { $('sceneTag').textContent = label; }
+function setActive(group, key) {
+  document.querySelectorAll(`#${group} .tweaks-btn`).forEach(b => b.classList.remove('active'));
+  const target = document.querySelector(`#${group} [data-scene="${key}"], #${group} [data-speed="${key}"]`);
+  if (target) target.classList.add('active');
+}
+
+// ── 動畫片段 ─────────────────────────────────────────────
+
+// 1. 重置到 before
+function resetToBefore() {
+  isAnimating = false;
+  scene = 'before';
+  setActive('sceneTweaks', 'before');
+  setSceneTag('SCENE 1 / BEFORE');
+
+  // Stats: 青銅 Lv.5 / 65 分
+  $('statsCard').classList.remove('silver-tier');
+  $('levelEmoji').textContent = '🥉';
+  $('levelName').textContent = '青銅';
+  $('levelTier').textContent = 'Lv.5';
+  $('levelSub').textContent = '下一級還差 35 分';
+  $('levelFill').style.width = '65%';
+  $('levelProgressText').textContent = '65 / 100 升級';
+  $('levelPct').textContent = '65';
+  $('scoreNum').textContent = '65';
+  $('scoreNum').classList.remove('boosted');
+
+  // Badge: 初次修復 仍鎖定
+  $('firstFixBadge').classList.remove('unlocking', 'unlocked', 'glow');
+  $('firstFixBadge').querySelector('.lock-overlay').style.opacity = '';
+  $('badgeCount').textContent = '3 / 12';
+  $('badgeCount').classList.remove('bumped');
+
+  // Finding 卡：警告狀態
+  const card = $('findingCard');
+  card.classList.remove('checking', 'fixed');
+  card.style.display = '';
+  $('findingStatus').className = 'finding-status warning';
+  $('findingStatusIcon').textContent = '⚠️';
+  $('findingStatusText').textContent = '1 個問題';
+  $('findingDetail').innerHTML = '<span>🟡</span><span>缺 canonical 標籤（告訴 Google「正版」網址、避免重複內容懲罰）</span>';
+  $('findingTip').style.display = '';
+  $('findingActions').style.display = '';
+  $('fixBtn').disabled = false;
+
+  // Success card 收起
+  $('successCard').style.display = 'none';
+  $('successCard').style.opacity = '0';
+  $('successCard').style.transform = 'translateY(8px)';
+
+  // Modal 關
+  $('fixModal').classList.remove('open');
+  $('modalCopyBtn').textContent = '📋 複製整段 HTML';
+  $('modalCopyBtn').classList.remove('copied');
+
+  // Overlay 關
+  $('levelupOverlay').classList.remove('fire');
+}
+
+// 2. 開修復 modal
+function openFixModal() {
+  $('fixModal').classList.add('open');
+}
+function closeFixModal() {
+  $('fixModal').classList.remove('open');
+}
+
+// 3. Score pop +5 動畫 + 粒子放射
+function fireScorePop() {
+  const pop = $('scorePop');
+  const burst = $('particleBurst');
+
+  // 重置
+  pop.classList.remove('fire');
+  burst.classList.remove('fire');
+  burst.innerHTML = '';
+
+  // 生成粒子（10 顆四散放射）
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('div');
+    p.className = 'p';
+    const angle = (i / 10) * Math.PI * 2;
+    const dist = 60 + Math.random() * 30;
+    p.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+    p.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+    p.style.animationDelay = `${Math.random() * 0.1}s`;
+    burst.appendChild(p);
+  }
+
+  // 觸發
+  void pop.offsetWidth; // reflow
+  pop.classList.add('fire');
+  burst.classList.add('fire');
+}
+
+// 4. 進度條 + 數字 65 → 70
+async function advanceProgress(from, to) {
+  const fill = $('levelFill');
+  const txt = $('levelProgressText');
+  const pct = $('levelPct');
+  const score = $('scoreNum');
+
+  fill.style.width = `${to}%`;
+  pct.textContent = String(to);
+  txt.textContent = `${to} / 100 升級`;
+  score.classList.add('boosted');
+
+  // 數字動畫（從 from 跳到 to）
+  await tweenNumber(score, from, to, 600 / ANIM.speed);
+
+  await wait(120);
+  score.classList.remove('boosted');
+}
+function tweenNumber(el, from, to, duration) {
+  return new Promise(resolve => {
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      el.textContent = Math.round(from + (to - from) * eased);
+      if (t < 1) requestAnimationFrame(step);
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+// 5. Level up overlay
+async function fireLevelUp() {
+  // 升等 stats 切到 silver
+  $('statsCard').classList.add('silver-tier');
+  $('levelEmoji').textContent = '🥈';
+  $('levelName').textContent = '白銀';
+  $('levelTier').textContent = 'Lv.1';
+  $('levelSub').textContent = '下一級還差 50 分';
+  // 進度重設到 0 (升等剛開始新等級)
+  $('levelFill').style.width = '0%';
+  $('levelProgressText').textContent = '0 / 100 升級';
+  $('levelPct').textContent = '0';
+
+  $('levelupOverlay').classList.add('fire');
+
+  await wait(3000);
+
+  $('levelupOverlay').classList.remove('fire');
+}
+
+// 6. Badge unlock 「初次修復」
+function fireBadgeUnlock() {
+  const badge = $('firstFixBadge');
+  const confetti = $('badgeConfetti');
+
+  badge.classList.add('unlocking');
+
+  // 生成五彩粒子
+  confetti.innerHTML = '';
+  confetti.classList.remove('fire');
+  const colors = ['#22c55e', '#fbbf24', '#3b82f6', '#ec4899', '#a78bfa'];
+  for (let i = 0; i < 16; i++) {
+    const c = document.createElement('div');
+    c.className = 'c';
+    const angle = (i / 16) * Math.PI * 2;
+    const dist = 35 + Math.random() * 20;
+    c.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+    c.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+    c.style.setProperty('--bg', colors[i % colors.length]);
+    confetti.appendChild(c);
+  }
+
+  setTimeout(() => {
+    confetti.classList.add('fire');
+    badge.classList.remove('locked');
+    badge.classList.add('unlocked', 'glow');
+
+    // Badge count 從 3/12 → 4/12
+    $('badgeCount').textContent = '4 / 12';
+    $('badgeCount').classList.add('bumped');
+    setTimeout(() => $('badgeCount').classList.remove('bumped'), 1500);
+
+    setTimeout(() => badge.classList.remove('glow'), 2000 / ANIM.speed);
+  }, 100);
+}
+
+// 7. Toast
+function toast(text) {
+  $('toastText').textContent = text;
+  $('toast').classList.add('show');
+  setTimeout(() => $('toast').classList.remove('show'), 1800 / ANIM.speed);
+}
+
+// ── 主流程：完整跑一遍 ────────────────────────────────────
+async function playFullSequence() {
+  if (isAnimating) return;
+  isAnimating = true;
+  $('playAllBtn').disabled = true;
+
+  resetToBefore();
+  await wait(300);
+
+  // ── Phase 1: 開 modal
+  scene = 'fixing';
+  setActive('sceneTweaks', 'fixing');
+  setSceneTag('SCENE 2 / 修復中');
+  openFixModal();
+  await wait(1200);
+
+  // ── Phase 1.5: 用戶按複製
+  $('modalCopyBtn').classList.add('copied');
+  $('modalCopyBtn').textContent = '✅ 已複製';
+  toast('已複製整段 HTML');
+  await wait(900);
+
+  // ── Phase 2: 用戶按「我已修好」
+  $('iFixedBtn').disabled = true;
+  closeFixModal();
+  await wait(300);
+
+  // Finding 卡轉成 checking
+  const card = $('findingCard');
+  card.classList.add('checking');
+  $('findingStatus').className = 'finding-status checking';
+  $('findingStatusIcon').outerHTML = '<span id="findingStatusIcon" class="spinner"></span>';
+  $('findingStatusText').textContent = '重新檢測中…';
+  $('findingTip').style.display = 'none';
+  $('findingActions').style.display = 'none';
+  $('fixBtn').disabled = true;
+  $('iFixedBtn').disabled = false;
+
+  // fix pulse 漣漪
+  $('fixPulse').classList.remove('fire');
+  void $('fixPulse').offsetWidth;
+  $('fixPulse').classList.add('fire');
+
+  await wait(1500);
+
+  // ── Phase 3: 修復成功
+  card.classList.remove('checking');
+  card.classList.add('fixed');
+  $('findingStatus').className = 'finding-status fixed';
+  $('findingStatusIcon').outerHTML = '<span id="findingStatusIcon">✅</span>';
+  $('findingStatusText').textContent = '已修復 +5 分';
+  $('findingDetail').innerHTML = '<span>🎉</span><span><strong style="color:var(--green)">canonical 標籤</strong>已偵測到。AI 引擎下次來爬時會認得這頁是正版。</span>';
+
+  fireScorePop();
+  await wait(300);
+
+  // ── Phase 4: 進度條跑 65 → 100 (到頂)
+  scene = 'leveling';
+  setActive('sceneTweaks', 'leveling');
+  setSceneTag('SCENE 3 / 升等中');
+  await advanceProgress(65, 100);
+
+  await wait(400);
+
+  // ── Phase 5: Level Up!
+  fireLevelUp();
+  await wait(1200);
+
+  // ── Phase 6: 在 Level up overlay 還亮的時候 → badge unlock
+  fireBadgeUnlock();
+
+  // 等 overlay 整個收完
+  await wait(2000);
+
+  // ── Phase 7: 完成
+  scene = 'done';
+  setActive('sceneTweaks', 'done');
+  setSceneTag('SCENE 4 / 完成');
+
+  // Success card 顯示
+  $('successCard').style.display = '';
+  await wait(80);
+  $('successCard').style.opacity = '1';
+  $('successCard').style.transform = 'translateY(0)';
+
+  isAnimating = false;
+  $('playAllBtn').disabled = false;
+  $('playAllBtn').textContent = '↻ 重新播放';
+}
+
+// ── 場景跳轉（不跑動畫、直接到那狀態）────────────────────
+function jumpToScene(target) {
+  if (isAnimating) return;
+  resetToBefore();
+
+  if (target === 'before') {
+    setSceneTag('SCENE 1 / BEFORE');
+    return;
+  }
+  if (target === 'fixing') {
+    setSceneTag('SCENE 2 / 修復中');
+    openFixModal();
+    return;
+  }
+  if (target === 'leveling') {
+    setSceneTag('SCENE 3 / 升等中');
+    // 進度條到 100
+    $('levelFill').style.transition = 'none';
+    $('levelFill').style.width = '100%';
+    $('levelProgressText').textContent = '100 / 100 升級';
+    $('levelPct').textContent = '100';
+    $('scoreNum').textContent = '70';
+    // 卡片轉成 fixed 狀態
+    const card = $('findingCard');
+    card.classList.add('fixed');
+    $('findingStatus').className = 'finding-status fixed';
+    $('findingStatusIcon').textContent = '✅';
+    $('findingStatusText').textContent = '已修復 +5 分';
+    $('findingDetail').innerHTML = '<span>🎉</span><span><strong style="color:var(--green)">canonical 標籤</strong>已偵測到</span>';
+    $('findingTip').style.display = 'none';
+    $('findingActions').style.display = 'none';
+    // 開 Level up overlay 持續顯示
+    setTimeout(() => {
+      $('levelupOverlay').style.display = 'flex';
+      $('levelupOverlay').style.opacity = '1';
+    }, 50);
+    setTimeout(() => $('levelFill').style.transition = '', 100);
+    return;
+  }
+  if (target === 'done') {
+    setSceneTag('SCENE 4 / 完成');
+    // Stats: 白銀 Lv.1
+    $('statsCard').classList.add('silver-tier');
+    $('levelEmoji').textContent = '🥈';
+    $('levelName').textContent = '白銀';
+    $('levelTier').textContent = 'Lv.1';
+    $('levelSub').textContent = '下一級還差 50 分';
+    $('levelFill').style.transition = 'none';
+    $('levelFill').style.width = '0%';
+    $('levelProgressText').textContent = '0 / 100 升級';
+    $('levelPct').textContent = '0';
+    $('scoreNum').textContent = '70';
+    // Badge unlock
+    $('firstFixBadge').classList.remove('locked');
+    $('firstFixBadge').classList.add('unlocked');
+    $('firstFixBadge').querySelector('.lock-overlay').style.opacity = '0';
+    $('badgeCount').textContent = '4 / 12';
+    // Finding 卡：已修復
+    const card = $('findingCard');
+    card.classList.add('fixed');
+    $('findingStatus').className = 'finding-status fixed';
+    $('findingStatusIcon').textContent = '✅';
+    $('findingStatusText').textContent = '已修復 +5 分';
+    $('findingDetail').innerHTML = '<span>🎉</span><span><strong style="color:var(--green)">canonical 標籤</strong>已偵測到。AI 引擎下次來爬時會認得這頁是正版。</span>';
+    $('findingTip').style.display = 'none';
+    $('findingActions').style.display = 'none';
+    // Success card
+    $('successCard').style.display = '';
+    setTimeout(() => {
+      $('successCard').style.opacity = '1';
+      $('successCard').style.transform = 'translateY(0)';
+      $('levelFill').style.transition = '';
+    }, 50);
+    return;
+  }
+}
+
+// ── Event Bindings ───────────────────────────────────────
+document.querySelectorAll('#sceneTweaks .tweaks-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.scene;
+    document.querySelectorAll('#sceneTweaks .tweaks-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    scene = target;
+    jumpToScene(target);
+  });
+});
+
+document.querySelectorAll('#speedTweaks .tweaks-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#speedTweaks .tweaks-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ANIM.setSpeed(parseFloat(btn.dataset.speed));
+  });
+});
+
+$('playAllBtn').addEventListener('click', () => {
+  playFullSequence();
+});
+
+$('fixBtn').addEventListener('click', () => {
+  openFixModal();
+});
+
+$('modalCopyBtn').addEventListener('click', () => {
+  $('modalCopyBtn').classList.add('copied');
+  $('modalCopyBtn').textContent = '✅ 已複製';
+  toast('已複製整段 HTML');
+});
+
+$('iFixedBtn').addEventListener('click', async () => {
+  closeFixModal();
+  // 跑 phase 2-7 段
+  await wait(300);
+  const card = $('findingCard');
+  card.classList.add('checking');
+  $('findingStatus').className = 'finding-status checking';
+  $('findingStatusIcon').outerHTML = '<span id="findingStatusIcon" class="spinner"></span>';
+  $('findingStatusText').textContent = '重新檢測中…';
+  $('findingTip').style.display = 'none';
+  $('findingActions').style.display = 'none';
+  $('fixPulse').classList.remove('fire');
+  void $('fixPulse').offsetWidth;
+  $('fixPulse').classList.add('fire');
+
+  await wait(1500);
+
+  card.classList.remove('checking');
+  card.classList.add('fixed');
+  $('findingStatus').className = 'finding-status fixed';
+  $('findingStatusIcon').outerHTML = '<span id="findingStatusIcon">✅</span>';
+  $('findingStatusText').textContent = '已修復 +5 分';
+  $('findingDetail').innerHTML = '<span>🎉</span><span><strong style="color:var(--green)">canonical 標籤</strong>已偵測到。AI 引擎下次來爬時會認得這頁是正版。</span>';
+
+  fireScorePop();
+  await wait(300);
+  await advanceProgress(65, 100);
+  await wait(400);
+  fireLevelUp();
+  await wait(1200);
+  fireBadgeUnlock();
+  await wait(2000);
+  $('successCard').style.display = '';
+  await wait(80);
+  $('successCard').style.opacity = '1';
+  $('successCard').style.transform = 'translateY(0)';
+});
+
+// 初始化
+resetToBefore();
+
+</script>
+</body>
+</html>

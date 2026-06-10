@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prototype #4 · Dashboard 內容品質 Tab — AI 雷達</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+/*
+  ───────────────────────────────────────────────────────────
+  AI 雷達 · Prototype #4 — Dashboard「內容品質」Tab 展開內容
+  ───────────────────────────────────────────────────────────
+  填補 prototype-2b 第 1564 行「demo 略」的洞 — 用戶在 Dashboard
+  「站點體檢」區塊點到「內容品質」Tab 時、Tab Panel 內要長什麼樣。
+
+  結構：
+    1. Tab Nav（5 個 face tab、content active）
+    2. Hero strip：分數 + 30 天 sparkline + 月增幅
+    3. 兩個入口卡：📄 單篇文章分析 / 📂 批次掃描全站
+    4. 15 項檢測 grid（5 分類 × 3 項）
+    5. 底部 CTA：完整批次掃描 + 升級 Pro
+
+  Tweaks panel：
+    - 用戶層級：Pro 標準 / Free 鎖
+    - 兩個入口卡的 hover state preview
+  ───────────────────────────────────────────────────────────
+*/
+
+/* ============== Design Tokens（對齊 prototype-2b）============== */
+:root {
+  --bg-base: #000;
+  --teal: #18c590;
+  --teal-dark: #0d7a58;
+  --emerald: #10b981;
+  --blue-deep: #084773;
+
+  --seo: #3b82f6;
+  --aeo: #8b5cf6;
+  --geo: #10b981;
+  --eeat: #f59e0b;
+  --content: #ec4899;
+  --content-deep: #be185d;
+  --content-glow: #f472b6;
+
+  --aivis: #f97316;
+  --aivis-glow: #fb923c;
+
+  --orange: #fb923c;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --green: #22c55e;
+
+  --text: rgba(255,255,255,1);
+  --text-mid: rgba(255,255,255,0.7);
+  --text-low: rgba(255,255,255,0.45);
+  --text-faint: rgba(255,255,255,0.2);
+
+  --glass-bg: rgba(255,255,255,0.04);
+  --glass-border: rgba(255,255,255,0.1);
+  --card-radius: 14px;
+
+  --font-tc: 'Noto Sans TC', sans-serif;
+  --font-en: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg-base);
+  color: var(--text);
+  font-family: var(--font-tc), var(--font-en), sans-serif;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.005em;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============== Background ============== */
+.bg-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.bg-top {
+  position: absolute; top: 0; left: 0; right: 0; height: 2400px;
+  background: linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%);
+  mix-blend-mode: lighten;
+}
+.bg-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3600px;
+  background: linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%);
+  mix-blend-mode: lighten;
+}
+.bg-grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+}
+
+/* ============== Layout ============== */
+.page {
+  position: relative; z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+}
+
+/* ============== Header ============== */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+}
+.brand-logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--teal), var(--emerald));
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: 18px;
+}
+.brand-text { font-size: 16px; font-weight: 800; }
+.brand-sub { font-size: 11px; color: var(--text-low); margin-top: 1px; }
+
+.scene-tag {
+  font-size: 11px;
+  color: var(--text-low);
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+}
+
+/* ============== Tweaks Panel ============== */
+.tweaks {
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 22px;
+  display: flex; align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.tweaks-label {
+  color: var(--text-low);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 700;
+}
+.tweaks-group {
+  display: flex; gap: 6px;
+  background: rgba(255,255,255,0.04);
+  padding: 3px;
+  border-radius: 8px;
+}
+.tweaks-btn {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--text-mid);
+  border: none; border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  font-family: var(--font-tc);
+  transition: all 0.15s;
+}
+.tweaks-btn:hover { color: white; background: rgba(255,255,255,0.06); }
+.tweaks-btn.active {
+  background: linear-gradient(135deg, var(--content), var(--content-deep));
+  color: white;
+  box-shadow: 0 2px 8px rgba(236,72,153,0.3);
+}
+
+/* ============== 站點體檢 — 整個外層 card（呼應 prototype-2b） ============== */
+.audit-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.audit-section::before {
+  content: '';
+  position: absolute;
+  top: -40%; right: -10%;
+  width: 360px; height: 360px;
+  background: radial-gradient(circle, rgba(236,72,153,0.12), transparent 60%);
+  pointer-events: none;
+}
+
+.audit-section-head {
+  display: flex; justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  position: relative; z-index: 2;
+}
+.audit-section-head h2 {
+  font-size: 16px; font-weight: 800;
+  display: flex; align-items: center; gap: 8px;
+}
+.audit-section-head .website {
+  font-size: 12px;
+  color: var(--text-low);
+  font-family: var(--font-mono);
+}
+
+/* ============== Tab Nav（5 個 face）============== */
+.audit-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  margin-bottom: 22px;
+  overflow-x: auto;
+  position: relative; z-index: 2;
+}
+.audit-tab {
+  flex: 1;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--text-mid);
+  cursor: pointer;
+  font-family: var(--font-tc);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+  transition: all 0.15s;
+  min-width: 100px;
+  white-space: nowrap;
+}
+.audit-tab:hover { color: white; background: rgba(255,255,255,0.04); }
+.audit-tab .mini-score {
+  font-family: var(--font-en);
+  font-size: 11px;
+  color: var(--text-low);
+}
+.audit-tab.active {
+  background: rgba(236,72,153,0.18);
+  color: white;
+  box-shadow: 0 0 0 1px rgba(236,72,153,0.4);
+}
+.audit-tab.active .mini-score { color: var(--content-glow); }
+/* 各 face 自己顏色（給未 active 的 tab hover 暗示）*/
+.audit-tab[data-face="seo"].active { background: rgba(59,130,246,0.18); box-shadow: 0 0 0 1px rgba(59,130,246,0.4); }
+.audit-tab[data-face="aeo"].active { background: rgba(139,92,246,0.18); box-shadow: 0 0 0 1px rgba(139,92,246,0.4); }
+.audit-tab[data-face="geo"].active { background: rgba(16,185,129,0.18); box-shadow: 0 0 0 1px rgba(16,185,129,0.4); }
+.audit-tab[data-face="eeat"].active { background: rgba(245,158,11,0.18); box-shadow: 0 0 0 1px rgba(245,158,11,0.4); }
+
+/* ============== Tab Body：Content Quality ============== */
+
+/* ── Hero strip：分數 + 30 天曲線 + 月增幅 ── */
+.content-hero {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 28px;
+  align-items: center;
+  padding: 20px 22px;
+  background: linear-gradient(135deg, rgba(236,72,153,0.10), rgba(236,72,153,0.02));
+  border: 1px solid rgba(236,72,153,0.25);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  position: relative; z-index: 2;
+}
+.score-big {
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 130px;
+}
+.score-big .ring {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background:
+    conic-gradient(var(--content) 0% 70%, rgba(255,255,255,0.06) 70% 100%);
+  display: grid; place-items: center;
+  position: relative;
+}
+.score-big .ring::before {
+  content: '';
+  position: absolute; inset: 8px;
+  background: var(--bg-base);
+  border-radius: 50%;
+}
+.score-big .ring-num {
+  font-family: var(--font-en);
+  font-size: 32px; font-weight: 900;
+  position: relative; z-index: 2;
+  letter-spacing: -0.02em;
+}
+.score-big .ring-num .div {
+  font-size: 16px; color: var(--text-low);
+}
+.score-big .label {
+  font-size: 11px;
+  color: var(--text-low);
+  margin-top: 6px;
+  letter-spacing: 0.05em;
+}
+
+.sparkline-box {
+  position: relative;
+  height: 90px;
+}
+.sparkline-box .label-row {
+  display: flex; justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.sparkline-box .label-row .title {
+  font-size: 12px;
+  color: var(--text-low);
+}
+.sparkline-box .label-row .delta {
+  font-family: var(--font-en);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green);
+}
+.sparkline-box .label-row .delta.up { color: var(--green); }
+.sparkline-box .label-row .delta.down { color: var(--red); }
+.sparkline-svg {
+  width: 100%; height: 60px;
+  display: block;
+}
+
+.month-stat {
+  text-align: right;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  padding-left: 24px;
+}
+.month-stat .head {
+  font-size: 11px; color: var(--text-low);
+  margin-bottom: 6px;
+}
+.month-stat .num {
+  font-family: var(--font-en);
+  font-size: 26px; font-weight: 900;
+  line-height: 1;
+}
+.month-stat .num .unit {
+  font-size: 13px;
+  color: var(--text-mid);
+  font-weight: 600;
+}
+.month-stat .sub {
+  font-size: 11px;
+  color: var(--text-low);
+  margin-top: 4px;
+}
+
+/* ── 兩個入口卡 ── */
+.entry-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+  position: relative; z-index: 2;
+}
+@media (max-width: 760px) {
+  .entry-cards { grid-template-columns: 1fr; }
+}
+.entry-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.entry-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(236,72,153,0.35);
+  box-shadow: 0 8px 24px rgba(236,72,153,0.15);
+}
+.entry-card.single::before, .entry-card.batch::before {
+  content: '';
+  position: absolute;
+  top: -30%; right: -20%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(236,72,153,0.18), transparent 60%);
+  pointer-events: none;
+  opacity: 0.7;
+}
+.entry-card.batch::before {
+  background: radial-gradient(circle, rgba(249,115,22,0.18), transparent 60%);
+}
+.entry-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  position: relative; z-index: 2;
+}
+.entry-head .icon {
+  font-size: 28px;
+  filter: drop-shadow(0 4px 12px rgba(236,72,153,0.4));
+}
+.entry-card.batch .entry-head .icon {
+  filter: drop-shadow(0 4px 12px rgba(249,115,22,0.4));
+}
+.entry-head .badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(236,72,153,0.18);
+  color: var(--content-glow);
+  letter-spacing: 0.05em;
+}
+.entry-card.batch .entry-head .badge {
+  background: rgba(249,115,22,0.18);
+  color: var(--aivis-glow);
+}
+.entry-card.batch .entry-head .badge.pro-only {
+  background: rgba(184,197,208,0.15);
+  color: var(--text-mid);
+}
+
+.entry-title {
+  font-size: 16px; font-weight: 800;
+  margin-bottom: 4px;
+  position: relative; z-index: 2;
+}
+.entry-desc {
+  font-size: 12px;
+  color: var(--text-mid);
+  line-height: 1.6;
+  margin-bottom: 14px;
+  position: relative; z-index: 2;
+}
+
+.entry-meta {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-low);
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  position: relative; z-index: 2;
+}
+.entry-meta strong {
+  color: white;
+  font-family: var(--font-en);
+}
+.entry-cta {
+  font-size: 12px; font-weight: 700;
+  color: var(--content-glow);
+  display: flex; align-items: center; gap: 4px;
+  transition: gap 0.15s;
+}
+.entry-card.batch .entry-cta { color: var(--aivis-glow); }
+.entry-card:hover .entry-cta { gap: 8px; }
+
+/* Free 鎖定狀態 */
+.entry-card.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.entry-card.locked:hover { transform: none; }
+.entry-card .lock-veil {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 5;
+  font-size: 12px;
+  text-align: center;
+}
+.entry-card.locked .lock-veil { display: flex; }
+.lock-veil .lock-icon { font-size: 26px; }
+.lock-veil .lock-title { font-weight: 700; color: white; }
+.lock-veil .lock-sub { color: var(--text-mid); font-size: 11px; max-width: 200px; }
+.lock-veil .lock-cta {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, var(--orange), var(--amber));
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  margin-top: 4px;
+  font-family: var(--font-tc);
+}
+
+/* ── 15 項檢測 breakdown ── */
+.checks-section {
+  position: relative; z-index: 2;
+}
+.checks-head {
+  display: flex; justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.checks-head h3 {
+  font-size: 14px; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.checks-head .pass-rate {
+  font-size: 12px; color: var(--text-low);
+}
+.checks-head .pass-rate strong {
+  font-family: var(--font-en);
+  color: var(--content-glow);
+  font-weight: 800;
+}
+
+.checks-categories {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+@media (max-width: 980px) { .checks-categories { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .checks-categories { grid-template-columns: repeat(2, 1fr); } }
+
+.check-cat {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.check-cat .cat-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.check-cat .cat-name {
+  font-size: 12px; font-weight: 700;
+  color: white;
+  display: flex; align-items: center; gap: 6px;
+}
+.check-cat .cat-emoji { font-size: 14px; }
+.check-cat .cat-rate {
+  font-family: var(--font-en);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(34,197,94,0.15);
+  color: #86efac;
+}
+.check-cat .cat-rate.warn { background: rgba(245,158,11,0.15); color: #fcd34d; }
+.check-cat .cat-rate.fail { background: rgba(239,68,68,0.15); color: #fca5a5; }
+
+.check-items {
+  display: flex; flex-direction: column;
+  gap: 5px;
+}
+.check-item {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-mid);
+}
+.check-item .ico { font-size: 12px; flex-shrink: 0; margin-right: 6px; }
+.check-item .name {
+  flex: 1; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.check-item.pass .ico { color: #86efac; }
+.check-item.warn .ico { color: #fcd34d; }
+.check-item.fail .ico { color: #fca5a5; }
+
+/* ── 底部 CTA bar ── */
+.bottom-bar {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(24,197,144,0.08), rgba(24,197,144,0.02));
+  border: 1px solid rgba(24,197,144,0.25);
+  border-radius: 10px;
+  position: relative; z-index: 2;
+  flex-wrap: wrap;
+}
+.bottom-bar .left {
+  font-size: 12px; color: var(--text-mid);
+}
+.bottom-bar .left strong { color: white; }
+.bottom-bar .actions {
+  display: flex; gap: 8px;
+}
+.bb-btn {
+  padding: 8px 14px;
+  font-size: 12px; font-weight: 700;
+  border-radius: 7px;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-tc);
+  transition: transform 0.15s;
+}
+.bb-btn:hover { transform: translateY(-1px); }
+.bb-btn.primary {
+  background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+  color: white;
+  box-shadow: 0 4px 12px rgba(24,197,144,0.3);
+}
+.bb-btn.ghost {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-mid);
+  border: 1px solid var(--glass-border);
+}
+
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-layer">
+  <div class="bg-top"></div>
+  <div class="bg-bottom"></div>
+  <div class="bg-grain"></div>
+</div>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-logo">📡</div>
+      <div>
+        <div class="brand-text">AI 雷達</div>
+        <div class="brand-sub">Prototype #4 · Dashboard 內容品質 Tab</div>
+      </div>
+    </div>
+    <div class="scene-tag" id="sceneTag">SCENE / Pro 標準</div>
+  </div>
+
+  <!-- Tweaks -->
+  <div class="tweaks">
+    <span class="tweaks-label">用戶層級</span>
+    <div class="tweaks-group" id="tierTweaks">
+      <button class="tweaks-btn active" data-tier="pro">Pro 標準</button>
+      <button class="tweaks-btn" data-tier="free">Free（鎖批次）</button>
+    </div>
+
+    <span class="tweaks-label" style="margin-left:auto">Tab 切換</span>
+    <div class="tweaks-group">
+      <button class="tweaks-btn">SEO</button>
+      <button class="tweaks-btn">AEO</button>
+      <button class="tweaks-btn">GEO</button>
+      <button class="tweaks-btn">E-E-A-T</button>
+      <button class="tweaks-btn active">內容品質</button>
+    </div>
+  </div>
+
+  <!-- 站點體檢區塊 — 模擬 prototype-2b 第 1532 行附近 -->
+  <div class="audit-section">
+
+    <div class="audit-section-head">
+      <h2>📊 站點體檢</h2>
+      <span class="website">kimbo3899.com.tw</span>
+    </div>
+
+    <!-- Tab Nav -->
+    <div class="audit-tabs">
+      <button class="audit-tab" data-face="seo">
+        <span>SEO</span>
+        <span class="mini-score">82</span>
+      </button>
+      <button class="audit-tab" data-face="aeo">
+        <span>AEO</span>
+        <span class="mini-score">76</span>
+      </button>
+      <button class="audit-tab" data-face="geo">
+        <span>GEO</span>
+        <span class="mini-score">68</span>
+      </button>
+      <button class="audit-tab" data-face="eeat">
+        <span>E-E-A-T</span>
+        <span class="mini-score">74</span>
+      </button>
+      <button class="audit-tab active" data-face="content">
+        <span>內容品質</span>
+        <span class="mini-score">70</span>
+      </button>
+    </div>
+
+    <!-- ────────── Tab Body: Content Quality ────────── -->
+
+    <!-- Hero strip -->
+    <div class="content-hero">
+      <div class="score-big">
+        <div class="ring">
+          <span class="ring-num">70<span class="div">/100</span></span>
+        </div>
+        <div class="label">內容品質得分</div>
+      </div>
+
+      <div class="sparkline-box">
+        <div class="label-row">
+          <span class="title">過去 30 天分數變化</span>
+          <span class="delta up">▲ +6 vs 上個月</span>
+        </div>
+        <!-- Sparkline SVG（30 點、向上 trend）-->
+        <svg class="sparkline-svg" viewBox="0 0 300 60" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ec4899" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#ec4899" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- area -->
+          <path d="M 0,42 L 10,40 L 20,44 L 30,38 L 40,42 L 50,36 L 60,34 L 70,38 L 80,32 L 90,34 L 100,28 L 110,30 L 120,26 L 130,28 L 140,24 L 150,26 L 160,22 L 170,20 L 180,24 L 190,18 L 200,20 L 210,16 L 220,18 L 230,14 L 240,12 L 250,15 L 260,10 L 270,12 L 280,8 L 290,10 L 300,6 L 300,60 L 0,60 Z"
+                fill="url(#sparkFill)" />
+          <!-- line -->
+          <polyline points="0,42 10,40 20,44 30,38 40,42 50,36 60,34 70,38 80,32 90,34 100,28 110,30 120,26 130,28 140,24 150,26 160,22 170,20 180,24 190,18 200,20 210,16 220,18 230,14 240,12 250,15 260,10 270,12 280,8 290,10 300,6"
+                    fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- 最後一點 dot -->
+          <circle cx="300" cy="6" r="3.5" fill="#ec4899" stroke="white" stroke-width="1.5"/>
+        </svg>
+      </div>
+
+      <div class="month-stat">
+        <div class="head">本月已分析</div>
+        <div class="num">217 <span class="unit">篇</span></div>
+        <div class="sub">203 通過・14 待修</div>
+      </div>
+    </div>
+
+    <!-- ░░░░ 兩個入口卡 ░░░░ -->
+    <div class="entry-cards">
+
+      <!-- 單篇入口 -->
+      <a class="entry-card single" onclick="alert('Demo: 跳到 /content-audit')">
+        <div class="entry-head">
+          <span class="icon">📄</span>
+          <span class="badge">免費版可用</span>
+        </div>
+        <div class="entry-title">單篇文章分析</div>
+        <div class="entry-desc">貼一個 URL、跑 15 項檢測。看起來像「內容品質體檢」、適合一篇一篇調整重點文章。</div>
+        <div class="entry-meta">
+          <span>最近分析：<strong>3 篇</strong> · 5 分鐘前</span>
+          <span class="entry-cta">立即分析 →</span>
+        </div>
+      </a>
+
+      <!-- 批次入口 -->
+      <a class="entry-card batch" id="batchCard" onclick="alert('Demo: 跳到 /bulk-scan/:id')">
+        <div class="entry-head">
+          <span class="icon">📂</span>
+          <span class="badge">Pro 專屬</span>
+        </div>
+        <div class="entry-title">批次掃描全站</div>
+        <div class="entry-desc">用 sitemap 一次掃 200 篇、每篇都有「複製貼回 HTML」修復建議、適合一次性盤整大規模文章站。</div>
+        <div class="entry-meta">
+          <span>上次掃描：<strong>200/200</strong> 完成 ✅ · 2 天前</span>
+          <span class="entry-cta">看完整報告 →</span>
+        </div>
+        <!-- Free 鎖定遮罩 -->
+        <div class="lock-veil" id="batchLockVeil">
+          <span class="lock-icon">🔒</span>
+          <div class="lock-title">批次模式為 Pro 專屬</div>
+          <div class="lock-sub">7 天免費試用、無條件退款。掃描 1 篇 vs 200 篇的時間差，自己拉看看</div>
+          <button class="lock-cta">升級 Pro · NT$990／月起</button>
+        </div>
+      </a>
+    </div>
+
+    <!-- ░░░░ 15 項檢測 breakdown ░░░░ -->
+    <div class="checks-section">
+      <div class="checks-head">
+        <h3>🔍 本站近 30 天 15 項檢測通過率</h3>
+        <span class="pass-rate"><strong>93.6%</strong> 通過（203/217 篇全綠）</span>
+      </div>
+
+      <div class="checks-categories">
+
+        <!-- 結構（heading / word_count / readability）-->
+        <div class="check-cat">
+          <div class="cat-head">
+            <span class="cat-name"><span class="cat-emoji">🏗️</span>結構</span>
+            <span class="cat-rate">97%</span>
+          </div>
+          <div class="check-items">
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">H1 唯一性</span></div>
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">標題層級</span></div>
+            <div class="check-item warn"><span class="ico">⚠</span><span class="name">字數充足</span></div>
+          </div>
+        </div>
+
+        <!-- Meta -->
+        <div class="check-cat">
+          <div class="cat-head">
+            <span class="cat-name"><span class="cat-emoji">🏷️</span>Meta</span>
+            <span class="cat-rate warn">82%</span>
+          </div>
+          <div class="check-items">
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">Title 長度</span></div>
+            <div class="check-item warn"><span class="ico">⚠</span><span class="name">Description 字數</span></div>
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">Canonical</span></div>
+          </div>
+        </div>
+
+        <!-- AEO -->
+        <div class="check-cat">
+          <div class="cat-head">
+            <span class="cat-name"><span class="cat-emoji">🤖</span>AEO</span>
+            <span class="cat-rate fail">68%</span>
+          </div>
+          <div class="check-items">
+            <div class="check-item fail"><span class="ico">✗</span><span class="name">FAQ Schema</span></div>
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">OG 完整</span></div>
+            <div class="check-item warn"><span class="ico">⚠</span><span class="name">Article Schema</span></div>
+          </div>
+        </div>
+
+        <!-- E-E-A-T -->
+        <div class="check-cat">
+          <div class="cat-head">
+            <span class="cat-name"><span class="cat-emoji">⭐</span>E-E-A-T</span>
+            <span class="cat-rate">95%</span>
+          </div>
+          <div class="check-items">
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">作者署名</span></div>
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">圖片 alt</span></div>
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">外部引用</span></div>
+          </div>
+        </div>
+
+        <!-- 多媒體與可讀性 -->
+        <div class="check-cat">
+          <div class="cat-head">
+            <span class="cat-name"><span class="cat-emoji">🎬</span>多媒體</span>
+            <span class="cat-rate warn">88%</span>
+          </div>
+          <div class="check-items">
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">圖片數量</span></div>
+            <div class="check-item warn"><span class="ico">⚠</span><span class="name">影片嵌入</span></div>
+            <div class="check-item pass"><span class="ico">✓</span><span class="name">可讀性</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 底部 CTA bar -->
+    <div class="bottom-bar">
+      <div class="left">
+        💡 <strong>本週 14 篇待修</strong>都集中在「AEO Schema」缺失 — 用批次模式一次套用 FAQ Schema 模板可解掉 8 篇
+      </div>
+      <div class="actions">
+        <button class="bb-btn ghost" onclick="alert('Demo: 跳到 /bulk-scan/:id')">📂 看待修清單</button>
+        <button class="bb-btn primary" onclick="alert('Demo: 觸發批次掃描')">🚀 重新批次掃描</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer hint -->
+  <div style="margin-top: 28px; text-align: center; font-size: 11px; color: var(--text-low);">
+    💬 這個 panel 是 prototype-2b Dashboard「站點體檢」區塊裡<br>
+    「內容品質」Tab 點開後展開的內容 — 填補原版 demo 略過的洞
+  </div>
+
+</div>
+
+<script>
+// Tweaks: Pro / Free 切換
+const batchCard = document.getElementById('batchCard');
+const batchLockVeil = document.getElementById('batchLockVeil');
+const sceneTag = document.getElementById('sceneTag');
+
+document.querySelectorAll('#tierTweaks .tweaks-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#tierTweaks .tweaks-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tier = btn.dataset.tier;
+
+    if (tier === 'pro') {
+      batchCard.classList.remove('locked');
+      sceneTag.textContent = 'SCENE / Pro 標準';
+    } else {
+      batchCard.classList.add('locked');
+      sceneTag.textContent = 'SCENE / Free（批次鎖）';
+    }
+  });
+});
+</script>
+</body>
+</html>

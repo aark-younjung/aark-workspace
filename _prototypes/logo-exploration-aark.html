@@ -1,0 +1,2456 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aark · Logo 視覺探索（3 方向）</title>
+
+<!--
+  ──────────────────────────────────────────────────────────────
+  AARK · Logo Exploration · 2026-06-05
+  ──────────────────────────────────────────────────────────────
+  Product: 方舟 AI 雷達（Aark AI Radar）
+  Brand mother: AARK
+  Operating company: 優勢方舟數位行銷
+
+  Three differentiated directions:
+    A · 科技極簡派（Tech Minimalist）       — 對標 Linear / Notion
+    B · 意象敘事派（Narrative Imagery）      — 對標 Stripe / Vercel
+    C · 暗黑科技權威派（Dark Tech Authority）— 對標 Ahrefs / SEMrush
+
+  Navigation: Left/Right arrow keys · dot buttons · edge arrows
+  Each direction is a self-contained section with theme variables.
+  ──────────────────────────────────────────────────────────────
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ────────── Reset & base ────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; min-height: 100vh; overflow-x: hidden; }
+  body {
+    background: #050608;
+    color: #fafafa;
+    font-family: 'Noto Sans TC', 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ────────── Top nav ────────── */
+  .top-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 36px;
+    background: rgba(5, 6, 8, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .top-nav .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'Inter', sans-serif; font-weight: 600;
+    font-size: 13px; letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+  }
+  .top-nav .brand .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #18c590;
+    box-shadow: 0 0 12px rgba(24, 197, 144, 0.6);
+  }
+  .top-nav .meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: rgba(255, 255, 255, 0.35); letter-spacing: 0.04em;
+  }
+
+  /* ────────── Page indicators ────────── */
+  .page-dots {
+    position: fixed; bottom: 40px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    display: flex; gap: 12px;
+    padding: 10px 14px;
+    background: rgba(5, 6, 8, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+  }
+  .page-dots button {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    border-radius: 999px;
+    transition: all 0.3s ease;
+  }
+  .page-dots button .marker {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+  }
+  .page-dots button:hover { color: rgba(255, 255, 255, 0.75); }
+  .page-dots button.active {
+    color: var(--theme-primary, #18c590);
+    background: color-mix(in srgb, var(--theme-primary, #18c590) 12%, transparent);
+  }
+  .page-dots button.active .marker { opacity: 1; box-shadow: 0 0 8px currentColor; }
+
+  /* ────────── Edge nav arrows ────────── */
+  .edge-nav {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    z-index: 40;
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(5, 6, 8, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+  .edge-nav:hover { border-color: rgba(255, 255, 255, 0.3); transform: translateY(-50%) scale(1.05); }
+  .edge-nav.prev { left: 28px; }
+  .edge-nav.next { right: 28px; }
+  .edge-nav svg { width: 18px; height: 18px; opacity: 0.7; }
+
+  /* ────────── Deck container ────────── */
+  .deck { position: relative; }
+  .direction {
+    display: none;
+    min-height: 100vh;
+    padding: 100px 60px 120px;
+  }
+  .direction.active { display: block; animation: fadeIn 0.5s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ────────── Direction header ────────── */
+  .dir-header {
+    max-width: 1280px; margin: 0 auto 80px;
+    display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: end;
+  }
+  .dir-label {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 6px 14px;
+    border: 1px solid var(--theme-border);
+    border-radius: 999px;
+    background: var(--theme-surface);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    color: var(--theme-primary);
+    letter-spacing: 0.06em;
+    margin-bottom: 24px;
+  }
+  .dir-label .dash { color: rgba(255, 255, 255, 0.3); }
+  .dir-title {
+    font-family: var(--theme-display-font);
+    font-size: clamp(48px, 6vw, 84px);
+    font-weight: var(--theme-display-weight, 600);
+    line-height: 1.05;
+    letter-spacing: var(--theme-display-tracking, -0.02em);
+    color: #ffffff;
+    margin-bottom: 18px;
+  }
+  .dir-title em {
+    font-style: var(--theme-em-style, italic);
+    color: var(--theme-primary);
+    font-weight: var(--theme-em-weight, 500);
+  }
+  .dir-tagline {
+    font-size: 17px; line-height: 1.6;
+    color: rgba(255, 255, 255, 0.55);
+    max-width: 580px;
+  }
+  .dir-target {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: rgba(255, 255, 255, 0.35);
+    line-height: 1.7;
+  }
+  .dir-target strong { color: rgba(255, 255, 255, 0.7); font-weight: 500; }
+
+  /* ────────── Grid sections ────────── */
+  .dir-section { max-width: 1280px; margin: 0 auto 80px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--theme-border);
+  }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+  }
+  .section-title {
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    font-size: 22px; font-weight: 600;
+    color: #fafafa;
+    letter-spacing: -0.01em;
+  }
+  .section-desc {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ────────── Logo hero block ────────── */
+  .logo-hero {
+    background: var(--theme-hero-bg);
+    border: 1px solid var(--theme-border);
+    border-radius: 24px;
+    padding: 80px 60px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 64px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .logo-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--theme-hero-glow);
+    pointer-events: none;
+  }
+  .logo-hero > * { position: relative; }
+  .logo-mark-big { width: 180px; height: 180px; flex-shrink: 0; }
+  .logo-mark-big svg { width: 100%; height: 100%; }
+  .logo-side h3 {
+    font-family: var(--theme-display-font);
+    font-size: 64px; font-weight: var(--theme-wordmark-weight, 700);
+    letter-spacing: var(--theme-wordmark-tracking, -0.04em);
+    color: #ffffff;
+    line-height: 1; margin-bottom: 16px;
+  }
+  .logo-side .ch-name {
+    font-family: var(--theme-chinese-font); font-weight: 700;
+    font-size: 20px; letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 18px;
+  }
+  .logo-side .philosophy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--theme-primary);
+    letter-spacing: 0.06em;
+    padding-top: 18px;
+    border-top: 1px solid var(--theme-border);
+    max-width: 380px;
+  }
+
+  /* ────────── Logo system grid ────────── */
+  .logo-system {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .logo-tile {
+    background: var(--theme-surface);
+    border: 1px solid var(--theme-border);
+    border-radius: 16px;
+    padding: 36px 24px 20px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    aspect-ratio: 1 / 1.05;
+    position: relative;
+    overflow: hidden;
+  }
+  .logo-tile.light { background: #f5f5f5; border-color: #e5e5e5; }
+  .logo-tile.light .tile-label { color: rgba(0, 0, 0, 0.45); }
+  .logo-tile .tile-content {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    width: 100%;
+  }
+  .logo-tile .tile-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    margin-top: 12px;
+  }
+
+  /* ────────── Palette ────────── */
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+  .swatch {
+    background: var(--theme-surface);
+    border: 1px solid var(--theme-border);
+    border-radius: 12px;
+    padding: 16px;
+    aspect-ratio: 1 / 1.3;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+  }
+  .swatch .chip {
+    height: 60%; border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .swatch .info {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    margin-top: 12px;
+  }
+  .swatch .info .name { color: #fafafa; font-weight: 500; margin-bottom: 2px; }
+  .swatch .info .hex { color: rgba(255, 255, 255, 0.4); }
+  .swatch .info .use { color: rgba(255, 255, 255, 0.55); font-size: 10px; margin-top: 4px; }
+
+  /* ────────── Typography ────────── */
+  .typo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .typo-card {
+    background: var(--theme-surface);
+    border: 1px solid var(--theme-border);
+    border-radius: 16px;
+    padding: 32px;
+  }
+  .typo-card .role {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .typo-card .specimen-en {
+    font-size: 36px; line-height: 1.1; color: #ffffff;
+    margin-bottom: 8px;
+  }
+  .typo-card .specimen-ch {
+    font-size: 28px; line-height: 1.3; color: #ffffff;
+    margin-bottom: 18px;
+  }
+  .typo-card .specimen-body {
+    font-size: 14px; line-height: 1.7;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 16px;
+  }
+  .typo-card .font-meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--theme-primary);
+    padding-top: 14px;
+    border-top: 1px solid var(--theme-border);
+  }
+
+  /* ────────── Mockup grid ────────── */
+  .mockup-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20px;
+  }
+  .mockup-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  /* ───── Browser frame ───── */
+  .browser {
+    background: #0a0c0f;
+    border: 1px solid var(--theme-border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .browser-chrome {
+    background: #14171c;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .browser-chrome .dots { display: flex; gap: 6px; }
+  .browser-chrome .dots span {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+  }
+  .browser-chrome .url {
+    flex: 1; height: 24px; border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    display: flex; align-items: center; padding: 0 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .browser-body {
+    padding: 22px 28px;
+    background: var(--theme-website-bg, #0a0c0f);
+    min-height: 280px;
+  }
+  .site-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .site-header .site-logo { display: flex; align-items: center; gap: 10px; }
+  .site-header .site-logo svg { width: 32px; height: 32px; }
+  .site-header .site-logo .name {
+    font-family: var(--theme-display-font);
+    font-size: 18px; font-weight: var(--theme-wordmark-weight, 700);
+    letter-spacing: var(--theme-wordmark-tracking, -0.03em);
+    color: #ffffff;
+  }
+  .site-header nav {
+    display: flex; gap: 24px;
+    font-size: 13px; color: rgba(255, 255, 255, 0.6);
+  }
+  .site-header nav a:hover { color: var(--theme-primary); }
+  .site-header .cta {
+    background: var(--theme-primary);
+    color: #000;
+    padding: 8px 16px; border-radius: 8px;
+    font-weight: 600; font-size: 12px;
+    margin-left: 8px;
+  }
+  .site-hero {
+    padding: 36px 0 16px;
+  }
+  .site-hero h1 {
+    font-family: var(--theme-display-font);
+    font-size: 36px; line-height: 1.1;
+    color: #fff;
+    margin-bottom: 14px;
+    font-weight: var(--theme-display-weight, 600);
+  }
+  .site-hero p { font-size: 14px; color: rgba(255, 255, 255, 0.55); max-width: 480px; }
+
+  /* ───── Business card ───── */
+  .cards-pair { display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+  .biz-card {
+    background: var(--theme-card-bg, #fafafa);
+    color: var(--theme-card-text, #0a0a0a);
+    aspect-ratio: 1.75 / 1;
+    border-radius: 12px;
+    padding: 22px 26px;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    position: relative; overflow: hidden;
+  }
+  .biz-card.back {
+    background: var(--theme-card-bg-back, var(--theme-primary));
+    color: var(--theme-card-text-back, #000);
+  }
+  .biz-card .top { display: flex; align-items: start; justify-content: space-between; }
+  .biz-card .top svg { width: 36px; height: 36px; }
+  .biz-card .top .corner-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.1em;
+    opacity: 0.55; text-align: right; line-height: 1.6;
+  }
+  .biz-card .name {
+    font-family: var(--theme-display-font);
+    font-size: 17px; font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 3px;
+  }
+  .biz-card .title {
+    font-size: 11px; opacity: 0.7;
+    margin-bottom: 8px;
+  }
+  .biz-card .contact {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; line-height: 1.7;
+    opacity: 0.65;
+  }
+  .biz-card.back .wordmark-big {
+    font-family: var(--theme-display-font);
+    font-size: 56px; font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    align-self: center; margin: auto 0;
+  }
+  .biz-card.back .tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.12em;
+    opacity: 0.6; text-transform: uppercase;
+  }
+
+  /* ───── Report cover ───── */
+  .report-cover {
+    background: var(--theme-report-bg, #0a0c0f);
+    border: 1px solid var(--theme-border);
+    border-radius: 8px;
+    aspect-ratio: 1 / 1.414; /* A4 */
+    padding: 36px 32px;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    position: relative; overflow: hidden;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+  .report-cover::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--theme-report-pattern);
+    pointer-events: none; opacity: 0.5;
+  }
+  .report-cover > * { position: relative; z-index: 1; }
+  .report-cover .top {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .report-cover .top svg { width: 36px; height: 36px; }
+  .report-cover .top .date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.4);
+  }
+  .report-cover .center {
+    display: flex; flex-direction: column;
+    align-items: flex-start; gap: 14px;
+  }
+  .report-cover .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--theme-primary);
+    padding: 4px 10px;
+    border: 1px solid var(--theme-primary);
+    border-radius: 999px;
+  }
+  .report-cover .title {
+    font-family: var(--theme-display-font);
+    font-size: 32px; font-weight: var(--theme-display-weight, 700);
+    color: #ffffff; line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .report-cover .ch-title {
+    font-family: var(--theme-chinese-font);
+    font-size: 16px; font-weight: 700;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 0.06em;
+  }
+  .report-cover .client {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.4);
+    padding-top: 10px;
+    border-top: 1px solid var(--theme-border);
+  }
+  .report-cover .client strong { color: rgba(255, 255, 255, 0.7); }
+
+  /* ───── OG image (1200x630 ratio) ───── */
+  .og-image {
+    aspect-ratio: 1200 / 630;
+    background: var(--theme-og-bg, #050608);
+    border: 1px solid var(--theme-border);
+    border-radius: 12px;
+    padding: 40px 48px;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    position: relative; overflow: hidden;
+  }
+  .og-image::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--theme-og-glow);
+    pointer-events: none;
+  }
+  .og-image > * { position: relative; z-index: 1; }
+  .og-image .top-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .og-image .og-logo { display: flex; align-items: center; gap: 12px; }
+  .og-image .og-logo svg { width: 40px; height: 40px; }
+  .og-image .og-logo .name {
+    font-family: var(--theme-display-font);
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .og-image .og-url {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .og-image .center-text {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center;
+  }
+  .og-image .headline {
+    font-family: var(--theme-display-font);
+    font-size: clamp(36px, 4vw, 54px);
+    line-height: 1.1;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    font-weight: var(--theme-display-weight, 600);
+    margin-bottom: 14px;
+  }
+  .og-image .headline em {
+    font-style: var(--theme-em-style, italic);
+    color: var(--theme-primary);
+  }
+  .og-image .sub {
+    font-family: var(--theme-chinese-font);
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.55);
+  }
+  .og-image .bottom-row {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+  .og-image .signal-chips { display: flex; gap: 8px; }
+  .og-image .signal-chips span {
+    padding: 3px 8px;
+    border: 1px solid var(--theme-border);
+    border-radius: 999px;
+    font-size: 10px;
+  }
+
+  /* ────────── Philosophy quote block ────────── */
+  .philosophy-block {
+    max-width: 920px; margin: 0 auto 60px;
+    padding: 60px 48px;
+    border: 1px solid var(--theme-border);
+    border-radius: 24px;
+    background: var(--theme-surface);
+    text-align: center;
+  }
+  .philosophy-block .quote {
+    font-family: var(--theme-display-font);
+    font-size: clamp(28px, 3.5vw, 44px);
+    line-height: 1.3;
+    color: var(--theme-primary);
+    margin-bottom: 24px;
+    font-weight: var(--theme-display-weight, 500);
+    letter-spacing: -0.01em;
+  }
+  .philosophy-block .quote em {
+    font-style: var(--theme-em-style, italic);
+  }
+  .philosophy-block .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     ╔══ Direction A · 科技極簡派 ══════════════════════════════════
+     對標：Linear / Notion
+     哲學：克制即訊號
+     色彩：高對比、低飽和、青綠單點 accent
+     字型：Inter Display + JetBrains Mono + Noto Sans TC
+     ════════════════════════════════════════════════════════════════ */
+  .dir-a {
+    --theme-primary: #18c590;
+    --theme-bg: #050608;
+    --theme-surface: rgba(255, 255, 255, 0.02);
+    --theme-border: rgba(255, 255, 255, 0.07);
+    --theme-hero-bg: linear-gradient(135deg, #08090c 0%, #0c0e12 100%);
+    --theme-hero-glow: radial-gradient(circle at 70% 30%, rgba(24, 197, 144, 0.08), transparent 60%);
+    --theme-display-font: 'Inter', sans-serif;
+    --theme-display-weight: 700;
+    --theme-display-tracking: -0.03em;
+    --theme-em-style: normal;
+    --theme-em-weight: 700;
+    --theme-wordmark-weight: 800;
+    --theme-wordmark-tracking: -0.06em;
+    --theme-chinese-font: 'Noto Sans TC', sans-serif;
+    --theme-card-bg: #f5f5f5;
+    --theme-card-text: #0a0a0a;
+    --theme-card-bg-back: #0a0a0a;
+    --theme-card-text-back: #18c590;
+    --theme-report-bg: #0a0a0a;
+    --theme-report-pattern: radial-gradient(circle at 80% 90%, rgba(24, 197, 144, 0.06), transparent 50%);
+    --theme-website-bg: #0a0c0f;
+    --theme-og-bg: linear-gradient(135deg, #050608 0%, #0a0c10 100%);
+    --theme-og-glow: radial-gradient(circle at 80% 50%, rgba(24, 197, 144, 0.1), transparent 60%);
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     ╔══ Direction B · 意象敘事派 ═══════════════════════════════════
+     對標：Stripe / Vercel
+     哲學：載你度過 AI 洪水
+     色彩：青綠+赤土橙 dual-tone、暖色調
+     字型：Newsreader Serif + Noto Serif TC
+     ════════════════════════════════════════════════════════════════ */
+  .dir-b {
+    --theme-primary: #18c590;
+    --theme-accent: #C04A1A;
+    --theme-bg: #04130f;
+    --theme-surface: rgba(24, 197, 144, 0.04);
+    --theme-border: rgba(24, 197, 144, 0.12);
+    --theme-hero-bg: linear-gradient(135deg, #052e2c 0%, #001a18 100%);
+    --theme-hero-glow: radial-gradient(circle at 60% 40%, rgba(24, 197, 144, 0.18), transparent 50%),
+                       radial-gradient(circle at 20% 80%, rgba(192, 74, 26, 0.08), transparent 50%);
+    --theme-display-font: 'Newsreader', 'Noto Serif TC', serif;
+    --theme-display-weight: 500;
+    --theme-display-tracking: -0.015em;
+    --theme-em-style: italic;
+    --theme-em-weight: 500;
+    --theme-wordmark-weight: 600;
+    --theme-wordmark-tracking: -0.025em;
+    --theme-chinese-font: 'Noto Serif TC', serif;
+    --theme-card-bg: #f5f1e8;
+    --theme-card-text: #1a1a1a;
+    --theme-card-bg-back: #052e2c;
+    --theme-card-text-back: #f5f1e8;
+    --theme-report-bg: linear-gradient(180deg, #052e2c 0%, #04130f 100%);
+    --theme-report-pattern: radial-gradient(circle at 50% 100%, rgba(24, 197, 144, 0.18), transparent 60%);
+    --theme-website-bg: linear-gradient(180deg, #052e2c 0%, #04130f 100%);
+    --theme-og-bg: linear-gradient(135deg, #052e2c 0%, #001a18 100%);
+    --theme-og-glow: radial-gradient(ellipse at 50% 120%, rgba(24, 197, 144, 0.25), transparent 60%);
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     ╔══ Direction C · 暗黑科技權威派 ═══════════════════════════════
+     對標：Ahrefs / SEMrush
+     哲學：監測就是力量
+     色彩：純黑底 + 高對比青綠 accent + 橘 highlight
+     字型：Space Grotesk + Noto Sans TC Black
+     ════════════════════════════════════════════════════════════════ */
+  .dir-c, .dir-d, .dir-e, .dir-f {
+    --theme-primary: #18c590;
+    --theme-accent: #f97316;
+    --theme-bg: #000000;
+    --theme-surface: rgba(255, 255, 255, 0.025);
+    --theme-border: rgba(24, 197, 144, 0.18);
+    --theme-hero-bg: #000000;
+    --theme-hero-glow: radial-gradient(circle at 70% 50%, rgba(24, 197, 144, 0.12), transparent 50%),
+                       linear-gradient(180deg, transparent 0%, rgba(24, 197, 144, 0.04) 100%);
+    --theme-display-font: 'Space Grotesk', 'Noto Sans TC', sans-serif;
+    --theme-display-weight: 700;
+    --theme-display-tracking: -0.025em;
+    --theme-em-style: normal;
+    --theme-em-weight: 700;
+    --theme-wordmark-weight: 700;
+    --theme-wordmark-tracking: -0.04em;
+    --theme-chinese-font: 'Noto Sans TC', sans-serif;
+    --theme-card-bg: #000000;
+    --theme-card-text: #ffffff;
+    --theme-card-bg-back: #18c590;
+    --theme-card-text-back: #000000;
+    --theme-report-bg: #000000;
+    --theme-report-pattern: linear-gradient(180deg, transparent 0%, rgba(24, 197, 144, 0.08) 100%),
+                            repeating-linear-gradient(90deg, transparent, transparent 30px, rgba(24, 197, 144, 0.03) 30px, rgba(24, 197, 144, 0.03) 31px);
+    --theme-website-bg: #000000;
+    --theme-og-bg: #000000;
+    --theme-og-glow: radial-gradient(circle at 50% 50%, rgba(24, 197, 144, 0.15), transparent 50%);
+  }
+
+  /* ────────── Responsive trim (still functional on narrow) ────────── */
+  @media (max-width: 1100px) {
+    .direction { padding: 100px 32px 120px; }
+    .dir-header { grid-template-columns: 1fr; }
+    .dir-target { text-align: left; }
+    .logo-hero { grid-template-columns: 1fr; padding: 48px 32px; }
+    .logo-mark-big { width: 140px; height: 140px; margin: 0 auto; }
+    .logo-side h3 { font-size: 48px; text-align: center; }
+    .logo-side .ch-name, .logo-side .philosophy { text-align: center; max-width: none; }
+    .logo-system { grid-template-columns: repeat(2, 1fr); }
+    .palette { grid-template-columns: repeat(3, 1fr); }
+    .typo-grid { grid-template-columns: 1fr; }
+    .mockup-grid, .mockup-row-2 { grid-template-columns: 1fr; }
+  }
+
+  /* ────────── Print-friendly hide ────────── */
+  @media print {
+    .top-nav, .page-dots, .edge-nav { display: none !important; }
+    .direction { display: block !important; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- Top nav                                                          -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<nav class="top-nav">
+  <div class="brand">
+    <span class="dot"></span>
+    Aark · Logo Exploration
+  </div>
+  <div class="meta">6 directions · 2026-06-05</div>
+</nav>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- Edge nav arrows                                                  -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<button class="edge-nav prev" id="navPrev" aria-label="Previous">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+</button>
+<button class="edge-nav next" id="navNext" aria-label="Next">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+</button>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- Deck                                                             -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<main class="deck">
+
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <!-- Direction A · 科技極簡派                                       -->
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <section class="direction dir-a active" data-page="0">
+
+    <div class="dir-header">
+      <div>
+        <div class="dir-label">A <span class="dash">/</span> 科技極簡派 <span class="dash">/</span> Tech Minimalist</div>
+        <h1 class="dir-title">克制<em>即訊號</em>。</h1>
+        <p class="dir-tagline">用最少的線條撐起最強的識別 — 雙 chevron 堆疊既是雙 A、也是雷達波峰。對標 Linear / Notion 那種「乾淨到不需要解釋」的氣質。</p>
+      </div>
+      <div class="dir-target">
+        <strong>對標</strong><br>
+        Linear · Notion · Stripe Atlas<br><br>
+        <strong>對代理商訊號</strong><br>
+        「這是有品味的<br>新一代 SaaS」
+      </div>
+    </div>
+
+    <!-- ────────── 1. Logo Hero ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">01 / Mark + Wordmark</div>
+          <div class="section-title">主 logo 鎖定組合</div>
+        </div>
+        <div class="section-desc">SVG · 純幾何</div>
+      </div>
+      <div class="logo-hero">
+        <div class="logo-mark-big">
+          <!-- Mark A: 雙 chevron 堆疊 + 基線 -->
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M 14 22 L 32 8 L 50 22" stroke="#18c590" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M 14 38 L 32 24 L 50 38" stroke="#18c590" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+            <line x1="14" y1="50" x2="50" y2="50" stroke="#18c590" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="logo-side">
+          <h3>Aark</h3>
+          <div class="ch-name">方舟 AI 雷達</div>
+          <div class="philosophy">// 雙 chevron = 雙 A + 雷達波峰<br>// 一個 mark 同時表達品牌名 + 產品功能</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── 2. Logo System ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">02 / Logo system</div>
+          <div class="section-title">變體與使用情境</div>
+        </div>
+        <div class="section-desc">favicon · app icon · 反白 · 浅底</div>
+      </div>
+      <div class="logo-system">
+        <!-- Mark only -->
+        <div class="logo-tile">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <path d="M 14 22 L 32 8 L 50 22" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M 14 38 L 32 24 L 50 38" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+              <line x1="14" y1="50" x2="50" y2="50" stroke="#18c590" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="tile-label">Mark only</div>
+        </div>
+        <!-- Inline lockup -->
+        <div class="logo-tile">
+          <div class="tile-content" style="gap:10px;display:flex;align-items:center;">
+            <svg viewBox="0 0 64 64" fill="none" style="width:36px;height:36px;">
+              <path d="M 14 22 L 32 8 L 50 22" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M 14 38 L 32 24 L 50 38" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+              <line x1="14" y1="50" x2="50" y2="50" stroke="#18c590" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+            <span style="font-family:'Inter',sans-serif;font-weight:800;font-size:22px;letter-spacing:-0.05em;color:#fff;">Aark</span>
+          </div>
+          <div class="tile-label">Inline lockup</div>
+        </div>
+        <!-- Light variant -->
+        <div class="logo-tile light">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <path d="M 14 22 L 32 8 L 50 22" stroke="#0a0a0a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M 14 38 L 32 24 L 50 38" stroke="#0a0a0a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+              <line x1="14" y1="50" x2="50" y2="50" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="tile-label">浅底版（mono）</div>
+        </div>
+        <!-- App icon -->
+        <div class="logo-tile" style="background:linear-gradient(135deg, #08090c 0%, #18c590 200%);">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:48px;height:48px;">
+              <path d="M 14 22 L 32 8 L 50 22" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M 14 38 L 32 24 L 50 38" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+              <line x1="14" y1="50" x2="50" y2="50" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="tile-label">App icon</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── 3. Palette ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">03 / Color palette</div>
+          <div class="section-title">配色方案</div>
+        </div>
+        <div class="section-desc">高對比 · 低飽和 · 單點 accent</div>
+      </div>
+      <div class="palette">
+        <div class="swatch">
+          <div class="chip" style="background:#18c590;"></div>
+          <div class="info"><div class="name">Aark Green</div><div class="hex">#18c590</div><div class="use">主色 · CTA · accent</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#050608;"></div>
+          <div class="info"><div class="name">Carbon</div><div class="hex">#050608</div><div class="use">主背景</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#0a0c0f;"></div>
+          <div class="info"><div class="name">Carbon 2</div><div class="hex">#0a0c0f</div><div class="use">surface / card</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#fafafa;"></div>
+          <div class="info"><div class="name">Off-white</div><div class="hex">#fafafa</div><div class="use">主文字</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#888;"></div>
+          <div class="info"><div class="name">Mute</div><div class="hex">#888888</div><div class="use">輔助文字</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#2a2a2a;"></div>
+          <div class="info"><div class="name">Hairline</div><div class="hex">#2a2a2a</div><div class="use">border / 分隔線</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── 4. Typography ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">04 / Typography</div>
+          <div class="section-title">字體配對</div>
+        </div>
+        <div class="section-desc">Inter + JetBrains Mono + Noto Sans TC</div>
+      </div>
+      <div class="typo-grid">
+        <div class="typo-card">
+          <div class="role">Display · English</div>
+          <div class="specimen-en" style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-0.04em;">Aark Radar</div>
+          <div class="specimen-body" style="font-family:'Inter',sans-serif;font-weight:500;">The first LLMO monitoring platform built in Taiwan. Five quantifiable signal layers, one score.</div>
+          <div class="font-meta">Inter · 400 / 600 / 800</div>
+        </div>
+        <div class="typo-card">
+          <div class="role">Display · 中文</div>
+          <div class="specimen-ch" style="font-family:'Noto Sans TC',sans-serif;font-weight:900;letter-spacing:-0.01em;">方舟 AI 雷達</div>
+          <div class="specimen-body" style="font-family:'Noto Sans TC',sans-serif;">台灣第一個 LLMO 監測平台。把大型語言模型優化拆成 5 個可量化的訊號層。</div>
+          <div class="font-meta">Noto Sans TC · 400 / 700 / 900</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── 5. Mockups ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">05 / Mockups</div>
+          <div class="section-title">實際應用場景</div>
+        </div>
+        <div class="section-desc">website · biz card · report · OG</div>
+      </div>
+
+      <div class="mockup-grid">
+        <!-- Browser -->
+        <div class="browser">
+          <div class="browser-chrome">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div class="url">aark-workspace.vercel.app</div>
+          </div>
+          <div class="browser-body">
+            <div class="site-header">
+              <div class="site-logo">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path d="M 14 22 L 32 8 L 50 22" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M 14 38 L 32 24 L 50 38" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+                  <line x1="14" y1="50" x2="50" y2="50" stroke="#18c590" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+                <span class="name">Aark</span>
+              </div>
+              <nav>
+                <a>Pricing</a><a>FAQ</a><a>Showcase</a>
+                <a class="cta">開始檢測</a>
+              </nav>
+            </div>
+            <div class="site-hero">
+              <h1>ChatGPT 推不<br>推薦你的品牌?</h1>
+              <p>方舟 AI 雷達 — 台灣第一個 LLMO 監測平台。輸入網址、60 秒給你完整 AI 能見度報告。</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Business cards -->
+        <div class="cards-pair">
+          <div class="biz-card">
+            <div class="top">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M 14 22 L 32 8 L 50 22" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 14 38 L 32 24 L 50 38" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+                <line x1="14" y1="50" x2="50" y2="50" stroke="#18c590" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+              <div class="corner-meta">Aark · 01<br>TAINAN · TW</div>
+            </div>
+            <div>
+              <div class="name">楊志強</div>
+              <div class="title">創辦人 · 優勢方舟數位行銷</div>
+              <div class="contact">mark6465@gmail.com<br>+886 6 XXX-XXXX<br>a-ark.com.tw</div>
+            </div>
+          </div>
+          <div class="biz-card back">
+            <div class="top">
+              <span class="tagline">LLMO Monitoring · TW</span>
+              <svg viewBox="0 0 64 64" fill="none" style="width:24px;height:24px;">
+                <path d="M 14 22 L 32 8 L 50 22" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 14 38 L 32 24 L 50 38" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+                <line x1="14" y1="50" x2="50" y2="50" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="wordmark-big">Aark</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:9px; opacity:0.55; letter-spacing:0.1em;">方舟 AI 雷達 · LLMO MONITORING</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-row-2">
+        <!-- Report cover -->
+        <div class="report-cover">
+          <div class="top">
+            <svg viewBox="0 0 64 64" fill="none">
+              <path d="M 14 22 L 32 8 L 50 22" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M 14 38 L 32 24 L 50 38" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+              <line x1="14" y1="50" x2="50" y2="50" stroke="#18c590" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+            <div class="date">REPORT · 2026.06</div>
+          </div>
+          <div class="center">
+            <div class="badge">LLMO MONITORING</div>
+            <div class="title">AI Visibility<br>Audit Report</div>
+            <div class="ch-title">AI 能見度<br>檢測報告</div>
+          </div>
+          <div class="client">
+            CLIENT<br>
+            <strong>kimbo3899.com.tw</strong><br>
+            BY <strong>優勢方舟數位行銷</strong>
+          </div>
+        </div>
+
+        <!-- OG image -->
+        <div class="og-image">
+          <div class="top-row">
+            <div class="og-logo">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M 14 22 L 32 8 L 50 22" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 14 38 L 32 24 L 50 38" stroke="#18c590" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+                <line x1="14" y1="50" x2="50" y2="50" stroke="#18c590" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+              <span class="name">Aark</span>
+            </div>
+            <div class="og-url">a-ark.com.tw</div>
+          </div>
+          <div class="center-text">
+            <div class="headline">ChatGPT 推不<br>推薦你的<em>品牌</em>?</div>
+            <div class="sub">方舟 AI 雷達 · LLMO 監測平台</div>
+          </div>
+          <div class="bottom-row">
+            <div class="signal-chips">
+              <span>SEO</span><span>AEO</span><span>GEO</span><span>E-E-A-T</span><span style="color:#18c590;border-color:#18c590;">aivis</span>
+            </div>
+            <span>60 秒免費檢測</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── Philosophy ────────── -->
+    <div class="philosophy-block">
+      <div class="quote">「<em>克制即訊號</em>。」</div>
+      <div class="meta">DESIGN PHILOSOPHY · DIRECTION A</div>
+    </div>
+
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <!-- Direction B · 意象敘事派                                       -->
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <section class="direction dir-b" data-page="1">
+
+    <div class="dir-header">
+      <div>
+        <div class="dir-label">B <span class="dash">/</span> 意象敘事派 <span class="dash">/</span> Narrative Imagery</div>
+        <h1 class="dir-title">載你度過 <em>AI 洪水</em>。</h1>
+        <p class="dir-tagline">Logo 內藏「方舟船身 + 雷達波弧」雙意象 — 一眼看到 mark，腦中就有故事。對標 Stripe / Vercel 那種「品牌即敘事」的深度感。</p>
+      </div>
+      <div class="dir-target">
+        <strong>對標</strong><br>
+        Stripe · Vercel · Anthropic<br><br>
+        <strong>對代理商訊號</strong><br>
+        「這個品牌<br>有故事、有深度」
+      </div>
+    </div>
+
+    <!-- ────────── 1. Logo Hero ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">01 / Mark + Wordmark</div>
+          <div class="section-title">主 logo 鎖定組合</div>
+        </div>
+        <div class="section-desc">SVG · 方舟 + 雷達波弧</div>
+      </div>
+      <div class="logo-hero">
+        <div class="logo-mark-big">
+          <!-- Mark B: 方舟船身 + 雷達雙弧 (forming double A peaks) -->
+          <svg viewBox="0 0 64 64" fill="none">
+            <!-- Hull (curved bottom) -->
+            <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#18c590"/>
+            <!-- Mast -->
+            <line x1="32" y1="38" x2="32" y2="20" stroke="#18c590" stroke-width="2" stroke-linecap="round"/>
+            <!-- Mast top dot -->
+            <circle cx="32" cy="19" r="2" fill="#18c590"/>
+            <!-- Radar arcs forming double-A peaks -->
+            <path d="M 18 28 Q 32 8 46 28" stroke="#18c590" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85"/>
+            <path d="M 22 32 Q 32 16 42 32" stroke="#18c590" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="logo-side">
+          <h3 style="font-family:'Newsreader', serif; font-style:italic; font-weight:500;">Aark</h3>
+          <div class="ch-name">方舟 AI 雷達</div>
+          <div class="philosophy">// 船身 = 方舟（載你度過）<br>// 雙弧波 = 雙 A + 雷達訊號掃描</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── 2. Logo System ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">02 / Logo system</div>
+          <div class="section-title">變體與使用情境</div>
+        </div>
+        <div class="section-desc">favicon · app icon · 反白 · 浅底</div>
+      </div>
+      <div class="logo-system">
+        <div class="logo-tile">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#18c590"/>
+              <line x1="32" y1="38" x2="32" y2="20" stroke="#18c590" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="32" cy="19" r="2" fill="#18c590"/>
+              <path d="M 18 28 Q 32 8 46 28" stroke="#18c590" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>
+              <path d="M 22 32 Q 32 16 42 32" stroke="#18c590" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="tile-label">Mark only</div>
+        </div>
+        <div class="logo-tile">
+          <div class="tile-content" style="gap:12px;display:flex;align-items:center;">
+            <svg viewBox="0 0 64 64" fill="none" style="width:38px;height:38px;">
+              <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#18c590"/>
+              <line x1="32" y1="38" x2="32" y2="20" stroke="#18c590" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="32" cy="19" r="2" fill="#18c590"/>
+              <path d="M 18 28 Q 32 8 46 28" stroke="#18c590" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>
+              <path d="M 22 32 Q 32 16 42 32" stroke="#18c590" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+            </svg>
+            <span style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:26px;letter-spacing:-0.02em;color:#fff;">Aark</span>
+          </div>
+          <div class="tile-label">Inline lockup</div>
+        </div>
+        <div class="logo-tile light">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#0a0a0a"/>
+              <line x1="32" y1="38" x2="32" y2="20" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="32" cy="19" r="2" fill="#0a0a0a"/>
+              <path d="M 18 28 Q 32 8 46 28" stroke="#0a0a0a" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>
+              <path d="M 22 32 Q 32 16 42 32" stroke="#0a0a0a" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="tile-label">浅底版（mono）</div>
+        </div>
+        <div class="logo-tile" style="background:linear-gradient(135deg, #052e2c 0%, #18c590 250%);">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:48px;height:48px;">
+              <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#fff"/>
+              <line x1="32" y1="38" x2="32" y2="20" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="32" cy="19" r="2" fill="#fff"/>
+              <path d="M 18 28 Q 32 8 46 28" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>
+              <path d="M 22 32 Q 32 16 42 32" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="tile-label">App icon</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── 3. Palette ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">03 / Color palette</div>
+          <div class="section-title">配色方案</div>
+        </div>
+        <div class="section-desc">青綠 + 赤土橙雙色調 · 暖底</div>
+      </div>
+      <div class="palette">
+        <div class="swatch">
+          <div class="chip" style="background:#18c590;"></div>
+          <div class="info"><div class="name">Aark Green</div><div class="hex">#18c590</div><div class="use">主色 · 雷達 · 海面</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#0d7a58;"></div>
+          <div class="info"><div class="name">Deep Sea</div><div class="hex">#0d7a58</div><div class="use">深色變體 · 漸層</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#C04A1A;"></div>
+          <div class="info"><div class="name">Rust</div><div class="hex">#C04A1A</div><div class="use">敘事 accent · 強調</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#052e2c;"></div>
+          <div class="info"><div class="name">Ocean Floor</div><div class="hex">#052e2c</div><div class="use">主背景</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#f5f1e8;"></div>
+          <div class="info"><div class="name">Parchment</div><div class="hex">#f5f1e8</div><div class="use">名片底 / 報告浅底</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#1a1a1a;"></div>
+          <div class="info"><div class="name">Ink</div><div class="hex">#1a1a1a</div><div class="use">主文字</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── 4. Typography ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">04 / Typography</div>
+          <div class="section-title">字體配對</div>
+        </div>
+        <div class="section-desc">Newsreader Serif + Noto Serif TC</div>
+      </div>
+      <div class="typo-grid">
+        <div class="typo-card">
+          <div class="role">Display · English</div>
+          <div class="specimen-en" style="font-family:'Newsreader',serif;font-weight:500;font-style:italic;letter-spacing:-0.015em;">Aark Radar</div>
+          <div class="specimen-body" style="font-family:'Newsreader',serif;font-weight:400;line-height:1.65;">The ark that carries your brand through the AI flood. LLMO monitoring built for agencies who outlast Google.</div>
+          <div class="font-meta">Newsreader · 400 / 500 italic</div>
+        </div>
+        <div class="typo-card">
+          <div class="role">Display · 中文</div>
+          <div class="specimen-ch" style="font-family:'Noto Serif TC',serif;font-weight:700;letter-spacing:0.02em;">方舟 AI 雷達</div>
+          <div class="specimen-body" style="font-family:'Noto Serif TC',serif;font-weight:500;line-height:1.7;">載你度過 AI 洪水的方舟 — 監測你在 ChatGPT、Perplexity、Gemini 的能見度。</div>
+          <div class="font-meta">Noto Serif TC · 500 / 700</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────── 5. Mockups ────────── -->
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">05 / Mockups</div>
+          <div class="section-title">實際應用場景</div>
+        </div>
+        <div class="section-desc">website · biz card · report · OG</div>
+      </div>
+
+      <div class="mockup-grid">
+        <div class="browser">
+          <div class="browser-chrome">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div class="url">aark-workspace.vercel.app</div>
+          </div>
+          <div class="browser-body">
+            <div class="site-header">
+              <div class="site-logo">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#18c590"/>
+                  <line x1="32" y1="38" x2="32" y2="20" stroke="#18c590" stroke-width="2.5"/>
+                  <circle cx="32" cy="19" r="2" fill="#18c590"/>
+                  <path d="M 18 28 Q 32 8 46 28" stroke="#18c590" stroke-width="3" fill="none" opacity="0.85"/>
+                  <path d="M 22 32 Q 32 16 42 32" stroke="#18c590" stroke-width="2.2" fill="none" opacity="0.5"/>
+                </svg>
+                <span class="name" style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;">Aark</span>
+              </div>
+              <nav>
+                <a>Pricing</a><a>FAQ</a><a>Showcase</a>
+                <a class="cta">開始檢測</a>
+              </nav>
+            </div>
+            <div class="site-hero">
+              <h1>載你度過<br><em>AI 洪水</em>。</h1>
+              <p>方舟 AI 雷達 — 給每個替客戶顧網站的代理商，一份能交出去的 LLMO 監測報告。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="cards-pair">
+          <div class="biz-card">
+            <div class="top">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#18c590"/>
+                <line x1="32" y1="38" x2="32" y2="20" stroke="#18c590" stroke-width="2.5"/>
+                <circle cx="32" cy="19" r="2" fill="#18c590"/>
+                <path d="M 18 28 Q 32 8 46 28" stroke="#18c590" stroke-width="3" fill="none" opacity="0.85"/>
+                <path d="M 22 32 Q 32 16 42 32" stroke="#18c590" stroke-width="2.2" fill="none" opacity="0.5"/>
+              </svg>
+              <div class="corner-meta">Aark · 載你度過<br>AI 洪水</div>
+            </div>
+            <div>
+              <div class="name" style="font-family:'Noto Serif TC',serif;font-weight:700;">楊志強</div>
+              <div class="title">創辦人 · 優勢方舟數位行銷</div>
+              <div class="contact">mark6465@gmail.com<br>+886 6 XXX-XXXX<br>a-ark.com.tw</div>
+            </div>
+          </div>
+          <div class="biz-card back">
+            <div class="top">
+              <span class="tagline">LLMO Monitoring · Since 2026</span>
+              <svg viewBox="0 0 64 64" fill="none" style="width:26px;height:26px;">
+                <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#f5f1e8"/>
+                <line x1="32" y1="38" x2="32" y2="20" stroke="#f5f1e8" stroke-width="2.5"/>
+                <circle cx="32" cy="19" r="2" fill="#f5f1e8"/>
+                <path d="M 18 28 Q 32 8 46 28" stroke="#f5f1e8" stroke-width="3" fill="none" opacity="0.85"/>
+                <path d="M 22 32 Q 32 16 42 32" stroke="#f5f1e8" stroke-width="2.2" fill="none" opacity="0.5"/>
+              </svg>
+            </div>
+            <div class="wordmark-big" style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;">Aark</div>
+            <div style="font-family:'Noto Serif TC',serif; font-size:11px; opacity:0.7;">方舟 AI 雷達 · 載你度過 AI 洪水</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-row-2">
+        <div class="report-cover">
+          <div class="top">
+            <svg viewBox="0 0 64 64" fill="none">
+              <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#18c590"/>
+              <line x1="32" y1="38" x2="32" y2="20" stroke="#18c590" stroke-width="2.5"/>
+              <circle cx="32" cy="19" r="2" fill="#18c590"/>
+              <path d="M 18 28 Q 32 8 46 28" stroke="#18c590" stroke-width="3" fill="none" opacity="0.85"/>
+              <path d="M 22 32 Q 32 16 42 32" stroke="#18c590" stroke-width="2.2" fill="none" opacity="0.5"/>
+            </svg>
+            <div class="date">REPORT · 2026.06</div>
+          </div>
+          <div class="center">
+            <div class="badge">LLMO MONITORING</div>
+            <div class="title" style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;letter-spacing:-0.015em;">AI Visibility<br>Audit</div>
+            <div class="ch-title" style="font-family:'Noto Serif TC',serif;font-weight:700;">AI 能見度<br>檢測報告</div>
+          </div>
+          <div class="client">
+            CLIENT<br>
+            <strong>kimbo3899.com.tw</strong><br>
+            BY <strong>優勢方舟數位行銷</strong>
+          </div>
+        </div>
+
+        <div class="og-image">
+          <div class="top-row">
+            <div class="og-logo">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M 12 46 Q 32 54 52 46 L 48 38 Q 32 42 16 38 Z" fill="#18c590"/>
+                <line x1="32" y1="38" x2="32" y2="20" stroke="#18c590" stroke-width="2.5"/>
+                <circle cx="32" cy="19" r="2" fill="#18c590"/>
+                <path d="M 18 28 Q 32 8 46 28" stroke="#18c590" stroke-width="3" fill="none" opacity="0.85"/>
+                <path d="M 22 32 Q 32 16 42 32" stroke="#18c590" stroke-width="2.2" fill="none" opacity="0.5"/>
+              </svg>
+              <span class="name" style="font-family:'Newsreader',serif;font-style:italic;font-weight:500;">Aark</span>
+            </div>
+            <div class="og-url">a-ark.com.tw</div>
+          </div>
+          <div class="center-text">
+            <div class="headline">載你度過<br><em>AI 洪水</em>。</div>
+            <div class="sub">方舟 AI 雷達 · LLMO 監測平台</div>
+          </div>
+          <div class="bottom-row">
+            <div class="signal-chips">
+              <span>SEO</span><span>AEO</span><span>GEO</span><span>E-E-A-T</span><span style="color:#18c590;border-color:#18c590;">aivis</span>
+            </div>
+            <span>60 秒免費檢測</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="philosophy-block">
+      <div class="quote">「<em>載你度過 AI 洪水</em>。」</div>
+      <div class="meta">DESIGN PHILOSOPHY · DIRECTION B</div>
+    </div>
+
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <!-- Direction C · 暗黑科技權威派                                   -->
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <section class="direction dir-c" data-page="2">
+
+    <div class="dir-header">
+      <div>
+        <div class="dir-label">C <span class="dash">/</span> 暗黑科技權威派 <span class="dash">/</span> Dark Tech Authority</div>
+        <h1 class="dir-title">監測<em>就是力量</em>。</h1>
+        <p class="dir-tagline">雷達掃描臂 + 鏡像 wedge 構成銳利的雙 A 幾何 — 像一台真正在運轉的監測機器。對標 Ahrefs / SEMrush，傳達「LLMO 監測類產品的專業重量感」。</p>
+      </div>
+      <div class="dir-target">
+        <strong>對標</strong><br>
+        Ahrefs · SEMrush · Datadog<br><br>
+        <strong>對代理商訊號</strong><br>
+        「這是真正的<br>LLMO 監測機器」
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">01 / Mark + Wordmark</div>
+          <div class="section-title">主 logo 鎖定組合</div>
+        </div>
+        <div class="section-desc">SVG · 雷達掃描臂 + 雙 wedge</div>
+      </div>
+      <div class="logo-hero">
+        <div class="logo-mark-big">
+          <!-- Mark C: 雷達 dial + 掃描臂 + 鏡像 wedge -->
+          <svg viewBox="0 0 64 64" fill="none">
+            <!-- Outer ring -->
+            <circle cx="32" cy="32" r="26" stroke="#18c590" stroke-width="2"/>
+            <!-- Inner ring -->
+            <circle cx="32" cy="32" r="17" stroke="#18c590" stroke-width="1" opacity="0.35"/>
+            <!-- Cross hairs subtle -->
+            <line x1="32" y1="6" x2="32" y2="58" stroke="#18c590" stroke-width="0.5" opacity="0.25"/>
+            <line x1="6" y1="32" x2="58" y2="32" stroke="#18c590" stroke-width="0.5" opacity="0.25"/>
+            <!-- Right wedge (filled, forming A peak) -->
+            <path d="M 32 32 L 32 6 L 51 16 Z" fill="#18c590" opacity="0.85"/>
+            <!-- Left wedge (lighter mirror, forming second A) -->
+            <path d="M 32 32 L 32 6 L 13 16 Z" fill="#18c590" opacity="0.35"/>
+            <!-- Center dot -->
+            <circle cx="32" cy="32" r="3" fill="#18c590"/>
+            <!-- Small ticks at cardinal points -->
+            <line x1="32" y1="2" x2="32" y2="6" stroke="#18c590" stroke-width="1.5" opacity="0.6"/>
+            <line x1="58" y1="32" x2="62" y2="32" stroke="#18c590" stroke-width="1.5" opacity="0.6"/>
+            <line x1="32" y1="58" x2="32" y2="62" stroke="#18c590" stroke-width="1.5" opacity="0.6"/>
+            <line x1="2" y1="32" x2="6" y2="32" stroke="#18c590" stroke-width="1.5" opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="logo-side">
+          <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</h3>
+          <div class="ch-name" style="font-family:'Noto Sans TC',sans-serif;font-weight:900;">方舟 AI 雷達</div>
+          <div class="philosophy">// 雷達掃描臂 = 持續監測<br>// 鏡像 wedge = 雙 A + 銳利幾何</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">02 / Logo system</div>
+          <div class="section-title">變體與使用情境</div>
+        </div>
+        <div class="section-desc">favicon · app icon · 反白 · 浅底</div>
+      </div>
+      <div class="logo-system">
+        <div class="logo-tile">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <circle cx="32" cy="32" r="26" stroke="#18c590" stroke-width="2.5"/>
+              <circle cx="32" cy="32" r="17" stroke="#18c590" stroke-width="1.2" opacity="0.35"/>
+              <path d="M 32 32 L 32 6 L 51 16 Z" fill="#18c590" opacity="0.85"/>
+              <path d="M 32 32 L 32 6 L 13 16 Z" fill="#18c590" opacity="0.35"/>
+              <circle cx="32" cy="32" r="3" fill="#18c590"/>
+            </svg>
+          </div>
+          <div class="tile-label">Mark only</div>
+        </div>
+        <div class="logo-tile">
+          <div class="tile-content" style="gap:12px;display:flex;align-items:center;">
+            <svg viewBox="0 0 64 64" fill="none" style="width:40px;height:40px;">
+              <circle cx="32" cy="32" r="26" stroke="#18c590" stroke-width="3"/>
+              <path d="M 32 32 L 32 6 L 51 16 Z" fill="#18c590" opacity="0.85"/>
+              <path d="M 32 32 L 32 6 L 13 16 Z" fill="#18c590" opacity="0.35"/>
+              <circle cx="32" cy="32" r="3" fill="#18c590"/>
+            </svg>
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;letter-spacing:-0.04em;color:#fff;">Aark</span>
+          </div>
+          <div class="tile-label">Inline lockup</div>
+        </div>
+        <div class="logo-tile light">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <circle cx="32" cy="32" r="26" stroke="#0a0a0a" stroke-width="2.5"/>
+              <circle cx="32" cy="32" r="17" stroke="#0a0a0a" stroke-width="1.2" opacity="0.35"/>
+              <path d="M 32 32 L 32 6 L 51 16 Z" fill="#0a0a0a" opacity="0.85"/>
+              <path d="M 32 32 L 32 6 L 13 16 Z" fill="#0a0a0a" opacity="0.35"/>
+              <circle cx="32" cy="32" r="3" fill="#0a0a0a"/>
+            </svg>
+          </div>
+          <div class="tile-label">浅底版（mono）</div>
+        </div>
+        <div class="logo-tile" style="background:#18c590;">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:48px;height:48px;">
+              <circle cx="32" cy="32" r="26" stroke="#000" stroke-width="3"/>
+              <path d="M 32 32 L 32 6 L 51 16 Z" fill="#000" opacity="0.9"/>
+              <path d="M 32 32 L 32 6 L 13 16 Z" fill="#000" opacity="0.4"/>
+              <circle cx="32" cy="32" r="3" fill="#000"/>
+            </svg>
+          </div>
+          <div class="tile-label" style="color:rgba(0,0,0,0.6);">App icon (青綠底)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">03 / Color palette</div>
+          <div class="section-title">配色方案</div>
+        </div>
+        <div class="section-desc">純黑 · 高對比 · 青綠主導 · 橘 highlight</div>
+      </div>
+      <div class="palette">
+        <div class="swatch">
+          <div class="chip" style="background:#18c590;"></div>
+          <div class="info"><div class="name">Aark Green</div><div class="hex">#18c590</div><div class="use">主色 · 全方位</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#000000;"></div>
+          <div class="info"><div class="name">Pure Black</div><div class="hex">#000000</div><div class="use">主背景 · 反差最大</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#f97316;"></div>
+          <div class="info"><div class="name">Alert</div><div class="hex">#f97316</div><div class="use">aivis / 警示 / hot</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#ffffff;"></div>
+          <div class="info"><div class="name">Pure White</div><div class="hex">#ffffff</div><div class="use">主文字 · 高對比</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#00ff9d;"></div>
+          <div class="info"><div class="name">Hot Green</div><div class="hex">#00ff9d</div><div class="use">data viz · live</div></div>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:#0a0f14;"></div>
+          <div class="info"><div class="name">Carbon</div><div class="hex">#0a0f14</div><div class="use">surface · card</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">04 / Typography</div>
+          <div class="section-title">字體配對</div>
+        </div>
+        <div class="section-desc">Space Grotesk + JetBrains Mono + Noto Sans TC Black</div>
+      </div>
+      <div class="typo-grid">
+        <div class="typo-card">
+          <div class="role">Display · English</div>
+          <div class="specimen-en" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.035em;">Aark Radar</div>
+          <div class="specimen-body" style="font-family:'Space Grotesk',sans-serif;font-weight:400;line-height:1.6;">The first LLMO monitoring platform built in Taiwan. Cross-LLM citation tracking. Five signal layers.</div>
+          <div class="font-meta">Space Grotesk · 400 / 500 / 700</div>
+        </div>
+        <div class="typo-card">
+          <div class="role">Display · 中文</div>
+          <div class="specimen-ch" style="font-family:'Noto Sans TC',sans-serif;font-weight:900;letter-spacing:0.02em;">方舟 AI 雷達</div>
+          <div class="specimen-body" style="font-family:'Noto Sans TC',sans-serif;font-weight:500;line-height:1.65;">監測你在 ChatGPT、Perplexity、Gemini 的能見度 — 拆 5 個可量化訊號層、各自打分。</div>
+          <div class="font-meta">Noto Sans TC · 500 / 700 / 900</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">05 / Mockups</div>
+          <div class="section-title">實際應用場景</div>
+        </div>
+        <div class="section-desc">website · biz card · report · OG</div>
+      </div>
+
+      <div class="mockup-grid">
+        <div class="browser">
+          <div class="browser-chrome">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div class="url">aark-workspace.vercel.app</div>
+          </div>
+          <div class="browser-body" style="background:#000;">
+            <div class="site-header">
+              <div class="site-logo">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <circle cx="32" cy="32" r="26" stroke="#18c590" stroke-width="3"/>
+                  <path d="M 32 32 L 32 6 L 51 16 Z" fill="#18c590" opacity="0.85"/>
+                  <path d="M 32 32 L 32 6 L 13 16 Z" fill="#18c590" opacity="0.35"/>
+                  <circle cx="32" cy="32" r="3" fill="#18c590"/>
+                </svg>
+                <span class="name" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</span>
+              </div>
+              <nav>
+                <a>Pricing</a><a>FAQ</a><a>Showcase</a>
+                <a class="cta">開始檢測</a>
+              </nav>
+            </div>
+            <div class="site-hero">
+              <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;">ChatGPT 推不<br>推薦你的<em style="color:#18c590;">品牌</em>?</h1>
+              <p>方舟 AI 雷達 — 跨 LLM 引用率監測平台。你的網站在 ChatGPT、Perplexity、Gemini 的真實提及率。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="cards-pair">
+          <div class="biz-card" style="background:#000;color:#fff;border:1px solid rgba(24,197,144,0.3);">
+            <div class="top">
+              <svg viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="32" r="26" stroke="#18c590" stroke-width="3"/>
+                <path d="M 32 32 L 32 6 L 51 16 Z" fill="#18c590" opacity="0.85"/>
+                <path d="M 32 32 L 32 6 L 13 16 Z" fill="#18c590" opacity="0.35"/>
+                <circle cx="32" cy="32" r="3" fill="#18c590"/>
+              </svg>
+              <div class="corner-meta" style="color:#18c590;">Aark · LLMO<br>MONITOR · TW</div>
+            </div>
+            <div>
+              <div class="name" style="font-family:'Space Grotesk',sans-serif;color:#fff;">楊志強</div>
+              <div class="title" style="color:rgba(255,255,255,0.7);">創辦人 · 優勢方舟數位行銷</div>
+              <div class="contact" style="color:rgba(255,255,255,0.55);">mark6465@gmail.com<br>+886 6 XXX-XXXX<br>a-ark.com.tw</div>
+            </div>
+          </div>
+          <div class="biz-card back">
+            <div class="top">
+              <span class="tagline">CROSS-LLM CITATION TRACKING</span>
+              <svg viewBox="0 0 64 64" fill="none" style="width:26px;height:26px;">
+                <circle cx="32" cy="32" r="26" stroke="#000" stroke-width="3"/>
+                <path d="M 32 32 L 32 6 L 51 16 Z" fill="#000" opacity="0.85"/>
+                <path d="M 32 32 L 32 6 L 13 16 Z" fill="#000" opacity="0.35"/>
+                <circle cx="32" cy="32" r="3" fill="#000"/>
+              </svg>
+            </div>
+            <div class="wordmark-big" style="font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:-0.05em;">Aark</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:9px; opacity:0.7; letter-spacing:0.12em;">RADAR · MONITORING · TAINAN</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-row-2">
+        <div class="report-cover">
+          <div class="top">
+            <svg viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="26" stroke="#18c590" stroke-width="3"/>
+              <path d="M 32 32 L 32 6 L 51 16 Z" fill="#18c590" opacity="0.85"/>
+              <path d="M 32 32 L 32 6 L 13 16 Z" fill="#18c590" opacity="0.35"/>
+              <circle cx="32" cy="32" r="3" fill="#18c590"/>
+            </svg>
+            <div class="date">REPORT · 2026.06</div>
+          </div>
+          <div class="center">
+            <div class="badge">LLMO MONITORING</div>
+            <div class="title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.025em;">AI Visibility<br>Audit Report</div>
+            <div class="ch-title">AI 能見度<br>檢測報告</div>
+          </div>
+          <div class="client">
+            CLIENT<br>
+            <strong>kimbo3899.com.tw</strong><br>
+            BY <strong>優勢方舟數位行銷</strong>
+          </div>
+        </div>
+
+        <div class="og-image">
+          <div class="top-row">
+            <div class="og-logo">
+              <svg viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="32" r="26" stroke="#18c590" stroke-width="3"/>
+                <path d="M 32 32 L 32 6 L 51 16 Z" fill="#18c590" opacity="0.85"/>
+                <path d="M 32 32 L 32 6 L 13 16 Z" fill="#18c590" opacity="0.35"/>
+                <circle cx="32" cy="32" r="3" fill="#18c590"/>
+              </svg>
+              <span class="name" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</span>
+            </div>
+            <div class="og-url">a-ark.com.tw</div>
+          </div>
+          <div class="center-text">
+            <div class="headline">ChatGPT 推不<br>推薦你的<em>品牌</em>?</div>
+            <div class="sub">方舟 AI 雷達 · 跨 LLM 引用率監測</div>
+          </div>
+          <div class="bottom-row">
+            <div class="signal-chips">
+              <span>SEO</span><span>AEO</span><span>GEO</span><span>E-E-A-T</span><span style="color:#18c590;border-color:#18c590;">aivis</span>
+            </div>
+            <span>60 秒免費檢測</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="philosophy-block">
+      <div class="quote">「<em>監測就是力量</em>。」</div>
+      <div class="meta">DESIGN PHILOSOPHY · DIRECTION C</div>
+    </div>
+
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <!-- Direction D · 字母 Monogram（沿用 C 字色框架，只換 mark）        -->
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <section class="direction dir-d" data-page="3">
+
+    <div class="dir-header">
+      <div>
+        <div class="dir-label">D <span class="dash">/</span> 字母 Monogram <span class="dash">/</span> Single Letter A</div>
+        <h1 class="dir-title">一個字母<em>，全部的故事</em>。</h1>
+        <p class="dir-tagline">實心 A 單字母 mark — 像 Anthropic / Adobe / Atlassian 那種「品牌名第一個字母就是 logo」的強識別。沿用 C 的字色框架、只換 mark。</p>
+      </div>
+      <div class="dir-target">
+        <strong>對標</strong><br>
+        Anthropic · Adobe · Atlassian<br><br>
+        <strong>對代理商訊號</strong><br>
+        「品牌自信、<br>視覺密度極高」
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">01 / Mark + Wordmark</div>
+          <div class="section-title">主 logo 鎖定組合</div>
+        </div>
+        <div class="section-desc">SVG · 實心 A 字母</div>
+      </div>
+      <div class="logo-hero">
+        <div class="logo-mark-big">
+          <!-- Mark D: Solid bold A with negative-space triangle aperture -->
+          <svg viewBox="0 0 64 64" fill="none">
+            <path fill="#18c590" fill-rule="evenodd"
+                  d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                     M 28 38 L 32 24 L 36 38 Z"/>
+          </svg>
+        </div>
+        <div class="logo-side">
+          <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</h3>
+          <div class="ch-name" style="font-family:'Noto Sans TC',sans-serif;font-weight:900;">方舟 AI 雷達</div>
+          <div class="philosophy">// 實心 A = 品牌名第一字母<br>// 內三角缺口 = A 的「眼睛」、最 iconic 的字母負空間</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">02 / Logo system</div>
+          <div class="section-title">變體與使用情境</div>
+        </div>
+        <div class="section-desc">favicon · app icon · 反白 · 浅底</div>
+      </div>
+      <div class="logo-system">
+        <div class="logo-tile">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <path fill="#18c590" fill-rule="evenodd"
+                    d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                       M 28 38 L 32 24 L 36 38 Z"/>
+            </svg>
+          </div>
+          <div class="tile-label">Mark only</div>
+        </div>
+        <div class="logo-tile">
+          <div class="tile-content" style="gap:12px;display:flex;align-items:center;">
+            <svg viewBox="0 0 64 64" fill="none" style="width:36px;height:36px;">
+              <path fill="#18c590" fill-rule="evenodd"
+                    d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                       M 28 38 L 32 24 L 36 38 Z"/>
+            </svg>
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;letter-spacing:-0.04em;color:#fff;">Aark</span>
+          </div>
+          <div class="tile-label">Inline lockup</div>
+        </div>
+        <div class="logo-tile light">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <path fill="#0a0a0a" fill-rule="evenodd"
+                    d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                       M 28 38 L 32 24 L 36 38 Z"/>
+            </svg>
+          </div>
+          <div class="tile-label">浅底版（mono）</div>
+        </div>
+        <div class="logo-tile" style="background:#18c590;">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:48px;height:48px;">
+              <path fill="#000" fill-rule="evenodd"
+                    d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                       M 28 38 L 32 24 L 36 38 Z"/>
+            </svg>
+          </div>
+          <div class="tile-label" style="color:rgba(0,0,0,0.6);">App icon (青綠底)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">03 / Mockups</div>
+          <div class="section-title">實際應用場景</div>
+        </div>
+        <div class="section-desc">website · biz card · report · OG</div>
+      </div>
+
+      <div class="mockup-grid">
+        <div class="browser">
+          <div class="browser-chrome">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div class="url">aark-workspace.vercel.app</div>
+          </div>
+          <div class="browser-body" style="background:#000;">
+            <div class="site-header">
+              <div class="site-logo">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path fill="#18c590" fill-rule="evenodd"
+                        d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                           M 28 38 L 32 24 L 36 38 Z"/>
+                </svg>
+                <span class="name" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</span>
+              </div>
+              <nav>
+                <a>Pricing</a><a>FAQ</a><a>Showcase</a>
+                <a class="cta">開始檢測</a>
+              </nav>
+            </div>
+            <div class="site-hero">
+              <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;">ChatGPT 推不<br>推薦你的<em style="color:#18c590;">品牌</em>?</h1>
+              <p>方舟 AI 雷達 — 跨 LLM 引用率監測平台。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="cards-pair">
+          <div class="biz-card" style="background:#000;color:#fff;border:1px solid rgba(24,197,144,0.3);">
+            <div class="top">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path fill="#18c590" fill-rule="evenodd"
+                      d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                         M 28 38 L 32 24 L 36 38 Z"/>
+              </svg>
+              <div class="corner-meta" style="color:#18c590;">Aark · 01<br>TAINAN · TW</div>
+            </div>
+            <div>
+              <div class="name" style="font-family:'Space Grotesk',sans-serif;color:#fff;">楊志強</div>
+              <div class="title" style="color:rgba(255,255,255,0.7);">創辦人 · 優勢方舟數位行銷</div>
+              <div class="contact" style="color:rgba(255,255,255,0.55);">mark6465@gmail.com<br>+886 6 XXX-XXXX<br>a-ark.com.tw</div>
+            </div>
+          </div>
+          <div class="biz-card back">
+            <div class="top">
+              <span class="tagline">LLMO MONITORING</span>
+              <svg viewBox="0 0 64 64" fill="none" style="width:26px;height:26px;">
+                <path fill="#000" fill-rule="evenodd"
+                      d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                         M 28 38 L 32 24 L 36 38 Z"/>
+              </svg>
+            </div>
+            <div class="wordmark-big" style="font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:-0.05em;">Aark</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:9px; opacity:0.7; letter-spacing:0.12em;">SINCE 2026 · TAINAN</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-row-2">
+        <div class="report-cover">
+          <div class="top">
+            <svg viewBox="0 0 64 64" fill="none">
+              <path fill="#18c590" fill-rule="evenodd"
+                    d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                       M 28 38 L 32 24 L 36 38 Z"/>
+            </svg>
+            <div class="date">REPORT · 2026.06</div>
+          </div>
+          <div class="center">
+            <div class="badge">LLMO MONITORING</div>
+            <div class="title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.025em;">AI Visibility<br>Audit Report</div>
+            <div class="ch-title">AI 能見度<br>檢測報告</div>
+          </div>
+          <div class="client">
+            CLIENT<br>
+            <strong>kimbo3899.com.tw</strong><br>
+            BY <strong>優勢方舟數位行銷</strong>
+          </div>
+        </div>
+
+        <div class="og-image">
+          <div class="top-row">
+            <div class="og-logo">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path fill="#18c590" fill-rule="evenodd"
+                      d="M 32 6 L 8 58 L 19 58 L 25 44 L 39 44 L 45 58 L 56 58 Z
+                         M 28 38 L 32 24 L 36 38 Z"/>
+              </svg>
+              <span class="name" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</span>
+            </div>
+            <div class="og-url">a-ark.com.tw</div>
+          </div>
+          <div class="center-text">
+            <div class="headline">ChatGPT 推不<br>推薦你的<em>品牌</em>?</div>
+            <div class="sub">方舟 AI 雷達 · LLMO 監測平台</div>
+          </div>
+          <div class="bottom-row">
+            <div class="signal-chips">
+              <span>SEO</span><span>AEO</span><span>GEO</span><span>E-E-A-T</span><span style="color:#18c590;border-color:#18c590;">aivis</span>
+            </div>
+            <span>60 秒免費檢測</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="philosophy-block">
+      <div class="quote">「<em>一個字母，全部的故事</em>。」</div>
+      <div class="meta">DESIGN PHILOSOPHY · DIRECTION D</div>
+    </div>
+
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <!-- Direction E · 5 訊號條（LLMO 5 layers 視覺化）                 -->
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <section class="direction dir-e" data-page="4">
+
+    <div class="dir-header">
+      <div>
+        <div class="dir-label">E <span class="dash">/</span> 訊號條 <span class="dash">/</span> 5 Signal Bars</div>
+        <h1 class="dir-title">5 個訊號<em>，1 個分數</em>。</h1>
+        <p class="dir-tagline">5 根垂直條對應 LLMO 5 訊號層（SEO / AEO / GEO / E-E-A-T / aivis）— 視覺上像聲波 / 雷達掃描，最有「監測數據」故事性。Mark 即產品說明。</p>
+      </div>
+      <div class="dir-target">
+        <strong>對標</strong><br>
+        Datadog · Grafana · Mixpanel<br><br>
+        <strong>對代理商訊號</strong><br>
+        「這工具天天<br>跑數據給你看」
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">01 / Mark + Wordmark</div>
+          <div class="section-title">主 logo 鎖定組合</div>
+        </div>
+        <div class="section-desc">SVG · 5 條訊號層</div>
+      </div>
+      <div class="logo-hero">
+        <div class="logo-mark-big">
+          <!-- Mark E: 5 vertical signal bars forming peak/wave shape -->
+          <svg viewBox="0 0 64 64" fill="none">
+            <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+            <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+            <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#18c590"/>
+            <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+            <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+          </svg>
+        </div>
+        <div class="logo-side">
+          <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</h3>
+          <div class="ch-name" style="font-family:'Noto Sans TC',sans-serif;font-weight:900;">方舟 AI 雷達</div>
+          <div class="philosophy">// 5 條 = SEO · AEO · GEO · E-E-A-T · aivis<br>// 中央最高 = aivis 是 LLMO 結果驗證層</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">02 / Logo system</div>
+          <div class="section-title">變體與使用情境</div>
+        </div>
+        <div class="section-desc">favicon · app icon · 反白 · 浅底</div>
+      </div>
+      <div class="logo-system">
+        <div class="logo-tile">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+              <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+              <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#18c590"/>
+              <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+              <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+            </svg>
+          </div>
+          <div class="tile-label">Mark only</div>
+        </div>
+        <div class="logo-tile">
+          <div class="tile-content" style="gap:12px;display:flex;align-items:center;">
+            <svg viewBox="0 0 64 64" fill="none" style="width:38px;height:38px;">
+              <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+              <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+              <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#18c590"/>
+              <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+              <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+            </svg>
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;letter-spacing:-0.04em;color:#fff;">Aark</span>
+          </div>
+          <div class="tile-label">Inline lockup</div>
+        </div>
+        <div class="logo-tile light">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#0a0a0a" opacity="0.35"/>
+              <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#0a0a0a" opacity="0.6"/>
+              <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#0a0a0a"/>
+              <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#0a0a0a" opacity="0.6"/>
+              <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#0a0a0a" opacity="0.35"/>
+            </svg>
+          </div>
+          <div class="tile-label">浅底版（mono）</div>
+        </div>
+        <div class="logo-tile" style="background:#18c590;">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:48px;height:48px;">
+              <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#000" opacity="0.4"/>
+              <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#000" opacity="0.65"/>
+              <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#000"/>
+              <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#000" opacity="0.65"/>
+              <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#000" opacity="0.4"/>
+            </svg>
+          </div>
+          <div class="tile-label" style="color:rgba(0,0,0,0.6);">App icon (青綠底)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">03 / Mockups</div>
+          <div class="section-title">實際應用場景</div>
+        </div>
+        <div class="section-desc">website · biz card · report · OG</div>
+      </div>
+
+      <div class="mockup-grid">
+        <div class="browser">
+          <div class="browser-chrome">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div class="url">aark-workspace.vercel.app</div>
+          </div>
+          <div class="browser-body" style="background:#000;">
+            <div class="site-header">
+              <div class="site-logo">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+                  <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+                  <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#18c590"/>
+                  <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+                  <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+                </svg>
+                <span class="name" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</span>
+              </div>
+              <nav>
+                <a>Pricing</a><a>FAQ</a><a>Showcase</a>
+                <a class="cta">開始檢測</a>
+              </nav>
+            </div>
+            <div class="site-hero">
+              <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;">ChatGPT 推不<br>推薦你的<em style="color:#18c590;">品牌</em>?</h1>
+              <p>方舟 AI 雷達 — 5 個訊號層、一個分數、跨 LLM 監測。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="cards-pair">
+          <div class="biz-card" style="background:#000;color:#fff;border:1px solid rgba(24,197,144,0.3);">
+            <div class="top">
+              <svg viewBox="0 0 64 64" fill="none">
+                <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+                <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+                <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#18c590"/>
+                <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+                <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+              </svg>
+              <div class="corner-meta" style="color:#18c590;">Aark · 5 SIGNALS<br>1 SCORE</div>
+            </div>
+            <div>
+              <div class="name" style="font-family:'Space Grotesk',sans-serif;color:#fff;">楊志強</div>
+              <div class="title" style="color:rgba(255,255,255,0.7);">創辦人 · 優勢方舟數位行銷</div>
+              <div class="contact" style="color:rgba(255,255,255,0.55);">mark6465@gmail.com<br>+886 6 XXX-XXXX<br>a-ark.com.tw</div>
+            </div>
+          </div>
+          <div class="biz-card back">
+            <div class="top">
+              <span class="tagline">5 SIGNAL LAYERS</span>
+              <svg viewBox="0 0 64 64" fill="none" style="width:26px;height:26px;">
+                <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#000" opacity="0.4"/>
+                <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#000" opacity="0.65"/>
+                <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#000"/>
+                <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#000" opacity="0.65"/>
+                <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#000" opacity="0.4"/>
+              </svg>
+            </div>
+            <div class="wordmark-big" style="font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:-0.05em;">Aark</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:9px; opacity:0.7; letter-spacing:0.12em;">SEO · AEO · GEO · EEAT · AIVIS</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-row-2">
+        <div class="report-cover">
+          <div class="top">
+            <svg viewBox="0 0 64 64" fill="none">
+              <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+              <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+              <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#18c590"/>
+              <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+              <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+            </svg>
+            <div class="date">REPORT · 2026.06</div>
+          </div>
+          <div class="center">
+            <div class="badge">LLMO MONITORING</div>
+            <div class="title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.025em;">AI Visibility<br>Audit Report</div>
+            <div class="ch-title">AI 能見度<br>檢測報告</div>
+          </div>
+          <div class="client">
+            CLIENT<br>
+            <strong>kimbo3899.com.tw</strong><br>
+            BY <strong>優勢方舟數位行銷</strong>
+          </div>
+        </div>
+
+        <div class="og-image">
+          <div class="top-row">
+            <div class="og-logo">
+              <svg viewBox="0 0 64 64" fill="none">
+                <rect x="6"  y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+                <rect x="17" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+                <rect x="29" y="10" width="6" height="46" rx="1.5" fill="#18c590"/>
+                <rect x="41" y="28" width="6" height="28" rx="1.5" fill="#18c590" opacity="0.6"/>
+                <rect x="52" y="40" width="6" height="16" rx="1.5" fill="#18c590" opacity="0.35"/>
+              </svg>
+              <span class="name" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</span>
+            </div>
+            <div class="og-url">a-ark.com.tw</div>
+          </div>
+          <div class="center-text">
+            <div class="headline">5 個訊號<br><em>1 個分數</em>。</div>
+            <div class="sub">方舟 AI 雷達 · LLMO 監測平台</div>
+          </div>
+          <div class="bottom-row">
+            <div class="signal-chips">
+              <span>SEO</span><span>AEO</span><span>GEO</span><span>E-E-A-T</span><span style="color:#18c590;border-color:#18c590;">aivis</span>
+            </div>
+            <span>60 秒免費檢測</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="philosophy-block">
+      <div class="quote">「<em>5 個訊號，1 個分數</em>。」</div>
+      <div class="meta">DESIGN PHILOSOPHY · DIRECTION E</div>
+    </div>
+
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <!-- Direction F · 切分鑽石（極簡幾何抽象）                          -->
+  <!-- ═════════════════════════════════════════════════════════════ -->
+  <section class="direction dir-f" data-page="5">
+
+    <div class="dir-header">
+      <div>
+        <div class="dir-label">F <span class="dash">/</span> 切分鑽石 <span class="dash">/</span> Split Diamond</div>
+        <h1 class="dir-title">水面之上<em>，AI 之眼</em>。</h1>
+        <p class="dir-tagline">鑽石上半實心 + 下半淡化 — 視覺上像「水面 / 訊號雜訊地平線」之上的尖角。最極簡的幾何抽象、識別度依賴形狀本身。</p>
+      </div>
+      <div class="dir-target">
+        <strong>對標</strong><br>
+        Vercel · Linear · Mux<br><br>
+        <strong>對代理商訊號</strong><br>
+        「氣質純粹、<br>跟潮流 SaaS 一族」
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">01 / Mark + Wordmark</div>
+          <div class="section-title">主 logo 鎖定組合</div>
+        </div>
+        <div class="section-desc">SVG · 切分鑽石幾何</div>
+      </div>
+      <div class="logo-hero">
+        <div class="logo-mark-big">
+          <!-- Mark F: Diamond split by horizon — top solid, bottom faded -->
+          <svg viewBox="0 0 64 64" fill="none">
+            <!-- Top triangle (上半實心、訊號之上) -->
+            <path d="M 32 6 L 10 34 L 54 34 Z" fill="#18c590"/>
+            <!-- Bottom triangle (下半淡化、地平線/雜訊之下) -->
+            <path d="M 32 58 L 10 34 L 54 34 Z" fill="#18c590" opacity="0.3"/>
+            <!-- Horizon line (sharp emphasis) -->
+            <line x1="10" y1="34" x2="54" y2="34" stroke="#18c590" stroke-width="2.5"/>
+          </svg>
+        </div>
+        <div class="logo-side">
+          <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</h3>
+          <div class="ch-name" style="font-family:'Noto Sans TC',sans-serif;font-weight:900;">方舟 AI 雷達</div>
+          <div class="philosophy">// 上半實心 = 訊號浮上水面被看見<br>// 下半淡化 = 競爭對手還沉在 AI 雜訊裡</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">02 / Logo system</div>
+          <div class="section-title">變體與使用情境</div>
+        </div>
+        <div class="section-desc">favicon · app icon · 反白 · 浅底</div>
+      </div>
+      <div class="logo-system">
+        <div class="logo-tile">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <path d="M 32 6 L 10 34 L 54 34 Z" fill="#18c590"/>
+              <path d="M 32 58 L 10 34 L 54 34 Z" fill="#18c590" opacity="0.3"/>
+              <line x1="10" y1="34" x2="54" y2="34" stroke="#18c590" stroke-width="3"/>
+            </svg>
+          </div>
+          <div class="tile-label">Mark only</div>
+        </div>
+        <div class="logo-tile">
+          <div class="tile-content" style="gap:12px;display:flex;align-items:center;">
+            <svg viewBox="0 0 64 64" fill="none" style="width:38px;height:38px;">
+              <path d="M 32 6 L 10 34 L 54 34 Z" fill="#18c590"/>
+              <path d="M 32 58 L 10 34 L 54 34 Z" fill="#18c590" opacity="0.3"/>
+              <line x1="10" y1="34" x2="54" y2="34" stroke="#18c590" stroke-width="3"/>
+            </svg>
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;letter-spacing:-0.04em;color:#fff;">Aark</span>
+          </div>
+          <div class="tile-label">Inline lockup</div>
+        </div>
+        <div class="logo-tile light">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:64px;height:64px;">
+              <path d="M 32 6 L 10 34 L 54 34 Z" fill="#0a0a0a"/>
+              <path d="M 32 58 L 10 34 L 54 34 Z" fill="#0a0a0a" opacity="0.3"/>
+              <line x1="10" y1="34" x2="54" y2="34" stroke="#0a0a0a" stroke-width="3"/>
+            </svg>
+          </div>
+          <div class="tile-label">浅底版（mono）</div>
+        </div>
+        <div class="logo-tile" style="background:#18c590;">
+          <div class="tile-content">
+            <svg viewBox="0 0 64 64" fill="none" style="width:48px;height:48px;">
+              <path d="M 32 6 L 10 34 L 54 34 Z" fill="#000"/>
+              <path d="M 32 58 L 10 34 L 54 34 Z" fill="#000" opacity="0.35"/>
+              <line x1="10" y1="34" x2="54" y2="34" stroke="#000" stroke-width="3"/>
+            </svg>
+          </div>
+          <div class="tile-label" style="color:rgba(0,0,0,0.6);">App icon (青綠底)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dir-section">
+      <div class="section-head">
+        <div>
+          <div class="section-num">03 / Mockups</div>
+          <div class="section-title">實際應用場景</div>
+        </div>
+        <div class="section-desc">website · biz card · report · OG</div>
+      </div>
+
+      <div class="mockup-grid">
+        <div class="browser">
+          <div class="browser-chrome">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div class="url">aark-workspace.vercel.app</div>
+          </div>
+          <div class="browser-body" style="background:#000;">
+            <div class="site-header">
+              <div class="site-logo">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path d="M 32 6 L 10 34 L 54 34 Z" fill="#18c590"/>
+                  <path d="M 32 58 L 10 34 L 54 34 Z" fill="#18c590" opacity="0.3"/>
+                  <line x1="10" y1="34" x2="54" y2="34" stroke="#18c590" stroke-width="3"/>
+                </svg>
+                <span class="name" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</span>
+              </div>
+              <nav>
+                <a>Pricing</a><a>FAQ</a><a>Showcase</a>
+                <a class="cta">開始檢測</a>
+              </nav>
+            </div>
+            <div class="site-hero">
+              <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;">浮出 AI 雜訊<br><em style="color:#18c590;">的水面</em>。</h1>
+              <p>方舟 AI 雷達 — LLMO 監測平台。讓你的品牌被 AI 看見、被引用、被推薦。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="cards-pair">
+          <div class="biz-card" style="background:#000;color:#fff;border:1px solid rgba(24,197,144,0.3);">
+            <div class="top">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M 32 6 L 10 34 L 54 34 Z" fill="#18c590"/>
+                <path d="M 32 58 L 10 34 L 54 34 Z" fill="#18c590" opacity="0.3"/>
+                <line x1="10" y1="34" x2="54" y2="34" stroke="#18c590" stroke-width="3"/>
+              </svg>
+              <div class="corner-meta" style="color:#18c590;">Aark · ABOVE<br>THE NOISE</div>
+            </div>
+            <div>
+              <div class="name" style="font-family:'Space Grotesk',sans-serif;color:#fff;">楊志強</div>
+              <div class="title" style="color:rgba(255,255,255,0.7);">創辦人 · 優勢方舟數位行銷</div>
+              <div class="contact" style="color:rgba(255,255,255,0.55);">mark6465@gmail.com<br>+886 6 XXX-XXXX<br>a-ark.com.tw</div>
+            </div>
+          </div>
+          <div class="biz-card back">
+            <div class="top">
+              <span class="tagline">LLMO MONITORING</span>
+              <svg viewBox="0 0 64 64" fill="none" style="width:26px;height:26px;">
+                <path d="M 32 6 L 10 34 L 54 34 Z" fill="#000"/>
+                <path d="M 32 58 L 10 34 L 54 34 Z" fill="#000" opacity="0.35"/>
+                <line x1="10" y1="34" x2="54" y2="34" stroke="#000" stroke-width="3"/>
+              </svg>
+            </div>
+            <div class="wordmark-big" style="font-family:'Space Grotesk',sans-serif;font-weight:800;letter-spacing:-0.05em;">Aark</div>
+            <div style="font-family:'JetBrains Mono', monospace; font-size:9px; opacity:0.7; letter-spacing:0.12em;">ABOVE THE NOISE FLOOR</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup-row-2">
+        <div class="report-cover">
+          <div class="top">
+            <svg viewBox="0 0 64 64" fill="none">
+              <path d="M 32 6 L 10 34 L 54 34 Z" fill="#18c590"/>
+              <path d="M 32 58 L 10 34 L 54 34 Z" fill="#18c590" opacity="0.3"/>
+              <line x1="10" y1="34" x2="54" y2="34" stroke="#18c590" stroke-width="3"/>
+            </svg>
+            <div class="date">REPORT · 2026.06</div>
+          </div>
+          <div class="center">
+            <div class="badge">LLMO MONITORING</div>
+            <div class="title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.025em;">AI Visibility<br>Audit Report</div>
+            <div class="ch-title">AI 能見度<br>檢測報告</div>
+          </div>
+          <div class="client">
+            CLIENT<br>
+            <strong>kimbo3899.com.tw</strong><br>
+            BY <strong>優勢方舟數位行銷</strong>
+          </div>
+        </div>
+
+        <div class="og-image">
+          <div class="top-row">
+            <div class="og-logo">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M 32 6 L 10 34 L 54 34 Z" fill="#18c590"/>
+                <path d="M 32 58 L 10 34 L 54 34 Z" fill="#18c590" opacity="0.3"/>
+                <line x1="10" y1="34" x2="54" y2="34" stroke="#18c590" stroke-width="3"/>
+              </svg>
+              <span class="name" style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">Aark</span>
+            </div>
+            <div class="og-url">a-ark.com.tw</div>
+          </div>
+          <div class="center-text">
+            <div class="headline">浮出 AI 雜訊<br><em>的水面</em>。</div>
+            <div class="sub">方舟 AI 雷達 · LLMO 監測平台</div>
+          </div>
+          <div class="bottom-row">
+            <div class="signal-chips">
+              <span>SEO</span><span>AEO</span><span>GEO</span><span>E-E-A-T</span><span style="color:#18c590;border-color:#18c590;">aivis</span>
+            </div>
+            <span>60 秒免費檢測</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="philosophy-block">
+      <div class="quote">「<em>水面之上，AI 之眼</em>。」</div>
+      <div class="meta">DESIGN PHILOSOPHY · DIRECTION F</div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- Page indicator dots                                              -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<div class="page-dots">
+  <button class="active" data-page="0"><span class="marker"></span>A · 雙 chevron</button>
+  <button data-page="1"><span class="marker"></span>B · 方舟敘事</button>
+  <button data-page="2"><span class="marker"></span>C · 雷達 dial</button>
+  <button data-page="3"><span class="marker"></span>D · 字母 A</button>
+  <button data-page="4"><span class="marker"></span>E · 5 訊號條</button>
+  <button data-page="5"><span class="marker"></span>F · 切分鑽石</button>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── -->
+<!-- Navigation script                                                -->
+<!-- ─────────────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  const directions = document.querySelectorAll('.direction');
+  const dots = document.querySelectorAll('.page-dots button');
+  const prev = document.getElementById('navPrev');
+  const next = document.getElementById('navNext');
+  const STORAGE_KEY = 'aark-logo-exploration-page';
+
+  // URL hash takes priority (for screenshot / share), then localStorage
+  let current = 0;
+  const hashMatch = window.location.hash.match(/^#([0-5])$/);
+  if (hashMatch) {
+    current = parseInt(hashMatch[1], 10);
+  } else {
+    const stored = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+    if (!isNaN(stored) && stored >= 0 && stored < directions.length) current = stored;
+  }
+  show(current);
+
+  function updateEdgeNav() {
+    prev.style.opacity = current === 0 ? '0.3' : '1';
+    next.style.opacity = current === directions.length - 1 ? '0.3' : '1';
+  }
+
+  function show(idx) {
+    current = Math.max(0, Math.min(directions.length - 1, idx));
+    directions.forEach((d, i) => d.classList.toggle('active', i === current));
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    localStorage.setItem(STORAGE_KEY, String(current));
+    updateEdgeNav();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  prev.addEventListener('click', () => show(current - 1));
+  next.addEventListener('click', () => show(current + 1));
+  dots.forEach((d, i) => d.addEventListener('click', () => show(i)));
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); show(current + 1); }
+    else if (e.key === '1') show(0);
+    else if (e.key === '2') show(1);
+    else if (e.key === '3') show(2);
+    else if (e.key === '4') show(3);
+    else if (e.key === '5') show(4);
+    else if (e.key === '6') show(5);
+  });
+
+  // Initial edge state
+  updateEdgeNav();
+})();
+</script>
+
+</body>
+</html>

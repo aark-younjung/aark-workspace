@@ -26,8 +26,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { buildPaymentForm, generateOrderNo } from '../lib/newebpay.js'
-import { isTestOrder } from '../lib/test-detect.js'
+import { buildPaymentForm, generateOrderNo } from '../_lib/newebpay.js'
+import { isTestOrder } from '../_lib/test-detect.js'
 
 const PACK_SPEC = {
   small: { amount: 490, quota: 300, label: 'aivis Top-up 小包 加購 300 次' },

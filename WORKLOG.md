@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-06-10（🔥 修 Vercel Hobby 12 function 上限爆界 — deploy 連環失敗根因）
+
+**問題：** brand-mentions MVP（604acb2）起、連續 3 個 commit deploy 全 fail、Production 卡在 1fc7e27。錯誤訊息：`No more than 12 Serverless Functions can be added on the Hobby plan`。
+
+**根因（查 git 才看懂）：** `api/` 下實際有 14 個 .js（含 `api/lib/` 2 個 helper）。Vercel 把每個 `api/**/*.js` 都算 function、lib 也算。先前 deploy 能過是靠 **build cache 沒嚴格重算**；brand-mentions 強制 fresh rebuild 後嚴格計數 = 15 > 12 爆界。我第一次「合併 brand-mentions 進 public.js」只退回 14、仍超標、所以還是 fail。
+
+**bulletproof 修法（降到 11 個、留 1 餘裕）：**
+1. **`api/lib/` → `api/_lib/`**：Vercel 忽略 `_` 開頭的檔/目錄、2 個 helper 確定不計數。修 5 個 import path（checkout-topup-newebpay / checkout-pro-yearly-newebpay / newebpay-notify）。
+2. **`api/indexnow-ping.js` 合併進 `api/public.js`**：`?action=indexnow-ping`（POST）、刪原檔。Dashboard.jsx fetch URL 同步改。public.js method guard 放行 GET + POST。
+
+**結果：** Vercel 計數 function 從 15 → **11**（11 routable + 2 個 _lib 忽略）。
+
+**累計合併進 public.js 的 endpoint：** stats / llms / aivis-trends / brand-mentions / indexnow-ping（5 合 1）。
+
+**教訓（記憶點）：** Vercel Hobby function 上限是 12、`api/**` 全算（含子目錄 helper）。helper 一律放 `api/_lib/`（底線開頭）才不佔額度。新增 endpoint 前先 `find api -name "*.js" -not -path "*/_lib/*" | wc -l` 確認沒爆。
+
+---
+
 ### 2026-06-10（aivis Gemini 整合 — 跨 LLM 監測從 1 個升 2 個）
 
 **動機：** CLAUDE.md 寫 aivis 監測「5 個 LLM」、實際 [api/aivis/fetch.js](api/aivis/fetch.js) 只接 Claude。配合用戶申請 Google API 一次性把 Gemini 加進去、aivis 從半成品升級為「Claude + Gemini」雙 LLM 監測。

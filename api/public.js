@@ -55,8 +55,17 @@ function hashIp(ip) {
 // ───────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  // 2026-06-10：indexnow-ping 用 POST、其餘 action 用 GET、所以放行兩者
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
+
+  const action = (req.query.action || '').toString()
+
+  // indexnow-ping（POST、不需 supabase）先處理 — 2026-06-10 從 /api/indexnow-ping 合併進來、省 1 個 function
+  if (action === 'indexnow-ping') return handleIndexnowPing(req, res)
+
+  // 其餘 action 一律 GET
   if (req.method !== 'GET') return res.status(405).send('Method not allowed')
 
   const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
@@ -66,12 +75,38 @@ export default async function handler(req, res) {
   }
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-  const action = (req.query.action || '').toString()
   if (action === 'stats') return handleStats(req, res, supabase)
   if (action === 'llms') return handleLlms(req, res, supabase)
   if (action === 'aivis-trends') return handleAivisTrends(req, res, supabase)
   if (action === 'brand-mentions') return handleBrandMentions(req, res)  // 不需 supabase、不傳
-  return res.status(400).json({ error: 'Missing or invalid action (expected: stats | llms | aivis-trends | brand-mentions)' })
+  return res.status(400).json({ error: 'Missing or invalid action (expected: stats | llms | aivis-trends | brand-mentions | indexnow-ping)' })
+}
+
+// ───────────────────────────────────────────────────────────
+// action=indexnow-ping — 通知 Google / Bing 重新抓 sitemap（2026-06-10 從 /api/indexnow-ping 合併進來）
+//   POST body: { url }
+// ───────────────────────────────────────────────────────────
+async function handleIndexnowPing(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed (POST only)' })
+  const { url } = req.body || {}
+  if (!url) return res.status(400).json({ error: 'URL required' })
+
+  try {
+    const baseUrl = url.replace(/\/$/, '')
+    const sitemapUrl = encodeURIComponent(`${baseUrl}/sitemap.xml`)
+    const [googleRes, bingRes] = await Promise.allSettled([
+      fetch(`https://www.google.com/ping?sitemap=${sitemapUrl}`, { method: 'GET' }),
+      fetch(`https://www.bing.com/ping?sitemap=${sitemapUrl}`, { method: 'GET' }),
+    ])
+    return res.json({
+      success: true,
+      google: googleRes.status === 'fulfilled' ? googleRes.value.status : 'error',
+      bing: bingRes.status === 'fulfilled' ? bingRes.value.status : 'error',
+      pingedAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    return res.status(500).json({ error: error.message })
+  }
 }
 
 // ───────────────────────────────────────────────────────────

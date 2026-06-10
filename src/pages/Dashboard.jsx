@@ -484,7 +484,8 @@ export default function Dashboard() {
     setPinging(true)
     setPingResult(null)
     try {
-      const res = await fetch('/api/indexnow-ping', {
+      // 2026-06-10：合併進 /api/public?action=indexnow-ping（Vercel Hobby 12 function 上限）
+      const res = await fetch('/api/public?action=indexnow-ping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: website.url }),

@@ -41,7 +41,7 @@
 
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
-import { parseNotifyPayload, parsePeriodNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization, requestPeriodTerminate, aesEncrypt, aesDecrypt } from './lib/newebpay.js'
+import { parseNotifyPayload, parsePeriodNotifyPayload, requestCreditCardRefund, cancelCreditCardAuthorization, requestPeriodTerminate, aesEncrypt, aesDecrypt } from './_lib/newebpay.js'
 
 // 關閉 Vercel 預設 bodyParser — NewebPay NPA NotifyURL 用 multipart/form-data，預設 parser 不認識會留 req.body 空
 // 改成自己手動讀 stream，依 content-type 分支 parse 3 種：

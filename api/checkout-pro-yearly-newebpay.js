@@ -33,8 +33,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { buildPaymentForm, buildPeriodForm, generateOrderNo } from './lib/newebpay.js'
-import { isTestOrder } from './lib/test-detect.js'
+import { buildPaymentForm, buildPeriodForm, generateOrderNo } from './_lib/newebpay.js'
+import { isTestOrder } from './_lib/test-detect.js'
 
 const PLAN_SPEC = {
   yearly: {
