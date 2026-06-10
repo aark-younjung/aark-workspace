@@ -219,19 +219,44 @@ export default async function handler(req, res) {
       const claudePosition = claudeMentioned ? findListPosition(claudeRes.text, brandName) : null
       const claudeContext = claudeMentioned ? extractContext(claudeRes.text, brandName) : null
 
-      // ─── Gemini 結果（額外、寫 gemini_ 欄；失敗就留 null） ───
+      // ─── Gemini 結果（額外引擎） ───
       let geminiMentioned = null
       let geminiCost = 0
+      let geminiPosition = null
       let geminiText = null
       if (geminiRes && geminiRes.ok) {
         geminiCost = geminiRes.inputTokens * GEMINI_PRICE_INPUT_PER_TOKEN + geminiRes.outputTokens * GEMINI_PRICE_OUTPUT_PER_TOKEN
         geminiMentioned = detectMention(geminiRes.text, brandName)
+        geminiPosition = geminiMentioned ? findListPosition(geminiRes.text, brandName) : null
         geminiText = geminiRes.text
       } else if (geminiRes && !geminiRes.ok) {
         console.warn(`Gemini call failed for run ${i}:`, geminiRes.error)
       }
 
-      // 單寫一筆：Claude 在主欄、Gemini 在 gemini_ 欄
+      // ─── engine_results JSONB（2026-06-10 路線 B：可擴充 N 引擎） ───
+      // 1 row = 1 scan、所有引擎結果存同一筆的 engine_results。之後加 ChatGPT/Perplexity
+      // 只要在這多塞一個 key、dashboard 自動列出、不用改 schema 也不用改 UI。
+      //   結構：{ <engine>: { mentioned, position, cost_usd, raw } }
+      // 主欄（model / raw_response / brand_mentioned / cost_usd）仍寫 Claude — 給額度計數、
+      // mention 表、舊資料相容用（Claude = 主引擎）。
+      const engineResults = {
+        claude: {
+          mentioned: claudeMentioned,
+          position: claudePosition,
+          cost_usd: claudeCost,
+          raw: claudeRes.text,
+        },
+      }
+      if (geminiRes && geminiRes.ok) {
+        engineResults.gemini = {
+          mentioned: geminiMentioned,
+          position: geminiPosition,
+          cost_usd: geminiCost,
+          raw: geminiText,
+        }
+      }
+
+      // 單寫一筆：Claude 在主欄 + engine_results JSONB
       const { data: row, error: insErr } = await supabase
         .from('aivis_responses')
         .insert({
@@ -245,10 +270,7 @@ export default async function handler(req, res) {
           output_tokens: claudeRes.outputTokens,
           cost_usd: claudeCost,
           brand_mentioned: claudeMentioned,
-          // Gemini 額外欄（需先跑 ALTER TABLE 加這 3 欄；沒 useGemini 時全 null）
-          gemini_raw_response: geminiText,
-          gemini_brand_mentioned: geminiMentioned,
-          gemini_cost_usd: geminiCost || null,
+          engine_results: engineResults,
         })
         .select('id')
         .single()

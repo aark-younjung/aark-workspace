@@ -24,6 +24,27 @@
 
 ---
 
+### 2026-06-10（aivis 路線 B：engine_results JSONB — 可擴充 N 引擎 + 分引擎顯示）
+
+**動機：** 用戶要「分引擎看」（Claude vs Gemini 各自被提及/沒提及）、且未來要擴充到 5 個 LLM。前一版用 gemini_ 欄不可擴充（5 引擎 = 15 欄）。
+
+**架構：engine_results JSONB（1 row = 1 scan 不變）**
+- `aivis_responses` 加 `engine_results JSONB`、drop 上一版的 3 個 gemini_ 欄（用戶端跑 SQL）
+- 結構：`{ claude: {mentioned, position, cost_usd, raw}, gemini: {...}, ... }`、之後加 ChatGPT/Perplexity 只要多塞 key、schema + UI 都不用改
+- 主欄（model/raw_response/brand_mentioned/cost_usd）仍 = Claude、給額度/mention 表/舊資料相容
+- [api/aivis/fetch.js](api/aivis/fetch.js)：Claude + Gemini 並行 → 組 engine_results 單寫一筆
+- [src/pages/AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：
+  - `ENGINE_META`（label + 色、預留 5 引擎）+ `normEngineResults`（舊資料 engine_results=null 自動合成 claude-only）
+  - 動態 `perEngine` 聚合（自動列出所有出現過的引擎）
+  - 概況卡 sub 動態顯示「Claude X% · Gemini Y%」、逐次結果每引擎一顆 ✓/✗ chip、展開分引擎原文
+
+**對抗式 review（5-agent workflow）：** 15 findings、彙整逐條讀檔反證後 = 14 誤報 + 1 真實低衝擊。
+- 唯一真問題：dashboard 月初用本地時間、fetch.js 用 UTC、差 8 小時 → 只影響每月交界「顯示」用量、不影響後端權威額度。**已修**（兩處月初對齊 UTC）。
+
+**待用戶：** 跑 `ALTER TABLE ... ADD engine_results JSONB + DROP gemini_*`（見回覆）。
+
+---
+
 ### 2026-06-10（aivis Gemini 改單寫架構 — 修額度雙重計算 bug）
 
 **問題：** 前一版 Gemini 整合「每次掃描雙寫 2 筆 aivis_responses（Claude + Gemini）」、但整個 dashboard + 額度系統建立在「1 row = 1 scan」假設上。雙寫導致：額度翻倍（150 次只能掃 75 次）、totalRuns / 曝光率 / avgPos / 本月提及 / 趨勢圖 / 歷史紀錄全部被多出的 row 汙染。對付費客戶是隱患。

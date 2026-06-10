@@ -55,6 +55,36 @@ const AIVIS_TEAL_DEEP = '#0d7a58'
 const PROMPT_CAP = 10
 const SCAN_RUNS = 3 // 每條 prompt 跑幾次取平均
 
+// ─── 多引擎顯示（2026-06-10 路線 B：engine_results JSONB） ───
+// 顯示名稱 + 配色。之後加 ChatGPT / Perplexity / Grok 只要在這加一行、其餘自動長出來。
+const ENGINE_META = {
+  claude:     { label: 'Claude',     color: '#d97757' },  // Anthropic 橘
+  gemini:     { label: 'Gemini',     color: '#4285f4' },  // Google 藍
+  chatgpt:    { label: 'ChatGPT',    color: '#10a37f' },  // OpenAI 綠（預留）
+  perplexity: { label: 'Perplexity', color: '#20b8cd' },  // 預留
+  grok:       { label: 'Grok',       color: '#888888' },  // 預留
+}
+function engineLabel(key) { return ENGINE_META[key]?.label || key }
+function engineColor(key) { return ENGINE_META[key]?.color || T.textMid }
+
+// 把一筆 response 正規化成 engine_results 形狀（含舊資料相容）。
+//   有 engine_results JSONB → 直接用。
+//   舊資料（engine_results 為 null）→ 用主欄合成 claude-only（mentioned 取 brand_mentioned、position 取 mentions 表）。
+// 回傳 { claude: { mentioned, position, cost_usd, raw }, gemini?: {...}, ... }
+function normEngineResults(r, mentionByRespId) {
+  if (r.engine_results && typeof r.engine_results === 'object' && Object.keys(r.engine_results).length > 0) {
+    return r.engine_results
+  }
+  return {
+    claude: {
+      mentioned: !!r.brand_mentioned,
+      position: mentionByRespId?.[r.id]?.position ?? null,
+      cost_usd: r.cost_usd ?? null,
+      raw: r.raw_response ?? null,
+    },
+  }
+}
+
 // 月查詢額度（與 Pricing.jsx aivisIncludedPerMonth=150 / Top-up hard cap 1000 同步）
 // - AIVIS_QUOTA_PER_MONTH：Pro 訂閱每月內含 150 次（每月 1 號歸零）
 // - AIVIS_HARD_CAP：內含 + Top-up 合計每月硬上限 1,000 次（避免毛利血崩）
@@ -210,11 +240,14 @@ export default function AIVisibilityDashboard() {
 
       // 4. 抓 30 天內的 responses + mentions（brand-scope）+ 本月 user-scope 查詢計數（額度判斷用）
       const since = new Date(Date.now() - 30 * 86400_000).toISOString()
-      const monthStartIso = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+      // 2026-06-10：月初用 UTC 算、對齊後端 fetch.js（setUTCDate(1)+setUTCHours(0)）。
+      // 之前用本地時間建月初、台灣 UTC+8 會差 8 小時、每月交界顯示用量與後端權威數字短暫不一致。
+      const _ms = new Date(); _ms.setUTCDate(1); _ms.setUTCHours(0, 0, 0, 0)
+      const monthStartIso = _ms.toISOString()
       const [respRes, mentRes, userMonthRes] = await Promise.all([
-        // 2026-06-10：多抓 gemini_brand_mentioned 欄、用來算 Gemini 引擎提及率（單寫架構、1 row = 1 scan）
+        // 2026-06-10 路線 B：抓 engine_results JSONB、算各引擎（Claude / Gemini / …）提及率
         supabase.from('aivis_responses')
-          .select('id, prompt_id, run_index, raw_response, brand_mentioned, cost_usd, created_at, gemini_brand_mentioned')
+          .select('id, prompt_id, run_index, raw_response, brand_mentioned, cost_usd, created_at, engine_results')
           .eq('brand_id', id).gte('created_at', since).order('created_at', { ascending: false }),
         supabase.from('aivis_mentions')
           .select('response_id, position, context, created_at')
@@ -259,16 +292,41 @@ export default function AIVisibilityDashboard() {
   const plannedRuns = activeCount * SCAN_RUNS                                        // 本次掃描預計花幾次
   const wouldExceedHard = userMonthQueries + plannedRuns > AIVIS_HARD_CAP            // 掃下去會破 1000
 
-  // 30 天內 mention rate 概況（主指標 = Claude、既有欄位 brand_mentioned、1 row = 1 scan）
+  // mentions 表 by response_id（給舊資料合成 position + 給 byPrompt 用）
+  const mentionByRespId = useMemo(() => {
+    const m = {}
+    for (const x of mentions) { if (!(x.response_id in m)) m[x.response_id] = x }
+    return m
+  }, [mentions])
+
+  // 30 天內 mention rate 概況
+  // 主指標 = Claude（既有欄位 brand_mentioned、1 row = 1 scan，給 headline + 趨勢沿用）
   const totalRuns = responses.length
   const mentionedRuns = responses.filter(r => r.brand_mentioned).length
   const exposureRate = totalRuns > 0 ? Math.round(mentionedRuns / totalRuns * 100) : 0
-  // 2026-06-10：Gemini 引擎提及率 — 從同筆 row 的 gemini_brand_mentioned 欄算（只含有跑 Gemini 的筆）
-  //   gemini_brand_mentioned 為 null = 那次沒跑 Gemini（舊資料 / Gemini 失敗）→ 不計入分母
-  const geminiRows = responses.filter(r => r.gemini_brand_mentioned !== null && r.gemini_brand_mentioned !== undefined)
-  const geminiRuns = geminiRows.length
-  const geminiMentioned = geminiRows.filter(r => r.gemini_brand_mentioned).length
-  const geminiExposureRate = geminiRuns > 0 ? Math.round(geminiMentioned / geminiRuns * 100) : null
+
+  // 2026-06-10 路線 B：動態 per-engine 聚合 — 自動列出所有出現過的引擎（claude / gemini / 未來更多）
+  //   每個引擎只在「有跑過該引擎」的筆數內算提及率（分母 = 該引擎實際有結果的次數）
+  const perEngine = useMemo(() => {
+    const acc = {} // { engine: { total, mentioned } }
+    for (const r of responses) {
+      const er = normEngineResults(r, mentionByRespId)
+      for (const [key, val] of Object.entries(er)) {
+        if (!val) continue
+        if (!acc[key]) acc[key] = { total: 0, mentioned: 0 }
+        acc[key].total += 1
+        if (val.mentioned) acc[key].mentioned += 1
+      }
+    }
+    // 算 rate + 排序（claude 優先、其餘按出現順序）
+    const order = ['claude', 'gemini', 'chatgpt', 'perplexity', 'grok']
+    return Object.entries(acc)
+      .map(([key, v]) => ({ key, ...v, rate: v.total > 0 ? Math.round(v.mentioned / v.total * 100) : 0 }))
+      .sort((a, b) => (order.indexOf(a.key) + 1 || 99) - (order.indexOf(b.key) + 1 || 99))
+  }, [responses, mentionByRespId])
+
+  // 是否多引擎（>1 個引擎有資料）→ 決定要不要顯示分引擎對照
+  const multiEngine = perEngine.length > 1
 
   // 平均出現位置（mentions 表的 position）
   const positions = mentions.map(m => m.position).filter(p => p != null)
@@ -279,7 +337,8 @@ export default function AIVisibilityDashboard() {
 
   // 本月新增提及次數（被 AI 提到才計入）
   const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  const _monthStart = new Date(); _monthStart.setUTCDate(1); _monthStart.setUTCHours(0, 0, 0, 0)
+  const monthStart = _monthStart.toISOString()  // UTC 月初、對齊後端
   const monthMentions = responses.filter(r => r.created_at >= monthStart && r.brand_mentioned).length
 
   // 30 天趨勢資料（每日 mention rate）
@@ -342,16 +401,17 @@ export default function AIVisibilityDashboard() {
       const m = mentions.find(x => x.response_id === r.id)
       byPrompt[r.prompt_id].runs.push({
         run_index: r.run_index,
-        mentioned: r.brand_mentioned,
+        mentioned: r.brand_mentioned,           // Claude 主（向下相容）
         position: m?.position ?? null,
-        snippet: r.raw_response,
+        snippet: r.raw_response,                // Claude 原文（向下相容）
+        engines: normEngineResults(r, mentionByRespId),  // 2026-06-10：per-engine 明細
       })
     }
     return Object.values(byPrompt).map(o => ({
       ...o,
       runs: o.runs.sort((a, b) => a.run_index - b.run_index),
     }))
-  }, [activeHistoryDay, responses, mentions, prompts])
+  }, [activeHistoryDay, responses, mentions, prompts, mentionByRespId])
 
   // ---------- 操作：Prompt CRUD ----------
   async function togglePrompt(p) {
@@ -590,17 +650,17 @@ export default function AIVisibilityDashboard() {
             ))
           ) : (
             <>
-              {/* 2026-06-10：品牌曝光率主數字 = Claude；有 Gemini 資料時 sub 顯示雙引擎對照 */}
+              {/* 2026-06-10 路線 B：品牌曝光率主數字 = Claude；多引擎時 sub 動態列出各引擎提及率 */}
               <OverviewCard icon="📊" label="品牌曝光率" value={exposureRate} suffix="%"
-                sub={geminiExposureRate !== null
-                  ? `Claude ${exposureRate}% · Gemini ${geminiExposureRate}%（過去 30 天）`
+                sub={multiEngine
+                  ? perEngine.map(e => `${engineLabel(e.key)} ${e.rate}%`).join(' · ') + '（過去 30 天）'
                   : `過去 30 天提及 ${mentionedRuns}/${totalRuns} 次`}
                 color={AIVIS_TEAL} highlight />
               <OverviewCard icon="🥇" label="平均出現位置" value={avgPos > 0 ? avgPos : '—'}
                 prefix={avgPos > 0 ? '第 ' : ''} suffix={avgPos > 0 ? ' 名' : ''}
                 sub="被提到時通常的排名" color={AIVIS_TEAL} />
               <OverviewCard icon="🔄" label="已掃描次數" value={scanCount} suffix=" 次"
-                sub={geminiRuns > 0 ? `跨 Claude + Gemini 雙引擎監測` : '累積掃描次數'} color={T.textMid} />
+                sub={multiEngine ? `跨 ${perEngine.length} 個 AI 引擎監測` : '累積掃描次數'} color={T.textMid} />
               <OverviewCard icon="✨" label="本月新增提及" value={monthMentions} suffix=" 次"
                 sub="AI 在本月回答中提到品牌的次數" color={T.orange} />
             </>
@@ -1443,23 +1503,34 @@ function RecentResults({
                   {r.runs.map((run, i) => {
                     const k = `${r.promptId}-${i}`
                     const open = expandedRun[k]
+                    // 2026-06-10 路線 B：逐次顯示各引擎 ✓/✗ chip + 展開看各引擎原文
+                    const engineEntries = Object.entries(run.engines || {})
+                    const anyMentioned = engineEntries.some(([, v]) => v?.mentioned)
                     return (
                       <div key={i} style={{
                         background: 'rgba(0,6,10,.55)',
-                        border: `1px solid ${run.mentioned ? AIVIS_TEAL + '25' : 'rgba(255,255,255,.06)'}`,
+                        border: `1px solid ${anyMentioned ? AIVIS_TEAL + '25' : 'rgba(255,255,255,.06)'}`,
                         borderRadius: 8, padding: '10px 12px',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          <span style={{
-                            fontSize: 14, fontWeight: 700,
-                            color: run.mentioned ? AIVIS_TEAL : T.fail,
-                          }}>{run.mentioned ? '✓' : '✕'}</span>
                           <span style={{ fontSize: 14, color: T.textMid, fontWeight: 600 }}>第 {run.run_index} 次</span>
-                          <span style={{ fontSize: 14, color: T.text }}>
-                            {run.mentioned
-                              ? <>有提到「<span style={{ color: AIVIS_TEAL, fontWeight: 700 }}>{brandHighlight}</span>」{run.position && <> · 出現位置 #{run.position}</>}</>
-                              : '未提及'}
-                          </span>
+                          {/* 每個引擎一顆 chip：底色用引擎色、✓ 提及 / ✕ 未提及 */}
+                          {engineEntries.map(([key, v]) => {
+                            const col = engineColor(key)
+                            const hit = !!v?.mentioned
+                            return (
+                              <span key={key} style={{
+                                fontSize: 13, fontWeight: 600, padding: '2px 9px', borderRadius: 99,
+                                background: hit ? col + '22' : 'rgba(255,255,255,.04)',
+                                border: `1px solid ${hit ? col + '55' : 'rgba(255,255,255,.10)'}`,
+                                color: hit ? col : T.textLow,
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                              }}>
+                                {engineLabel(key)} {hit ? '✓' : '✕'}
+                                {hit && v.position ? <span style={{ opacity: .8 }}>#{v.position}</span> : null}
+                              </span>
+                            )
+                          })}
                           <button onClick={() => toggleRunExpand(r.promptId, i)} style={{
                             marginLeft: 'auto', background: 'transparent',
                             border: '1px solid rgba(255,255,255,.12)', color: T.textMid,
@@ -1468,14 +1539,23 @@ function RecentResults({
                           }}>{open ? '收合 ▲' : '展開原文 ▼'}</button>
                         </div>
                         {open && (
-                          <div style={{
-                            marginTop: 10, padding: '10px 12px',
-                            background: 'rgba(0,0,0,.3)', borderRadius: 6,
-                            borderLeft: `2px solid ${run.mentioned ? AIVIS_TEAL : 'rgba(255,255,255,.15)'}`,
-                            fontSize: 14, color: T.textMid, lineHeight: 1.7,
-                            whiteSpace: 'pre-wrap', maxHeight: 280, overflowY: 'auto',
-                          }}>
-                            {highlightBrandAuto(run.snippet, brandHighlight)}
+                          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {/* 每個引擎各自一段原文 */}
+                            {engineEntries.map(([key, v]) => (
+                              <div key={key}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: engineColor(key), marginBottom: 4 }}>
+                                  {engineLabel(key)} 原文
+                                </div>
+                                <div style={{
+                                  padding: '10px 12px', background: 'rgba(0,0,0,.3)', borderRadius: 6,
+                                  borderLeft: `2px solid ${v?.mentioned ? engineColor(key) : 'rgba(255,255,255,.15)'}`,
+                                  fontSize: 14, color: T.textMid, lineHeight: 1.7,
+                                  whiteSpace: 'pre-wrap', maxHeight: 280, overflowY: 'auto',
+                                }}>
+                                  {v?.raw ? highlightBrandAuto(v.raw, brandHighlight) : '（無原文）'}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
