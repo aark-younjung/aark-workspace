@@ -1332,7 +1332,8 @@ function iconBtn() {
 // TrendChart（30 天提及率折線圖 + hover tooltip）
 // =====================================================
 function TrendChart({ data }) {
-  const W = 380, H = 220, padL = 38, padR = 14, padT = 22, padB = 28
+  // 全寬呈現：用寬扁 viewBox（760×200，~3.8:1），避免 SVG 依寬度等比放大導致高度過高、軸標籤過大
+  const W = 760, H = 200, padL = 44, padR = 16, padT = 22, padB = 30
   const innerW = W - padL - padR, innerH = H - padT - padB
   const maxY = 100, minY = 0
   const xStep = innerW / Math.max(1, data.length - 1)
@@ -1551,7 +1552,7 @@ function RecentResults({
         <div style={{
           fontSize: 14, fontWeight: 700, color: T.textLow, letterSpacing: '.14em',
           marginBottom: 8, textTransform: 'uppercase',
-        }}>最近 {history.length} 次掃描</div>
+        }}>最近 {history.length} 次掃描結果</div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {history.map(h => {
             const isActive = h.id === activeHistoryId
@@ -1593,7 +1594,18 @@ function RecentResults({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {results.map(r => {
-          const mentions = r.runs.filter(x => x.mentioned).length
+          // 每引擎提及率（取代原本只看 Claude 的單一數字）—
+          // Gemini 提到但 Claude 沒提到時，不再誤顯示 0
+          const perEng = {}
+          for (const run of r.runs) {
+            for (const [k, v] of Object.entries(run.engines || {})) {
+              if (!v) continue
+              if (!perEng[k]) perEng[k] = { m: 0, t: 0 }
+              perEng[k].t += 1
+              if (v.mentioned) perEng[k].m += 1
+            }
+          }
+          const perEngArr = Object.entries(perEng)
           const isOpen = expandedPrompt === r.promptId
           return (
             <div key={r.promptId} style={{
@@ -1610,12 +1622,21 @@ function RecentResults({
                 }}>
                 <span style={{ fontSize: 14 }}>📋</span>
                 <span style={{ flex: 1, fontSize: 14, color: T.text, lineHeight: 1.5 }}>「{r.promptText}」</span>
-                <span style={{
-                  fontSize: 14, fontWeight: 700,
-                  color: mentions >= 2 ? AIVIS_TEAL : (mentions === 1 ? T.warn : T.fail),
-                  background: (mentions >= 2 ? AIVIS_TEAL : (mentions === 1 ? T.warn : T.fail)) + '18',
-                  padding: '3px 9px', borderRadius: 5, whiteSpace: 'nowrap',
-                }}>提及率 {mentions}/{r.runs.length}</span>
+                <span style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flexShrink: 0 }}>
+                  {perEngArr.map(([k, e]) => {
+                    const hit = e.m > 0
+                    const col = engineColor(k)
+                    return (
+                      <span key={k} title={`${engineLabel(k)} 提及 ${e.m}/${e.t} 次`} style={{
+                        fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
+                        color: hit ? col : T.textLow,
+                        background: hit ? col + '20' : 'rgba(255,255,255,.04)',
+                        border: `1px solid ${hit ? col + '45' : 'rgba(255,255,255,.10)'}`,
+                        padding: '3px 9px', borderRadius: 5,
+                      }}>{engineLabel(k)} {e.m}/{e.t}</span>
+                    )
+                  })}
+                </span>
                 <svg width="11" height="11" viewBox="0 0 11 11" style={{
                   transform: isOpen ? 'rotate(180deg)' : 'rotate(0)',
                   transition: 'transform .2s', flexShrink: 0,
