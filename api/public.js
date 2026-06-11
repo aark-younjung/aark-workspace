@@ -138,10 +138,11 @@ async function handleBrandMentions(req, res) {
   const cleanDomain = excludeDomain
     .replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '')
 
-  // 用 Gemini 接地（Google Search）查品牌在網路上的外部提及來源
-  const prompt = `請用網路搜尋，找出「${brand}」這個品牌或公司在網路上被提及的外部來源` +
-    `（新聞報導、論壇討論、社群貼文、部落格、商家目錄、評論等），盡量列出多個不同網站的來源。` +
-    (cleanDomain ? `請排除來自 ${cleanDomain}（品牌自家網站）的頁面。` : '')
+  // 用 Gemini 接地（Google Search）查品牌的「第三方/獨立來源」提及（排除自家官方/社群/電商頁面）
+  const prompt = `請用網路搜尋，找出「${brand}」這個品牌或公司被「第三方、獨立來源」提及或討論的地方` +
+    `（例如：新聞報導、論壇討論、部落格評論、開箱 / 評測文章、媒體採訪等）。` +
+    `請「排除」品牌自己的官方網站、自家社群官方帳號（FB / IG / YouTube 官方頻道）、自家電商賣場（蝦皮 / momo / 官方賣場）等官方頁面，只列出「別人在談論這個品牌」的獨立來源，盡量列出多個不同網站。` +
+    (cleanDomain ? `特別排除來自 ${cleanDomain} 的頁面。` : '')
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${BRAND_MENTIONS_GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`
