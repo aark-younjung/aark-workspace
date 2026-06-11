@@ -13,6 +13,22 @@
  */
 
 /**
+ * 純 email 白名單判斷（不含沙盒條件）。
+ * 用於「測試帳號」相關判斷 — 例如 aivis 曝光監測額度無上限。
+ * Env: TEST_EMAILS="email1,email2,..."（逗號分隔）
+ * @param {string|null|undefined} email
+ * @returns {boolean} true 表示此 email 在測試名單內
+ */
+export function isTestEmail(email) {
+  if (!email) return false
+  const testEmails = (process.env.TEST_EMAILS || '')
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean)
+  return testEmails.includes(email.toLowerCase())
+}
+
+/**
  * @param {string|null|undefined} email - 下單用戶 email（可選）
  * @returns {boolean} true 表示應該標記為測試訂單
  */
@@ -21,11 +37,6 @@ export function isTestOrder(email) {
   const apiUrl = process.env.NEWEBPAY_API_URL || ''
   if (apiUrl.includes('ccore.newebpay.com')) return true
 
-  // 條件 2：測試 email 名單（env: TEST_EMAILS="email1,email2,..."）
-  if (!email) return false
-  const testEmails = (process.env.TEST_EMAILS || '')
-    .split(',')
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean)
-  return testEmails.includes(email.toLowerCase())
+  // 條件 2：測試 email 名單（env: TEST_EMAILS）
+  return isTestEmail(email)
 }

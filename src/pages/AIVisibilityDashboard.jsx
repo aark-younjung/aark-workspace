@@ -282,6 +282,14 @@ export default function AIVisibilityDashboard() {
   const activeCount = activePrompts.length
   const atCap = activeCount >= PROMPT_CAP
 
+  // 測試帳號（email 在 VITE_TEST_EMAILS 名單）→ 前端跳過額度攔截，與後端 TEST_EMAILS 對齊。
+  // 後端 fetch.js 已對測試帳號放行（hardCap=Infinity），這裡同步讓前端不要先擋下來。
+  const isTestAccount = useMemo(() => {
+    const list = (import.meta.env.VITE_TEST_EMAILS || '')
+      .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+    return !!user?.email && list.includes(user.email.toLowerCase())
+  }, [user])
+
   // ---------- 月查詢額度狀態 ----------
   // 給 banner / modal / runScan 攔截用，全部以 user-scope 計算（跨所有品牌）
   const remainingMonthly = Math.max(0, AIVIS_QUOTA_PER_MONTH - userMonthQueries)     // 還剩幾次內含
@@ -501,11 +509,12 @@ export default function AIVisibilityDashboard() {
       return
     }
     // 額度攔截：硬上限優先（連 Top-up 都救不了）→ 月內含上限（可加購）
-    if (atHardCap || wouldExceedHard) {
+    // 測試帳號（VITE_TEST_EMAILS）豁免，後端也已放行
+    if (!isTestAccount && (atHardCap || wouldExceedHard)) {
       setShowTopupModal('hard')
       return
     }
-    if (atSoftLimit) {
+    if (!isTestAccount && atSoftLimit) {
       setShowTopupModal('soft')
       return
     }
@@ -725,7 +734,7 @@ export default function AIVisibilityDashboard() {
               - 80%~99%：黃色提醒 + 「了解加購」按鈕（軟性 upsell）
               - 100%+：紅色警示 + 「立即加購」按鈕（硬性 upsell，掃描已被 runScan 攔住）
         ── */}
-        {!isLoading && atWarn && (
+        {!isLoading && atWarn && !isTestAccount && (
           <UsageBanner
             used={userMonthQueries}
             quota={AIVIS_QUOTA_PER_MONTH}

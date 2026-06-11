@@ -17,6 +17,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { isTestEmail } from '../_lib/test-detect.js'
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-haiku-4-5-20251001'
@@ -94,7 +95,7 @@ export default async function handler(req, res) {
     // 試用期計算起始也不一樣：付費 Pro 用 calendar month，試用用 trial_started_at
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .select('is_pro, is_trial, trial_started_at')
+      .select('is_pro, is_trial, trial_started_at, email')
       .eq('id', prompt.user_id)
       .maybeSingle()
 
@@ -102,16 +103,20 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to fetch profile', detail: profileErr.message })
     }
 
-    // 守衛：aivis 是 Pro 專屬功能；非 Pro 且非試用 → 403 拒絕
+    // 測試帳號（email 在 TEST_EMAILS 名單內）→ aivis 額度無上限、且免 Pro 守衛。
+    // 給內部 QA / 自己壓測用，不影響真實付費客戶。新增測試帳號只要把 email 加進 TEST_EMAILS env。
+    const isTestAccount = isTestEmail(profile?.email)
+
+    // 守衛：aivis 是 Pro 專屬功能；非 Pro 且非試用 → 403 拒絕（測試帳號豁免）
     // 防免費用戶（含 curl/Postman 繞 UI）直接戳 API 刷 AI 額度，造成商業模式失效 + 燒 Claude API 成本
     const isTrial = !!profile?.is_trial && !!profile?.trial_started_at
-    if (!profile?.is_pro && !isTrial) {
+    if (!profile?.is_pro && !isTrial && !isTestAccount) {
       return res.status(403).json({ error: 'AI 曝光監測為 Pro 功能，請先升級或啟用 7 天免費試用' })
     }
 
     const quotaLimit = isTrial ? AIVIS_QUOTA_PER_TRIAL : AIVIS_QUOTA_PER_MONTH
-    // 試用期硬上限 = quota（不開放 Top-up），付費 Pro 硬上限 = 1000
-    const hardCap = isTrial ? AIVIS_QUOTA_PER_TRIAL : AIVIS_HARD_CAP
+    // 試用期硬上限 = quota（不開放 Top-up），付費 Pro 硬上限 = 1000；測試帳號 = 無上限（Infinity）
+    const hardCap = isTestAccount ? Infinity : (isTrial ? AIVIS_QUOTA_PER_TRIAL : AIVIS_HARD_CAP)
 
     // 計數起始：試用期從 trial_started_at 起算（整個 7 天試用期合計），付費 Pro 從本月 1 日 UTC 起算
     let countSinceIso
@@ -175,8 +180,8 @@ export default async function handler(req, res) {
         })
       }
 
-      // 已用完內含額度 → 嘗試從 Top-up 扣 1 次（試用用戶跳過此路徑，hardCap = quota 已擋）
-      if (!isTrial && wouldBeNthQuery > AIVIS_QUOTA_PER_MONTH) {
+      // 已用完內含額度 → 嘗試從 Top-up 扣 1 次（試用用戶 + 測試帳號跳過此路徑）
+      if (!isTrial && !isTestAccount && wouldBeNthQuery > AIVIS_QUOTA_PER_MONTH) {
         const { data: consumed, error: consumeErr } = await supabase
           .rpc('aivis_consume_topup_credit', { p_user_id: prompt.user_id })
 
