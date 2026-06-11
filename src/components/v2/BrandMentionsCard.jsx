@@ -116,8 +116,8 @@ export default function BrandMentionsCard({ defaultBrand = '', defaultExcludeDom
           </span>
         </div>
         <p className="text-sm text-white/55 mt-2 leading-relaxed">
-          搜尋網路上有多少地方提到你的品牌（排除你自己網站）。
-          <strong className="text-white/85">外部提及次數是 AI 推薦你的關鍵訊號之一</strong>。
+          AI 即時搜尋時，會參考哪些地方在談你的品牌（排除你自己網站）。
+          <strong className="text-white/85">這些「AI 會參考的來源」是它推不推薦你的關鍵訊號</strong> — 想被推薦，就去這些來源爭取曝光。
         </p>
       </div>
 
@@ -212,7 +212,7 @@ function ResultSummary({ result }) {
       <div className="flex items-center gap-3 mb-2 flex-wrap">
         <span className="text-2xl">{style.emoji}</span>
         <div>
-          <div className="text-sm font-mono" style={{ color: style.text }}>網路提及次數</div>
+          <div className="text-sm font-mono" style={{ color: style.text }}>AI 參考來源</div>
           <div className="text-3xl font-bold text-white font-mono">{totalResults.toLocaleString()}</div>
         </div>
       </div>
