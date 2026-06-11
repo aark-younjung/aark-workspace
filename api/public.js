@@ -168,6 +168,8 @@ async function handleBrandMentions(req, res) {
         error: 'upstream_error',
         message: '品牌提及搜尋暫時無法使用（功能調整中），請稍後再試。',
         upstream_status: resp.status,
+        // 2026-06-11 暫時診斷：吐出 Google 的錯誤訊息以定位 403 根因（此訊息不含 key/cx、安全）。修好後移除。
+        upstream_message: upstreamMessage,
       })
     }
 
