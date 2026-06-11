@@ -152,10 +152,11 @@ async function handleBrandMentions(req, res) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${BRAND_MENTIONS_GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`
 
   try {
-    // 接地非確定性、偶爾整批回空 → 最多試 2 次、撈到來源就停。
-    // 避免「其實有提及卻回 0」被前端快取 24h、看起來像沒曝光。
+    // 接地非確定性、偶爾整批回空 → 最多試 3 次、撈到來源就停。
+    // 避免「其實有提及卻回 0」（實測單次約 4 成回空 → 3 次把假 0 機率壓到 ~10%）。
+    // 只有回空才會重試（有來源即刻回），所以正常查詢不會變慢。
     let items = []
-    for (let attempt = 0; attempt < 2 && items.length === 0; attempt++) {
+    for (let attempt = 0; attempt < 3 && items.length === 0; attempt++) {
       const resp = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
