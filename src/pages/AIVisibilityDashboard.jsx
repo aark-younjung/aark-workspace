@@ -307,11 +307,9 @@ export default function AIVisibilityDashboard() {
     return m
   }, [mentions])
 
-  // 30 天內 mention rate 概況
-  // 主指標 = Claude（既有欄位 brand_mentioned、1 row = 1 scan，給 headline + 趨勢沿用）
+  // 30 天內 mention rate 概況。主指標改為「接地引擎 Gemini」（最貼近用戶真實看到的）；
+  // 實際統計在下方 monthStart 之後的 primary 區塊。totalRuns = 全部 response 列數（= 掃描次數）。
   const totalRuns = responses.length
-  const mentionedRuns = responses.filter(r => r.brand_mentioned).length
-  const exposureRate = totalRuns > 0 ? Math.round(mentionedRuns / totalRuns * 100) : 0
 
   // 2026-06-10 路線 B：動態 per-engine 聚合 — 自動列出所有出現過的引擎（claude / gemini / 未來更多）
   //   每個引擎只在「有跑過該引擎」的筆數內算提及率（分母 = 該引擎實際有結果的次數）
@@ -336,17 +334,33 @@ export default function AIVisibilityDashboard() {
   // 是否多引擎（>1 個引擎有資料）→ 決定要不要顯示分引擎對照
   const multiEngine = perEngine.length > 1
 
-  // 平均出現位置（mentions 表的 position）
-  const positions = mentions.map(m => m.position).filter(p => p != null)
-  const avgPos = positions.length > 0 ? Math.round(positions.reduce((a, b) => a + b, 0) / positions.length) : 0
+  // 平均出現位置改用主引擎（見下方 primary 區塊）
 
   // 累積掃描次數（responses 行數）
   const scanCount = totalRuns
 
-  // 本月新增提及次數（被 AI 提到才計入）
+  // 本月起始（UTC 月初、對齊後端）
   const _monthStart = new Date(); _monthStart.setUTCDate(1); _monthStart.setUTCHours(0, 0, 0, 0)
-  const monthStart = _monthStart.toISOString()  // UTC 月初、對齊後端
-  const monthMentions = responses.filter(r => r.created_at >= monthStart && r.brand_mentioned).length
+  const monthStart = _monthStart.toISOString()
+
+  // ── 主要訊號 = 接地引擎 Gemini（最貼近用戶真實看到的）；無 Gemini 資料時 fallback Claude ──
+  // headline 三卡（曝光率 / 平均位置 / 本月提及）都改用主引擎；分母 = 該引擎實際有跑過的筆數。
+  const primaryKey = responses.some(r => r.engine_results?.gemini) ? 'gemini' : 'claude'
+  const primaryLabel = primaryKey === 'gemini' ? 'Gemini' : 'Claude'
+  let _pTotal = 0, _pMent = 0, _pMonth = 0, _pPosSum = 0, _pPosN = 0
+  for (const r of responses) {
+    const v = normEngineResults(r, mentionByRespId)[primaryKey]
+    if (!v) continue
+    _pTotal += 1
+    if (v.mentioned) {
+      _pMent += 1
+      if (r.created_at >= monthStart) _pMonth += 1
+      if (v.position != null) { _pPosSum += v.position; _pPosN += 1 }
+    }
+  }
+  const exposureRate = _pTotal > 0 ? Math.round(_pMent / _pTotal * 100) : 0
+  const avgPos = _pPosN > 0 ? Math.round(_pPosSum / _pPosN) : 0
+  const monthMentions = _pMonth
 
   // 30 天趨勢資料（每日 mention rate）
   const trendData = useMemo(() => {
@@ -714,21 +728,21 @@ export default function AIVisibilityDashboard() {
             ))
           ) : (
             <>
-              {/* 2026-06-10 路線 B：品牌曝光率主數字 = Claude；多引擎時 sub 動態列出各引擎提及率 */}
+              {/* 2026-06-11：主數字改用主引擎（接地 Gemini，最貼近真實）；多引擎時 sub 標出（主）+ 列各引擎 */}
               <OverviewCard icon="📊" label="品牌曝光率" value={exposureRate} suffix="%"
                 sub={recentRange
-                  ? `近 7 天 ${recentRange.min}–${recentRange.max}%・AI 答案每天在變`
+                  ? `近 7 天 ${recentRange.min}–${recentRange.max}%・主要看 ${primaryLabel}（即時上網）`
                   : (multiEngine
-                    ? perEngine.map(e => `${engineLabel(e.key)} ${e.rate}%`).join(' · ') + '（過去 30 天）'
-                    : `過去 30 天提及 ${mentionedRuns}/${totalRuns} 次`)}
+                    ? perEngine.map(e => `${engineLabel(e.key)}${e.key === primaryKey ? '（主）' : ''} ${e.rate}%`).join(' · ')
+                    : `主要引擎 ${primaryLabel}・即時上網的答案`)}
                 color={AIVIS_TEAL} highlight />
               <OverviewCard icon="🥇" label="平均出現位置" value={avgPos > 0 ? avgPos : '—'}
                 prefix={avgPos > 0 ? '第 ' : ''} suffix={avgPos > 0 ? ' 名' : ''}
-                sub="被提到時通常的排名" color={AIVIS_TEAL} />
+                sub={`${primaryLabel} 提到你時通常的排名`} color={AIVIS_TEAL} />
               <OverviewCard icon="🔄" label="已掃描次數" value={scanCount} suffix=" 次"
                 sub={multiEngine ? `跨 ${perEngine.length} 個 AI 引擎監測` : '累積掃描次數'} color={T.textMid} />
               <OverviewCard icon="✨" label="本月新增提及" value={monthMentions} suffix=" 次"
-                sub="AI 在本月回答中提到品牌的次數" color={T.orange} />
+                sub={`${primaryLabel} 在本月回答提到品牌的次數`} color={T.orange} />
             </>
           )}
         </div>
@@ -741,11 +755,6 @@ export default function AIVisibilityDashboard() {
               <TrendChart data={trendData} />
           }
         </div>
-
-        {/* ── 引用來源（主打）：AI 推薦你產業時參考了哪些地方 → 想被推薦就去這些地方爭取曝光 ── */}
-        {!isLoading && !isEmpty && (
-          <CitedSourcesCard sources={citedSources} brandName={brand?.name || ''} />
-        )}
 
         {/* ── Prompts 管理（全寬） ── */}
         <div style={{ marginBottom: 32 }}>
@@ -834,6 +843,13 @@ export default function AIVisibilityDashboard() {
               setActiveHistoryId={setActiveHistoryDay}
             />
         }
+
+        {/* ── 引用來源（放最下面、預設只顯示 10 個、其餘展開才看） ── */}
+        {!isLoading && !isEmpty && (
+          <div style={{ marginTop: 18 }}>
+            <CitedSourcesCard sources={citedSources} brandName={brand?.name || ''} />
+          </div>
+        )}
 
         {scanning && <ScanOverlay phase={scanPhase} total={scanTotal} prompts={activePrompts} />}
         {showTopupModal && (
@@ -1482,7 +1498,10 @@ function TrendChart({ data }) {
 // 核心洞察：AI 是讀這些地方才形成推薦的 → 想被推薦就去這些地方爭取曝光
 // =====================================================
 function CitedSourcesCard({ sources, brandName }) {
+  const [showAll, setShowAll] = useState(false)
   const has = sources && sources.length > 0
+  const visible = has ? (showAll ? sources : sources.slice(0, 10)) : []
+  const hidden = has ? sources.length - visible.length : 0
   return (
     <div style={{
       background: `linear-gradient(155deg, ${AIVIS_TEAL}16 0%, rgba(1,8,14,.6) 70%)`,
@@ -1503,23 +1522,35 @@ function CitedSourcesCard({ sources, brandName }) {
         —— 被榜單/目錄收錄、衝 Google 商家評論、在論壇有存在感。
       </div>
       {has ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          {sources.map((s, i) => (
-            <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" title={s.uri}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
-                background: 'rgba(0,6,10,.5)', border: '1px solid rgba(255,255,255,.07)',
-                borderRadius: 8, padding: '11px 13px',
-              }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: AIVIS_TEAL, minWidth: 16 }}>{i + 1}.</span>
-              <span style={{ flex: 1, fontSize: 14, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {s.title}
-              </span>
-              {s.count > 1 && <span style={{ fontSize: 13, color: T.textLow, flexShrink: 0 }}>被 {s.count} 題引用</span>}
-              <span style={{ fontSize: 13, color: T.textLow, flexShrink: 0 }}>↗</span>
-            </a>
-          ))}
-        </div>
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {visible.map((s, i) => (
+              <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" title={s.uri}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
+                  background: 'rgba(0,6,10,.5)', border: '1px solid rgba(255,255,255,.07)',
+                  borderRadius: 8, padding: '11px 13px',
+                }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: AIVIS_TEAL, minWidth: 16 }}>{i + 1}.</span>
+                <span style={{ flex: 1, fontSize: 14, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {s.title}
+                </span>
+                {s.count > 1 && <span style={{ fontSize: 13, color: T.textLow, flexShrink: 0 }}>被 {s.count} 題引用</span>}
+                <span style={{ fontSize: 13, color: T.textLow, flexShrink: 0 }}>↗</span>
+              </a>
+            ))}
+          </div>
+          {sources.length > 10 && (
+            <button onClick={() => setShowAll(v => !v)} style={{
+              marginTop: 10, width: '100%', background: 'transparent',
+              border: `1px solid ${AIVIS_TEAL}40`, color: AIVIS_TEAL,
+              fontSize: 14, fontWeight: 600, padding: '9px', borderRadius: 8,
+              cursor: 'pointer', fontFamily: T.font,
+            }}>
+              {showAll ? '收合 ▴' : `顯示其餘 ${hidden} 個來源 ▾`}
+            </button>
+          )}
+        </>
       ) : (
         <div style={{
           fontSize: 14, color: T.textLow, marginTop: 14, padding: '12px 14px',
