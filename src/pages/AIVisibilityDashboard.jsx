@@ -387,11 +387,20 @@ export default function AIVisibilityDashboard() {
   }, [historyDays, activeHistoryDay])
 
   // 當前選中的歷史日期的「最近結果」(group by prompt)
+  // 2026-06-11：只顯示「該日最新一次掃描」、不再把同一天多次掃描混在一起。
+  //   原本同一天掃 8 次 = 24 筆全列出、最新的 Gemini 資料被埋在舊資料裡看不到。
+  //   做法：取該日最大 created_at、只留下其前 5 分鐘內的筆（= 同一批掃描）。
   const recentResults = useMemo(() => {
     if (!activeHistoryDay || responses.length === 0) return []
     const dayResponses = responses.filter(r => dayKey(r.created_at) === activeHistoryDay)
+    if (dayResponses.length === 0) return []
+    // 找該日最新時間、只留 5 分鐘窗口內的（一次掃描約 40 秒、5 分鐘窗口很安全）
+    const latestTs = Math.max(...dayResponses.map(r => new Date(r.created_at).getTime()))
+    const WINDOW_MS = 5 * 60 * 1000
+    const latestScan = dayResponses.filter(r => latestTs - new Date(r.created_at).getTime() <= WINDOW_MS)
+
     const byPrompt = {} // { prompt_id: { promptText, runs[] } }
-    for (const r of dayResponses) {
+    for (const r of latestScan) {
       const p = prompts.find(x => x.id === r.prompt_id)
       if (!p) continue
       if (!byPrompt[r.prompt_id]) {
