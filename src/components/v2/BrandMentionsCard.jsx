@@ -91,7 +91,8 @@ export default function BrandMentionsCard({ defaultBrand = '', defaultExcludeDom
       }
 
       setResult(data)
-      saveCache(cacheKey, data)
+      // 只快取「有撈到來源」的結果；接地偶發回 0 不快取，避免把 false 0 鎖 24h、下次查還會再試
+      if (data.totalResults > 0) saveCache(cacheKey, data)
     } catch (e) {
       setErr('連線失敗、請稍後再試')
       console.error(e)
