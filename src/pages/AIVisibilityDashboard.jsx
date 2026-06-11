@@ -429,6 +429,32 @@ export default function AIVisibilityDashboard() {
     }))
   }, [activeHistoryDay, responses, mentions, prompts, mentionByRespId])
 
+  // 引用來源彙整（主打）：把「最近一次掃描」所有引擎的接地來源去重 + 計數（被幾題 prompt 引用）。
+  // 目前只有 Gemini 有 sources；之後 Claude 接地後自動一起算。
+  const citedSources = useMemo(() => {
+    const map = {} // uri -> { uri, title, count }
+    for (const r of recentResults) {
+      for (const run of r.runs) {
+        for (const eng of Object.values(run.engines || {})) {
+          for (const s of (eng?.sources || [])) {
+            if (!s?.uri) continue
+            if (!map[s.uri]) map[s.uri] = { uri: s.uri, title: s.title || s.uri, count: 0 }
+            map[s.uri].count += 1
+          }
+        }
+      }
+    }
+    return Object.values(map).sort((a, b) => b.count - a.count)
+  }, [recentResults])
+
+  // 近 7 天提及率「區間」（顯示範圍而非單一數字，把日常波動框成預期內、不讓客戶誤會成不準）
+  const recentRange = useMemo(() => {
+    const recent = trendData.slice(-7).filter(d => d.total > 0).map(d => d.val)
+    if (recent.length < 2) return null
+    const min = Math.min(...recent), max = Math.max(...recent)
+    return min === max ? null : { min, max }
+  }, [trendData])
+
   // ---------- 操作：Prompt CRUD ----------
   async function togglePrompt(p) {
     // 啟用前先檢查上限
@@ -690,9 +716,11 @@ export default function AIVisibilityDashboard() {
             <>
               {/* 2026-06-10 路線 B：品牌曝光率主數字 = Claude；多引擎時 sub 動態列出各引擎提及率 */}
               <OverviewCard icon="📊" label="品牌曝光率" value={exposureRate} suffix="%"
-                sub={multiEngine
-                  ? perEngine.map(e => `${engineLabel(e.key)} ${e.rate}%`).join(' · ') + '（過去 30 天）'
-                  : `過去 30 天提及 ${mentionedRuns}/${totalRuns} 次`}
+                sub={recentRange
+                  ? `近 7 天 ${recentRange.min}–${recentRange.max}%・AI 答案每天在變`
+                  : (multiEngine
+                    ? perEngine.map(e => `${engineLabel(e.key)} ${e.rate}%`).join(' · ') + '（過去 30 天）'
+                    : `過去 30 天提及 ${mentionedRuns}/${totalRuns} 次`)}
                 color={AIVIS_TEAL} highlight />
               <OverviewCard icon="🥇" label="平均出現位置" value={avgPos > 0 ? avgPos : '—'}
                 prefix={avgPos > 0 ? '第 ' : ''} suffix={avgPos > 0 ? ' 名' : ''}
@@ -705,10 +733,22 @@ export default function AIVisibilityDashboard() {
           )}
         </div>
 
-        {/* ── 兩欄：Prompts + 趨勢 ─────────────────────── */}
-        <div className="two-col" style={{
-          display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 18, marginBottom: 32,
-        }}>
+        {/* ── 趨勢線（主角）：全寬。AI 即時上網、答案天天在變 → 看趨勢不看單次數字 ── */}
+        <div style={{ marginBottom: 18 }}>
+          {isLoading ? <TrendSkeleton /> :
+            trendError ? <ErrorCard title="30 天提及率趨勢" message="Supabase 連線逾時，無法載入歷史資料。"
+              onRetry={() => { setTrendError(false); loadAll() }} /> :
+              <TrendChart data={trendData} />
+          }
+        </div>
+
+        {/* ── 引用來源（主打）：AI 推薦你產業時參考了哪些地方 → 想被推薦就去這些地方爭取曝光 ── */}
+        {!isLoading && !isEmpty && (
+          <CitedSourcesCard sources={citedSources} brandName={brand?.name || ''} />
+        )}
+
+        {/* ── Prompts 管理（全寬） ── */}
+        <div style={{ marginBottom: 32 }}>
           {isLoading ? <PromptsSkeleton /> :
             prompts.length === 0 ? <PromptsEmpty onGenerate={regeneratePrompts} /> :
               <PromptsPanel
@@ -719,12 +759,6 @@ export default function AIVisibilityDashboard() {
                 onAdd={addPrompt} onRegenerate={regeneratePrompts}
                 activeCount={activeCount} atCap={atCap}
               />
-          }
-
-          {isLoading ? <TrendSkeleton /> :
-            trendError ? <ErrorCard title="30 天提及率趨勢" message="Supabase 連線逾時，無法載入歷史資料。"
-              onRetry={() => { setTrendError(false); loadAll() }} /> :
-              <TrendChart data={trendData} />
           }
         </div>
 
@@ -1340,7 +1374,7 @@ function TrendChart({ data }) {
       }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>30 天提及率趨勢</div>
-          <div style={{ fontSize: 14, color: T.textLow }}>每日 02:00 自動掃描</div>
+          <div style={{ fontSize: 14, color: T.textLow }}>AI 即時上網、答案天天在變 — 看趨勢，別看單次數字</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 14, color: T.textMid }}>近 30 日</div>
@@ -1438,6 +1472,61 @@ function TrendChart({ data }) {
       }}>
         <span>💡 <span style={{ color: T.textMid }}>滑過折線可查看每日數據</span></span>
       </div>
+    </div>
+  )
+}
+
+// =====================================================
+// CitedSourcesCard（主打）：AI 接地推薦時參考了哪些網站
+// 核心洞察：AI 是讀這些地方才形成推薦的 → 想被推薦就去這些地方爭取曝光
+// =====================================================
+function CitedSourcesCard({ sources, brandName }) {
+  const has = sources && sources.length > 0
+  return (
+    <div style={{
+      background: `linear-gradient(155deg, ${AIVIS_TEAL}16 0%, rgba(1,8,14,.6) 70%)`,
+      border: `1px solid ${AIVIS_TEAL}45`, borderRadius: T.rL, padding: 22, marginBottom: 18,
+      boxShadow: `0 8px 24px ${AIVIS_TEAL}12`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 5, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 17, fontWeight: 800, color: T.text }}>🔗 AI 是參考這些地方在推薦的</span>
+        {has && <span style={{
+          fontSize: 13, fontWeight: 700, color: AIVIS_TEAL,
+          background: AIVIS_TEAL + '18', border: `1px solid ${AIVIS_TEAL}40`,
+          padding: '2px 10px', borderRadius: 20,
+        }}>{sources.length} 個來源</span>}
+      </div>
+      <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.75, marginBottom: has ? 16 : 0, maxWidth: 760 }}>
+        AI 回答「推薦哪些公司」時，是即時讀了下面這些網站才形成答案的。
+        <strong style={{ color: T.text }}>想讓 AI 推薦{brandName ? `「${brandName}」` : '你'}，就要設法出現在這些地方</strong>
+        —— 被榜單/目錄收錄、衝 Google 商家評論、在論壇有存在感。
+      </div>
+      {has ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {sources.map((s, i) => (
+            <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" title={s.uri}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
+                background: 'rgba(0,6,10,.5)', border: '1px solid rgba(255,255,255,.07)',
+                borderRadius: 8, padding: '11px 13px',
+              }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: AIVIS_TEAL, minWidth: 16 }}>{i + 1}.</span>
+              <span style={{ flex: 1, fontSize: 14, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {s.title}
+              </span>
+              {s.count > 1 && <span style={{ fontSize: 13, color: T.textLow, flexShrink: 0 }}>被 {s.count} 題引用</span>}
+              <span style={{ fontSize: 13, color: T.textLow, flexShrink: 0 }}>↗</span>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div style={{
+          fontSize: 14, color: T.textLow, marginTop: 14, padding: '12px 14px',
+          background: 'rgba(0,6,10,.4)', border: '1px dashed rgba(255,255,255,.1)', borderRadius: 8,
+        }}>
+          執行一次掃描後，這裡會列出 AI 形成推薦時參考的網站來源（目前 Gemini 已支援接地、會帶來源）。
+        </div>
+      )}
     </div>
   )
 }
