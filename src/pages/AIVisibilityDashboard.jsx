@@ -554,6 +554,9 @@ export default function AIVisibilityDashboard() {
         if (geminiStatus && !geminiStatus.key_present) {
           reason = '（⚠️ Gemini 未啟用：後端讀不到 GEMINI_API_KEY）'
           toastKind = 'warn'
+        } else if (geminiStatus && geminiStatus.quota_exhausted) {
+          reason = '（⚠️ Gemini 配額用完：今日免費額度已用盡，明日 0 點（太平洋時間）重置，或開通 Google billing 解除）'
+          toastKind = 'warn'
         } else if (geminiStatus && geminiStatus.last_error) {
           reason = `（⚠️ Gemini 呼叫失敗：${String(geminiStatus.last_error).slice(0, 120)}）`
           toastKind = 'warn'
@@ -756,7 +759,7 @@ export default function AIVisibilityDashboard() {
                 立即執行掃描
               </div>
               <div style={{ fontSize: 14, color: T.textMid }}>
-                手動觸發一次 {activeCount} prompt × {SCAN_RUNS} 次的 Claude + Gemini 詢問 · 約耗時 {activeCount * 8} 秒
+                手動觸發 {activeCount} prompt：Claude 各問 {SCAN_RUNS} 次 + Gemini 各問 1 次（省免費額度）· 約耗時 {activeCount * 8} 秒
               </div>
             </div>
           </div>
@@ -1143,7 +1146,7 @@ function PromptsPanel({
             </span>
           </div>
           <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
-            這些問題會被定期送進 Claude + Gemini，每條重複 {SCAN_RUNS} 次取平均。
+            這些問題會送進 Claude（每條 {SCAN_RUNS} 次取平均）+ Gemini（每條 1 次、省免費額度）。
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>

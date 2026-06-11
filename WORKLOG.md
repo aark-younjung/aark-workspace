@@ -6,6 +6,47 @@
 
 ---
 
+### 2026-06-11（aivis Gemini 模型遷移：gemini-2.0-flash EOL → gemini-2.5-flash-lite + 規模成本分析）
+
+**根因（查網路才發現）：** `gemini-2.0-flash` 已於 **2026-02-18 棄用、2026-06-01 停止服務**（今天 06-11 已過期）。這是 429 之外、接下來會變 404 的真正根因 —— 這支模型本來就非換不可。
+
+**改動 [api/aivis/fetch.js](api/aivis/fetch.js)：** `GEMINI_MODEL` 改 `'gemini-2.5-flash-lite'`（官方建議遷移目標、定價相同 $0.10/$0.40 per MTok、1M context、8× output 上限）；`GEMINI_API_URL` 改成用 `${GEMINI_MODEL}` 組字串（未來換模型只改一個常數，順手解掉 GEMINI_MODEL 未使用的 lint hint）；定價常數不動。
+
+**規模成本分析（回答「客戶變多免費額度夠不夠 / 會不會影響收費」）：**
+- **免費層是「整支 key 共用」的固定天花板**（Flash-Lite ≈ 15 RPM / 1,000 RPD），**不隨客戶數放大**。並發 3 個客戶同時掃就破 15 RPM → 幾十個活躍客戶尖峰就會零星 429。自己一人測試就撞到，就是這個 + 模型 EOL。
+- **但付費成本微不足道**：每客戶用滿 150 次/月 → Claude ~$0.39 + Gemini ~$0.01 = **~$0.40/月 ≈ NT$13**，佔 Pro NT$1,490 的 **~0.9%**。成本與營收都線性放大 → AI 成本永遠 ~1% 營收，**不影響收費模式**。
+- **建議**：(1) 已換模型；(2) 強烈建議 Google 專案開 billing 解除免費層 RPM/RPD（成本 <1% 營收）；(3) 「Gemini 1 次/prompt」保留（省 RPM + 成本，付費後想要分引擎平均再調回 3×）。
+- 數字依據：Claude Haiku 4.5 = $1/$5（claude-api skill 確認）；Gemini 2.5 Flash-Lite = $0.10/$0.40、免費 ~15 RPM/1,000 RPD（Google docs + 多方查證）。
+
+**驗證：** `node --check` fetch.js 過；grep 確認 live code 無殘留 gemini-2.0/1.5/pro。
+
+**待用戶：** push 部署 + 去 Google Cloud 對該 key 的專案開通 billing（步驟見對話）。
+
+---
+
+### 2026-06-11（aivis Gemini 沒顯示 = HTTP 429 配額耗盡，非程式 bug → 節省免費用量 + 429 韌性）
+
+**症狀：** AI 曝光監測掃描完只顯示 Claude、Gemini 完全不出現。
+
+**診斷（逐層排除）：**
+- 前端顯示邏輯正確（`RecentResults` 對 `engine_results` 逐 key 渲染 chip、有 gemini key 就會長出來）
+- DB schema 正確（打 Supabase REST 探過：`engine_results` JSONB 存在、舊 `gemini_*` 欄已 drop，那兩條「待用戶跑」的 SQL 已執行）
+- toast 診斷顯示 **HTTP 429 `RESOURCE_EXHAUSTED`** + `"please check your plan and billing details"`，且走「全失敗 / 0%」分支（15 通連第一通都 429）→ **Google 端當日免費配額耗盡 / 該專案沒開通付費**，不是程式 bug。code 註解「Gemini 2.0 Flash 免費 1500 query/天」的假設已不成立（Google 砍免費上限 + 連日除錯手動掃刷光）。
+- 確認全專案只有 `api/aivis/fetch.js` 會打 Gemini；沒有任何 cron 在背景燒配額（vercel.json crons 只有 cron-weekly-reports；dashboard「每日 02:00 自動掃描」是文案、未接）。
+
+**用戶決策：維持免費 + 節省用量**（不開 billing）。改動：
+- **[api/aivis/fetch.js](api/aivis/fetch.js)**：
+  1. **Gemini 每條 prompt 只問 1 次**（`shouldCallGemini = useGemini && i === 1`）省 ⅔ 免費配額。Gemini 是次要引擎、要訊號不要平均；i>1 的 run `gemini: null` 不計入成功/失敗統計。`engine_results.gemini` 只寫在第 1 筆 row（dashboard `perEngine` 用各引擎自己的分母算提及率，正確）。
+  2. **`callGemini` 加 429/503 退避重試**（`maxRetries=1`、backoff 800ms）撐過短暫 RPM 尖峰；逾時/網路錯誤**不重試**（每次最多 30s、重試會拖爆 function 時限）。回傳多帶 `status`。
+  3. **429/配額耗盡單獨標記** `gemini_status.quota_exhausted`（偵測 `status===429` 或 error 含 429/quota/RESOURCE_EXHAUSTED）。
+- **[src/pages/AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)**：toast 加 `quota_exhausted` 專屬提示「⚠️ Gemini 配額用完：今日免費額度已用盡，明日 0 點（太平洋時間）重置，或開通 Google billing 解除」；掃描 CTA + Prompts 面板文案改為「Claude 各問 3 次 + Gemini 各問 1 次（省免費額度）」。
+
+**驗證：** `node --check` fetch.js 過；vite transform 902 模組全過；eslint 兩檔無新增問題（既有的 process/no-undef、useCountUp 未使用為 config/既存問題）。本機 full build 在 render 階段 exit 127（沙盒環境問題、與改動無關，Vercel 部署正常）。
+
+**待用戶：** push 到 main 部署。免費層仍有「當日 RPD」上限，硬上限耗盡時 retry 也救不了 — 要長期穩定終究得開 Google billing（Gemini 2.0 Flash $0.10/$0.40 per MTok、極便宜）。
+
+---
+
 ### 2026-06-10（🔥 修 Vercel Hobby 12 function 上限爆界 — deploy 連環失敗根因）
 
 **問題：** brand-mentions MVP（604acb2）起、連續 3 個 commit deploy 全 fail、Production 卡在 1fc7e27。錯誤訊息：`No more than 12 Serverless Functions can be added on the Hobby plan`。

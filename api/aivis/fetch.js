@@ -26,13 +26,15 @@ const MAX_TOKENS = 1024
 const PRICE_INPUT_PER_TOKEN = 1 / 1_000_000   // $1 / MTok
 const PRICE_OUTPUT_PER_TOKEN = 5 / 1_000_000  // $5 / MTok
 
-// ─── Gemini 整合（2026-06-10、跟著 Brand Mentions MVP 一起加） ───
-// 每次 run 同時打 Claude + Gemini、增加跨 LLM 覆蓋率；DB 用 model 欄位區分
-// Gemini 2.0 Flash 免費額度：1500 query/天、100 萬 tokens/天 — 100 用戶內幾乎用不到付費
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
-const GEMINI_MODEL = 'gemini-2.0-flash'
-const GEMINI_PRICE_INPUT_PER_TOKEN = 0.10 / 1_000_000   // $0.10 / MTok
-const GEMINI_PRICE_OUTPUT_PER_TOKEN = 0.40 / 1_000_000  // $0.40 / MTok
+// ─── Gemini 整合（2026-06-10 加，2026-06-11 換模型 + 改 1 次/prompt） ───
+// 跨 LLM 覆蓋率：每條 prompt 的第 1 次 run 同時打 Claude + Gemini，結果存進同筆 row 的 engine_results。
+// 模型：gemini-2.5-flash-lite —— 原本的 gemini-2.0-flash 已於 2026-06-01 停止服務（EOL），
+//   Flash-Lite 是官方建議的遷移目標、定價相同（$0.10/$0.40 per MTok）、1M context。
+// 免費層上限（整支 key 共用、非每客戶）：約 15 RPM / 1,000 RPD —— 正式收費需開 Google billing 解除。
+const GEMINI_MODEL = 'gemini-2.5-flash-lite'
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const GEMINI_PRICE_INPUT_PER_TOKEN = 0.10 / 1_000_000   // $0.10 / MTok（與 2.0 Flash 相同）
+const GEMINI_PRICE_OUTPUT_PER_TOKEN = 0.40 / 1_000_000  // $0.40 / MTok（與 2.0 Flash 相同）
 
 // 額度規則 — 與 [Pricing.jsx] 與 [AIVisibilityDashboard.jsx] 三邊同步
 const AIVIS_QUOTA_PER_MONTH = 150   // Pro 內含本月免費額度
@@ -151,7 +153,8 @@ export default async function handler(req, res) {
     let usedThisCall = 0           // 本次呼叫實際成功寫入幾筆，遞增後與 monthCount 合計判斷
     let topupConsumedThisCall = 0  // 本次呼叫從 Top-up 扣了幾次（給 client 顯示明細用）
     // 2026-06-10 Gemini 診斷：追蹤後端到底有沒有讀到 key / 呼叫成功 / 錯誤
-    let geminiAttempts = 0, geminiOkCount = 0, geminiLastError = null
+    // 2026-06-11：geminiQuotaExhausted — 429/配額耗盡單獨標記，前端顯示專屬提示
+    let geminiAttempts = 0, geminiOkCount = 0, geminiLastError = null, geminiQuotaExhausted = false
 
     for (let i = 1; i <= runs; i++) {
       // 額度判斷（per-run，每次跑前先看下一筆會不會破線）
@@ -201,10 +204,13 @@ export default async function handler(req, res) {
       // 2026-06-10：Claude + Gemini 並行呼叫、單寫一筆 row（Claude 主欄 + Gemini 額外欄）
       // 設計：1 次掃描 = 1 筆 aivis_responses（維持「1 row = 1 scan」不變、dashboard / 額度全部沿用）
       //   Claude 失敗 → 整個 run 視為失敗、不扣 quota（主引擎）
-      //   Gemini 失敗 → 只記 console、gemini_ 欄留 null（額外資料、不影響 run）
+      //   Gemini 失敗 → 只記 console、engine_results.gemini 不寫（額外資料、不影響 run）
+      // 2026-06-11：Gemini 每條 prompt 只問 1 次（i===1）省 ⅔ 免費配額 —
+      //   Gemini 是次要引擎、要的是「有沒有被提到」的訊號、不像 Claude 要跑 3 次取平均。
+      const shouldCallGemini = useGemini && i === 1
       const [claudeRes, geminiRes] = await Promise.all([
         callClaude(prompt.text, ANTHROPIC_API_KEY),
-        useGemini ? callGemini(prompt.text, GEMINI_API_KEY) : Promise.resolve(null),
+        shouldCallGemini ? callGemini(prompt.text, GEMINI_API_KEY) : Promise.resolve(null),
       ])
 
       if (!claudeRes.ok) {
@@ -226,7 +232,7 @@ export default async function handler(req, res) {
       let geminiCost = 0
       let geminiPosition = null
       let geminiText = null
-      if (useGemini) geminiAttempts += 1
+      if (shouldCallGemini) geminiAttempts += 1
       if (geminiRes && geminiRes.ok) {
         geminiOkCount += 1
         geminiCost = geminiRes.inputTokens * GEMINI_PRICE_INPUT_PER_TOKEN + geminiRes.outputTokens * GEMINI_PRICE_OUTPUT_PER_TOKEN
@@ -235,6 +241,10 @@ export default async function handler(req, res) {
         geminiText = geminiRes.text
       } else if (geminiRes && !geminiRes.ok) {
         geminiLastError = geminiRes.error
+        // 429 / 配額耗盡單獨標記 — 前端 toast 顯示「配額用完」而非泛泛「呼叫失敗」
+        if (geminiRes.status === 429 || /\b429\b|quota|RESOURCE_EXHAUSTED/i.test(geminiRes.error || '')) {
+          geminiQuotaExhausted = true
+        }
         console.warn(`Gemini call failed for run ${i}:`, geminiRes.error)
       }
 
@@ -304,9 +314,11 @@ export default async function handler(req, res) {
       results.push({
         run: i,
         claude: { mentioned: claudeMentioned, position: claudePosition, cost_usd: claudeCost },
-        gemini: geminiRes && geminiRes.ok
-          ? { mentioned: geminiMentioned, cost_usd: geminiCost }
-          : (useGemini ? { error: geminiRes?.error || 'failed' } : null),
+        // 沒呼叫 Gemini 的 run（i>1、或 useGemini=false）→ null，不計入成功/失敗統計
+        gemini: !shouldCallGemini ? null
+          : (geminiRes && geminiRes.ok
+            ? { mentioned: geminiMentioned, cost_usd: geminiCost }
+            : { error: geminiRes?.error || 'failed' }),
       })
     }
 
@@ -351,11 +363,13 @@ export default async function handler(req, res) {
         is_trial: isTrial,
       },
       // 2026-06-10 Gemini 診斷：key_present=後端有沒有讀到 GEMINI_API_KEY、attempts/ok=呼叫次數、last_error=最後錯誤
+      // 2026-06-11：quota_exhausted=429/配額耗盡（前端顯示「配額用完」專屬提示）
       gemini_status: {
         key_present: useGemini,
         attempts: geminiAttempts,
         ok: geminiOkCount,
         last_error: geminiLastError,
+        quota_exhausted: geminiQuotaExhausted,
       },
     })
 
@@ -367,37 +381,56 @@ export default async function handler(req, res) {
 
 // ---------------------- 工具函式 ----------------------
 
+// 小睡（給 429/503 退避用）
+const sleep = ms => new Promise(r => setTimeout(r, ms))
+
 // 呼叫 Gemini API（2026-06-10）— 跟 Claude 同一個 prompt、增加跨 LLM 覆蓋率
-// 失敗回 {ok:false, error}、Gemini 失敗不會擋 Claude 主流程
-async function callGemini(promptText, apiKey) {
-  try {
-    const r = await fetch(`${GEMINI_API_URL}?key=${encodeURIComponent(apiKey)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: promptText }] }],
-        generationConfig: { maxOutputTokens: MAX_TOKENS },
-      }),
-      signal: AbortSignal.timeout(30000),
-    })
+// 失敗回 {ok:false, error, status?}、Gemini 失敗不會擋 Claude 主流程
+// 2026-06-11：429（配額/速率）、503（過載）短暫退避重試 maxRetries 次 —
+//   撐過短暫的每分鐘速率尖峰（RPM）。注意：若是「當日免費額度耗盡」這種硬上限、
+//   重試也不會過、但退避成本小（最多 ~0.8s）。逾時/網路錯誤不重試（避免拖爆 function 時限）。
+async function callGemini(promptText, apiKey, maxRetries = 1) {
+  let lastError = null
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const r = await fetch(`${GEMINI_API_URL}?key=${encodeURIComponent(apiKey)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: promptText }] }],
+          generationConfig: { maxOutputTokens: MAX_TOKENS },
+        }),
+        signal: AbortSignal.timeout(30000),
+      })
 
-    if (!r.ok) {
-      const errText = await r.text()
-      return { ok: false, error: `HTTP ${r.status}: ${errText.slice(0, 300)}` }
-    }
+      // 429 / 503 → 短暫退避後重試；最後一次仍失敗才回傳錯誤（帶 status 給上層判斷配額）
+      if (r.status === 429 || r.status === 503) {
+        const errText = await r.text()
+        lastError = `HTTP ${r.status}: ${errText.slice(0, 300)}`
+        if (attempt < maxRetries) { await sleep(800 * (attempt + 1)); continue }
+        return { ok: false, error: lastError, status: r.status }
+      }
 
-    const data = await r.json()
-    // Gemini response 結構：candidates[0].content.parts[0].text
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-    return {
-      ok: true,
-      text,
-      inputTokens: data.usageMetadata?.promptTokenCount || 0,
-      outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
+      if (!r.ok) {
+        const errText = await r.text()
+        return { ok: false, error: `HTTP ${r.status}: ${errText.slice(0, 300)}`, status: r.status }
+      }
+
+      const data = await r.json()
+      // Gemini response 結構：candidates[0].content.parts[0].text
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+      return {
+        ok: true,
+        text,
+        inputTokens: data.usageMetadata?.promptTokenCount || 0,
+        outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
+      }
+    } catch (err) {
+      // 逾時 / 網路錯誤不重試（每次最多 30s、重試會拖爆 function 時限）
+      return { ok: false, error: err.message }
     }
-  } catch (err) {
-    return { ok: false, error: err.message }
   }
+  return { ok: false, error: lastError || 'unknown error' }
 }
 
 async function callClaude(promptText, apiKey) {
