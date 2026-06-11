@@ -110,19 +110,21 @@ async function handleIndexnowPing(req, res) {
 }
 
 // ───────────────────────────────────────────────────────────
-// action=brand-mentions — 品牌外部提及（Google Custom Search、2026-06-10 從 /api/brand-mentions 合併進來）
+// action=brand-mentions — 品牌外部提及（改用 Gemini 接地搜尋，2026-06-11）
+//   原本用 Google Custom Search（CSE），但被 403 PERMISSION_DENIED 卡死（aark-api 專案計費/存取玄學、查無解）。
+//   改用已可用的 Gemini 接地（google_search）繞過：問 Gemini 該品牌在網路上被哪些外部來源提及、解析 grounding sources。
 //   Query: brand, excludeDomain, num
-//   Env: GOOGLE_CSE_API_KEY, GOOGLE_CSE_ID
+//   Env: GEMINI_API_KEY
 // ───────────────────────────────────────────────────────────
 const BRAND_MENTIONS_ALLOWED_NUM = [5, 10, 20]
+const BRAND_MENTIONS_GEMINI_MODEL = 'gemini-2.5-flash'
 
 async function handleBrandMentions(req, res) {
-  const apiKey = process.env.GOOGLE_CSE_API_KEY
-  const cseId = process.env.GOOGLE_CSE_ID
-  if (!apiKey || !cseId) {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
     return res.status(503).json({
       error: 'not_configured',
-      message: 'Brand mentions 功能未啟用、請在 Vercel 設定 GOOGLE_CSE_API_KEY 與 GOOGLE_CSE_ID',
+      message: 'Brand mentions 功能未啟用、請在 Vercel 設定 GEMINI_API_KEY',
     })
   }
 
@@ -133,64 +135,72 @@ async function handleBrandMentions(req, res) {
   if (!brand || brand.length < 2) return res.status(400).json({ error: 'Brand name required (≥ 2 chars)' })
   if (brand.length > 50) return res.status(400).json({ error: 'Brand name too long (max 50 chars)' })
 
-  // 組 query：exact phrase + 排除自家網域、避免抓到自家頁面
-  // 例：`"金鉑先生" -site:kimbo3899.com.tw`
-  let query = `"${brand}"`
-  if (excludeDomain) {
-    const cleanDomain = excludeDomain
-      .replace(/^https?:\/\//i, '')
-      .replace(/^www\./i, '')
-      .replace(/\/.*$/, '')
-    if (cleanDomain) query += ` -site:${cleanDomain}`
-  }
+  const cleanDomain = excludeDomain
+    .replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, '')
+
+  // 用 Gemini 接地（Google Search）查品牌在網路上的外部提及來源
+  const prompt = `請用網路搜尋，找出「${brand}」這個品牌或公司在網路上被提及的外部來源` +
+    `（新聞報導、論壇討論、社群貼文、部落格、商家目錄、評論等），盡量列出多個不同網站的來源。` +
+    (cleanDomain ? `請排除來自 ${cleanDomain}（品牌自家網站）的頁面。` : '')
 
   try {
-    const url = new URL('https://www.googleapis.com/customsearch/v1')
-    url.searchParams.set('key', apiKey)
-    url.searchParams.set('cx', cseId)
-    url.searchParams.set('q', query)
-    url.searchParams.set('num', String(num))
-    url.searchParams.set('hl', 'zh-TW')
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${BRAND_MENTIONS_GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+        generationConfig: { maxOutputTokens: 1024 },
+      }),
+      signal: AbortSignal.timeout(30000),
+    })
 
-    const resp = await fetch(url.toString())
     if (!resp.ok) {
       const text = await resp.text()
-      console.error('Google CSE API error:', resp.status, text)
-      // 2026-06-10：把 Google 真實錯誤訊息吐回前端、方便診斷設定問題
-      // 常見：API key 沒啟用 Custom Search API / cx(CSE ID) 錯 / key 限制錯 API
       let upstreamMessage = ''
       try { upstreamMessage = JSON.parse(text)?.error?.message || '' } catch { upstreamMessage = text.slice(0, 300) }
-      // 2026-06-10：Brand Mentions 暫時 parked — Google Custom Search 403 卡關（key 來自 aark-api、
-      // API 已啟用、cx 正確、等 1hr 仍 PERMISSION_DENIED、疑似 Google 專案層級問題待查）。
-      // 對外給乾淨訊息、不洩漏內部 key/cx。debug 細節改記 server log。
-      console.error('Brand mentions upstream error:', resp.status, upstreamMessage)
+      console.error('brand-mentions gemini error:', resp.status, upstreamMessage)
       return res.status(502).json({
         error: 'upstream_error',
-        message: '品牌提及搜尋暫時無法使用（功能調整中），請稍後再試。',
+        message: '品牌提及搜尋暫時無法使用，請稍後再試。',
         upstream_status: resp.status,
-        // 2026-06-11 暫時診斷：吐出 Google 的錯誤訊息以定位 403 根因（此訊息不含 key/cx、安全）。修好後移除。
-        upstream_message: upstreamMessage,
       })
     }
 
     const data = await resp.json()
-    const totalResults = parseInt(data?.searchInformation?.totalResults || '0')
-    const items = (data?.items || []).map(it => ({
-      title: it.title,
-      link: it.link,
-      snippet: it.snippet,
-      displayLink: it.displayLink,
-      category: categorizeBrandSource(it.displayLink),
-    }))
+    // 接地來源：groundingMetadata.groundingChunks[].web.{uri, title}
+    //   uri = Google 轉址連結（點了會導到真實頁面）；title = 網站名/網頁標題（拿來顯示 + 分類）
+    const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+    const seen = new Set()
+    const items = []
+    for (const c of chunks) {
+      const uri = c.web?.uri
+      // 去掉角括號避免前端 dangerouslySetInnerHTML 被注入（title 來自 Google grounding）
+      const title = (c.web?.title || '').replace(/[<>]/g, '').trim()
+      if (!uri || !title || seen.has(title)) continue
+      if (cleanDomain && title.toLowerCase().includes(cleanDomain.toLowerCase())) continue
+      seen.add(title)
+      items.push({
+        title,
+        link: uri,
+        snippet: '',
+        displayLink: title,
+        category: categorizeBrandSource(title),
+      })
+      if (items.length >= num) break
+    }
 
+    const totalResults = items.length
     return res.status(200).json({
       brand,
-      excludeDomain: excludeDomain || null,
-      query,
+      excludeDomain: cleanDomain || null,
+      query: `Gemini 接地搜尋「${brand}」的外部提及`,
       totalResults,
       items,
       categoryCounts: countByBrandCategory(items),
       recommendation: recommendBrand(totalResults),
+      source: 'gemini_grounding',
     })
   } catch (err) {
     console.error('brand-mentions error:', err)
@@ -216,11 +226,12 @@ function countByBrandCategory(items) {
   return counts
 }
 
+// 門檻配合 Gemini 接地的尺度（一次約回 5-15 個精選來源，不是 CSE 的原始大計數）
 function recommendBrand(totalResults) {
   if (totalResults === 0) {
     return {
       level: 'critical',
-      message: '網路完全沒人提到你的品牌、這是 AI 不推薦你的最大原因。',
+      message: '網路上幾乎找不到提到你品牌的外部來源 — 這是 AI 不推薦你的最大原因。',
       actions: [
         '投新聞稿（中央社 / 聯合新聞網 / TVBS / 中時 / 自由）',
         '鋪論壇話題（Mobile01 / PTT 對應板 / Dcard）',
@@ -229,33 +240,33 @@ function recommendBrand(totalResults) {
       ],
     }
   }
-  if (totalResults < 10) {
+  if (totalResults < 3) {
     return {
       level: 'warning',
-      message: `只有 ${totalResults} 處提到、外部曝光偏低。`,
+      message: `只找到 ${totalResults} 個外部來源、媒體曝光偏低。`,
       actions: [
         '主動投放 1-2 篇產業媒體（INSIDE / TechOrange / 數位時代）',
-        '社群定期發產品/案例分享',
+        '社群定期發產品 / 案例分享',
         '經營公司 Wikipedia / Google 商家',
       ],
     }
   }
-  if (totalResults < 50) {
+  if (totalResults < 7) {
     return {
       level: 'fair',
-      message: `${totalResults} 處提及、已有起步、但還需要更多元的來源。`,
+      message: `找到 ${totalResults} 個外部來源、已有起步、但還需要更多元的來源。`,
       actions: [
-        '檢查來源是否多元（news / forum / social 都有）',
+        '檢查來源是否多元（新聞 / 論壇 / 社群都有）',
         '針對缺乏的來源類型補強（例：沒新聞就投稿）',
       ],
     }
   }
   return {
     level: 'good',
-    message: `${totalResults} 處提及、外部曝光健康。`,
+    message: `找到 ${totalResults} 個外部來源、媒體曝光健康。`,
     actions: [
       '持續維護 — 新聞稿、論壇互動、社群經營',
-      '可考慮監測競品提及次數做對比',
+      '可考慮監測競品的外部提及做對比',
     ],
   }
 }
