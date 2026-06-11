@@ -929,9 +929,10 @@ function AivisHero({ isPro, websiteName, overallScore }) {
     let cancelled = false
     supabase
       .from('aivis_brands')
-      .select('id, brand_name, domain')
+      .select('id, name, domain')
       .eq('user_id', user.id)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.warn('aivis brands load error:', error.message)
         if (!cancelled) setBrands(data || [])
       })
     return () => { cancelled = true }
@@ -1020,7 +1021,7 @@ function AivisHero({ isPro, websiteName, overallScore }) {
                   background: 'rgba(249,115,22,0.15)',
                   border: '1px solid rgba(249,115,22,0.35)',
                 }}>
-                  {b.brand_name}
+                  {b.name}
                 </span>
               ))}
               {brands.length > 6 && (
