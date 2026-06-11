@@ -6,6 +6,30 @@
 
 ---
 
+### 2026-06-11（媒體曝光 / 品牌外部提及「復活」：Custom Search 死路 → 改用 Gemini 接地）
+
+**背景：** brand-mentions（BrandMentionsCard，在 Dashboard / DashboardV2）原用 Google Custom Search（CSE），2026-06-10 因 **403 PERMISSION_DENIED** parked。本次徹底排查仍無解：
+- 確認 key 在 aark-api、應用程式限制=無、API 限制=Custom Search API、Custom Search API 已啟用、aark-api 已連結帳單帳戶（後付有有效萬事達卡）—— 全對。
+- 加暫時診斷吐出 Google 真實錯誤＝「**This project does not have the access to Custom Search JSON API.**」連「aark-api 上全新、零限制的 key」都試過仍 403。判定為 Google 專案層級玄學、不值得再耗。
+
+**用戶決策：放棄 CSE，改用已可用的 Gemini 接地（Gemini billing 已開）。**
+
+**改動 [api/public.js](api/public.js) `handleBrandMentions`：**
+- 完全改寫：問 Gemini（`gemini-2.5-flash` + `tools:[{google_search:{}}]`）該品牌的外部提及、解析 `groundingMetadata.groundingChunks[].web.{uri,title}` → 組成**和 CSE 一模一樣的 `items/categoryCounts/recommendation` 格式** → 前端 [BrandMentionsCard.jsx](src/components/v2/BrandMentionsCard.jsx) **零改動**。
+- env 由 `GOOGLE_CSE_API_KEY/ID` 改為 `GEMINI_API_KEY`；移除暫時診斷。
+- 查詢字串調成「只找**第三方獨立來源**（新聞/論壇/開箱/評測），排除自家官網/官方社群/電商賣場」（不然會撈到品牌自家 YT/蝦皮）。
+- `recommendBrand` 門檻改配合接地尺度（0 / <3 / <7；接地一次約回 5-15 個精選來源、非 CSE 大計數）。
+- **回空重試**：接地非確定性、偶爾整批回 0（實測 0→0→4）→ 最多試 2 次撈到就停，避免偶發 0 被前端快取 24h 像沒曝光。
+- title 去角括號（前端用 dangerouslySetInnerHTML）。
+
+**驗證（線上實打公開端點）：** 改進版回 ptt.cc（論壇）、iyp/mygov/kolr 等獨立來源、`source:gemini_grounding` ✅。
+
+**踩雷備忘：** push `5900832` 後 **Vercel 沒自動部署（GitHub webhook 漏接、Deployments 清單沒這筆）** → 推空 commit 重新觸發即可（`git commit --allow-empty`）。其餘 commit 都正常 Ready。
+
+**指標意義改變（要對客戶講）：** 數字從「全網幾筆提及（CSE 大計數）」變成「Gemini 即時搜到幾個獨立來源（~0-15）」，較精選、會波動。
+
+---
+
 ### 2026-06-11（aivis Dashboard 改版：引用來源「主打」+ 趨勢線當主角 + 波動框成區間）
 
 **動機（產品共識）：** (1) 引用來源對用戶很有價值（= AI 推薦時參考了哪些資料 → 想被推薦就去那些地方爭取曝光），決定主打。(2) 接地後分數會日常波動 → 用「趨勢 + 區間 + 說明」呈現，把波動框成「環境本來就在變」（續訂理由）而非「數據不準」。

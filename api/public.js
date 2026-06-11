@@ -144,52 +144,59 @@ async function handleBrandMentions(req, res) {
     `請「排除」品牌自己的官方網站、自家社群官方帳號（FB / IG / YouTube 官方頻道）、自家電商賣場（蝦皮 / momo / 官方賣場）等官方頁面，只列出「別人在談論這個品牌」的獨立來源，盡量列出多個不同網站。` +
     (cleanDomain ? `特別排除來自 ${cleanDomain} 的頁面。` : '')
 
+  const body = JSON.stringify({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    tools: [{ google_search: {} }],
+    generationConfig: { maxOutputTokens: 1024 },
+  })
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${BRAND_MENTIONS_GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`
+
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${BRAND_MENTIONS_GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        generationConfig: { maxOutputTokens: 1024 },
-      }),
-      signal: AbortSignal.timeout(30000),
-    })
-
-    if (!resp.ok) {
-      const text = await resp.text()
-      let upstreamMessage = ''
-      try { upstreamMessage = JSON.parse(text)?.error?.message || '' } catch { upstreamMessage = text.slice(0, 300) }
-      console.error('brand-mentions gemini error:', resp.status, upstreamMessage)
-      return res.status(502).json({
-        error: 'upstream_error',
-        message: '品牌提及搜尋暫時無法使用，請稍後再試。',
-        upstream_status: resp.status,
+    // 接地非確定性、偶爾整批回空 → 最多試 2 次、撈到來源就停。
+    // 避免「其實有提及卻回 0」被前端快取 24h、看起來像沒曝光。
+    let items = []
+    for (let attempt = 0; attempt < 2 && items.length === 0; attempt++) {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal: AbortSignal.timeout(30000),
       })
-    }
 
-    const data = await resp.json()
-    // 接地來源：groundingMetadata.groundingChunks[].web.{uri, title}
-    //   uri = Google 轉址連結（點了會導到真實頁面）；title = 網站名/網頁標題（拿來顯示 + 分類）
-    const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || []
-    const seen = new Set()
-    const items = []
-    for (const c of chunks) {
-      const uri = c.web?.uri
-      // 去掉角括號避免前端 dangerouslySetInnerHTML 被注入（title 來自 Google grounding）
-      const title = (c.web?.title || '').replace(/[<>]/g, '').trim()
-      if (!uri || !title || seen.has(title)) continue
-      if (cleanDomain && title.toLowerCase().includes(cleanDomain.toLowerCase())) continue
-      seen.add(title)
-      items.push({
-        title,
-        link: uri,
-        snippet: '',
-        displayLink: title,
-        category: categorizeBrandSource(title),
-      })
-      if (items.length >= num) break
+      if (!resp.ok) {
+        const text = await resp.text()
+        let upstreamMessage = ''
+        try { upstreamMessage = JSON.parse(text)?.error?.message || '' } catch { upstreamMessage = text.slice(0, 300) }
+        console.error('brand-mentions gemini error:', resp.status, upstreamMessage)
+        return res.status(502).json({
+          error: 'upstream_error',
+          message: '品牌提及搜尋暫時無法使用，請稍後再試。',
+          upstream_status: resp.status,
+        })
+      }
+
+      const data = await resp.json()
+      // 接地來源：groundingMetadata.groundingChunks[].web.{uri, title}
+      //   uri = Google 轉址連結（點了會導到真實頁面）；title = 網站名/網頁標題（拿來顯示 + 分類）
+      const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+      const seen = new Set()
+      items = []
+      for (const c of chunks) {
+        const uri = c.web?.uri
+        // 去掉角括號避免前端 dangerouslySetInnerHTML 被注入（title 來自 Google grounding）
+        const title = (c.web?.title || '').replace(/[<>]/g, '').trim()
+        if (!uri || !title || seen.has(title)) continue
+        if (cleanDomain && title.toLowerCase().includes(cleanDomain.toLowerCase())) continue
+        seen.add(title)
+        items.push({
+          title,
+          link: uri,
+          snippet: '',
+          displayLink: title,
+          category: categorizeBrandSource(title),
+        })
+        if (items.length >= num) break
+      }
     }
 
     const totalResults = items.length
