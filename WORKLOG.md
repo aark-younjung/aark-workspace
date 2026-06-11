@@ -6,6 +6,30 @@
 
 ---
 
+### 2026-06-11（aivis Phase 1：Gemini 改「接地」Google Search grounding + 顯示引用來源）
+
+**動機（產品定位確認）：** 用戶比對發現「工具搜出來的 Gemini 結果」≠「Gemini App 搜出來的」（App 有電話/地址、格式也不同）。根因：工具呼叫的是**裸 API**（純訓練知識、不上網），App 是**接地**（即時 Google + 地圖）。確認 aivis 核心價值 = 「貼近用戶在 AI App 真實看到的答案」：純訓練知識幾乎不變、客戶優化也測不出變化（賣個「測了不會變」的儀表板）；**接地才會隨優化變動、才兌現「AI 引用率天天在變」的訂閱賣點**。
+
+**改動：**
+- [api/aivis/fetch.js](api/aivis/fetch.js)：
+  - 模型 gemini-2.5-flash-lite → **gemini-2.5-flash**（GA、支援接地；lite 不一定支援）；定價更新 $0.30/$2.50 per MTok
+  - callGemini 請求加 `tools:[{google_search:{}}]`；回應解析 `groundingMetadata.groundingChunks[].web.{uri,title}` → sources、`webSearchQueries.length` → searchCount
+  - 成本 = token + 接地搜尋（$35/1,000、`GEMINI_GROUNDING_PRICE_PER_SEARCH`；每天前 1,500 免費，此處按全額記帳給成本可見度）
+  - sources 存進 `engine_results.gemini.sources`（JSONB，免改 schema）
+- [src/pages/AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：「展開原文」每個引擎下方顯示「🔗 AI 引用來源」可點連結（目前只有 Gemini 有）
+
+**接地後行為變化（已知）：** 分數會日常波動（正常、是「會動」的證據）；掃描變慢（要先上網）；成本上升但仍 <1% 營收。對客戶要講「趨勢」不是「即時數字」、優化到反映有數天～數週延遲。
+
+**待辦（用戶已拍板方向、依序做）：**
+- **Phase 2**：Claude 接地（伺服器端 `web_search_20260209` tool，回應處理較複雜、可能要升模型）
+- **Phase 3**：客戶自選掃描引擎 → 做成「每品牌持久設定」（02:00 cron 才讀得到）+「最多選幾隻」綁方案（免費 1 / Pro 2-3 / Agency 5），避免無上限自選反而拉高成本；額度未來可改數「引擎呼叫數」
+
+**驗證：** node --check 過；eslint 無新增問題（既有 process/useCountUp/deps）。
+
+**待用戶：** push 部署後用測試帳號掃描，確認 Gemini 答案有當前資料 + 出現「AI 引用來源」連結、且分數會隨時間/優化變動。
+
+---
+
 ### 2026-06-11（aivis Gemini 模型遷移：gemini-2.0-flash EOL → gemini-2.5-flash-lite + 規模成本分析）
 
 **根因（查網路才發現）：** `gemini-2.0-flash` 已於 **2026-02-18 棄用、2026-06-01 停止服務**（今天 06-11 已過期）。這是 429 之外、接下來會變 404 的真正根因 —— 這支模型本來就非換不可。

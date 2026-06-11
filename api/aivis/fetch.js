@@ -27,15 +27,18 @@ const MAX_TOKENS = 1024
 const PRICE_INPUT_PER_TOKEN = 1 / 1_000_000   // $1 / MTok
 const PRICE_OUTPUT_PER_TOKEN = 5 / 1_000_000  // $5 / MTok
 
-// ─── Gemini 整合（2026-06-10 加，2026-06-11 換模型 + 改 1 次/prompt） ───
-// 跨 LLM 覆蓋率：每條 prompt 的第 1 次 run 同時打 Claude + Gemini，結果存進同筆 row 的 engine_results。
-// 模型：gemini-2.5-flash-lite —— 原本的 gemini-2.0-flash 已於 2026-06-01 停止服務（EOL），
-//   Flash-Lite 是官方建議的遷移目標、定價相同（$0.10/$0.40 per MTok）、1M context。
-// 免費層上限（整支 key 共用、非每客戶）：約 15 RPM / 1,000 RPD —— 正式收費需開 Google billing 解除。
-const GEMINI_MODEL = 'gemini-2.5-flash-lite'
+// ─── Gemini 整合（2026-06-10 加；2026-06-11 換模型；2026-06-11 加 Google Search 接地） ───
+// 跨 LLM 覆蓋率 + 接地：每條 prompt 的第 1 次 run 打 Gemini（同時 Claude），存進同筆 row 的 engine_results。
+// 接地（grounding）：請求帶 tools:[{google_search:{}}]，讓 Gemini 即時上網查 → 答案貼近用戶在
+//   Gemini App 看到的（當前資料 + 引用來源），不再只靠訓練知識。回傳 groundingMetadata 帶來源。
+//   這才是 aivis 的核心價值：客戶優化網站後，接地版分數才會動（純訓練知識幾乎不變）。
+// 模型：gemini-2.5-flash（GA、支援接地；flash-lite 不一定支援）。1M context。
+const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
-const GEMINI_PRICE_INPUT_PER_TOKEN = 0.10 / 1_000_000   // $0.10 / MTok（與 2.0 Flash 相同）
-const GEMINI_PRICE_OUTPUT_PER_TOKEN = 0.40 / 1_000_000  // $0.40 / MTok（與 2.0 Flash 相同）
+const GEMINI_PRICE_INPUT_PER_TOKEN = 0.30 / 1_000_000    // $0.30 / MTok（gemini-2.5-flash）
+const GEMINI_PRICE_OUTPUT_PER_TOKEN = 2.50 / 1_000_000   // $2.50 / MTok（gemini-2.5-flash）
+// 接地搜尋計費：Gemini 2.5 = $35 / 1,000 次（每天前 1,500 次免費；此處按全額記帳給成本可見度）
+const GEMINI_GROUNDING_PRICE_PER_SEARCH = 35 / 1_000
 
 // 額度規則 — 與 [Pricing.jsx] 與 [AIVisibilityDashboard.jsx] 三邊同步
 const AIVIS_QUOTA_PER_MONTH = 150   // Pro 內含本月免費額度
@@ -232,18 +235,23 @@ export default async function handler(req, res) {
       const claudePosition = claudeMentioned ? findListPosition(claudeRes.text, brandName) : null
       const claudeContext = claudeMentioned ? extractContext(claudeRes.text, brandName) : null
 
-      // ─── Gemini 結果（額外引擎） ───
+      // ─── Gemini 結果（額外引擎、已接地） ───
       let geminiMentioned = null
       let geminiCost = 0
       let geminiPosition = null
       let geminiText = null
+      let geminiSources = null
       if (shouldCallGemini) geminiAttempts += 1
       if (geminiRes && geminiRes.ok) {
         geminiOkCount += 1
-        geminiCost = geminiRes.inputTokens * GEMINI_PRICE_INPUT_PER_TOKEN + geminiRes.outputTokens * GEMINI_PRICE_OUTPUT_PER_TOKEN
+        // 成本 = token + 接地搜尋（每次搜尋約 $0.035）
+        geminiCost = geminiRes.inputTokens * GEMINI_PRICE_INPUT_PER_TOKEN
+          + geminiRes.outputTokens * GEMINI_PRICE_OUTPUT_PER_TOKEN
+          + (geminiRes.searchCount || 0) * GEMINI_GROUNDING_PRICE_PER_SEARCH
         geminiMentioned = detectMention(geminiRes.text, brandName)
         geminiPosition = geminiMentioned ? findListPosition(geminiRes.text, brandName) : null
         geminiText = geminiRes.text
+        geminiSources = geminiRes.sources || []
       } else if (geminiRes && !geminiRes.ok) {
         geminiLastError = geminiRes.error
         // 429 / 配額耗盡單獨標記 — 前端 toast 顯示「配額用完」而非泛泛「呼叫失敗」
@@ -273,6 +281,7 @@ export default async function handler(req, res) {
           position: geminiPosition,
           cost_usd: geminiCost,
           raw: geminiText,
+          sources: geminiSources,   // 接地引用來源 [{ uri, title }]
         }
       }
 
@@ -403,6 +412,8 @@ async function callGemini(promptText, apiKey, maxRetries = 1) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: promptText }] }],
+          // 接地：讓 Gemini 自行決定要不要 Google 搜尋、搜幾次（current models 用 google_search）
+          tools: [{ google_search: {} }],
           generationConfig: { maxOutputTokens: MAX_TOKENS },
         }),
         signal: AbortSignal.timeout(30000),
@@ -422,11 +433,20 @@ async function callGemini(promptText, apiKey, maxRetries = 1) {
       }
 
       const data = await r.json()
-      // Gemini response 結構：candidates[0].content.parts[0].text
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+      const cand = data.candidates?.[0]
+      // 答案可能拆成多個 text part（接地後常見）→ 全部接起來
+      const text = (cand?.content?.parts || []).map(p => p.text).filter(Boolean).join('') || ''
+      // 接地來源：groundingMetadata.groundingChunks[].web.{uri,title}；搜尋次數用 webSearchQueries 估
+      const gm = cand?.groundingMetadata || {}
+      const sources = (gm.groundingChunks || [])
+        .map(c => (c.web ? { uri: c.web.uri, title: c.web.title || c.web.uri } : null))
+        .filter(Boolean)
+      const searchCount = (gm.webSearchQueries || []).length
       return {
         ok: true,
         text,
+        sources,
+        searchCount,
         inputTokens: data.usageMetadata?.promptTokenCount || 0,
         outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
       }

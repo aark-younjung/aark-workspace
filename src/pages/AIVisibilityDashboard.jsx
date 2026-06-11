@@ -1592,6 +1592,26 @@ function RecentResults({
                                 }}>
                                   {v?.raw ? highlightBrandAuto(v.raw, brandHighlight) : '（無原文）'}
                                 </div>
+                                {/* 接地引用來源（目前只有 Gemini 有）：AI 即時上網查時引用了哪些網站 */}
+                                {Array.isArray(v?.sources) && v.sources.length > 0 && (
+                                  <div style={{ marginTop: 8 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: engineColor(key), marginBottom: 5 }}>
+                                      🔗 AI 引用來源（{v.sources.length}）
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                      {v.sources.map((s, si) => (
+                                        <a key={si} href={s.uri} target="_blank" rel="noopener noreferrer" title={s.uri}
+                                          style={{
+                                            fontSize: 13, color: T.textMid, textDecoration: 'none',
+                                            display: 'flex', gap: 6, overflow: 'hidden',
+                                          }}>
+                                          <span style={{ color: engineColor(key), fontWeight: 700, flexShrink: 0 }}>{si + 1}.</span>
+                                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title || s.uri}</span>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
