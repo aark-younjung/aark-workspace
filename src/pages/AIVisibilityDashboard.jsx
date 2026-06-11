@@ -336,7 +336,6 @@ export default function AIVisibilityDashboard() {
   const scanCount = totalRuns
 
   // 本月新增提及次數（被 AI 提到才計入）
-  const now = new Date()
   const _monthStart = new Date(); _monthStart.setUTCDate(1); _monthStart.setUTCHours(0, 0, 0, 0)
   const monthStart = _monthStart.toISOString()  // UTC 月初、對齊後端
   const monthMentions = responses.filter(r => r.created_at >= monthStart && r.brand_mentioned).length
@@ -518,9 +517,9 @@ export default function AIVisibilityDashboard() {
         totalMentioned += json.mentioned_count
         totalRunsCount += json.runs
         if (json.gemini_status) geminiStatus = json.gemini_status  // 後端 Gemini 診斷（取最後一條）
-        // Gemini 分項（by_engine.gemini 存在 = 後端有跑 Gemini）
+        // Gemini 分項 — 累計成功次數；geminiActive 改成「真的有成功」才算（修：by_engine.gemini
+        // 在全失敗時也存在、會誤判成功顯示 0%、把真正的失敗錯誤吞掉）
         if (json.by_engine?.gemini) {
-          geminiActive = true
           geminiMentioned += json.by_engine.gemini.mentioned_count || 0
           geminiRunsCount += json.by_engine.gemini.success_runs || 0
         }
@@ -533,20 +532,24 @@ export default function AIVisibilityDashboard() {
       }
       const rate = totalRunsCount > 0 ? Math.round(totalMentioned / totalRunsCount * 100) : 0
       const geminiRate = geminiRunsCount > 0 ? Math.round(geminiMentioned / geminiRunsCount * 100) : 0
+      geminiActive = geminiRunsCount > 0  // 真的有成功才算雙引擎、全失敗走診斷分支
       setScanning(false)
       const topupNote = totalTopupConsumed > 0 ? `（含 ${totalTopupConsumed} 次 Top-up）` : ''
-      // 有跑 Gemini → 顯示雙引擎對照；否則顯示 Claude + 診斷原因（為什麼 Gemini 沒跑）
+      // 有成功跑 Gemini → 顯示雙引擎對照；否則顯示 Claude + 診斷原因（為什麼 Gemini 沒成功）
       let engineNote, toastKind = 'success'
       if (geminiActive) {
         engineNote = `Claude 提及率 ${rate}% · Gemini 提及率 ${geminiRate}%`
       } else {
-        // Gemini 沒產出結果 — 用後端診斷說明原因
+        // Gemini 沒成功 — 用後端診斷說明原因
         let reason = ''
         if (geminiStatus && !geminiStatus.key_present) {
           reason = '（⚠️ Gemini 未啟用：後端讀不到 GEMINI_API_KEY）'
           toastKind = 'warn'
         } else if (geminiStatus && geminiStatus.last_error) {
-          reason = `（⚠️ Gemini 呼叫失敗：${String(geminiStatus.last_error).slice(0, 80)}）`
+          reason = `（⚠️ Gemini 呼叫失敗：${String(geminiStatus.last_error).slice(0, 120)}）`
+          toastKind = 'warn'
+        } else if (geminiStatus && geminiStatus.key_present && geminiStatus.ok === 0) {
+          reason = '（⚠️ Gemini 全部失敗、無錯誤訊息、請查 Network）'
           toastKind = 'warn'
         }
         engineNote = `平均提及率 ${rate}%${reason}`
