@@ -5,6 +5,7 @@ import { isInAppBrowser, getInAppBrowserName, getDeviceOS, getCurrentUrl, tryOpe
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
 import AarkMark from '../components/v2/AarkMark'
+import { trackPixel } from '../lib/pixel'
 
 // 2026-05-25：移除 Cloudflare Turnstile captcha
 // 原因：Cloudflare widget 持續中斷用戶打字（即使 conditional mount 也擋不住），
@@ -86,6 +87,8 @@ export default function Register() {
       setLoading(false)
     } else {
       setSuccess(true)
+      // Meta Pixel 轉換事件（FB 廣告成效歸因）— 沒設 Pixel ID 時靜默
+      trackPixel('CompleteRegistration')
     }
   }
 

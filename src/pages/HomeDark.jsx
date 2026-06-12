@@ -294,6 +294,17 @@ export default function HomeDark() {
       .catch(() => {})
   }, [])
 
+  // 落地頁（/lp/*）帶過來的待掃網址 — 用戶註冊/登入完回到首頁，自動帶入輸入框（2026-06-13）
+  // 只帶入、不自動觸發掃描：讓用戶按下按鈕保留主控感，也避免未確認網址就扣免費站數額度
+  useEffect(() => {
+    if (!user) return
+    const pending = sessionStorage.getItem('lp_pending_url')
+    if (pending) {
+      setUrl(pending)
+      sessionStorage.removeItem('lp_pending_url')
+    }
+  }, [user])
+
   // 打字動畫:循環打/刪範例網址,只在已登入且 input 為空時跑
   useEffect(() => {
     if (!user || url) { setTypedDomain(''); return }

@@ -31,6 +31,7 @@ import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminShowcase from './pages/admin/AdminShowcase'
 import AdminMonitoring from './pages/admin/AdminMonitoring'
 import AdminActivity from './pages/admin/AdminActivity'
+import LandingPage from './pages/lp/LandingPage'
 import AIVisibility from './pages/AIVisibility'
 import AIVisibilityDashboard from './pages/AIVisibilityDashboard'
 import MyClients from './pages/MyClients'
@@ -130,6 +131,8 @@ function AppInner() {
         <Route path="/ai-visibility" element={<AIVisibility />} />
         <Route path="/ai-visibility/:id" element={<AIVisibilityDashboard />} />
         {/* 法律頁 — NewebPay 商家審核要求必備揭露 */}
+        {/* FB 廣告落地頁（2026-06-13）— /lp/google-vs-ai、/lp/ai-site-check、/lp/agency */}
+        <Route path="/lp/:variant" element={<LandingPage />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/consumer-rights" element={<ConsumerRights />} />

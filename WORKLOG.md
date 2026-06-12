@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-06-13（FB 廣告落地頁 ×3 + Meta Pixel 基建）
+
+**背景：** FB 廣告 A/B/C 三組文案與圖完成中（行銷/廣告/FB廣告文案-ABC三組.md），廣告不能直連首頁（message match + 單一出口原則）→ 建獨立落地頁資料夾 [src/pages/lp/](src/pages/lp/)。
+
+**新增：**
+- [lpContent.js](src/pages/lp/lpContent.js) — 三 variant 文案設定（headline 行內分段標色結構）：`google-vs-ai`（A 品牌主）/ `ai-site-check`（C AI 建站）/ `agency`（B 代理商候補）
+- [LandingPage.jsx](src/pages/lp/LandingPage.jsx) — 共用模板、路由 `/lp/:variant`。無導覽列、單一 CTA、青綠漸層同品牌底、公開 stats 社會證明、footer 法遵連結（FB 審核需隱私權頁可達）。未知 variant → 導回首頁
+- **掃描漏斗**：LP 留 URL（`sessionStorage.lp_pending_url`）→ 未登入導 /register、已登入導 / → [HomeDark.jsx](src/pages/HomeDark.jsx) 新 effect 在登入後自動帶入輸入框（**只帶入不自動掃**：保留用戶主控、避免未確認就扣站數額度）
+- **代理商漏斗**：`/lp/agency` CTA → 重用 Pricing 的 [AgencyWaitlistModal](src/components/v2/AgencyWaitlistModal.jsx)（呼應 6/10「候補名單有訊號才上架」決策 — B 廣告就是去產生訊號）
+- [pixel.js](src/lib/pixel.js) — Meta Pixel 工具：ID 走 env `VITE_META_PIXEL_ID`、沒設=全 no-op。事件：PageView（main.jsx init）/ **Lead**（LP CTA，content_name 帶 variant）/ **CompleteRegistration**（[Register.jsx](src/pages/Register.jsx) 註冊成功）
+
+**待用戶動作：** (1) Meta 事件管理工具建 Pixel → ID 填進 Vercel env `VITE_META_PIXEL_ID` + redeploy (2) 三組廣告各帶 utm_campaign=fb_a/fb_b/fb_c (3) 投放前用 Meta Pixel Helper 擴充驗證事件有送。
+
+**驗證：** @babel/parser 7 檔全綠（pixel/lpContent/LandingPage/App/main/HomeDark/Register）。
+
+---
+
 ### 2026-06-13（後台新頁：用戶活躍分析 AdminActivity）
 
 **需求：** 用戶想要「分析所有用戶的活躍狀態」。AdminMonitoring 已有月活躍數 + Top 10 重度使用者（聚合視角），缺的是**逐用戶分群與行動名單**（誰要流失了、誰該被推銷）。
