@@ -104,7 +104,7 @@ export default function LandingPage() {
         </p>
 
         {/* 主 CTA — 所有 variant 都以掃描框開場（agency 也是：先體驗、後申請） */}
-        <form onSubmit={handleScanSubmit} className="w-full max-w-md flex flex-col sm:flex-row gap-3 mb-10">
+        <form onSubmit={handleScanSubmit} className="w-full max-w-md flex flex-col sm:flex-row gap-3 mb-3">
           <input
             type="text"
             value={url}
@@ -121,6 +121,10 @@ export default function LandingPage() {
             {content.cta}
           </button>
         </form>
+        {/* CTA 微文案 — 拆「會不會被推銷/要不要付錢」的心理防線（學自同業最佳實踐） */}
+        <p className="text-xs mb-10 flex items-center gap-1.5" style={{ color: '#64748b' }}>
+          <span style={{ color: '#18c590' }}>✓</span> 免費・不用綁卡・30 秒出結果
+        </p>
 
         {/* 三行賣點（scan variant 用） */}
         {content.bullets && (
