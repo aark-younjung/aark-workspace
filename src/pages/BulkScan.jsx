@@ -38,6 +38,8 @@ export default function BulkScan() {
   const [results, setResults] = useState(null) // job 完成後的詳細 results
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState(null)
+  // 2026-06-12：網站沒 sitemap 時後端改用首頁連結探索 — 這裡存提示文字（null = 正常 sitemap 路線）
+  const [discoveryNote, setDiscoveryNote] = useState(null)
   const pollTimer = useRef(null)
 
   // mount 拉 website + 最新的 job（如果有進行中或最近完成的）
@@ -102,6 +104,10 @@ export default function BulkScan() {
       // detail 優先：後端的 detail 帶完整診斷（試了哪些路徑、robots.txt 有沒有寫、是否被 anti-bot 擋）
       // 只顯示泛泛的 data.error 會讓用戶不知道怎麼修（2026-06-12 fix）
       if (!r.ok) throw new Error(data.detail || data.hint || data.error || `HTTP ${r.status}`)
+      // 後備路線提示：沒 sitemap、用首頁連結湊的清單 — 告知覆蓋率有限 + 給補 sitemap 的動機
+      setDiscoveryNote(data.discoveryMethod === 'homepage_links'
+        ? `這個網站沒有 sitemap — 已改用首頁連結探索（找到 ${data.discoveredCount} 個頁面）。這只涵蓋首頁連得到的頁面，建議補上 sitemap.xml 讓掃描涵蓋全部文章。`
+        : null)
       const { data: newJob } = await supabase
         .from('bulk_scan_jobs').select('*').eq('id', data.jobId).single()
       setJob(newJob)
@@ -208,6 +214,13 @@ export default function BulkScan() {
         </div>
       )}
 
+      {/* 沒 sitemap、走首頁連結後備路線的告知（2026-06-12）— 黃色 info、不是錯誤 */}
+      {discoveryNote && (
+        <div style={{ padding: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 8, color: '#fcd34d', fontSize: 14, marginBottom: 16 }}>
+          💡 {discoveryNote}
+        </div>
+      )}
+
       {/* 沒 job 或上次失敗 / 取消 → 顯示開始按鈕（Pro / Free 不同 UX） */}
       {(!job || ['failed', 'cancelled'].includes(job.status)) && (
         isProUser ? (
@@ -217,7 +230,7 @@ export default function BulkScan() {
               {job ? '重新批次掃描' : '開始批次掃描'}
             </h3>
             <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 16 }}>
-              我們會抓你網站的 sitemap.xml，找出所有文章 URL（最多 200 篇，依 sitemap lastmod 倒序、最新先掃），
+              我們會抓你網站的 sitemap.xml，找出所有文章 URL（最多 200 篇，依 sitemap lastmod 倒序、最新先掃；沒有 sitemap 的網站會改用首頁連結探索），
               逐篇分析 7 項文章層級檢測：H1 / Meta 標題 / Meta 描述 / Open Graph / JSON-LD schema / 字數 / canonical。
               預估時長 25-30 分鐘，過程中可關閉視窗，掃完回來看結果。
             </p>

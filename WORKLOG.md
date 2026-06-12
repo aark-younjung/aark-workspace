@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-06-12（BulkScan：沒 sitemap 的網站改走「首頁連結探索」後備路線 + 錯誤提示去 WP 本位）
+
+**起因：** 用戶掃 52jcdesign.com（Joomla 站、AI 寫內容）失敗 — 8 個 sitemap 候選路徑全 404、robots.txt 是 Joomla 預設模板沒寫 Sitemap 指令。診斷確認**掃描器判斷正確、是站方真的沒 sitemap**（Joomla 核心不產 sitemap、要裝 OSMap）。台灣不少老站／AI 生成靜態站都這樣 → 與其失敗、不如降級服務。
+
+**改動 [api/bulk-scan.js](api/bulk-scan.js)：**
+1. **後備探索 `discoverUrlsFromHomepage()`**：sitemap 全滅時抓首頁 HTML、收集同網域 `<a href>`（排 mailto/tel/javascript/錨點、去 hash、保留 query 照顧 `?p=123` 型 permalink）、過 `URL_BLACKLIST_PATTERNS` 同標準過濾。只爬一層（function 時限內最安全）。實測 52jcdesign 可撈 12 個有效 URL。
+2. **`discoverSitemapUrls` 回傳改 `{urls, method}`**（'sitemap' | 'homepage_links'）、start response 加 `discoveryMethod` 欄位。
+3. **錯誤提示分平台**：原文案只講 Yoast/Rank Math（WP 本位）→ 改成 WordPress / Joomla（OSMap）/ Shopify・Wix（內建、抓不到是被擋）/ 自架靜態站（手動上傳）各自的修法 + robots.txt 加 Sitemap 指令建議。
+4. **黑名單補 3 條**（首頁連結路線實測撈到的雜訊）：`/cdn-cgi/`（Cloudflare email-protection）、`/component/users/`（Joomla 登入頁）、`/(login|cart|checkout|my-account)$` 功能頁。
+5. 「過濾後 0 篇」的錯誤訊息改準確（原本誤說「找不到 sitemap.xml」，實際是有抓到但全被過濾）。
+
+**改動 [BulkScan.jsx](src/pages/BulkScan.jsx)：** start 成功後若 `discoveryMethod === 'homepage_links'` → 顯示黃色 info 橫幅「沒有 sitemap、已改用首頁連結探索（找到 N 個頁面）、建議補 sitemap」；說明文案補一句後備路線。
+
+**驗證：** node --check + @babel/parser JSX parse 雙綠；52jcdesign 真實 HTML 模擬抽取+過濾 → 14 抓 12 有效（about/portfolio/knowledge/faq...）、2 雜訊已進黑名單。
+
+---
+
 ### 2026-06-12（BulkScan：sitemap 探索失敗只顯示泛泛錯誤 → 浮出後端完整診斷）
 
 **用戶回報：** 批次文章掃描出現「⚠️ Sitemap discovery failed」，看不出原因。

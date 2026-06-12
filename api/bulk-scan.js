@@ -39,6 +39,10 @@ const URL_BLACKLIST_PATTERNS = [
   /\/page\/\d+\/?$/i,            // 分頁（/page/2/, /page/3/ ...）
   /\.(jpg|jpeg|png|gif|webp|pdf|zip|mp4)$/i,
   /\.(kml|xml|json|rss|atom)$/i,         // 外掛自動產出的非 HTML 檔（Rank Math Local SEO 的 locations.kml 等）
+  // ↓ 2026-06-12 首頁連結後備路線實測補的（52jcdesign.com / Joomla 案例）
+  /\/cdn-cgi\//i,                        // Cloudflare 內部連結（email-protection 等）
+  /\/component\/users\//i,               // Joomla 使用者頁（login / profile）
+  /\/(login|logout|register|signin|sign-in|cart|checkout|my-account)\/?$/i,  // 各平台登入/購物車類功能頁
 ]
 
 export default async function handler(req, res) {
@@ -129,8 +133,11 @@ async function handleStart(req, res, supabase, userId) {
   if (jobErr) return res.status(500).json({ error: 'Failed to create job', detail: jobErr.message })
 
   let urls
+  let discoveryMethod = 'sitemap'
   try {
-    urls = await discoverSitemapUrls(website.url)
+    const discovery = await discoverSitemapUrls(website.url)
+    urls = discovery.urls
+    discoveryMethod = discovery.method
   } catch (e) {
     await supabase.from('bulk_scan_jobs').update({
       status: 'failed',
@@ -141,14 +148,15 @@ async function handleStart(req, res, supabase, userId) {
   }
 
   if (urls.length === 0) {
+    // 走到這裡代表 sitemap 或首頁連結「有抓到」、但過濾掉封存頁/附件後一篇可掃的都不剩
     await supabase.from('bulk_scan_jobs').update({
       status: 'failed',
-      error_message: '在你的網站找不到 sitemap.xml — 請先確認 SEO 外掛（Yoast / Rank Math）有開啟產生 sitemap',
+      error_message: 'sitemap／首頁連結有抓到、但過濾掉分類頁／標籤頁／附件後沒有可掃的文章 URL — 網站可能還沒有發布任何文章',
       finished_at: new Date().toISOString(),
     }).eq('id', job.id)
     return res.status(404).json({
-      error: 'No sitemap URLs found',
-      hint: '請確認網站根目錄有 sitemap.xml、或 Yoast/Rank Math 已啟用 sitemap',
+      error: 'No scannable URLs found',
+      hint: 'sitemap／首頁連結有抓到、但過濾後沒有可掃的文章 URL — 確認網站已發布文章',
       jobId: job.id,
     })
   }
@@ -186,6 +194,8 @@ async function handleStart(req, res, supabase, userId) {
     discoveredCount,
     totalUrls: queuedUrls.length,
     capped,
+    // 'sitemap' | 'homepage_links' — 後者代表網站沒 sitemap、是用首頁連結湊的清單（前端提示補 sitemap）
+    discoveryMethod,
     estimatedMinutes: Math.max(1, Math.ceil(queuedUrls.length / 8)),
   })
 }
@@ -414,10 +424,29 @@ async function discoverSitemapUrls(siteUrl) {
   }
 
   if (!xml) {
+    // ─── 後備路線（2026-06-12）：sitemap 全滅 → 改爬首頁站內連結 ───
+    // 適用：沒 sitemap 的 Joomla / 自架 / AI 生成靜態站（實案：52jcdesign.com，Joomla 無 OSMap）
+    // 只爬首頁一層（function 時限內最安全），抓到的是導覽列 + 首頁列表連結 — 不如 sitemap 全
+    // 但「能掃部分」遠勝「直接失敗」；UI 會提示用戶補 sitemap
+    let fallbackUrls = []
+    try {
+      fallbackUrls = await discoverUrlsFromHomepage(siteUrl)
+    } catch { /* fallback 失敗就走原本的 throw */ }
+    if (fallbackUrls.length > 0) {
+      return { urls: fallbackUrls, method: 'homepage_links' }
+    }
+
     const robotsHint = robotsSitemaps.length > 0
       ? `（robots.txt 內找到 ${robotsSitemaps.length} 個 Sitemap 指令但都抓不到 — 可能被 anti-bot 擋）`
       : '（robots.txt 內也沒寫 Sitemap 指令）'
-    throw new Error(`已試 ${allCandidates.length} 個 sitemap 路徑都找不到有效 XML${robotsHint}。請確認：(a) 網站有裝 Yoast / Rank Math 等 SEO 外掛並啟用 sitemap (b) sitemap 不被 Cloudflare / mod_security 擋 (c) robots.txt 可正常存取`)
+    // 修法提示分平台寫 — 不只 WordPress（2026-06-12：原文案太 WP 本位，Joomla/靜態站用戶看了沒用）
+    throw new Error(
+      `已試 ${allCandidates.length} 個 sitemap 路徑都找不到有效 XML${robotsHint}，改抓首頁連結也沒有收穫。` +
+      `修法依平台：WordPress → 裝 Rank Math / Yoast 並開啟 sitemap（WP 5.5+ 內建 /wp-sitemap.xml）；` +
+      `Joomla → 裝 OSMap 擴充套件；Shopify / Wix → 內建 /sitemap.xml、抓不到通常是被防火牆擋；` +
+      `自架或 AI 生成的靜態站 → 手動產一份 sitemap.xml 上傳到網站根目錄。` +
+      `完成後建議在 robots.txt 加一行「Sitemap: 你的sitemap網址」`
+    )
   }
 
   // 如果是 sitemap index → 抓所有子 sitemap 的 URL 集合 union
@@ -440,11 +469,43 @@ async function discoverSitemapUrls(siteUrl) {
         if (r.status === 'fulfilled') allEntries.push(...r.value)
       }
     }
-    return filterAndSort(allEntries)
+    return { urls: filterAndSort(allEntries), method: 'sitemap' }
   }
 
   // 單一 sitemap → 直接解析
-  return filterAndSort(extractUrlsWithMeta(xml))
+  return { urls: filterAndSort(extractUrlsWithMeta(xml)), method: 'sitemap' }
+}
+
+// ─── Sitemap 全滅時的後備探索（2026-06-12） ───
+// 抓首頁 HTML、收集同網域的站內連結當掃描清單。
+// 只爬一層：Vercel function 時限內最安全；深爬交給未來版本（若需求出現）。
+// 雜訊過濾沿用 URL_BLACKLIST_PATTERNS（tag/category/feed/附件等），與 sitemap 路線同標準。
+async function discoverUrlsFromHomepage(siteUrl) {
+  const origin = new URL(siteUrl).origin
+  const r = await fetchWithUaFallback(origin + '/', AbortSignal.timeout(SITEMAP_FETCH_TIMEOUT_MS))
+  if (!r.ok) return []
+  const html = await r.text()
+
+  // 抓所有 <a href="...">；排除頁內錨點（#）、mailto/tel/javascript
+  const tagMatches = html.match(/<a\s[^>]*href\s*=\s*["'][^"']+["']/gi) || []
+  const entries = []
+  const seen = new Set()
+  for (const tag of tagMatches) {
+    const m = tag.match(/href\s*=\s*["']([^"']+)["']/i)
+    if (!m) continue
+    const raw = m[1].trim()
+    if (/^(mailto:|tel:|javascript:|#)/i.test(raw)) continue
+    let u
+    try { u = new URL(raw, origin + '/') } catch { continue }
+    if (u.origin !== origin) continue            // 只收站內連結
+    if (!/^https?:$/.test(u.protocol)) continue
+    u.hash = ''                                   // 去頁內錨點、其餘保留（含 query，照顧 ?p=123 型 permalink）
+    const clean = u.toString()
+    if (seen.has(clean)) continue
+    seen.add(clean)
+    entries.push({ url: clean, lastmod: null })   // 首頁連結沒有 lastmod、排序維持頁面出現順序
+  }
+  return filterAndSort(entries)
 }
 
 // 從 sitemap XML 抽出所有 <loc>...</loc> 內容
