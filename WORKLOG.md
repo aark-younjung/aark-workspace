@@ -21,6 +21,8 @@
 
 **驗證：** @babel/parser 7 檔全綠（pixel/lpContent/LandingPage/App/main/HomeDark/Register）。
 
+**追加（同日）— /lp/agency 改版「先體驗、後申請」：** 用戶指出冷流量直接面對候補申請表轉換太差（沒用過產品不會留資料）。改成雙層漏斗：主 CTA = 掃描框（「免費掃一個客戶的網站，看你能交付什麼」→ 代理商先變免費用戶、進產品親手摸，之後可在 AdminActivity「Free 高頻活躍」名單主動接觸開通試用）+ 三步流程卡（掃描 → 一鍵客戶報告 → 變月費服務）+ 候補申請降為次要 CTA（描邊按鈕 + 「免費一個月・不綁卡・24 小時真人聯繫」降風險文案）。Pixel Lead 事件分流：掃描=`lp_agency`、候補=`lp_agency_waitlist`。
+
 ---
 
 ### 2026-06-13（後台新頁：用戶活躍分析 AdminActivity）

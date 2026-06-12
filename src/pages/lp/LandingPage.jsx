@@ -54,9 +54,9 @@ export default function LandingPage() {
     navigate(user ? '/' : '/register')
   }
 
-  // 代理商候補：Lead 事件 + 開 modal
+  // 代理商候補（次要 CTA）：Lead 事件單獨標記、與掃描 Lead 區分以利成效分析
   const handleWaitlist = () => {
-    trackPixel('Lead', { content_name: 'lp_agency' })
+    trackPixel('Lead', { content_name: 'lp_agency_waitlist' })
     setWaitlistOpen(true)
   }
 
@@ -103,44 +103,70 @@ export default function LandingPage() {
           {content.sub}
         </p>
 
-        {/* CTA 區 — scan 模式給掃描框、waitlist 模式給按鈕 */}
-        {content.mode === 'scan' ? (
-          <form onSubmit={handleScanSubmit} className="w-full max-w-md flex flex-col sm:flex-row gap-3 mb-10">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={content.inputPlaceholder}
-              className="flex-1 px-5 py-3.5 rounded-xl text-white placeholder-slate-500 outline-none border"
-              style={{ background: 'rgba(15,23,42,0.8)', borderColor: 'rgba(148,163,184,0.25)' }}
-            />
-            <button
-              type="submit"
-              className="px-6 py-3.5 rounded-xl font-bold whitespace-nowrap transition-transform hover:scale-105"
-              style={{ background: '#18c590', color: '#011520' }}
-            >
-              {content.cta}
-            </button>
-          </form>
-        ) : (
+        {/* 主 CTA — 所有 variant 都以掃描框開場（agency 也是：先體驗、後申請） */}
+        <form onSubmit={handleScanSubmit} className="w-full max-w-md flex flex-col sm:flex-row gap-3 mb-10">
+          <input
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder={content.inputPlaceholder}
+            className="flex-1 px-5 py-3.5 rounded-xl text-white placeholder-slate-500 outline-none border"
+            style={{ background: 'rgba(15,23,42,0.8)', borderColor: 'rgba(148,163,184,0.25)' }}
+          />
           <button
-            onClick={handleWaitlist}
-            className="px-10 py-4 rounded-xl font-bold text-lg mb-10 transition-transform hover:scale-105"
+            type="submit"
+            className="px-6 py-3.5 rounded-xl font-bold whitespace-nowrap transition-transform hover:scale-105"
             style={{ background: '#18c590', color: '#011520' }}
           >
             {content.cta}
           </button>
+        </form>
+
+        {/* 三行賣點（scan variant 用） */}
+        {content.bullets && (
+          <ul className="space-y-3 mb-12">
+            {content.bullets.map((b, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: '#cbd5e1' }}>
+                <span style={{ color: '#18c590' }}>✓</span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
         )}
 
-        {/* 三行賣點 */}
-        <ul className="space-y-3 mb-12">
-          {content.bullets.map((b, i) => (
-            <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: '#cbd5e1' }}>
-              <span style={{ color: '#18c590' }}>✓</span>
-              <span>{b}</span>
-            </li>
-          ))}
-        </ul>
+        {/* agency variant：三步流程 + 次要候補 CTA（熱流量直達出口） */}
+        {content.steps && (
+          <div className="w-full max-w-md mb-12">
+            <div className="space-y-4 mb-10">
+              {content.steps.map((s, i) => (
+                <div key={i} className="flex items-start gap-4 rounded-xl border p-4"
+                  style={{ background: 'rgba(15,23,42,0.6)', borderColor: 'rgba(148,163,184,0.15)' }}>
+                  <span
+                    className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
+                    style={{ background: 'rgba(24,197,144,0.15)', color: '#18c590' }}
+                  >
+                    {i + 1}
+                  </span>
+                  <div>
+                    <p className="text-white font-semibold text-sm mb-0.5">{s.title}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: '#94a3b8' }}>{s.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-center">
+              <p className="text-sm mb-3" style={{ color: '#94a3b8' }}>準備好接案了？</p>
+              <button
+                onClick={handleWaitlist}
+                className="px-8 py-3.5 rounded-xl font-bold border transition-colors hover:bg-white/5"
+                style={{ color: '#18c590', borderColor: 'rgba(24,197,144,0.45)', background: 'transparent' }}
+              >
+                {content.waitlistCta}
+              </button>
+              <p className="text-xs mt-3" style={{ color: '#64748b' }}>{content.waitlistNote}</p>
+            </div>
+          </div>
+        )}
 
         {/* 社會證明（公開 stats 端點、載不到就不顯示） */}
         {stats && (
