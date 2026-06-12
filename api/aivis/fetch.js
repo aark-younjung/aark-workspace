@@ -8,7 +8,9 @@
  *   runs        (選填) 重複次數，預設 3，上限 5
  *
  * Env:
- *   ANTHROPIC_API_KEY          — Anthropic Console 申請的 API key
+ *   ANTHROPIC_API_KEY          — Anthropic Console 申請的 API key（主引擎，必填）
+ *   GEMINI_API_KEY             — Google AI Studio 的 key（選用，沒設就不跑 Gemini）
+ *   OPENAI_API_KEY             — OpenAI Platform 的 key（選用，沒設就不跑 ChatGPT；2026-06-12 加）
  *   SUPABASE_URL               — Supabase 專案 URL
  *   SUPABASE_SERVICE_ROLE_KEY  — service role（後端用，繞過 RLS）
  *
@@ -40,6 +42,17 @@ const GEMINI_PRICE_OUTPUT_PER_TOKEN = 2.50 / 1_000_000   // $2.50 / MTok（gemin
 // 接地搜尋計費：Gemini 2.5 = $35 / 1,000 次（每天前 1,500 次免費；此處按全額記帳給成本可見度）
 const GEMINI_GROUNDING_PRICE_PER_SEARCH = 35 / 1_000
 
+// ─── ChatGPT（OpenAI）整合（2026-06-12 加） ───
+// 跟 Gemini 同策略：每條 prompt 的第 1 次 run 打 OpenAI（與 Claude 並行），存同筆 row 的 engine_results.chatgpt。
+// 接地：Responses API 帶 tools:[{type:'web_search'}]，模擬用戶在 ChatGPT 問推薦時的即時搜尋 → 客戶優化網站後分數才會動。
+// reasoning effort 設 low：推薦類查詢不需深推理，省 token 也壓延遲（實測 low ≈ 8s、預設 30s+ 會貼近 function 時限）。
+const OPENAI_MODEL = 'gpt-5-mini'
+const OPENAI_API_URL = 'https://api.openai.com/v1/responses'
+const OPENAI_PRICE_INPUT_PER_TOKEN = 0.25 / 1_000_000   // $0.25 / MTok（gpt-5-mini）
+const OPENAI_PRICE_OUTPUT_PER_TOKEN = 2.00 / 1_000_000  // $2.00 / MTok
+// web search 工具計費：$10 / 1,000 次工具呼叫；搜尋抓回的內容 token 已含在 input_tokens 一起計價
+const OPENAI_WEB_SEARCH_PRICE_PER_CALL = 10 / 1_000
+
 // 額度規則 — 與 [Pricing.jsx] 與 [AIVisibilityDashboard.jsx] 三邊同步
 const AIVIS_QUOTA_PER_MONTH = 150   // Pro 內含本月免費額度
 const AIVIS_HARD_CAP = 1000          // 每月查詢硬上限（內含 + Top-up 合計），Agency 推出後解除
@@ -67,6 +80,9 @@ export default async function handler(req, res) {
   // Gemini 為「選用」— 沒設 GEMINI_API_KEY 就只跑 Claude（向下相容）
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY
   const useGemini = !!GEMINI_API_KEY
+  // OpenAI（ChatGPT 引擎）同樣「選用」— 沒設 OPENAI_API_KEY 就不跑（向下相容）
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+  const useOpenAI = !!OPENAI_API_KEY
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: 'Missing required environment variables' })
@@ -163,6 +179,8 @@ export default async function handler(req, res) {
     // 2026-06-10 Gemini 診斷：追蹤後端到底有沒有讀到 key / 呼叫成功 / 錯誤
     // 2026-06-11：geminiQuotaExhausted — 429/配額耗盡單獨標記，前端顯示專屬提示
     let geminiAttempts = 0, geminiOkCount = 0, geminiLastError = null, geminiQuotaExhausted = false
+    // 2026-06-12 ChatGPT 診斷：同 Gemini 模式 — 餘額耗盡（insufficient_quota）單獨標記，前端可顯示專屬提示
+    let openaiAttempts = 0, openaiOkCount = 0, openaiLastError = null, openaiQuotaExhausted = false
 
     for (let i = 1; i <= runs; i++) {
       // 額度判斷（per-run，每次跑前先看下一筆會不會破線）
@@ -216,9 +234,12 @@ export default async function handler(req, res) {
       // 2026-06-11：Gemini 每條 prompt 只問 1 次（i===1）省 ⅔ 免費配額 —
       //   Gemini 是次要引擎、要的是「有沒有被提到」的訊號、不像 Claude 要跑 3 次取平均。
       const shouldCallGemini = useGemini && i === 1
-      const [claudeRes, geminiRes] = await Promise.all([
+      // 2026-06-12 ChatGPT 同政策：每條 prompt 只問 1 次（i===1）— 副引擎要的是「有沒有被提到」的訊號
+      const shouldCallOpenAI = useOpenAI && i === 1
+      const [claudeRes, geminiRes, openaiRes] = await Promise.all([
         callClaude(prompt.text, ANTHROPIC_API_KEY),
         shouldCallGemini ? callGemini(prompt.text, GEMINI_API_KEY) : Promise.resolve(null),
+        shouldCallOpenAI ? callOpenAI(prompt.text, OPENAI_API_KEY) : Promise.resolve(null),
       ])
 
       if (!claudeRes.ok) {
@@ -261,6 +282,32 @@ export default async function handler(req, res) {
         console.warn(`Gemini call failed for run ${i}:`, geminiRes.error)
       }
 
+      // ─── ChatGPT 結果（額外引擎、帶 web search）2026-06-12 ───
+      let openaiMentioned = null
+      let openaiCost = 0
+      let openaiPosition = null
+      let openaiText = null
+      let openaiSources = null
+      if (shouldCallOpenAI) openaiAttempts += 1
+      if (openaiRes && openaiRes.ok) {
+        openaiOkCount += 1
+        // 成本 = token + web search 工具呼叫（每次 $0.01）
+        openaiCost = openaiRes.inputTokens * OPENAI_PRICE_INPUT_PER_TOKEN
+          + openaiRes.outputTokens * OPENAI_PRICE_OUTPUT_PER_TOKEN
+          + (openaiRes.searchCount || 0) * OPENAI_WEB_SEARCH_PRICE_PER_CALL
+        openaiMentioned = detectMention(openaiRes.text, brandName)
+        openaiPosition = openaiMentioned ? findListPosition(openaiRes.text, brandName) : null
+        openaiText = openaiRes.text
+        openaiSources = openaiRes.sources || []
+      } else if (openaiRes && !openaiRes.ok) {
+        openaiLastError = openaiRes.error
+        // OpenAI 餘額耗盡（insufficient_quota）/ 429 單獨標記 — 這就是「auto-recharge 沒開、數據無聲消失」的偵測點
+        if (openaiRes.status === 429 || /insufficient_quota|\b429\b/i.test(openaiRes.error || '')) {
+          openaiQuotaExhausted = true
+        }
+        console.warn(`OpenAI call failed for run ${i}:`, openaiRes.error)
+      }
+
       // ─── engine_results JSONB（2026-06-10 路線 B：可擴充 N 引擎） ───
       // 1 row = 1 scan、所有引擎結果存同一筆的 engine_results。之後加 ChatGPT/Perplexity
       // 只要在這多塞一個 key、dashboard 自動列出、不用改 schema 也不用改 UI。
@@ -282,6 +329,15 @@ export default async function handler(req, res) {
           cost_usd: geminiCost,
           raw: geminiText,
           sources: geminiSources,   // 接地引用來源 [{ uri, title }]
+        }
+      }
+      if (openaiRes && openaiRes.ok) {
+        engineResults.chatgpt = {
+          mentioned: openaiMentioned,
+          position: openaiPosition,
+          cost_usd: openaiCost,
+          raw: openaiText,
+          sources: openaiSources,   // web search 引用來源 [{ uri, title }]
         }
       }
 
@@ -324,7 +380,7 @@ export default async function handler(req, res) {
         })
       }
 
-      // results 同時記錄兩個 engine 的結果（給 client 顯示用）
+      // results 同時記錄各 engine 的結果（給 client 顯示用）
       results.push({
         run: i,
         claude: { mentioned: claudeMentioned, position: claudePosition, cost_usd: claudeCost },
@@ -333,6 +389,11 @@ export default async function handler(req, res) {
           : (geminiRes && geminiRes.ok
             ? { mentioned: geminiMentioned, cost_usd: geminiCost }
             : { error: geminiRes?.error || 'failed' }),
+        // ChatGPT 同規則（2026-06-12）
+        chatgpt: !shouldCallOpenAI ? null
+          : (openaiRes && openaiRes.ok
+            ? { mentioned: openaiMentioned, cost_usd: openaiCost }
+            : { error: openaiRes?.error || 'failed' }),
       })
     }
 
@@ -341,8 +402,11 @@ export default async function handler(req, res) {
     const claudeMentionedCount = results.filter(r => r.claude?.mentioned).length
     const geminiMentionedCount = results.filter(r => r.gemini?.mentioned).length
     const geminiSuccessRuns = results.filter(r => r.gemini && !r.gemini.error).length
+    const chatgptMentionedCount = results.filter(r => r.chatgpt?.mentioned).length
+    const chatgptSuccessRuns = results.filter(r => r.chatgpt && !r.chatgpt.error).length
     const claudeCostTotal = results.reduce((sum, r) => sum + (r.claude?.cost_usd || 0), 0)
     const geminiCostTotal = results.reduce((sum, r) => sum + (r.gemini?.cost_usd || 0), 0)
+    const chatgptCostTotal = results.reduce((sum, r) => sum + (r.chatgpt?.cost_usd || 0), 0)
 
     return res.status(200).json({
       success: true,
@@ -352,8 +416,8 @@ export default async function handler(req, res) {
       // 主指標：Claude（向下相容、之前的 dashboard 看這兩個欄位）
       mentioned_count: claudeMentionedCount,
       mention_rate: claudeMentionedCount / runs,
-      total_cost_usd: claudeCostTotal + geminiCostTotal,
-      // 跨 LLM 分項（2026-06-10 新增、給 dashboard 顯示「Claude vs Gemini」對照）
+      total_cost_usd: claudeCostTotal + geminiCostTotal + chatgptCostTotal,
+      // 跨 LLM 分項（2026-06-10 新增、2026-06-12 加 ChatGPT、給 dashboard 顯示各引擎對照）
       by_engine: {
         claude: {
           mentioned_count: claudeMentionedCount,
@@ -365,6 +429,12 @@ export default async function handler(req, res) {
           mention_rate: geminiSuccessRuns > 0 ? geminiMentionedCount / geminiSuccessRuns : 0,
           success_runs: geminiSuccessRuns,
           cost_usd: geminiCostTotal,
+        } : null,
+        chatgpt: useOpenAI ? {
+          mentioned_count: chatgptMentionedCount,
+          mention_rate: chatgptSuccessRuns > 0 ? chatgptMentionedCount / chatgptSuccessRuns : 0,
+          success_runs: chatgptSuccessRuns,
+          cost_usd: chatgptCostTotal,
         } : null,
       },
       results,
@@ -384,6 +454,14 @@ export default async function handler(req, res) {
         ok: geminiOkCount,
         last_error: geminiLastError,
         quota_exhausted: geminiQuotaExhausted,
+      },
+      // 2026-06-12 ChatGPT 診斷：同 Gemini 格式 — quota_exhausted=true 通常代表 OpenAI 餘額用完（該開 auto-recharge 了）
+      chatgpt_status: {
+        key_present: useOpenAI,
+        attempts: openaiAttempts,
+        ok: openaiOkCount,
+        last_error: openaiLastError,
+        quota_exhausted: openaiQuotaExhausted,
       },
     })
 
@@ -449,6 +527,81 @@ async function callGemini(promptText, apiKey, maxRetries = 1) {
         searchCount,
         inputTokens: data.usageMetadata?.promptTokenCount || 0,
         outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
+      }
+    } catch (err) {
+      // 逾時 / 網路錯誤不重試（每次最多 30s、重試會拖爆 function 時限）
+      return { ok: false, error: err.message }
+    }
+  }
+  return { ok: false, error: lastError || 'unknown error' }
+}
+
+// 呼叫 OpenAI Responses API（2026-06-12）— ChatGPT 引擎、帶 web_search 工具接地
+// 失敗回 {ok:false, error, status?}；失敗不擋 Claude 主流程（同 Gemini fail-soft 設計）。
+// 429（速率/餘額）/ 503 短暫退避重試 1 次；逾時/網路錯誤不重試（避免拖爆 function 時限）。
+// 注意：insufficient_quota（帳戶餘額耗盡）會以 429 回 — 上層用 openaiQuotaExhausted 單獨標記。
+async function callOpenAI(promptText, apiKey, maxRetries = 1) {
+  let lastError = null
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const r = await fetch(OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: OPENAI_MODEL,
+          input: promptText,
+          // 接地：讓模型自行決定要不要上網搜尋、搜幾次（計費以實際 web_search_call 次數算）
+          tools: [{ type: 'web_search' }],
+          // low：推薦類查詢不需深推理 — 實測 8s vs 預設 30s+，避免貼近 Vercel function 時限
+          reasoning: { effort: 'low' },
+          // 上限含 reasoning token，設 2048 給 low effort 留足空間（可見回答 ~500-800 tok）
+          max_output_tokens: 2048,
+        }),
+        signal: AbortSignal.timeout(30000),
+      })
+
+      // 429（速率/餘額）/ 503 → 短暫退避後重試；最後仍失敗才回傳（帶 status 給上層判斷配額）
+      if (r.status === 429 || r.status === 503) {
+        const errText = await r.text()
+        lastError = `HTTP ${r.status}: ${errText.slice(0, 300)}`
+        if (attempt < maxRetries) { await sleep(800 * (attempt + 1)); continue }
+        return { ok: false, error: lastError, status: r.status }
+      }
+
+      if (!r.ok) {
+        const errText = await r.text()
+        return { ok: false, error: `HTTP ${r.status}: ${errText.slice(0, 300)}`, status: r.status }
+      }
+
+      const data = await r.json()
+      // output 是混合陣列：reasoning / web_search_call / message — 答案在 message 的 content parts
+      let text = ''
+      const sources = []
+      let searchCount = 0
+      for (const item of data.output || []) {
+        if (item.type === 'web_search_call') searchCount += 1
+        if (item.type === 'message') {
+          for (const part of item.content || []) {
+            if (part.text) text += part.text
+            // 引用來源在 annotations（type=url_citation）→ 正規化成跟 Gemini sources 同形狀 {uri,title}
+            for (const ann of part.annotations || []) {
+              if (ann.type === 'url_citation' && ann.url) {
+                sources.push({ uri: ann.url, title: ann.title || ann.url })
+              }
+            }
+          }
+        }
+      }
+      return {
+        ok: true,
+        text,
+        sources,
+        searchCount,
+        inputTokens: data.usage?.input_tokens || 0,
+        outputTokens: data.usage?.output_tokens || 0,
       }
     } catch (err) {
       // 逾時 / 網路錯誤不重試（每次最多 30s、重試會拖爆 function 時限）

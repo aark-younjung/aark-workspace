@@ -6,6 +6,26 @@
 
 ---
 
+### 2026-06-12（aivis 第 3 引擎 ChatGPT 上線：OpenAI Responses API + web_search 接地）
+
+**背景：** FB 廣告即將上線、文案直接點名 ChatGPT — 監測產品沒有 ChatGPT = credibility gap。aivis 自 6/10 起的 `engine_results` JSONB 路線 B 本來就為此鋪路（前端 `ENGINE_META` 連 chatgpt 的 OpenAI 綠 `#10a37f` 都預留了）。
+
+**改動 [api/aivis/fetch.js](api/aivis/fetch.js)（唯一改動檔，前端 0 改動）：**
+- 新增 `callOpenAI()`：OpenAI **Responses API**（`/v1/responses`）+ `gpt-5-mini` + `tools:[{type:'web_search'}]` 接地。照 `callGemini` 同模式：429/503 退避重試 1 次、30s timeout、逾時不重試、fail-soft 不擋 Claude 主流程。
+- **`reasoning: { effort: 'low' }` 是關鍵**：實測 low ≈ 8 秒/1 次搜尋（預設 effort 跑了 3 次搜尋、~30s+ 會貼近 function 時限）。`max_output_tokens: 2048`（含 reasoning token，low 下可見回答 ~500-800 tok 足夠）。
+- 呼叫政策同 Gemini：**每條 prompt 只在 run 1 打**（副引擎要「有沒有被提到」訊號、不用 3 次平均）。
+- 解析：`output[]` 混合陣列（reasoning / web_search_call / message）— text 取 message parts 串接、sources 取 `annotations[type=url_citation]` 正規化成跟 Gemini 同形狀 `{uri,title}`、searchCount 數 `web_search_call` 項。
+- 計費常數：input $0.25/MTok、output $2/MTok（gpt-5-mini）+ **web search 工具 $10/1k 次呼叫**（搜尋內容 token 已含在 input_tokens）。實測單次帶搜尋查詢 ~$0.038；150 額度/月 ≈ 50 次 ChatGPT 呼叫 ≈ $1.9/用戶/月。
+- 寫入：`engine_results.chatgpt = {mentioned, position, cost_usd, raw, sources}`（1 row = 1 scan 不變、額度不受影響）。
+- 回傳：`by_engine.chatgpt` + `chatgpt_status`（key_present/attempts/ok/last_error/**quota_exhausted**）— quota_exhausted 含 `insufficient_quota` 偵測（OpenAI 餘額耗盡 = auto-recharge 沒開的警訊）。
+- env：`OPENAI_API_KEY` 選用、沒設就不跑（向下相容，同 GEMINI_API_KEY 模式）。
+
+**驗證：** key 實測 3 連發（基本呼叫 ✅ / web_search 3 次搜尋帶引用 ✅ / low effort 8 秒 1 搜尋 ✅）+ `node --check` 語法通過。**未部署** — 待用戶在 Vercel 加 `OPENAI_API_KEY` env var 後 push 部署 + 沙盒實測（aark6465 測試帳號）。
+
+**帳號備忘：** OpenAI 走「原型 $5」方案、個人身份購買（台灣企業稅號流程白屏 bug、統編日後去 Billing preferences 補）。**廣告上線前要開 auto-recharge**（低於 $5 充 $10、月上限 $20-30）— 已存 memory 提醒。
+
+---
+
 ### 2026-06-11（媒體曝光 / 品牌外部提及「復活」：Custom Search 死路 → 改用 Gemini 接地）
 
 **背景：** brand-mentions（BrandMentionsCard，在 Dashboard / DashboardV2）原用 Google Custom Search（CSE），2026-06-10 因 **403 PERMISSION_DENIED** parked。本次徹底排查仍無解：
