@@ -17,7 +17,7 @@
 - **代理商漏斗**：`/lp/agency` CTA → 重用 Pricing 的 [AgencyWaitlistModal](src/components/v2/AgencyWaitlistModal.jsx)（呼應 6/10「候補名單有訊號才上架」決策 — B 廣告就是去產生訊號）
 - [pixel.js](src/lib/pixel.js) — Meta Pixel 工具：ID 走 env `VITE_META_PIXEL_ID`、沒設=全 no-op。事件：PageView（main.jsx init）/ **Lead**（LP CTA，content_name 帶 variant）/ **CompleteRegistration**（[Register.jsx](src/pages/Register.jsx) 註冊成功）
 
-**待用戶動作：** (1) Meta 事件管理工具建 Pixel → ID 填進 Vercel env `VITE_META_PIXEL_ID` + redeploy (2) 三組廣告各帶 utm_campaign=fb_a/fb_b/fb_c (3) 投放前用 Meta Pixel Helper 擴充驗證事件有送。
+**待用戶動作：** (1) ~~Meta 事件管理工具建 Pixel → ID 填進 Vercel env `VITE_META_PIXEL_ID` + redeploy~~ ✅ 同日完成（Pixel ID 936559629392661、production bundle 已驗證 fbq init 上線）(2) 三組廣告各帶 utm_campaign=fb_a/fb_b/fb_c (3) 投放前用事件管理工具「測試事件」驗證 PageView + Lead。
 
 **驗證：** @babel/parser 7 檔全綠（pixel/lpContent/LandingPage/App/main/HomeDark/Register）。
 
