@@ -6,6 +6,16 @@
 
 ---
 
+### 2026-06-13（Pro 到期自動降級：補上從來沒存在過的 sweep）
+
+**起因：** 用戶問「送朋友一個月 Pro，後台有到期下架機制嗎？」→ 排查發現 **`pro_expires_at` 寫入方有兩條（5/13 客服延長工具、6/9 年繳 notify P0 fix）、但讀取降級方是 0 條**——cron 只掃 trial、AuthContext 沒 lazy check。實際後果：年繳客戶（含第一個付費客戶 yuppy0912）365 天後是終身 Pro；[Account.jsx](src/pages/Account.jsx) 承諾「到期後自動降為免費版」沒實作；[newebpay-notify.js](api/newebpay-notify.js) 6/9 的註解假設這個 cron 存在（從未存在）。
+
+**修法 [cron-weekly-reports.js](api/cron-weekly-reports.js)：** 新增 `processProExpiry()` 進每日 cron——`is_pro=true AND pro_expires_at IS NOT NULL AND pro_expires_at < now()` → `is_pro=false`。安全範圍驗證過：**月繳 NPA 用戶 pro_expires_at=null 完全不受影響**；會降的只有年繳到期/客服延長到期/贈送到期三種（全是該降的）。只動 is_pro、其餘欄位留作歷史。回傳加 `pro_expiry` 計數。
+
+**待做（記在 code 註解）：** 到期前 7 天續訂提醒 email（仿 trial Day 4/6/7 模式）——年繳客戶明年到期前該收到提醒，不是默默降級。
+
+---
+
 ### 2026-06-13（Claude 主引擎接地 + Top-up 改價：300/800 → 40/100 次）
 
 **背景：** 用戶發現「ChatGPT 有引用來源、Claude 沒有」→ 根因：主引擎 callClaude 是裸呼叫（三引擎裡唯一不接網路），而額度/mention 表/趨勢全以它為準。接地後成本跳級（~NT$0.4 → ~NT$5/掃描）→ Top-up 舊價（NT$1.63/1.24 每次）變成賣一次虧 NT$3-5 → 兩件事綁定一批上。

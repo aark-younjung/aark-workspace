@@ -455,6 +455,40 @@ async function processWeeklyReports({ supabase, RESEND_API_KEY, SITE_URL }) {
   return results
 }
 
+// ===========================================================================
+// processProExpiry — 每天跑：掃 pro_expires_at 過期的 Pro → 降回 Free（2026-06-13 加）
+// ===========================================================================
+// 背景：pro_expires_at 自 5/13（客服延長工具）與 6/9（年繳 notify P0 fix）就在寫入，
+// 但從來沒有任何機制讀它來降級 — 年繳客戶 365 天後實際上是「終身 Pro」，
+// 且 Account.jsx 對用戶承諾「到期後自動降為免費版」。本函式補上這個洞。
+//
+// 安全範圍：只掃 pro_expires_at IS NOT NULL 且已過期的 row —
+//   - 月繳 NPA 用戶 pro_expires_at = null → 完全不受影響（扣款失敗的停權走 NPA notify 路徑）
+//   - 會被降級的只有三種：年繳到期 / 客服延長到期 / 後台贈送到期 — 全是該降的
+// 降級只動 is_pro；pro_expires_at / payment_gateway / subscribed_at 保留當歷史紀錄。
+// 後續加強（待做）：到期前 7 天寄續訂提醒 email（與 trial Day 4/6/7 同模式）。
+async function processProExpiry({ supabase }) {
+  const results = { expired: 0 }
+  const nowIso = new Date().toISOString()
+  const { data: expiredRows, error } = await supabase
+    .from('profiles')
+    .update({ is_pro: false })
+    .eq('is_pro', true)
+    .not('pro_expires_at', 'is', null)
+    .lt('pro_expires_at', nowIso)
+    .select('id, email, pro_expires_at')
+
+  if (error) {
+    console.error('Pro expire sweep error:', error)
+  } else {
+    results.expired = expiredRows?.length || 0
+    for (const row of expiredRows || []) {
+      console.log(`Pro expired → downgraded: ${row.email} (expired ${row.pro_expires_at})`)
+    }
+  }
+  return results
+}
+
 export default async function handler(req, res) {
   // Verify cron secret to prevent unauthorized calls
   const secret = process.env.CRON_SECRET
@@ -476,6 +510,9 @@ export default async function handler(req, res) {
   // 每天跑：試用過期掃描 + Day 4/6/7 提醒 email
   const trialResults = await processTrials({ supabase, RESEND_API_KEY, SITE_URL })
 
+  // 每天跑：Pro 到期降級掃描（年繳到期 / 客服延長到期 / 贈送到期；2026-06-13 加）
+  const proExpiryResults = await processProExpiry({ supabase })
+
   // 週一才跑：訂閱戶週報
   // getUTCDay(): Sunday=0, Monday=1, ..., Saturday=6
   let weeklyResults = null
@@ -486,6 +523,7 @@ export default async function handler(req, res) {
   return res.status(200).json({
     success: true,
     trial: trialResults,
+    pro_expiry: proExpiryResults,
     weekly: weeklyResults, // null when not Monday
   })
 }
