@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-06-13（後台新頁：用戶活躍分析 AdminActivity）
+
+**需求：** 用戶想要「分析所有用戶的活躍狀態」。AdminMonitoring 已有月活躍數 + Top 10 重度使用者（聚合視角），缺的是**逐用戶分群與行動名單**（誰要流失了、誰該被推銷）。
+
+**新增 [AdminActivity.jsx](src/pages/admin/AdminActivity.jsx)（`/admin/activity`、選單「📈 活躍分析」）：**
+- **活躍定義 = 最後一次產品行為**（不是登入）：aivis 掃描（aivis_responses）/ 網站掃描（seo_audits 經 websites 轉 user_id）/ 新增網站（websites）/ 批次掃描（bulk_scan_jobs），4 源並行抓、回看 120 天。
+- **5 分群**：🔥 活躍（≤7 天）/ 🌤 一般（8-30）/ 😴 沉睡（31-90）/ 🪦 不活躍（>90 或窗內無活動）/ 🆕 未啟用（註冊 ≤14 天且零活動）。KPI 卡可點擊過濾 + 分布條。
+- **兩張行動名單**（本頁真正的價值）：
+  - ⚠️ **流失風險** = Pro/試用中 且 31+ 天沒活動 → 退訂前兆、客服主動關懷名單
+  - 💎 **升級潛力** = Free 且 7 天內活躍 且 30 天活動 ≥5 次 → 最該收到升級訊息的人
+- 用戶表：方案 chip / 狀態 chip / 最後活躍（人話「3 天前」）/ 最後行為 / 30 天活動數 / 註冊日。
+- 與其他 admin 頁同模式：AdminGuard + AdminLayout + 前端 anon 直查（RLS 上線前需開 admin 讀全表 policy，與既有頁面同一條待辦）。
+- **規模備忘（code 註解）**：各 query 上限 1000 row（PostgREST 預設）、現量級 OK；單來源 120 天事件破千時老用戶會被誤判不活躍 → 屆時改 Supabase RPC（GROUP BY user_id, MAX(created_at)）。
+
+**串接：** [App.jsx](src/App.jsx) route + [AdminLayout.jsx](src/pages/admin/AdminLayout.jsx) NAV + CLAUDE.md 路由表/第二階段清單。
+
+---
+
 ### 2026-06-13（Pro 到期自動降級：補上從來沒存在過的 sweep）
 
 **起因：** 用戶問「送朋友一個月 Pro，後台有到期下架機制嗎？」→ 排查發現 **`pro_expires_at` 寫入方有兩條（5/13 客服延長工具、6/9 年繳 notify P0 fix）、但讀取降級方是 0 條**——cron 只掃 trial、AuthContext 沒 lazy check。實際後果：年繳客戶（含第一個付費客戶 yuppy0912）365 天後是終身 Pro；[Account.jsx](src/pages/Account.jsx) 承諾「到期後自動降為免費版」沒實作；[newebpay-notify.js](api/newebpay-notify.js) 6/9 的註解假設這個 cron 存在（從未存在）。

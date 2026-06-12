@@ -30,6 +30,7 @@ import AdminRevenue from './pages/admin/AdminRevenue'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminShowcase from './pages/admin/AdminShowcase'
 import AdminMonitoring from './pages/admin/AdminMonitoring'
+import AdminActivity from './pages/admin/AdminActivity'
 import AIVisibility from './pages/AIVisibility'
 import AIVisibilityDashboard from './pages/AIVisibilityDashboard'
 import MyClients from './pages/MyClients'
@@ -124,6 +125,7 @@ function AppInner() {
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
         <Route path="/admin/showcase" element={<AdminShowcase />} />
         <Route path="/admin/monitoring" element={<AdminMonitoring />} />
+        <Route path="/admin/activity" element={<AdminActivity />} />
         {/* AI 曝光監測（aivis）— Phase 1 基礎 */}
         <Route path="/ai-visibility" element={<AIVisibility />} />
         <Route path="/ai-visibility/:id" element={<AIVisibilityDashboard />} />

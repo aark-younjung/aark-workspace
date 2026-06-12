@@ -288,6 +288,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 | `/admin/users` | AdminUsers | 用戶列表：搜尋、篩選、展開詳情、手動升降級 Pro |
 | `/admin/websites` | AdminWebsites | 掃描紀錄：所有網站 + 四大分數 |
 | `/admin/revenue` | AdminRevenue | 營收：MRR 估算、Pro 用戶列表、近 6 月增長圖 |
+| `/admin/activity` | AdminActivity | 用戶活躍分析：5 分群 KPI + 流失風險/升級潛力行動名單（2026-06-13） |
 | `/ai-visibility` | AIVisibility | **AI 曝光監測** — 品牌列表 + 新增（aivis 模組 Phase 1） |
 | `/ai-visibility/:id` | AIVisibilityDashboard | AI 曝光監測 — 單一品牌儀表板（目前為空狀態）|
 
@@ -300,6 +301,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 - [x] **系統監控 AdminMonitoring（B3 — 2026-05-13 完成）**：4 KPI（本月掃描 / API 成本 / 提及率 / 活躍用戶）+ 7/30 天趨勢圖 + Top 10 重度使用者。錯誤日誌 viewer 待 schema 加 error 欄位後另外做。
 - [x] 客服工具：補發 Top-up（B2a）/ 延長 Pro 到期日（B2b）/ 寄自訂 email（B2c）— 2026-05-13 完成 ✅（待用戶側跑 [admin-cs-tools.sql](admin-cs-tools.sql)）
 - [x] **NewebPay 訂閱資料整合（2026-05-22 完成）**：AdminUsers 列表方案標籤細分（早鳥/年繳/月繳/授予 Pro），加退款警示 chip；展開詳情新增「Pro 月繳訂閱 NPA」區塊（已扣期數 + lifetime revenue + 下次扣款日 + 取消備註）；AdminRevenue 加 NPA 月繳 MRR + Top-up 累計營收兩張卡，MRR 公式改「per-user × 月攤分」加總，退款率分母校正為「所有歷史年繳已付款訂單」。
+- [x] **用戶活躍分析 AdminActivity（2026-06-13 完成）**：以「最後一次產品行為」（aivis 掃描/網站掃描/新增網站/批次掃描）把全用戶分 5 群（活躍 ≤7 天/一般 8-30/沉睡 31-90/不活躍 >90/新註冊未啟用），KPI 卡可點擊過濾 + 分布條 + 兩張行動名單：⚠️ 流失風險（付費中但 30 天沒動 → 客服關懷）、💎 升級潛力（Free 但高頻活躍 → 行銷對象）。規模備忘：單來源 120 天事件 >1000 row 時改 Supabase RPC GROUP BY。
 
 ### 第三階段（待開發）
 - [ ] 內容管理：~~公告~~（✅ 2026-05-07 完成）、FAQ、定價文案
