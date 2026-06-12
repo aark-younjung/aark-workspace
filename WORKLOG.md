@@ -6,6 +6,20 @@
 
 ---
 
+### 2026-06-12（BulkScan：sitemap 探索失敗只顯示泛泛錯誤 → 浮出後端完整診斷）
+
+**用戶回報：** 批次文章掃描出現「⚠️ Sitemap discovery failed」，看不出原因。
+
+**根因：** [BulkScan.jsx](src/pages/BulkScan.jsx) `startScan` 的錯誤處理只丟 `data.error`（後端 502 的泛泛標題），把 `data.detail` 吞掉了——而 detail 裡才是 [api/bulk-scan.js](api/bulk-scan.js) `discoverSitemapUrls` 精心組的完整診斷（已試幾個路徑 / robots.txt 有沒有 Sitemap 指令 / 是否疑似被 anti-bot 擋 + 修復指引）。
+
+**修法：** 錯誤訊息優先序改 `data.detail || data.hint || data.error || HTTP status`。後端 0 改動（診斷本來就有、只是前端沒顯示）。
+
+**備忘：** 失敗 job 的 `error_message`（含完整診斷）本來就會存 DB、重新整理頁面後「上次失敗：」區塊會顯示——所以不重跑也能看到上次的真正原因。
+
+**順手發現（另案）：** 青山站 robots.txt 是 `User-agent: Googlebot / Disallow: /`（WooCommerce「商店即將推出」模式所致）——上線時必須解除，否則 Google 完全不收錄。已驗證青山 `/wp-sitemap.xml` HTTP 200 正常，批次掃描掃青山理論上可通。
+
+---
+
 ### 2026-06-12（aivis 第 3 引擎 ChatGPT 上線：OpenAI Responses API + web_search 接地）
 
 **背景：** FB 廣告即將上線、文案直接點名 ChatGPT — 監測產品沒有 ChatGPT = credibility gap。aivis 自 6/10 起的 `engine_results` JSONB 路線 B 本來就為此鋪路（前端 `ENGINE_META` 連 chatgpt 的 OpenAI 綠 `#10a37f` 都預留了）。

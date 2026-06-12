@@ -99,7 +99,9 @@ export default function BulkScan() {
         body: JSON.stringify({ websiteId, mode: safeMode }),
       })
       const data = await r.json()
-      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`)
+      // detail 優先：後端的 detail 帶完整診斷（試了哪些路徑、robots.txt 有沒有寫、是否被 anti-bot 擋）
+      // 只顯示泛泛的 data.error 會讓用戶不知道怎麼修（2026-06-12 fix）
+      if (!r.ok) throw new Error(data.detail || data.hint || data.error || `HTTP ${r.status}`)
       const { data: newJob } = await supabase
         .from('bulk_scan_jobs').select('*').eq('id', data.jobId).single()
       setJob(newJob)
