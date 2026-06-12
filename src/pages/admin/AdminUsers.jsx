@@ -432,7 +432,8 @@ export default function AdminUsers() {
     try {
       const userId = topupModal.user.id
       const pack = topupForm.pack
-      const quota = pack === 'large' ? 800 : 300
+      // 2026-06-13 改價後的新量（與 checkout-topup-newebpay.js PACK_SPEC 一致）
+      const quota = pack === 'large' ? 100 : 40
       const sourceId = `admin_${userId.slice(0, 8)}_${Date.now()}`
       const { error } = await supabase.from('aivis_topup_credits').insert({
         user_id: userId,
@@ -1294,8 +1295,8 @@ export default function AdminUsers() {
               <label className="block text-slate-300 text-sm font-medium mb-2">點數包</label>
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
-                  { v: 'small', label: '小包 300 次', sub: 'NT$ 490 等值' },
-                  { v: 'large', label: '大包 800 次', sub: 'NT$ 990 等值' },
+                  { v: 'small', label: '小包 40 次', sub: 'NT$ 490 等值' },
+                  { v: 'large', label: '大包 100 次', sub: 'NT$ 990 等值' },
                 ].map(opt => (
                   <button
                     key={opt.v}

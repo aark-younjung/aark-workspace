@@ -58,7 +58,7 @@ export default function Terms() {
       <ul>
         <li><strong>Pro 月繳</strong>：NT$1,490 / 月，按月自動續訂</li>
         <li><strong>Pro 年繳</strong>：NT$13,900 / 年（享省 22% 優惠），按年自動續訂</li>
-        <li><strong>aivis Top-up 加購包</strong>：小包 NT$490（+300 次）/ 大包 NT$990（+800 次），一次性購買、不過期、用完為止、不綁訂閱</li>
+        <li><strong>aivis Top-up 加購包</strong>：小包 NT$490（+40 次）/ 大包 NT$990（+100 次），一次性購買、不過期、用完為止、不綁訂閱</li>
       </ul>
       <h3>4.2 7 天免費試用</h3>
       <p>

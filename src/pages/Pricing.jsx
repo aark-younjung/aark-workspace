@@ -179,9 +179,9 @@ export default function Pricing() {
   // 設計理由：(1) 避免「改完 SEO 就退訂」流失 → 用 aivis 持續性綁住 Pro 訂閱
   //          (2) Top-up 採 just-in-time 揭露 — 用戶到 aivis dashboard 接近上限時才彈出加購
   //              避免定價頁出現「還要再加錢嗎」的隱憂稀釋 Pro 卡訴求
-  // Top-up 規格（後端 / dashboard 實作時參考）：
-  //   - 小包：NT$490 / +300 次（每次 NT$1.63，補檔用）
-  //   - 大包：NT$990 / +800 次（每次 NT$1.24，多品牌或競品矩陣）
+  // Top-up 規格（後端 / dashboard 實作時參考）— 2026-06-13 改價（三引擎接地後成本 ~NT$5/次）：
+  //   - 小包：NT$490 / +40 次（每次 NT$12.25，補檔用）
+  //   - 大包：NT$990 / +100 次（每次 NT$9.9，對齊 Pro 隱含單價 1490/150）
   //   - 一次性購買、不過期、用完為止、不綁訂閱
   //   - 每月查詢硬上限 1,000 次（內含 + Top-up 合計），Agency 推出後解除
   const aivisIncludedPerMonth = 150

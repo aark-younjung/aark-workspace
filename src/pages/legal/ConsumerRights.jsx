@@ -31,7 +31,7 @@ export default function ConsumerRights() {
       <ul>
         <li><strong>Pro 月繳</strong>：NT$1,490 / 月（自動續訂）</li>
         <li><strong>Pro 年繳</strong>：NT$13,900 / 年（自動續訂，享省 22% 優惠）</li>
-        <li><strong>aivis Top-up 加購包</strong>：小包 NT$490（+300 次）/ 大包 NT$990（+800 次），一次性購買、不過期、用完為止</li>
+        <li><strong>aivis Top-up 加購包</strong>：小包 NT$490（+40 次）/ 大包 NT$990（+100 次），一次性購買、不過期、用完為止</li>
       </ul>
       <p>
         所有費用均以新台幣（NT$）計價，並依中華民國稅法開立電子發票寄送至您註冊之 Email。

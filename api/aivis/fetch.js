@@ -28,6 +28,9 @@ const MAX_TOKENS = 1024
 // Haiku 4.5 定價（USD / token）
 const PRICE_INPUT_PER_TOKEN = 1 / 1_000_000   // $1 / MTok
 const PRICE_OUTPUT_PER_TOKEN = 5 / 1_000_000  // $5 / MTok
+// Claude web search 工具計費：$10 / 1,000 次搜尋（2026-06-13 主引擎接地時加）
+// 搜尋抓回的內容算 input tokens 一起計價。⚠️ max_uses 改動會連動 Top-up 定價成本基準（~NT$5/次假設 max_uses=2）
+const CLAUDE_WEB_SEARCH_PRICE_PER_CALL = 10 / 1_000
 
 // ─── Gemini 整合（2026-06-10 加；2026-06-11 換模型；2026-06-11 加 Google Search 接地） ───
 // 跨 LLM 覆蓋率 + 接地：每條 prompt 的第 1 次 run 打 Gemini（同時 Claude），存進同筆 row 的 engine_results。
@@ -251,7 +254,10 @@ export default async function handler(req, res) {
       }
 
       // ─── Claude 結果（主、寫既有欄位、扣 quota） ───
-      const claudeCost = claudeRes.inputTokens * PRICE_INPUT_PER_TOKEN + claudeRes.outputTokens * PRICE_OUTPUT_PER_TOKEN
+      // 成本 = token + web search（2026-06-13 接地後，每次搜尋 $0.01）
+      const claudeCost = claudeRes.inputTokens * PRICE_INPUT_PER_TOKEN
+        + claudeRes.outputTokens * PRICE_OUTPUT_PER_TOKEN
+        + (claudeRes.searchCount || 0) * CLAUDE_WEB_SEARCH_PRICE_PER_CALL
       const claudeMentioned = detectMention(claudeRes.text, brandName)
       const claudePosition = claudeMentioned ? findListPosition(claudeRes.text, brandName) : null
       const claudeContext = claudeMentioned ? extractContext(claudeRes.text, brandName) : null
@@ -320,6 +326,7 @@ export default async function handler(req, res) {
           position: claudePosition,
           cost_usd: claudeCost,
           raw: claudeRes.text,
+          sources: claudeRes.sources || [],   // 2026-06-13 接地：web search 引用來源 [{ uri, title }]
         },
       }
       if (geminiRes && geminiRes.ok) {
@@ -611,6 +618,9 @@ async function callOpenAI(promptText, apiKey, maxRetries = 1) {
   return { ok: false, error: lastError || 'unknown error' }
 }
 
+// 2026-06-13 主引擎接地：跟 Gemini/ChatGPT 對齊 — 模擬用戶在 Claude App 問推薦時的即時搜尋。
+// 這補上了「主引擎是三個裡唯一不接網路」的洞（額度/mention 表/趨勢全以 Claude 為準、卻只憑訓練知識）。
+// ⚠️ 指標跳階：接地後提及率會明顯變動（反映真實現況），切換日要在 dashboard 對客戶標註。
 async function callClaude(promptText, apiKey) {
   try {
     const r = await fetch(ANTHROPIC_API_URL, {
@@ -623,6 +633,10 @@ async function callClaude(promptText, apiKey) {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: MAX_TOKENS,
+        // 接地：Anthropic 原生 web search（server-side、API 自己跑搜尋迴圈）。
+        // Haiku 4.5 用 20250305 版 — 20260209 動態過濾版只支援 Opus/Sonnet 4.6+。
+        // max_uses=2：控成本（$10/1k 次搜尋）；推薦類查詢 1-2 次搜尋已足夠。
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2 }],
         messages: [{ role: 'user', content: promptText }],
       }),
       signal: AbortSignal.timeout(30000),
@@ -634,10 +648,29 @@ async function callClaude(promptText, apiKey) {
     }
 
     const data = await r.json()
-    const text = data.content?.[0]?.text || ''
+    // 接地後 content 是混合陣列：text / server_tool_use / web_search_tool_result。
+    // 答案文字可能被引用切成多個 text block → 全部串接；引用在 text block 的 citations[]。
+    // stop_reason 'pause_turn'（server 迴圈達上限）在 max_uses=2 下幾乎不會發生 — 發生就用已累積的文字。
+    let text = ''
+    const sources = []
+    const seenUrls = new Set()
+    for (const block of data.content || []) {
+      if (block.type !== 'text') continue
+      text += block.text || ''
+      // 引用來源正規化成跟 Gemini/ChatGPT 同形狀 {uri, title}、以 url 去重
+      for (const c of block.citations || []) {
+        if (c.type === 'web_search_result_location' && c.url && !seenUrls.has(c.url)) {
+          seenUrls.add(c.url)
+          sources.push({ uri: c.url, title: c.title || c.url })
+        }
+      }
+    }
     return {
       ok: true,
       text,
+      sources,
+      // 實際搜尋次數（計費依據）— API 在 usage.server_tool_use 回報
+      searchCount: data.usage?.server_tool_use?.web_search_requests || 0,
       inputTokens: data.usage?.input_tokens || 0,
       outputTokens: data.usage?.output_tokens || 0,
     }

@@ -29,9 +29,12 @@ import { createClient } from '@supabase/supabase-js'
 import { buildPaymentForm, generateOrderNo } from '../_lib/newebpay.js'
 import { isTestOrder } from '../_lib/test-detect.js'
 
+// 2026-06-13 改價：三引擎全接地（ChatGPT+Claude+Gemini 即時搜尋）後成本 ~NT$5/次，
+// 舊量（300/800）單價 NT$1.63/1.24 低於成本。新量單價：小包 NT$12.25、大包 NT$9.9（對齊 Pro 隱含單價 1490/150）。
+// 已售出舊 credits 照舊履行（不過期承諾），此處只影響新購買。
 const PACK_SPEC = {
-  small: { amount: 490, quota: 300, label: 'aivis Top-up 小包 加購 300 次' },
-  large: { amount: 990, quota: 800, label: 'aivis Top-up 大包 加購 800 次' },
+  small: { amount: 490, quota: 40, label: 'aivis Top-up 小包 加購 40 次' },
+  large: { amount: 990, quota: 100, label: 'aivis Top-up 大包 加購 100 次' },
 }
 
 // 同意書文案 v1 — 與前端 AIVisibilityDashboard.jsx TOPUP_CONSENT_V1 必須完全一致

@@ -6,6 +6,27 @@
 
 ---
 
+### 2026-06-13（Claude 主引擎接地 + Top-up 改價：300/800 → 40/100 次）
+
+**背景：** 用戶發現「ChatGPT 有引用來源、Claude 沒有」→ 根因：主引擎 callClaude 是裸呼叫（三引擎裡唯一不接網路），而額度/mention 表/趨勢全以它為準。接地後成本跳級（~NT$0.4 → ~NT$5/掃描）→ Top-up 舊價（NT$1.63/1.24 每次）變成賣一次虧 NT$3-5 → 兩件事綁定一批上。
+
+**A. Claude 接地 [api/aivis/fetch.js](api/aivis/fetch.js)：**
+- callClaude 加 `tools:[{type:'web_search_20250305', name:'web_search', max_uses:2}]`（Haiku 4.5 不支援 20260209 動態過濾版、那是 Opus/Sonnet 4.6+ 專屬）。Anthropic server-side 搜尋迴圈、官方文件 WebFetch 查證。
+- 解析改寫：content 變混合陣列（text/server_tool_use/web_search_tool_result）→ **全部 text block 串接**（原本只讀 content[0] 會漏字）+ citations[]（web_search_result_location）正規化成 {uri,title} 去重 → `engine_results.claude.sources`。
+- 計費：`usage.server_tool_use.web_search_requests` × $10/1k + 搜尋內容算 input tokens。常數 `CLAUDE_WEB_SEARCH_PRICE_PER_CALL` 加註「改 max_uses 要連動 Top-up 定價」。
+- pause_turn：max_uses=2 下幾乎不會發生、發生用已累積文字（註解記載）。
+- **⚠️ 指標跳階**：接地後提及率反映真實現況、趨勢圖切換日會有階梯——對客戶標註待做。
+
+**B. Top-up 改價（9 處全列、前後端 + 法律頁 + 文件）：**
+- 新量：小包 NT$490/+40 次（NT$12.25/次）、大包 NT$990/+100 次（NT$9.9/次、刻意對齊 Pro 隱含單價 1490/150）。成本基準 ~NT$5/次（Claude 3run 接地 + ChatGPT/Gemini run1）。
+- [checkout-topup-newebpay.js](api/aivis/checkout-topup-newebpay.js) PACK_SPEC（含 NewebPay 商品 label）/ [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) TOPUP_PACKS / [Terms.jsx](src/pages/legal/Terms.jsx) / [ConsumerRights.jsx](src/pages/legal/ConsumerRights.jsx) / [Pricing.jsx](src/pages/Pricing.jsx)（註解）/ [AdminUsers.jsx](src/pages/admin/AdminUsers.jsx)（客服補發 quota 硬編碼 ×2 處）/ README / CLAUDE.md。
+- 已售出舊 credits 照舊履行（「不過期」承諾 + aivis_topup_consents 紀錄）、改價只對新購生效。consent 文案 v1 未動（後端 verify 相等性、不能動）。
+- **上線兩週後用 DB cost_usd 實測校正次數**（安全先行價非終局價）。早鳥 NT$990/月毛利僅 ~24%——別擴早鳥量。
+
+**驗證：** node --check ×2 + babel JSX parse ×5 全綠。Claude 接地請求 shape 依官方文件（無法本地實測——ANTHROPIC_API_KEY 只在 Vercel），待部署後沙盒掃描驗收（同時驗 ChatGPT chip + Claude sources + 新 Top-up 數字）。
+
+---
+
 ### 2026-06-12（BulkScan：沒 sitemap 的網站改走「首頁連結探索」後備路線 + 錯誤提示去 WP 本位）
 
 **起因：** 用戶掃 52jcdesign.com（Joomla 站、AI 寫內容）失敗 — 8 個 sitemap 候選路徑全 404、robots.txt 是 Joomla 預設模板沒寫 Sitemap 指令。診斷確認**掃描器判斷正確、是站方真的沒 sitemap**（Joomla 核心不產 sitemap、要裝 OSMap）。台灣不少老站／AI 生成靜態站都這樣 → 與其失敗、不如降級服務。

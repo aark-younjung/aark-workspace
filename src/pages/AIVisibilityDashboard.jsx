@@ -93,10 +93,11 @@ const AIVIS_QUOTA_PER_MONTH = 150
 const AIVIS_HARD_CAP = 1000
 const AIVIS_WARN_RATIO = 0.8
 
-// Top-up 包規格（後端尚未實作，目前 modal 內 disclaimer 引導聯繫客服）
+// Top-up 包規格 — 必須與後端 api/aivis/checkout-topup-newebpay.js PACK_SPEC 一致
+// 2026-06-13 改價：三引擎即時搜尋版掃描成本 ~NT$5/次，舊量（300/800）會虧本。大包單價對齊 Pro 隱含單價 NT$9.9。
 const TOPUP_PACKS = [
-  { id: 'small', label: '小包', price: 490, quota: 300, perCall: 1.63, hint: '補檔用，月底用量緊張時補一包' },
-  { id: 'large', label: '大包', price: 990, quota: 800, perCall: 1.24, hint: '多品牌或競品矩陣，每次最划算' },
+  { id: 'small', label: '小包', price: 490, quota: 40, perCall: 12.25, hint: '補檔用，月底用量緊張時補一包' },
+  { id: 'large', label: '大包', price: 990, quota: 100, perCall: 9.9, hint: '多品牌或競品矩陣，每次最划算' },
 ]
 
 // =====================================================
