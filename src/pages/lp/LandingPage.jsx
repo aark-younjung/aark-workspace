@@ -24,6 +24,61 @@ import { LP_VARIANTS } from './lpContent'
 // 行內分段標色（color: null=白 / green=品牌青綠 / red=警示紅）
 const SEG_COLOR = { green: '#18c590', red: '#ef4444' }
 
+// 產品預覽卡（範例）— 落地頁的「第一眼」核心：把訪客的反射從「我自己問 AI 就好」
+// 轉成「這數字我手動做不出來」。三引擎並列（打掉問一次）+ 你vs競品（給 stakes）+ 8 週趨勢（打掉查一次）。
+// 明確標「範例」：這是產品能力預覽、不是假裝訪客的數據。
+function DashboardPreview() {
+  const engines = [
+    { name: 'ChatGPT', color: '#10a37f', you: 32, comp: 78 },
+    { name: 'Claude',  color: '#d97757', you: 45, comp: 69 },
+    { name: 'Gemini',  color: '#4285f4', you: 21, comp: 83 },
+  ]
+  const W = 300, H = 54
+  const youTrend = [30, 28, 33, 29, 31, 27, 30, 29]
+  const compTrend = [38, 45, 51, 57, 63, 70, 77, 83]
+  const toPts = arr => arr.map((v, i) =>
+    `${(i * (W / (arr.length - 1))).toFixed(0)},${(H - (v / 100) * H).toFixed(0)}`).join(' ')
+
+  const Bar = ({ label, pct, color }) => (
+    <div className="flex items-center gap-2 mb-1.5">
+      <span className="text-xs w-7 shrink-0" style={{ color: '#94a3b8' }}>{label}</span>
+      <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(148,163,184,0.15)' }}>
+        <div className="h-full rounded-full" style={{ width: pct + '%', background: color }} />
+      </div>
+      <span className="text-xs w-9 text-right" style={{ color: '#cbd5e1' }}>{pct}%</span>
+    </div>
+  )
+
+  return (
+    <div className="w-full max-w-md rounded-2xl border p-5 mb-4"
+      style={{ background: 'rgba(15,23,42,0.7)', borderColor: 'rgba(148,163,184,0.2)' }}>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm font-bold text-white">你 vs 競品 · 三大 AI 引擎推薦率</span>
+        <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(148,163,184,0.15)', color: '#94a3b8' }}>範例</span>
+      </div>
+      {engines.map(e => (
+        <div key={e.name} className="mb-3">
+          <div className="text-xs font-semibold mb-1.5" style={{ color: e.color }}>{e.name}</div>
+          <Bar label="你" pct={e.you} color="#18c590" />
+          <Bar label="競品" pct={e.comp} color="#ef4444" />
+        </div>
+      ))}
+      <div className="pt-3 mt-1 border-t" style={{ borderColor: 'rgba(148,163,184,0.15)' }}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs" style={{ color: '#94a3b8' }}>過去 8 週引用率趨勢</span>
+          <span className="text-xs">
+            <span style={{ color: '#18c590' }}>● 你</span>　<span style={{ color: '#ef4444' }}>● 競品</span>
+          </span>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 54 }} preserveAspectRatio="none">
+          <polyline fill="none" stroke="#ef4444" strokeWidth="2.5" points={toPts(compTrend)} />
+          <polyline fill="none" stroke="#18c590" strokeWidth="2.5" points={toPts(youTrend)} />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
 export default function LandingPage() {
   const { variant } = useParams()
   const navigate = useNavigate()
@@ -99,11 +154,15 @@ export default function LandingPage() {
         </h1>
 
         {/* 副標 */}
-        <p className="text-center text-base leading-relaxed mb-10 max-w-lg" style={{ color: '#94a3b8' }}>
+        <p className="text-center text-base leading-relaxed mb-6 max-w-lg" style={{ color: '#94a3b8' }}>
           {content.sub}
         </p>
 
-        {/* 主 CTA — 所有 variant 都以掃描框開場（agency 也是：先體驗、後申請） */}
+        {/* 第一眼 = 成果（範例儀表板），不是動作（掃描框）— 拆「我自己問 AI 就好」異議 */}
+        <DashboardPreview />
+        <p className="text-sm mb-5 text-center font-medium" style={{ color: '#cbd5e1' }}>↓ 30 秒，生成你品牌的真實版本</p>
+
+        {/* CTA 掃描框（降為配角、置於儀表板之後） */}
         <form onSubmit={handleScanSubmit} className="w-full max-w-md flex flex-col sm:flex-row gap-3 mb-3">
           <input
             type="text"
