@@ -219,6 +219,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 4. **SVG 動畫：** SVG 元素內的 pulse 動畫須用 `<animate>` 原生屬性（r、opacity），不可用 CSS scale（transform-origin 會跑位）
 5. **網站分析上限：** Free=3 個、Pro=15 個（Home.jsx 的 `WEBSITE_LIMIT` 已啟用）
 6. **文件同步：** 每次功能變動後，同步更新 `README.md`（版本記錄 + 方案對照表）和 `CLAUDE.md`（待開發功能、商業模式）
+7. **精簡優先（預設 ponytail 精神）：** 寫 code 前先爬決策梯，停在第一個成立的：(1) 這需要寫嗎（YAGNI，投機需求直接跳過並說一句） (2) 標準庫有嗎 (3) 平台原生功能覆蓋嗎（CSS 勝過 JS、DB 約束勝過 app code、`<input type=date>` 勝過套件） (4) 現有依賴能解嗎 (5) 能一行嗎 (6) 才寫最少可行 code。不過度抽象、不為小功能加新依賴、不寫沒人要的 boilerplate、刪優於加、無聊勝過聰明。**但不在這些上偷懶**：trust boundary 的輸入驗證、防資料遺失的錯誤處理、安全、無障礙、用戶明確要求的——少了這些的精簡 code 是半成品。刻意簡化用 `ponytail:` 註解標記（有已知上限就寫明上限 + 升級路徑）。一人團隊維護，code 越少越好維護。
 
 ---
 
