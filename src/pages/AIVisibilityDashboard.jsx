@@ -753,7 +753,8 @@ export default function AIVisibilityDashboard() {
           {isLoading ? <TrendSkeleton /> :
             trendError ? <ErrorCard title="30 天提及率趨勢" message="Supabase 連線逾時，無法載入歷史資料。"
               onRetry={() => { setTrendError(false); loadAll() }} /> :
-              <TrendChart data={trendData} />
+              isEmpty ? <TrendGhostRadar onStart={runScan} scanning={scanning} disabled={activeCount === 0} /> :
+                <TrendChart data={trendData} />
           }
         </div>
 
@@ -1348,6 +1349,73 @@ function iconBtn() {
 // =====================================================
 // TrendChart（30 天提及率折線圖 + hover tooltip）
 // =====================================================
+// 空狀態的趨勢區塊：雷達擴散 ghost + 中央「開始監測」按鈕（2026-06-18）
+// 取代「空白扁平趨勢圖」——新用戶第一眼看到趨勢長什麼樣（標示意、脈動代表未啟動），按下才跑首掃。
+// 雷達擴散用 SVG <animate>（r/opacity，不用 CSS scale——transform-origin 會跑位，見專案踩坑），與首頁雷達同語言、改用品牌青綠。
+function TrendGhostRadar({ onStart, scanning, disabled }) {
+  const W = 760, H = 200
+  // 示意用的向上趨勢折線（dashed、低透明、整體緩慢脈動）
+  const ghostPts = [[44, 150], [150, 142], [256, 120], [362, 126], [468, 96], [574, 82], [680, 56], [716, 48]]
+  const ghostPath = ghostPts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ')
+  return (
+    <div style={{
+      background: 'rgba(1,8,14,.55)', border: `1px solid ${T.cardBorder}`,
+      borderRadius: T.rL, padding: 22, position: 'relative', minWidth: 0, overflow: 'hidden',
+    }}>
+      <style>{`@keyframes aivisGhostPulse{0%,100%{box-shadow:0 0 0 0 ${AIVIS_TEAL}66,0 6px 22px ${AIVIS_TEAL}44}50%{box-shadow:0 0 0 14px ${AIVIS_TEAL}00,0 6px 32px ${AIVIS_TEAL}88}}@keyframes aivisGhostLine{0%,100%{opacity:.16}50%{opacity:.42}}`}</style>
+      <div style={{ marginBottom: 6 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>30 天提及率趨勢</div>
+        <div style={{ fontSize: 14, color: T.textLow }}>AI 即時上網、答案天天在變 — 看趨勢，別看單次數字</div>
+      </div>
+
+      <div style={{ position: 'relative', height: 232, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* 背景 ghost 趨勢線（示意、整體脈動） */}
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{
+          position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none',
+          animation: 'aivisGhostLine 3.2s ease-in-out infinite',
+        }}>
+          <path d={ghostPath} fill="none" stroke={AIVIS_TEAL} strokeWidth="2.5" strokeDasharray="6 7" strokeLinecap="round" />
+          {ghostPts.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3" fill={AIVIS_TEAL} opacity="0.55" />)}
+        </svg>
+
+        {/* 雷達擴散 + 中央按鈕 */}
+        <div style={{ position: 'relative', width: 220, height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+          <svg viewBox="0 0 220 220" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <circle cx="110" cy="110" r="100" fill="none" stroke={`${AIVIS_TEAL}22`} strokeWidth="1" />
+            <circle cx="110" cy="110" r="66" fill="none" stroke={`${AIVIS_TEAL}2e`} strokeWidth="1" />
+            <circle cx="110" cy="110" r="34" fill="none" stroke={`${AIVIS_TEAL}3a`} strokeWidth="1" />
+            {[0, 0.8, 1.6].map((delay, i) => (
+              <circle key={i} cx="110" cy="110" fill="none" stroke={AIVIS_TEAL} strokeWidth="1.5">
+                <animate attributeName="r" from="30" to="105" dur="2.4s" begin={`${delay}s`} repeatCount="indefinite" />
+                <animate attributeName="opacity" from="0.7" to="0" dur="2.4s" begin={`${delay}s`} repeatCount="indefinite" />
+              </circle>
+            ))}
+          </svg>
+          <button onClick={onStart} disabled={scanning || disabled}
+            style={{
+              position: 'relative', zIndex: 3, border: 'none', borderRadius: '50%', width: 120, height: 120,
+              background: `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`,
+              color: '#021b14', fontFamily: T.font, fontWeight: 900, fontSize: 17,
+              cursor: (scanning || disabled) ? 'not-allowed' : 'pointer',
+              opacity: (scanning || disabled) ? 0.55 : 1,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+              animation: (scanning || disabled) ? 'none' : 'aivisGhostPulse 2.2s ease-in-out infinite',
+            }}>
+            <span style={{ fontSize: 26 }}>{scanning ? '⏳' : '📡'}</span>
+            <span>{scanning ? '監測中' : '開始監測'}</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ textAlign: 'center', fontSize: 13, color: T.textMid, marginTop: 4 }}>
+        {disabled
+          ? '先在下方產生並啟用 prompt，再開始監測'
+          : '按下開始第一次掃描 ChatGPT、Claude、Gemini —— 趨勢會隨每次掃描逐日累積'}
+      </div>
+    </div>
+  )
+}
+
 function TrendChart({ data }) {
   // 全寬呈現：用寬扁 viewBox（760×200，~3.8:1），避免 SVG 依寬度等比放大導致高度過高、軸標籤過大
   const W = 760, H = 200, padL = 44, padR = 16, padT = 22, padB = 30

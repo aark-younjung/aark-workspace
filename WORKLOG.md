@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-06-18（aivis 空狀態：雷達擴散 ghost 趨勢圖 + 「開始監測」啟動按鈕）
+
+**背景：** 用戶發現 aivis 趨勢圖不會自動長（掃描是前端驅動、無自動排程，確認過 vercel.json 只有 daily weekly-reports cron、不掃 aivis）。新用戶第一眼是空白扁平趨勢圖 → 傷轉換。用戶提議：空狀態給「ghost 趨勢圖 + 中央開始監測按鈕 + 像首頁雷達擴散的脈動」。
+
+**先講清楚的物理限制：** 真趨勢=時間函數，新用戶第一天不可能有真趨勢。這個改的是「第一印象 + 啟動」，不是「趨勢自己長」。後者要 A（每日自動掃描，仍未做、premature 因目前付費用戶≈0，等有回流用戶再做、要排隊機制避 Vercel timeout）。
+
+**改動 [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：** 新增 `TrendGhostRadar`，`isEmpty` 時取代空白 `TrendChart`：
+- 雷達擴散：SVG `<animate>` 同心圓 r 放大 + opacity 淡出（3 條 staggered），與首頁雷達同語言、改品牌青綠 #18c590（首頁那個還是舊橘）。用 SVG animate 不用 CSS scale（專案踩坑：transform-origin 跑位）。
+- 中央 `開始監測` 圓鈕（📡）綁現有 `runScan`、box-shadow 呼吸光暈脈動；背景 dashed 向上 ghost 趨勢線整體明暗脈動。
+- 誠實微文案「按下開始第一次掃描…趨勢會隨每次掃描逐日累積」——**沒有 A 之前不可寫「每天自動更新」**。`activeCount===0` 時改提示「先產生並啟用 prompt」。
+- 純前端、不動後端。驗證：@babel/parser OK + 獨立 HTML 截圖確認構圖。
+
+**待辦（A）：** 每日自動掃描排程（併進 cron-weekly-reports，綁付費 active 品牌、控額度、避 timeout）——等有回流付費用戶再做，做完才能把文案升級成「每天自動更新」。
+
+---
+
 ### 2026-06-13（FB 廣告落地頁 ×3 + Meta Pixel 基建）
 
 **背景：** FB 廣告 A/B/C 三組文案與圖完成中（行銷/廣告/FB廣告文案-ABC三組.md），廣告不能直連首頁（message match + 單一出口原則）→ 建獨立落地頁資料夾 [src/pages/lp/](src/pages/lp/)。
