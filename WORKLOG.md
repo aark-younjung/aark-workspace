@@ -6,6 +6,14 @@
 
 ---
 
+### 2026-06-19（趨勢圖移到第一屏）
+
+**背景：** 心跳/趨勢圖原本在 DashboardV2 整頁**最底部**（站點體檢+工具箱之後），新客戶捲不到、看不到，違背「掃完馬上勾住」初衷。用戶選「移到頂部（aivis Hero 下方）」。
+
+**改動 [DashboardV2.jsx](src/pages/DashboardV2.jsx)：** 把 `trendData.length>1 ? <TrendChart> : <HeartbeatTrend>` 從頁尾搬到 aivis Hero `<section>` 正下方（第一屏可見）。純位置調整、邏輯不變。`vite build` exit 0。
+
+---
+
 ### 2026-06-19（心跳脈動圖抽成共用元件、aivis 也統一）
 
 **背景：** 上一筆把心跳圖做進 DashboardV2，但 aivis 還是舊的青綠投射圖（`TrendForming`）、兩邊不一致。用戶拍板「換成心跳圖、兩邊統一」。
