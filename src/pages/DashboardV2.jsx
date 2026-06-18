@@ -479,8 +479,8 @@ export default function DashboardV2() {
             {/* ─── 修復工具箱（合併版單一入口） ─── */}
             <ToolBox websiteId={website.id} />
 
-            {/* ─── 30 天進步曲線 ─── */}
-            {trendData.length > 1 && <TrendChart trendData={trendData} />}
+            {/* ─── 30 天進步曲線：≥2 筆顯示真實折線；第一次掃完（≤1 筆）顯示心跳脈動成形圖當勾子 ─── */}
+            {trendData.length > 1 ? <TrendChart trendData={trendData} /> : <HeartbeatTrend />}
           </>
         )}
 
@@ -2099,6 +2099,88 @@ function ToolModal({ tool, websiteId, userId, onClose }) {
 }
 
 // 30 天進步曲線
+// ── 心跳脈動「趨勢成形中」圖（2026-06-19）────────────────────────────────
+// 為什麼：掃完第一次只有 1 筆資料、畫不出真趨勢（原本 trendData.length>1 才顯示 TrendChart
+//   → 第一次掃完這整區一片空白、新客戶看不到「想繼續看下去」的動力就流失）。
+// 視覺：ECG 心電圖風——上下曲折、整體上揚的「橘黃發光心跳線 + 沿線跑動的脈動點」，
+//   配「綠色虛線」平滑上揚底參考線。脈動點用 SVG <animate>（不用 CSS scale——SVG transform-origin 會跑位，專案踩坑）。
+// honesty：這是「示意動畫」不是真數據、右上角明標「示意」；資料累積到 2 筆以上就自動切回真實 TrendChart。
+function HeartbeatTrend() {
+  const W = 800, H = 200
+  const ORANGE = '#FF9D2E'      // 發光心跳線
+  const ORANGE_HI = '#FFC24B'   // 高光點 / 橘黃
+  const GREEN = '#18c590'       // 綠色虛線底（品牌青綠）
+
+  // 單一心跳節拍：x 比例 → 相對基線的位移（負=往上）。R 波大尖峰 -58、S 波回落 +20、T 波小丘 -16。
+  const beat = [[0, 0], [0.22, 0], [0.30, -7], [0.36, 0], [0.43, 9], [0.48, -58], [0.52, 20], [0.57, 0], [0.72, -16], [0.84, 0], [1, 0]]
+  const BEATS = 4, beatW = W / BEATS, baseStart = 152, drift = 18  // 每拍基線往上抬 → 整體上揚（曲折但向上）
+  const pts = []
+  for (let i = 0; i < BEATS; i++) {
+    const base = baseStart - i * drift
+    for (const [f, dy] of beat) {
+      if (i > 0 && f === 0) continue  // 拍與拍的接點不重複
+      pts.push([i * beatW + f * beatW, base + dy])
+    }
+  }
+  const ecgPath = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+  const peaks = Array.from({ length: BEATS }, (_, i) => [i * beatW + 0.48 * beatW, (baseStart - i * drift) - 58]) // R 波峰
+
+  return (
+    <section className="mb-6 rounded-2xl p-5 sm:p-6" style={{
+      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+    }}>
+      {/* HTML 徽章小點用 CSS scale 沒問題（非 SVG）；心跳節奏「lub-dub」 */}
+      <style>{`@keyframes hbBadge{0%,100%{transform:scale(.75);opacity:.5}12%{transform:scale(1.25);opacity:1}26%{transform:scale(.9);opacity:.7}40%{transform:scale(1.12);opacity:.95}54%{transform:scale(.75);opacity:.5}}`}</style>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">📈 過去 30 天進步軌跡</h3>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+          style={{ background: `${ORANGE}22`, border: `1px solid ${ORANGE}66`, color: ORANGE_HI }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: ORANGE, display: 'inline-block', animation: 'hbBadge 1.4s ease-in-out infinite' }} />
+          趨勢成形中
+        </span>
+      </div>
+
+      <div style={{ width: '100%' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+          <defs>
+            <filter id="hbGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+
+          {/* 綠色虛線底（平滑上揚參考線） */}
+          <path d={`M0,168 C 260,150 560,108 ${W},72`} fill="none" stroke={GREEN} strokeWidth="2"
+            strokeDasharray="7 8" strokeLinecap="round" opacity="0.45" />
+
+          {/* 橘黃發光心跳線 */}
+          <path id="hbLine" d={ecgPath} fill="none" stroke={ORANGE} strokeWidth="2.6"
+            strokeLinejoin="round" strokeLinecap="round" filter="url(#hbGlow)" />
+
+          {/* R 波峰發光點：心跳脈動（SVG animate、避開 CSS scale 踩坑） */}
+          {peaks.map(([x, y], i) => (
+            <circle key={i} cx={x} cy={y} fill={ORANGE_HI} filter="url(#hbGlow)">
+              <animate attributeName="r" values="2.5;5.5;3;5;2.5" dur="1.4s" begin={`${i * 0.15}s`} repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.5;1;0.7;0.95;0.5" dur="1.4s" begin={`${i * 0.15}s`} repeatCount="indefinite" />
+            </circle>
+          ))}
+
+          {/* 沿心跳線跑動的脈動點（心電監視器掃描感） */}
+          <circle r="5.5" fill={ORANGE_HI} filter="url(#hbGlow)">
+            <animateMotion dur="3.2s" repeatCount="indefinite"><mpath href="#hbLine" /></animateMotion>
+          </circle>
+
+          <text x={W - 6} y="16" fontSize="11" fill="rgba(255,255,255,0.4)" textAnchor="end">示意 · 持續掃描後顯示真實趨勢</text>
+        </svg>
+      </div>
+
+      <p className="text-sm mt-3" style={{ color: 'rgba(255,255,255,0.55)' }}>
+        ✅ 已完成首次掃描 — 持續監測，<span style={{ color: ORANGE_HI, fontWeight: 700 }}>真實的 30 天進步軌跡</span>就會在這裡浮現
+      </p>
+    </section>
+  )
+}
+
 function TrendChart({ trendData }) {
   return (
     <section className="mb-6 rounded-2xl p-5 sm:p-6" style={{

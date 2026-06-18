@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-06-19（SEO 網站儀表板：第一次掃完顯示心跳脈動「趨勢成形中」圖）
+
+**背景＋定位修正：** 用戶要的「掃完第一次出現假趨勢圖」其實是在 **SEO 網站儀表板**（`/dashboard/:id` = DashboardV2），不是 aivis（之前做錯地方）。原本 [DashboardV2.jsx:483](src/pages/DashboardV2.jsx) 是 `trendData.length > 1 && <TrendChart>` → 第一次掃完只有 1 筆、整區空白、留不住新客戶。
+
+**新增 `HeartbeatTrend`（[DashboardV2.jsx](src/pages/DashboardV2.jsx)）：** ECG 心電圖風格——
+- 上下曲折、整體上揚的「**橘黃發光心跳線**」（`#FF9D2E`，R 波大尖峰 + S 波回落 + T 波小丘，每拍基線往上抬 = 曲折但向上）。
+- R 波峰**橘黃發光點**（`#FFC24B`）做心跳脈動：SVG `<animate>` r/opacity「lub-dub」節奏（**不用 CSS scale——SVG transform-origin 踩坑**）。
+- 沿線跑動的脈動點（`<animateMotion>` + `<mpath href=#hbLine>`）= 心電監視器掃描感。
+- **綠色虛線**（`#18c590`）平滑上揚底參考線。右上「示意」標 + 「趨勢成形中」橘色脈動徽章。
+- 渲染：`trendData.length > 1 ? <TrendChart> : <HeartbeatTrend>`（第一次掃完 ≤1 筆 → 心跳圖、≥2 筆 → 真折線）。
+- honesty：明標「示意」、非真數據；累積 2 筆自動切回真 TrendChart。
+- 驗證：`vite build` exit 0 + Playwright 截圖確認構圖（橘黃心跳線/綠虛線/峰點/徽章皆正確）。純前端。
+
+**待用戶決定：** aivis 那個舊版 `TrendForming`（6/18-19 做的、青綠投射線）現在跟這個心跳圖風格不一致——要不要也換成心跳圖 / 移除 / 留著，等用戶拍板。
+
+---
+
 ### 2026-06-19（aivis 趨勢「成形中」狀態：掃完第一次也有脈動勾子）
 
 **背景：** 6/18 做的雷達 ghost 只在「0 筆掃描」出現，但用戶真正要的是「**掃完第一次進儀表板**」那一刻——30 天裡只有今天 1 個點、其餘 0，真 `TrendChart` 變成貼地平線+孤點、超沒說服力，新客戶看不到「想繼續看下去」的動力就流失了。
