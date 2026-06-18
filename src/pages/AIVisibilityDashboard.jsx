@@ -698,7 +698,7 @@ export default function AIVisibilityDashboard() {
                 color: AIVIS_TEAL, textTransform: 'uppercase',
               }}>aivis · phase 2</span>
               <span style={{ width: 4, height: 4, borderRadius: '50%', background: T.textLow }}></span>
-              <span style={{ fontSize: 14, color: T.textLow }}>每日定時 02:00 自動掃描</span>
+              <span style={{ fontSize: 14, color: T.textLow }}>答案天天在變 · 建議每週回來監測</span>
             </div>
             <h1 style={{
               fontSize: 34, fontWeight: 800, color: T.text, letterSpacing: '-.02em',
@@ -772,8 +772,8 @@ export default function AIVisibilityDashboard() {
                     footer={
                       <div style={{ fontSize: 13, color: T.textMid }}>
                         {daysWithData <= 1
-                          ? <>已完成首次掃描 🎉 · 持續監測 <span style={{ color: '#FFC24B', fontWeight: 700 }}>3-5 天</span>，真實的提及率趨勢就會在這裡浮現</>
-                          : <>已監測 <span style={{ color: '#FFC24B', fontWeight: 700 }}>{daysWithData}</span> 天 · 再過幾天，完整 30 天走勢就會浮現</>}
+                          ? <>已完成首次掃描 🎉 · 趨勢會隨你每次<span style={{ color: '#FFC24B', fontWeight: 700 }}>「再次掃描」</span>累積（目前手動更新）。AI 答案天天在變，建議每週回來掃一次。</>
+                          : <>已監測 <span style={{ color: '#FFC24B', fontWeight: 700 }}>{daysWithData}</span> 天 · 每次「再次掃描」多累積一天；建議每週回來掃，30 天走勢逐步完整。</>}
                       </div>
                     }
                   />

@@ -6,6 +6,19 @@
 
 ---
 
+### 2026-06-19（趨勢說明改誠實「手動」+ 移除假的「每日 02:00 自動掃描」宣稱）
+
+**背景：** 用戶問趨勢圖要不要告知「多久自動掃描一次」。查證：**完全沒有自動掃描**——`vercel.json` 只有 1 個 cron（每天 9:00 跑 `cron-weekly-reports`）、那支只寄試用提醒+週報信、不掃描。掃描全靠手動「重新檢測/開始監測」。用戶選「誠實寫手動」。
+
+**改動：**
+- 心跳帶 footer 文案（[DashboardV2.jsx](src/pages/DashboardV2.jsx) + [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)）：改成「趨勢隨你每次重新檢測/再次掃描累積（目前手動更新）· AI 答案天天在變、建議每週回來掃一次」。去掉任何「自動」暗示。
+- **修掉已上線的假宣稱** [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) header：原本寫「每日定時 02:00 自動掃描」（完全不存在）→ 改「答案天天在變 · 建議每週回來監測」。
+- 驗證：`vite build` exit 0、bundle 無「每日定時 02:00」殘留。
+
+**另發現待用戶決定：** [EEATAudit.jsx:310](src/pages/EEATAudit.jsx) Pro 升級卡寫「每月自動掃描通知」——同樣是還沒做的功能（且週報其實是每週、且不掃描）。屬付費功能承諾、未自動改、待用戶決定怎麼處理。
+
+---
+
 ### 2026-06-19（心跳圖嵌進 aivis Hero 卡片內 + 不規律波形 + 掃描點畫線效果）
 
 **用戶要求三點：**（1）放進 aivis Hero 卡片內、引擎圖示上方那條（用戶截圖紅框指定）（2）上下起伏不要那麼規律（3）掃描點還沒到的地方不出現橘線、點經過後才畫出（心電監視器掃描感）。

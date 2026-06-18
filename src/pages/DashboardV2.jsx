@@ -972,7 +972,7 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
               title=""
               footer={
                 <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)', margin: 0 }}>
-                  ✅ 已完成首次掃描 — 持續監測，<span style={{ color: '#FFC24B', fontWeight: 700 }}>真實 30 天軌跡</span>即將浮現
+                  ✅ 已完成首次掃描 — 趨勢會隨你每次<span style={{ color: '#FFC24B', fontWeight: 700 }}>「重新檢測」</span>累積（目前手動更新）。AI 答案天天在變，建議每週回來掃一次，走勢就會成形。
                 </p>
               }
             />
