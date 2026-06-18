@@ -384,6 +384,9 @@ export default function AIVisibilityDashboard() {
     return days
   }, [responses])
 
+  // 有掃描資料的「天數」（不是次數）。<3 天畫不出有意義的趨勢 → 用 TrendForming 脈動成形圖勾住新客戶。
+  const daysWithData = useMemo(() => trendData.filter(d => d.total > 0).length, [trendData])
+
   // 歷史掃描日期 chips（distinct days，最近 7 天）
   const historyDays = useMemo(() => {
     const map = {} // { 'YYYY-MM-DD': { count, latest } }
@@ -754,7 +757,8 @@ export default function AIVisibilityDashboard() {
             trendError ? <ErrorCard title="30 天提及率趨勢" message="Supabase 連線逾時，無法載入歷史資料。"
               onRetry={() => { setTrendError(false); loadAll() }} /> :
               isEmpty ? <TrendGhostRadar onStart={runScan} scanning={scanning} disabled={activeCount === 0} /> :
-                <TrendChart data={trendData} />
+                daysWithData < 3 ? <TrendForming data={trendData} daysScanned={daysWithData} onRescan={runScan} scanning={scanning} /> :
+                  <TrendChart data={trendData} />
           }
         </div>
 
@@ -1411,6 +1415,91 @@ function TrendGhostRadar({ onStart, scanning, disabled }) {
         {disabled
           ? '先在下方產生並啟用 prompt，再開始監測'
           : '按下開始第一次掃描 ChatGPT、Claude、Gemini —— 趨勢會隨每次掃描逐日累積'}
+      </div>
+    </div>
+  )
+}
+
+// =====================================================
+// TrendForming（趨勢成形中：掃完第 1-2 天、資料點太少畫不出真趨勢時用）（2026-06-19）
+// 為什麼：新客戶掃完第一次進來，30 天裡只有 1 個點、其餘 0 → 真 TrendChart 變貼地平線+孤點、超沒說服力、留不住人。
+// 做法：真實起點（實心發光點）+ 從起點往右上脈動延伸的「投射走勢」（dashed 低透明 + 標「示意」）+ 最新點雷達漣漪。
+// honesty 防線：真數據實心發光、預期走勢一律 dashed 且明標「示意」，不偽裝成真實歷史，只是「你會長成這樣」的視覺勾子。
+function TrendForming({ data, daysScanned, onRescan, scanning }) {
+  const W = 760, H = 200, padL = 44, padR = 16, padT = 22, padB = 30
+  const innerW = W - padL - padR, innerH = H - padT - padB
+  const yScale = v => padT + innerH - (v / 100) * innerH
+  const yTicks = [0, 50, 100]
+
+  // 趨勢還沒長出來：把「今天的真實提及率」放最左當起點，往右上投射「預期走勢（示意）」到 30 天後。
+  // 為什麼放左邊：30 天歷史圖裡今天在最右、沒有空間往右投射；成形狀態改成前瞻框架（今天→30天後）更直覺也更勾人。
+  const realDays = data.filter(d => d.total > 0)
+  const todayVal = realDays.length ? realDays[realDays.length - 1].val : 0
+  const x0 = padL, y0 = yScale(todayVal)
+  // 投射 S 曲線：從起點往右上抬到接近頂部（aspirational、非真實數據）
+  const projPath = `M${x0},${y0} C${x0 + innerW * 0.4},${y0} ${W - padR - innerW * 0.35},${padT + 30} ${W - padR},${padT + 18}`
+
+  return (
+    <div style={{
+      background: 'rgba(1,8,14,.55)', border: `1px solid ${T.cardBorder}`,
+      borderRadius: T.rL, padding: 22, position: 'relative', minWidth: 0,
+    }}>
+      <style>{`@keyframes aivisFormLine{0%,100%{opacity:.22}50%{opacity:.5}}@keyframes aivisFormDot{0%,100%{opacity:.5;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}`}</style>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>30 天提及率趨勢</div>
+          <div style={{ fontSize: 14, color: T.textLow }}>AI 即時上網、答案天天在變 — 看趨勢，別看單次數字</div>
+        </div>
+        {/* 成形中 LIVE 徽章（脈動小點） */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, background: `${AIVIS_TEAL}1f`, border: `1px solid ${AIVIS_TEAL}55` }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: AIVIS_TEAL, transformOrigin: 'center', animation: 'aivisFormDot 1.6s ease-in-out infinite' }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: AIVIS_TEAL }}>趨勢成形中</span>
+        </div>
+      </div>
+
+      <div style={{ position: 'relative' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+          {/* Y 軸格線 */}
+          {yTicks.map(t => (
+            <g key={t}>
+              <line x1={padL} y1={yScale(t)} x2={W - padR} y2={yScale(t)} stroke="rgba(255,255,255,.06)" strokeDasharray="2 4" />
+              <text x={padL - 8} y={yScale(t) + 3} fontSize="10" fill={T.textLow} textAnchor="end" fontFamily={T.mono}>{t}%</text>
+            </g>
+          ))}
+          {/* X 軸前瞻標籤：今天 → 30 天後 */}
+          <text x={x0} y={H - padB + 16} fontSize="9" fill={T.textLow} textAnchor="middle" fontFamily={T.mono}>今天</text>
+          <text x={W - padR} y={H - padB + 16} fontSize="9" fill={T.textLow} textAnchor="end" fontFamily={T.mono}>30 天後</text>
+          {/* 預期走勢（示意、脈動 dashed） */}
+          <path d={projPath} fill="none" stroke={AIVIS_TEAL} strokeWidth="2.5" strokeDasharray="6 7" strokeLinecap="round"
+            style={{ animation: 'aivisFormLine 3s ease-in-out infinite' }} />
+          <text x={W - padR} y={padT + 8} fontSize="10" fill={T.textLow} textAnchor="end" fontFamily={T.font}>預期走勢 · 示意</text>
+          {/* 今天的真實起點（實心發光）+ 數值 */}
+          <circle cx={x0} cy={y0} r="4.5" fill={AIVIS_TEAL} style={{ filter: `drop-shadow(0 0 6px ${AIVIS_TEAL})` }} />
+          <text x={x0 + 10} y={y0 - 10} fontSize="12" fill={AIVIS_TEAL} textAnchor="start" fontWeight="700" fontFamily={T.font}>今天 {todayVal}%</text>
+          {/* 起點雷達漣漪（脈動、呼應空狀態雷達語言） */}
+          {[0, 1].map(d => (
+            <circle key={d} cx={x0} cy={y0} fill="none" stroke={AIVIS_TEAL} strokeWidth="1.5">
+              <animate attributeName="r" from="6" to="34" dur="2s" begin={`${d}s`} repeatCount="indefinite" />
+              <animate attributeName="opacity" from="0.7" to="0" dur="2s" begin={`${d}s`} repeatCount="indefinite" />
+            </circle>
+          ))}
+        </svg>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 13, color: T.textMid }}>
+          {daysScanned <= 1
+            ? <>已完成首次掃描 🎉 · 趨勢需要時間累積，持續監測 <span style={{ color: AIVIS_TEAL, fontWeight: 700 }}>3-5 天</span> 就能看到真實走勢</>
+            : <>已監測 <span style={{ color: AIVIS_TEAL, fontWeight: 700 }}>{daysScanned}</span> 天 · 再過幾天，完整 30 天走勢就會浮現</>}
+        </div>
+        <button onClick={onRescan} disabled={scanning}
+          style={{
+            border: `1px solid ${AIVIS_TEAL}66`, borderRadius: 10, padding: '8px 16px',
+            background: `${AIVIS_TEAL}14`, color: AIVIS_TEAL, fontFamily: T.font, fontWeight: 700, fontSize: 13,
+            cursor: scanning ? 'not-allowed' : 'pointer', opacity: scanning ? 0.55 : 1, whiteSpace: 'nowrap',
+          }}>
+          {scanning ? '⏳ 監測中' : '📡 再次掃描'}
+        </button>
       </div>
     </div>
   )
