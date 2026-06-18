@@ -560,7 +560,10 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
   const title = website.name || hostname
   const metaDesc = seoAudit?.meta_tags?.description?.trim()
   const ogDesc = aeoAudit?.open_graph?.description?.trim()
-  const description = metaDesc || ogDesc || `${title} — AI 能見度檢測網站`
+  // ponytail: 抓不到 meta/OG 描述時用中性 fallback——絕不可寫死本工具標語，
+  // 否則每個沒寫 meta 的客戶站都會被誤標成「AI 能見度檢測網站」，污染 llms.txt 最關鍵的 blockquote。
+  // 上限：無描述的站只能給中性句；未來可從首頁正文/title tag 萃取真實業別描述。
+  const description = metaDesc || ogDesc || `${title} 官方網站`
   const today = new Date().toISOString().split('T')[0]
   const baseUrl = website.url.replace(/\/$/, '')
   const hasOrgSchema = !!eeatAudit?.organization_schema
