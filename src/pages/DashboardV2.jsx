@@ -437,22 +437,15 @@ export default function DashboardV2() {
             {/* ─── ✨ aivis Hero + Gamify Rail（grid 8:4） ─── */}
             <section className="grid lg:grid-cols-12 gap-4 mb-6">
               <div className="lg:col-span-8">
-                <AivisHero isPro={isPro} websiteName={website.name} overallScore={overallScore} />
+                <AivisHero isPro={isPro} websiteName={website.name} overallScore={overallScore} trendData={trendData} />
               </div>
               <div className="lg:col-span-4">
                 <GamifyRail gamify={gamify} />
               </div>
             </section>
 
-            {/* ─── 30 天進步曲線（移到第一屏、aivis Hero 下方）：≥2 筆顯示真實折線；
-                  第一次掃完（≤1 筆）顯示心跳脈動成形圖當勾子，掃完馬上勾住新客戶 ─── */}
-            {trendData.length > 1 ? <TrendChart trendData={trendData} /> : (
-              <HeartbeatTrend footer={
-                <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)', margin: 0 }}>
-                  ✅ 已完成首次掃描 — 持續監測，<span style={{ color: '#FFC24B', fontWeight: 700 }}>真實的 30 天進步軌跡</span>就會在這裡浮現
-                </p>
-              } />
-            )}
+            {/* ─── 30 天進步曲線：≥2 筆顯示真實折線（第一次掃完的心跳成形帶已嵌進上方 aivis Hero 卡片內） ─── */}
+            {trendData.length > 1 && <TrendChart trendData={trendData} />}
 
             {/* ─── 公告改成 SiteHeader 鈴鐺、Dashboard 內不再放卡片（2026-06-06） ─── */}
 
@@ -929,7 +922,7 @@ function TopBar({ website, navigate, onExportPdf, onChecklist, onRescan, rescann
 //   2. no_brands — 用戶沒設定追蹤品牌、顯示設定 CTA
 //   3. has_brands — 用戶有設品牌、列出來、給「看完整監測」入口
 // aivis 真實提及率資料需要等到 aivis monitoring run 才有、目前先讓用戶能正確進入設定流程
-function AivisHero({ isPro, websiteName, overallScore }) {
+function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
   const { user } = useAuth()
   const [brands, setBrands] = useState(null) // null = loading, [] = no brands, [...] = has brands
 
@@ -969,6 +962,22 @@ function AivisHero({ isPro, websiteName, overallScore }) {
         </div>
         <p className="text-base text-white/65 mb-1">追蹤你在 ChatGPT / Claude / Perplexity / Gemini / GLM 的真實提及率</p>
         <p className="text-sm text-white/45 mb-6"><span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-semibold text-sm">LLMO 結果驗證層</span> · 跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分</p>
+
+        {/* 心跳脈動「趨勢成形中」帶：嵌在 hero 卡片內（用戶指定位置）。第一次掃完（trendData ≤1 筆）顯示、
+            真實 30 天折線（≥2 筆）改放在 hero 下方。bare = 去外框、融入卡片當「生命徵象帶」。 */}
+        {trendData.length <= 1 && (
+          <div className="mb-6">
+            <HeartbeatTrend
+              bare
+              title=""
+              footer={
+                <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)', margin: 0 }}>
+                  ✅ 已完成首次掃描 — 持續監測，<span style={{ color: '#FFC24B', fontWeight: 700 }}>真實 30 天軌跡</span>即將浮現
+                </p>
+              }
+            />
+          </div>
+        )}
 
         {/* 5 AI 引擎 chips（中性、不掛假數據）— 純展示「我們追蹤這 5 個 AI 引擎」這件事 */}
         <div className="grid grid-cols-5 gap-2 mb-6">

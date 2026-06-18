@@ -6,6 +6,20 @@
 
 ---
 
+### 2026-06-19（心跳圖嵌進 aivis Hero 卡片內 + 不規律波形 + 掃描點畫線效果）
+
+**用戶要求三點：**（1）放進 aivis Hero 卡片內、引擎圖示上方那條（用戶截圖紅框指定）（2）上下起伏不要那麼規律（3）掃描點還沒到的地方不出現橘線、點經過後才畫出（心電監視器掃描感）。
+
+**改動：**
+- [HeartbeatTrend.jsx](src/components/HeartbeatTrend.jsx)：
+  - **不規律波形**：`beatDefs` 每拍 w/base/amp 都不同（中間 base 小回落、整體向上），取代原本等寬等距 4 拍。
+  - **掃描點畫線**：綠色虛線「軌跡」完整顯示（預示路徑）；橘線 `pathLength="100"` + `stroke-dashoffset 100→0` 動畫，與掃描點 `animateMotion` 同 `DUR=3.6s`、同走弧長 → 橘線只在掃描點身後出現、前方只有綠虛線。移除原本到處都在的 R 波峰脈動點（會出現在掃描點前方、矛盾）。
+  - 新增 `bare` prop：去掉外層卡片框、融入別的容器；`title=""` 可隱藏標題。
+- [DashboardV2.jsx](src/pages/DashboardV2.jsx)：`AivisHero` 收 `trendData`，在 LLMO 副標與引擎 chips 之間嵌 `<HeartbeatTrend bare title="">`（`trendData.length<=1` 時）。真實 30 天折線（≥2 筆）留在 Hero 下方。
+- 驗證：`vite build` exit 0 + Playwright 截圖確認（左橘右綠、波形不規律、嵌入 hero 卡片）。
+
+---
+
 ### 2026-06-19（趨勢圖移到第一屏）
 
 **背景：** 心跳/趨勢圖原本在 DashboardV2 整頁**最底部**（站點體檢+工具箱之後），新客戶捲不到、看不到，違背「掃完馬上勾住」初衷。用戶選「移到頂部（aivis Hero 下方）」。
