@@ -567,8 +567,6 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
   const today = new Date().toISOString().split('T')[0]
   const baseUrl = website.url.replace(/\/$/, '')
   const hasOrgSchema = !!eeatAudit?.organization_schema
-  const hasAboutPage = !!eeatAudit?.about_page
-  const hasContactPage = !!eeatAudit?.contact_page
 
   const lines = []
   lines.push(`# ${title}`)
@@ -582,8 +580,10 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
   lines.push('')
   lines.push(`- [Homepage](${baseUrl}): ${title}`)
   lines.push(`- [Sitemap](${baseUrl}/sitemap.xml): XML sitemap with all site URLs`)
-  if (hasAboutPage) lines.push(`- [About](${baseUrl}/about): Organization information`)
-  if (hasContactPage) lines.push(`- [Contact](${baseUrl}/contact): Contact information`)
+  // ponytail: eeat audit 只回 about/contact 的 boolean（passed），沒存實際 URL。
+  // 不可瞎編 /about、/contact——Astro/Joomla/自架站路徑常不同，編出來的連結會 404，
+  // llms.txt 裡放 404 等於告訴 AI「這站壞了」，比不放更糟。只列保證存在的 Homepage + Sitemap。
+  // 上限：失去 about/contact 指引；未來可從 sitemap 比對出真實 about/contact URL 再列回來（截圖 #2 的策展建議）。
   lines.push('')
   lines.push('## AI crawler policy')
   lines.push('')
