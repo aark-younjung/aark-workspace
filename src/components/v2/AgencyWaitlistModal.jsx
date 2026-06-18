@@ -56,6 +56,17 @@ export default function AgencyWaitlistModal({ open, onClose }) {
         user_id: user?.id || null,
       }])
       if (error) throw error
+      // 寄 email 通知擁有者（fire-and-forget：登記已成功，通知失敗不影響使用者）
+      fetch('/api/public?action=agency-waitlist-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          company_name: companyName.trim() || null,
+          num_clients_estimate: numClients || null,
+          reason: reason.trim() || null,
+        }),
+      }).catch(() => {})
       setDone(true)
     } catch (e) {
       console.error('Agency waitlist submit failed:', e)

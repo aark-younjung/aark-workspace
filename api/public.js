@@ -64,6 +64,8 @@ export default async function handler(req, res) {
 
   // indexnow-ping（POST、不需 supabase）先處理 — 2026-06-10 從 /api/indexnow-ping 合併進來、省 1 個 function
   if (action === 'indexnow-ping') return handleIndexnowPing(req, res)
+  // agency-waitlist-notify（POST、不需 supabase）— 代理商候補申請時寄 email 通知擁有者（2026-06-18）
+  if (action === 'agency-waitlist-notify') return handleAgencyWaitlistNotify(req, res)
 
   // 其餘 action 一律 GET
   if (req.method !== 'GET') return res.status(405).send('Method not allowed')
@@ -106,6 +108,55 @@ async function handleIndexnowPing(req, res) {
     })
   } catch (error) {
     return res.status(500).json({ error: error.message })
+  }
+}
+
+// ───────────────────────────────────────────────────────────
+// action=agency-waitlist-notify — 代理商候補有人申請時寄 email 通知擁有者（2026-06-18）
+//   POST body: { email, company_name, num_clients_estimate, reason }
+//   fire-and-forget：登記已寫入 aark_agency_waitlist，這只是即時通知；失敗不影響登記。
+//   ponytail: 公開未驗證端點、無 rate limit（只寄信給擁有者、濫用風險低）；若被灌爆再加節流。
+// ───────────────────────────────────────────────────────────
+const WAITLIST_NOTIFY_TO = 'aark6465@gmail.com'
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+}
+async function handleAgencyWaitlistNotify(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed (POST only)' })
+  const RESEND_API_KEY = process.env.RESEND_API_KEY
+  if (!RESEND_API_KEY) return res.status(200).json({ ok: false, skipped: 'RESEND_API_KEY not set' })
+
+  const { email, company_name, num_clients_estimate, reason } = req.body || {}
+  // 信任邊界驗證：email 格式不對就不寄（擋空打/亂打灌信箱）
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(email))) {
+    return res.status(400).json({ error: 'invalid email' })
+  }
+
+  const html = `
+    <h2 style="margin:0 0 12px">🤝 新代理商候補申請</h2>
+    <p><b>Email：</b>${escHtml(email)}</p>
+    <p><b>公司 / 品牌：</b>${escHtml(company_name) || '—'}</p>
+    <p><b>預估客戶數：</b>${escHtml(num_clients_estimate) || '—'}</p>
+    <p><b>申請原因：</b>${escHtml(reason) || '—'}</p>
+    <hr>
+    <p style="color:#888;font-size:13px">落地頁承諾 24 小時內聯繫。後台完整名單：/admin/waitlist</p>`
+
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'AI 雷達 <report@aark.io>',
+        to: WAITLIST_NOTIFY_TO,
+        reply_to: String(email),
+        subject: `🤝 新代理商候補申請：${escHtml(company_name) || escHtml(email)}`,
+        html,
+      }),
+    })
+    if (!r.ok) return res.status(502).json({ error: 'resend failed', detail: (await r.text()).slice(0, 200) })
+    return res.status(200).json({ ok: true })
+  } catch (e) {
+    return res.status(500).json({ error: e.message })
   }
 }
 

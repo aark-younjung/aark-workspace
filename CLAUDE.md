@@ -290,7 +290,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 | `/admin/websites` | AdminWebsites | 掃描紀錄：所有網站 + 四大分數 |
 | `/admin/revenue` | AdminRevenue | 營收：MRR 估算、Pro 用戶列表、近 6 月增長圖 |
 | `/admin/activity` | AdminActivity | 用戶活躍分析：5 分群 KPI + 流失風險/升級潛力行動名單（2026-06-13） |
-| `/admin/waitlist` | AdminWaitlist | 代理商候補名單檢視（讀 aark_agency_waitlist；2026-06-18）。⚠️ 尚無 email 通知，需主動進來看 |
+| `/admin/waitlist` | AdminWaitlist | 代理商候補名單檢視（讀 aark_agency_waitlist；2026-06-18）。申請時會 email 通知 aark6465（public.js `?action=agency-waitlist-notify`，fire-and-forget） |
 | `/ai-visibility` | AIVisibility | **AI 曝光監測** — 品牌列表 + 新增（aivis 模組 Phase 1） |
 | `/ai-visibility/:id` | AIVisibilityDashboard | AI 曝光監測 — 單一品牌儀表板（目前為空狀態）|
 
