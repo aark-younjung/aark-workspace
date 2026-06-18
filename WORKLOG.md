@@ -6,6 +6,21 @@
 
 ---
 
+### 2026-06-19（用戶端可刪除「我的網站」+ websites RLS delete policy）
+
+**背景：** 用戶發現一般掃描網站（websites 表）只有 admin 能從 `/admin/websites` 刪，用戶端完全沒有刪除入口——加錯網址／想清舊站都卡住，第一印象差、也佔「我的網站」清單與站數上限。（aivis 品牌另有刪除鈕，這次只補一般掃描網站。）
+
+**改動 [HomeDark.jsx](src/pages/HomeDark.jsx)：**
+- 新增 `deleteWebsite(siteId, name)`：confirm 二次確認 → `supabase.from('websites').delete().eq('id', siteId)` → 樂觀更新 `setMyWebsites` 拿掉該筆。
+- 「我的網站」卡片頁尾加 🗑 刪除鈕，與「查看報告 →」並排（icon-only 不擠版面）。卡片是 `<Link>`，刪除鈕 `e.preventDefault()+stopPropagation()` 避免觸發跳轉。
+- 驗證：`vite build` exit 0、新 bundle 含「確定要刪除「」字串。
+
+**⚠️ 待用戶在 Supabase 跑 SQL（否則前端按了會被 RLS 擋）：**
+- `websites` 加 delete policy：`using (auth.uid() = user_id)`，只能刪自己的站。
+- 子表（seo/aeo/geo/content/eeat_audits、bulk_scan_jobs、scan_error_logs）外鍵需 `on delete cascade`，否則刪站會 FK 違反。cascade 由系統執行、不受子表 RLS 限制，故子表免加 delete policy。先跑驗證查詢確認 confdeltype 是否已是 c。
+
+---
+
 ### 2026-06-18（aivis 空狀態：雷達擴散 ghost 趨勢圖 + 「開始監測」啟動按鈕）
 
 **背景：** 用戶發現 aivis 趨勢圖不會自動長（掃描是前端驅動、無自動排程，確認過 vercel.json 只有 daily weekly-reports cron、不掃 aivis）。新用戶第一眼是空白扁平趨勢圖 → 傷轉換。用戶提議：空狀態給「ghost 趨勢圖 + 中央開始監測按鈕 + 像首頁雷達擴散的脈動」。

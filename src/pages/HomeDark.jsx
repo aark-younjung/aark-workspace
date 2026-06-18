@@ -368,6 +368,19 @@ export default function HomeDark() {
     })))
   }
 
+  // 刪除自己的網站（連同掃描紀錄）— 用戶端入口。
+  // RLS 需允許 owner 刪自己的站（auth.uid() = user_id），否則前端按了會被 policy 擋。
+  const deleteWebsite = async (siteId, name) => {
+    if (!confirm(`確定要刪除「${name}」嗎？\n這個網站的所有掃描紀錄會一併移除，無法復原。`)) return
+    const { error } = await supabase.from('websites').delete().eq('id', siteId)
+    if (error) {
+      console.error('delete website error:', error)
+      alert(`刪除失敗：${error.message || '請稍後再試'}`)
+      return
+    }
+    setMyWebsites(prev => prev.filter(s => s.id !== siteId)) // 樂觀更新：直接從清單拿掉
+  }
+
   const addLog = (bot, item, status) => {
     const t = new Date()
     const time = t.toTimeString().slice(0, 8)
@@ -1125,7 +1138,15 @@ export default function HomeDark() {
                       ) : <p className="text-sm" style={{ color: T.textMid }}>尚未分析</p>}
                       <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                         <span className="text-sm" style={{ color: T.textMid }}>🤖 {timeAgo(site.last_scanned_at)}</span>
-                        <span className="text-sm font-medium group-hover:underline" style={{ color: T.orange }}>查看報告 →</span>
+                        <div className="flex items-center gap-3">
+                          {/* 刪除鈕：preventDefault + stopPropagation，避免觸發外層 Link 跳轉 */}
+                          <button
+                            onClick={e => { e.preventDefault(); e.stopPropagation(); deleteWebsite(site.id, site.name) }}
+                            className="text-sm text-white/30 hover:text-red-400 transition-colors"
+                            title="刪除網站" aria-label="刪除網站"
+                          >🗑</button>
+                          <span className="text-sm font-medium group-hover:underline" style={{ color: T.orange }}>查看報告 →</span>
+                        </div>
                       </div>
                     </GlassCard>
                   </Link>
