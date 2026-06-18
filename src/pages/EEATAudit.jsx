@@ -307,7 +307,7 @@ export default function EEATAudit() {
                     >
                       <div className="text-4xl mb-3">🔒</div>
                       <h4 className="text-lg font-bold mb-2" style={{ color: T.text }}>升級 Pro 解鎖完整建議</h4>
-                      <p className="text-sm mb-5" style={{ color: T.textMid }}>包含優先順序排序、具體修復步驟、時程規劃，以及每月自動掃描通知</p>
+                      <p className="text-sm mb-5" style={{ color: T.textMid }}>包含優先順序排序、具體修復步驟、時程規劃，以及每週 email 報告與分數變化提醒</p>
                       <Link
                         to="/pricing"
                         className="block w-full px-6 py-3 text-white font-semibold rounded-xl transition-all shadow-lg text-center"

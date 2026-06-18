@@ -15,7 +15,7 @@
 - **修掉已上線的假宣稱** [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) header：原本寫「每日定時 02:00 自動掃描」（完全不存在）→ 改「答案天天在變 · 建議每週回來監測」。
 - 驗證：`vite build` exit 0、bundle 無「每日定時 02:00」殘留。
 
-**另發現待用戶決定：** [EEATAudit.jsx:310](src/pages/EEATAudit.jsx) Pro 升級卡寫「每月自動掃描通知」——同樣是還沒做的功能（且週報其實是每週、且不掃描）。屬付費功能承諾、未自動改、待用戶決定怎麼處理。
+**另發現並修正：** [EEATAudit.jsx:310](src/pages/EEATAudit.jsx) Pro 升級卡原寫「每月自動掃描通知」（未做功能、付費承諾）→ 用戶同意改成「每週 email 報告與分數變化提醒」（cron-weekly-reports 真的有做的賣點）。bundle 無「每月自動掃描」殘留、`vite build` exit 0。
 
 ---
 
