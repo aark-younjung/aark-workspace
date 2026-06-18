@@ -11,6 +11,7 @@ const NAV = [
   { path: '/admin/showcase', label: '排行榜審核', icon: '⭐' },
   { path: '/admin/monitoring', label: '系統監控', icon: '📡' },
   { path: '/admin/activity', label: '活躍分析', icon: '📈' },
+  { path: '/admin/waitlist', label: '代理商候補', icon: '🤝' },
 ]
 
 export default function AdminLayout({ children }) {
