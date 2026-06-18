@@ -6,6 +6,19 @@
 
 ---
 
+### 2026-06-19（心跳脈動圖抽成共用元件、aivis 也統一）
+
+**背景：** 上一筆把心跳圖做進 DashboardV2，但 aivis 還是舊的青綠投射圖（`TrendForming`）、兩邊不一致。用戶拍板「換成心跳圖、兩邊統一」。
+
+**改動：**
+- 新增共用元件 [src/components/HeartbeatTrend.jsx](src/components/HeartbeatTrend.jsx)：心跳脈動圖核心，props `title / subtitle / footer / action / cardStyle`。
+- [DashboardV2.jsx](src/pages/DashboardV2.jsx)：移除 inline 版、改 import 共用元件，傳 SEO 版 footer 文案。
+- [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：刪掉 `TrendForming`（青綠投射圖），`daysWithData < 3` 改用共用 `HeartbeatTrend`，傳 aivis 標題/副標 + 「再次掃描」action（橘色系，與卡片一致）+ daysWithData 文案。空狀態仍保留青綠 `TrendGhostRadar`（不同狀態用不同視覺 OK）。
+- 注意：filter/path 固定 id（hbGlow/hbLine），同頁僅一個實例不撞 id。
+- 驗證：無 `TrendForming` 殘留引用、`vite build` exit 0、bundle 含 hbLine。
+
+---
+
 ### 2026-06-19（SEO 網站儀表板：第一次掃完顯示心跳脈動「趨勢成形中」圖）
 
 **背景＋定位修正：** 用戶要的「掃完第一次出現假趨勢圖」其實是在 **SEO 網站儀表板**（`/dashboard/:id` = DashboardV2），不是 aivis（之前做錯地方）。原本 [DashboardV2.jsx:483](src/pages/DashboardV2.jsx) 是 `trendData.length > 1 && <TrendChart>` → 第一次掃完只有 1 筆、整區空白、留不住新客戶。
