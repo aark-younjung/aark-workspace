@@ -444,6 +444,16 @@ export default function DashboardV2() {
               </div>
             </section>
 
+            {/* ─── 30 天進步曲線（移到第一屏、aivis Hero 下方）：≥2 筆顯示真實折線；
+                  第一次掃完（≤1 筆）顯示心跳脈動成形圖當勾子，掃完馬上勾住新客戶 ─── */}
+            {trendData.length > 1 ? <TrendChart trendData={trendData} /> : (
+              <HeartbeatTrend footer={
+                <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)', margin: 0 }}>
+                  ✅ 已完成首次掃描 — 持續監測，<span style={{ color: '#FFC24B', fontWeight: 700 }}>真實的 30 天進步軌跡</span>就會在這裡浮現
+                </p>
+              } />
+            )}
+
             {/* ─── 公告改成 SiteHeader 鈴鐺、Dashboard 內不再放卡片（2026-06-06） ─── */}
 
             {/* ─── Audit 達標引導卡（2026-06-10）— 4 個訊號層平均 ≥ 85 時觸發
@@ -480,14 +490,6 @@ export default function DashboardV2() {
             {/* ─── 修復工具箱（合併版單一入口） ─── */}
             <ToolBox websiteId={website.id} />
 
-            {/* ─── 30 天進步曲線：≥2 筆顯示真實折線；第一次掃完（≤1 筆）顯示心跳脈動成形圖當勾子 ─── */}
-            {trendData.length > 1 ? <TrendChart trendData={trendData} /> : (
-              <HeartbeatTrend footer={
-                <p className="text-sm" style={{ color: 'rgba(255,255,255,0.55)', margin: 0 }}>
-                  ✅ 已完成首次掃描 — 持續監測，<span style={{ color: '#FFC24B', fontWeight: 700 }}>真實的 30 天進步軌跡</span>就會在這裡浮現
-                </p>
-              } />
-            )}
           </>
         )}
 
