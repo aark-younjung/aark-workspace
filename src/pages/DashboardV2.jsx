@@ -33,6 +33,11 @@ import ClientReportModal from '../components/v2/ClientReportModal'
 import LLMOChecklistModal from '../components/v2/LLMOChecklistModal'
 import Footer from '../components/Footer'
 import HeartbeatTrend from '../components/HeartbeatTrend'
+import logoChatGPT from '../assets/engines/chatgpt.svg'
+import logoClaude from '../assets/engines/claude.svg'
+import logoPerplexity from '../assets/engines/perplexity.svg'
+import logoGemini from '../assets/engines/gemini.svg'
+import logoGrok from '../assets/engines/grok.svg'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
 import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
@@ -979,20 +984,22 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
           </div>
         )}
 
-        {/* 5 AI 引擎 chips（中性、不掛假數據）— 純展示「我們追蹤這 5 個 AI 引擎」這件事 */}
+        {/* 5 AI 引擎 chips（真實 logo）— 白底圓角磚確保深色/淺色 logo 都看得見（Grok 黑、ChatGPT 已改深色） */}
         <div className="grid grid-cols-5 gap-2 mb-6">
           {[
-            { name: 'ChatGPT',    emoji: '💬' },
-            { name: 'Claude',     emoji: '🟣' },
-            { name: 'Perplexity', emoji: '🔎' },
-            { name: 'Gemini',     emoji: '✨' },
-            { name: 'Grok',       emoji: '🧠' },
+            { name: 'ChatGPT',    logo: logoChatGPT },
+            { name: 'Claude',     logo: logoClaude },
+            { name: 'Perplexity', logo: logoPerplexity },
+            { name: 'Gemini',     logo: logoGemini },
+            { name: 'Grok',       logo: logoGrok },
           ].map((e, i) => (
             <div key={i} className="text-center p-2 rounded-lg" style={{
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
             }}>
-              <div className="text-2xl mb-1">{e.emoji}</div>
+              <div className="mx-auto mb-1.5 flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 9, background: '#fff' }}>
+                <img src={e.logo} alt={e.name} style={{ width: 22, height: 22, display: 'block' }} />
+              </div>
               <div className="text-sm text-white/55">{e.name}</div>
               <div className="text-sm font-mono text-white/35">—</div>
             </div>

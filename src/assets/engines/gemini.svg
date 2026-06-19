@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Gemini 4 點星 spark（官方藍→紫→粉漸層）。原始檔為 ~690 triangle 馬賽克版、
+     icon 尺寸下糊成色塊且不利維護，改用乾淨向量 spark，任意尺寸都銳利。 -->
+<svg version="1.1" id="gemini-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="gemini-grad" x1="2" y1="3" x2="22" y2="21" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4889F5"/>
+      <stop offset="0.5" stop-color="#9277E0"/>
+      <stop offset="1" stop-color="#D96570"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#gemini-grad)" d="M12,2 C12,7.523 7.523,12 2,12 C7.523,12 12,16.477 12,22 C12,16.477 16.477,12 22,12 C16.477,12 12,7.523 12,2 Z"/>
+</svg>

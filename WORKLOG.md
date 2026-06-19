@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-06-19（AivisHero 5 引擎 chip 換成真實 SVG logo）
+
+**背景：** 用戶提供 5 個引擎 SVG logo（ChatGPT/Claude/Perplexity/Gemini/Grok），要換掉原本的 emoji。
+
+**改動：**
+- 新增 [src/assets/engines/](src/assets/engines/) 5 個 SVG：chatgpt（**fill 由 #fff 改 #0d0d0d**，否則白 logo 在白磚看不見）、claude（#D17456）、perplexity、grok（純黑）、gemini。
+- **Gemini 特例**：用戶原檔是 ~690 triangle 馬賽克版，icon 尺寸糊成色塊、且無法可靠手抄；改用乾淨 4 點星 spark + 官方藍→紫→粉漸層（任意尺寸都銳利）。若日後要原馬賽克，把檔丟進 src/assets/engines/gemini.svg 覆蓋即可（import 已接好）。
+- [DashboardV2.jsx](src/pages/DashboardV2.jsx) AivisHero：5 引擎 chip 的 emoji 換成 `<img>` logo，每個放 **34px 白色圓角磚**內（22px logo）——確保 Grok 黑/Perplexity 深色 logo 在深色 hero 卡片上也看得見。
+- 驗證：`vite build` exit 0（小 svg 內聯 base64、大的 emit 成檔）+ Playwright 截圖確認 5 logo 皆清楚。
+
+---
+
 ### 2026-06-19（引擎名稱修正：GLM → Grok）
 
 **背景：** 用戶指出 AI 曝光監測的第 5 個引擎名稱寫錯——是 Grok（xAI）不是 GLM。PDF 與 aivis dashboard（ENGINE_META）本來就用 Grok、其他頁卻寫 GLM、不一致。
