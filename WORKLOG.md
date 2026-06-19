@@ -15,6 +15,7 @@
 - **Gemini 特例**：用戶原檔是 ~690 triangle 馬賽克版，icon 尺寸糊成色塊、且無法可靠手抄；改用乾淨 4 點星 spark + 官方藍→紫→粉漸層（任意尺寸都銳利）。若日後要原馬賽克，把檔丟進 src/assets/engines/gemini.svg 覆蓋即可（import 已接好）。
 - [DashboardV2.jsx](src/pages/DashboardV2.jsx) AivisHero：5 引擎 chip 的 emoji 換成 `<img>` logo，每個放 **34px 白色圓角磚**內（22px logo）——確保 Grok 黑/Perplexity 深色 logo 在深色 hero 卡片上也看得見。
 - 驗證：`vite build` exit 0（小 svg 內聯 base64、大的 emit 成檔）+ Playwright 截圖確認 5 logo 皆清楚。
+- 後續微調：Gemini spark 顯得比其他小 → viewBox `0 0 24` → `2.5 2.5 19` 裁掉四周留白、填滿白磚、與其他 logo 份量一致。
 
 ---
 
