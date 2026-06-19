@@ -128,8 +128,8 @@ export default function LandingPage() {
       />
 
       <div className="relative z-10 flex-1 flex flex-col items-center px-6 pt-10 pb-16 max-w-2xl mx-auto w-full">
-        {/* 頂部：logo 列（純識別、不是導覽 — 落地頁不給逃生門） */}
-        <div className="flex items-center gap-2.5 self-start mb-14">
+        {/* 頂部：logo 列（純識別、不是導覽 — 落地頁不給逃生門）。mb 縮小，把掃描框擠進第一屏。 */}
+        <div className="flex items-center gap-2.5 self-start mb-8">
           <AarkMark size={28} />
           <span className="text-white font-bold text-lg tracking-wide">方舟 AI 雷達</span>
         </div>
@@ -158,11 +158,9 @@ export default function LandingPage() {
           {content.sub}
         </p>
 
-        {/* 第一眼 = 成果（範例儀表板），不是動作（掃描框）— 拆「我自己問 AI 就好」異議 */}
-        <DashboardPreview />
-        <p className="text-sm mb-5 text-center font-medium" style={{ color: '#cbd5e1' }}>↓ 30 秒，生成你品牌的真實版本</p>
-
-        {/* CTA 掃描框（降為配角、置於儀表板之後） */}
+        {/* CTA 掃描框 — 上移到第一屏（手機折線內）。
+            原本放在範例儀表板下面（手機 846px、掉出 844px 折線）→ 261 個廣告訪客 0 行動。
+            改成：大標→副標→掃描框（行動先看見）→範例儀表板（證據在下面、滾一下就看到）。 */}
         <form onSubmit={handleScanSubmit} className="w-full max-w-md flex flex-col sm:flex-row gap-3 mb-3">
           <input
             type="text"
@@ -180,10 +178,14 @@ export default function LandingPage() {
             {content.cta}
           </button>
         </form>
-        {/* CTA 微文案 — 拆「會不會被推銷/要不要付錢」的心理防線（學自同業最佳實踐） */}
-        <p className="text-xs mb-10 flex items-center gap-1.5" style={{ color: '#64748b' }}>
+        {/* CTA 微文案 — 拆「會不會被推銷/要不要付錢」的心理防線 */}
+        <p className="text-xs mb-8 flex items-center gap-1.5" style={{ color: '#64748b' }}>
           <span style={{ color: '#18c590' }}>✓</span> 免費・不用綁卡・30 秒出結果
         </p>
+
+        {/* 範例儀表板（證據、移到掃描框下方）— 拆「我自己問 AI 就好」異議 */}
+        <p className="text-sm mb-3 text-center font-medium" style={{ color: '#cbd5e1' }}>↓ 30 秒，你會拿到這樣的即時報告（範例）</p>
+        <DashboardPreview />
 
         {/* 三行賣點（scan variant 用） */}
         {content.bullets && (
