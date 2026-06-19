@@ -447,6 +447,21 @@ export default function DashboardV2() {
             {/* ─── 30 天進步曲線：≥2 筆顯示真實折線（第一次掃完的心跳成形帶已嵌進上方 aivis Hero 卡片內） ─── */}
             {trendData.length > 1 && <TrendChart trendData={trendData} />}
 
+            {/* ─── 站點體檢（5 Tab wrapper）— 移到第一屏：這是用戶掃完最想看的「答案」，排在 hero 正下方、馬上看得到 ─── */}
+            <AuditSection
+              scores={scores}
+              activeFace={activeFace}
+              setActiveFace={setActiveFace}
+              website={website}
+              seoAudit={seoAudit}
+              aeoAudit={aeoAudit}
+              geoAudit={geoAudit}
+              eeatAudit={eeatAudit}
+              contentLatest={contentLatest}
+              contentHistory={contentHistory}
+              isPro={isPro}
+            />
+
             {/* ─── 公告改成 SiteHeader 鈴鐺、Dashboard 內不再放卡片（2026-06-06） ─── */}
 
             {/* ─── Audit 達標引導卡（2026-06-10）— 4 個訊號層平均 ≥ 85 時觸發
@@ -464,21 +479,6 @@ export default function DashboardV2() {
 
             {/* ─── Quest Section（今日任務 = Action Center）— Gap 2（2026-06-05）接真資料 ─── */}
             <QuestSection quests={generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit, websiteId: website.id })} />
-
-            {/* ─── 站點體檢（5 Tab wrapper） ─── */}
-            <AuditSection
-              scores={scores}
-              activeFace={activeFace}
-              setActiveFace={setActiveFace}
-              website={website}
-              seoAudit={seoAudit}
-              aeoAudit={aeoAudit}
-              geoAudit={geoAudit}
-              eeatAudit={eeatAudit}
-              contentLatest={contentLatest}
-              contentHistory={contentHistory}
-              isPro={isPro}
-            />
 
             {/* ─── 修復工具箱（合併版單一入口） ─── */}
             <ToolBox websiteId={website.id} />
