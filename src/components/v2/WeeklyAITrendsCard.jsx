@@ -388,7 +388,7 @@ export default function WeeklyAITrendsCard() {
       {/* Footer 小字 — 解釋資料來源 */}
       <p className="mt-3 text-sm text-white/35 leading-relaxed">
         💡 {showPersonal ? '個人區來自你的 aivis 追蹤；' : ''}
-        全平台統計來自 Aark aivis 監測累積（跨用戶匿名）— 涵蓋 ChatGPT / Claude / Perplexity / Gemini / GLM 5 個 AI 引擎、每 5 分鐘更新。
+        全平台統計來自 Aark aivis 監測累積（跨用戶匿名）— 涵蓋 ChatGPT / Claude / Perplexity / Gemini / Grok 5 個 AI 引擎、每 5 分鐘更新。
       </p>
     </section>
   )

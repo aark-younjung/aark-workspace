@@ -6,6 +6,14 @@
 
 ---
 
+### 2026-06-19（引擎名稱修正：GLM → Grok）
+
+**背景：** 用戶指出 AI 曝光監測的第 5 個引擎名稱寫錯——是 Grok（xAI）不是 GLM。PDF 與 aivis dashboard（ENGINE_META）本來就用 Grok、其他頁卻寫 GLM、不一致。
+
+**改 4 處 GLM → Grok：** [DashboardV2.jsx](src/pages/DashboardV2.jsx)（AivisHero 副標 + 引擎 chip）、[WeeklyAITrendsCard.jsx](src/components/v2/WeeklyAITrendsCard.jsx) footer、[HomeDark.jsx](src/pages/HomeDark.jsx) 功能清單。src + bundle 已無 GLM 殘留、`vite build` exit 0。
+
+---
+
 ### 2026-06-19（站點體檢移到第一屏）
 
 **背景：** 用戶指出「站點體檢」是掃完網址第一時間最想看的「答案」，但原本被「品牌外部提及／本週 AI 趨勢／今日該修」壓在下面（位置 8）。

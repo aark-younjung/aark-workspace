@@ -1373,7 +1373,7 @@ export default function HomeDark() {
                 fullName: '跨 LLM 引用追蹤',
                 tag: '結果驗證',
                 desc: '量化你在 5 個 AI 引擎的真實提及率。',
-                items: ['ChatGPT 引用率', 'Claude 引用率', 'Perplexity 引用率', 'Gemini 引用率', 'GLM 引用率'],
+                items: ['ChatGPT 引用率', 'Claude 引用率', 'Perplexity 引用率', 'Gemini 引用率', 'Grok 引用率'],
                 color: '#f97316',
               },
             ].map((item) => (

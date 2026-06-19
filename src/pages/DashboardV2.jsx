@@ -960,7 +960,7 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
             {isPro ? 'Pro 核心' : '🔒 Pro 功能'}
           </span>
         </div>
-        <p className="text-base text-white/65 mb-1">追蹤你在 ChatGPT / Claude / Perplexity / Gemini / GLM 的真實提及率</p>
+        <p className="text-base text-white/65 mb-1">追蹤你在 ChatGPT / Claude / Perplexity / Gemini / Grok 的真實提及率</p>
         <p className="text-sm text-white/45 mb-6"><span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-semibold text-sm">LLMO 結果驗證層</span> · 跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分</p>
 
         {/* 心跳脈動「趨勢成形中」帶：嵌在 hero 卡片內（用戶指定位置）。第一次掃完（trendData ≤1 筆）顯示、
@@ -986,7 +986,7 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
             { name: 'Claude',     emoji: '🟣' },
             { name: 'Perplexity', emoji: '🔎' },
             { name: 'Gemini',     emoji: '✨' },
-            { name: 'GLM',        emoji: '🧠' },
+            { name: 'Grok',       emoji: '🧠' },
           ].map((e, i) => (
             <div key={i} className="text-center p-2 rounded-lg" style={{
               background: 'rgba(255,255,255,0.04)',
