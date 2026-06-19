@@ -254,6 +254,8 @@ export default function HomeDark() {
   // 掃描失敗時的結構化錯誤資訊（title / hint / action / technical）
   // 取代原本黑箱 alert，讓用戶看到具體原因 + 可行動的下一步
   const [errorInfo, setErrorInfo] = useState(null)
+  // 未登入快掃結果（value-first）：不寫 DB、inline 顯示 4 大分數 + 引導註冊解鎖完整報告 + aivis
+  const [anonResult, setAnonResult] = useState(null)
   // anti-bot 鎖極嚴的聳動 modal — 取代瀏覽器原生 alert，用紅色警示 + 強烈衝擊文案
   // 4 輪爬蟲全擋 → 用戶網站對 AI 完全隱形，這是核心商業價值「AI 看不見你」最有衝擊力的展示瞬間
   const [antiBotModal, setAntiBotModal] = useState({ open: false, websiteId: null, url: '' })
@@ -433,12 +435,14 @@ export default function HomeDark() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!user) { navigate('/login', { state: { from: '/' } }); return }
+    // value-first：未登入也能掃（SEO/AEO/GEO/EEAT 都是瀏覽器端算、不花 LLM 錢）。
+    // 結果 inline 顯示分數 + 摘要；完整建議/保存/AI 曝光監測再引導註冊。
     if (!url) return
     setLoading(true)
     setScanLogs([])
     setErrorInfo(null)   // 開新一輪掃描清掉前次錯誤 banner
-    setStatus('正在建立網站記錄...')
+    setAnonResult(null)  // 清掉前次快掃結果
+    setStatus(user ? '正在建立網站記錄...' : '正在分析網站...')
 
     // websiteId 拉到 try 外，方便 catch 時也能用（anti-bot blocked 仍要寫 partial audit）
     let websiteId = null
@@ -449,21 +453,24 @@ export default function HomeDark() {
       cleanUrl = normalizeUrl(url)
       if (!cleanUrl) throw new Error('URL 格式錯誤')
 
+      // 只有登入用戶才建/找 website row（未登入快掃不寫 DB）
       // 以「URL + user_id」為唯一鍵：同一網址不同用戶各有自己的紀錄，避免資料污染與後台漏抓
-      const { data: existing } = await supabase
-        .from('websites')
-        .select('id')
-        .eq('url', cleanUrl)
-        .eq('user_id', user.id)
-        .maybeSingle()
+      if (user) {
+        const { data: existing } = await supabase
+          .from('websites')
+          .select('id')
+          .eq('url', cleanUrl)
+          .eq('user_id', user.id)
+          .maybeSingle()
 
-      if (existing) {
-        websiteId = existing.id
-      } else {
-        const { data: newSite, error: siteError } = await supabase
-          .from('websites').insert([{ url: cleanUrl, name: new URL(cleanUrl).hostname, user_id: user.id }]).select().single()
-        if (siteError) throw siteError
-        websiteId = newSite.id
+        if (existing) {
+          websiteId = existing.id
+        } else {
+          const { data: newSite, error: siteError } = await supabase
+            .from('websites').insert([{ url: cleanUrl, name: new URL(cleanUrl).hostname, user_id: user.id }]).select().single()
+          if (siteError) throw siteError
+          websiteId = newSite.id
+        }
       }
 
       setStatus('正在分析網站...')
@@ -505,6 +512,21 @@ export default function HomeDark() {
           return r
         })(),
       ])
+
+      // 未登入：不寫 DB，直接 inline 顯示 4 大分數 + 引導註冊（value-first）
+      if (!user) {
+        setAnonResult({
+          url: cleanUrl,
+          name: new URL(cleanUrl).hostname,
+          seo: seoResult?.score ?? null,
+          aeo: aeoResult?.score ?? null,
+          geo: geoResult?.score ?? null,
+          eeat: eeatResult?.score ?? null,
+        })
+        setStatus('')
+        setLoading(false)
+        return
+      }
 
       await Promise.allSettled([
         seoResult && supabase.from('seo_audits').insert([{
@@ -956,11 +978,8 @@ export default function HomeDark() {
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  onFocus={() => { if (!user) navigate('/login', { state: { from: '/' } }) }}
                   placeholder={
-                    user
-                      ? (typedDomain ? `輸入網址,例如 ${typedDomain}` : '輸入您的網址')
-                      : '請先登入以開始分析'
+                    typedDomain ? `輸入網址,例如 ${typedDomain}` : '輸入您的網址（免費・免註冊）'
                   }
                   className="home-url-input flex-1 px-6 py-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-400/60 focus:border-transparent transition-all"
                   disabled={loading}
@@ -985,10 +1004,38 @@ export default function HomeDark() {
                 </button>
               </div>
               {status && <p className="mt-3 text-white/80 text-sm">{status}</p>}
-              {!user && (
-                <p className="mt-3 text-white/50 text-sm">
-                  <Link to="/login" className="text-orange-400 hover:text-orange-300 underline font-medium">登入</Link> 或 <Link to="/register" className="text-orange-400 hover:text-orange-300 underline font-medium">免費註冊</Link> 後即可開始分析
+              {!user && !anonResult && (
+                <p className="mt-3 text-white/50 text-sm flex items-center gap-1.5">
+                  <span className="text-emerald-400">✓</span> 免費・免註冊・30 秒看你的 4 大 AI 能見度分數
                 </p>
+              )}
+
+              {/* 未登入快掃結果（value-first teaser）：4 大分數 + 引導註冊解鎖完整建議 + AI 曝光監測 */}
+              {!user && anonResult && (
+                <div className="mt-6 rounded-2xl border p-5" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.14)' }}>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <div className="text-white font-bold text-base truncate">📊 {anonResult.name} 的 AI 能見度快掃</div>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${T.aivis}1f`, border: `1px solid ${T.aivis}55`, color: T.aivis }}>免費快掃</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    {[['SEO', anonResult.seo], ['AEO', anonResult.aeo], ['GEO', anonResult.geo], ['E-E-A-T', anonResult.eeat]].map(([label, score]) => (
+                      <div key={label} className="text-center rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.28)' }}>
+                        <div className="text-2xl font-extrabold" style={{ color: score == null ? T.textLow : score >= 70 ? T.pass : score >= 40 ? T.warn : T.fail }}>{score ?? '—'}</div>
+                        <div className="text-xs mt-1" style={{ color: T.textMid }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm mb-4 leading-relaxed" style={{ color: T.textMid }}>
+                    這是你 4 大訊號層的快掃分數。<span className="text-white font-semibold">完整修復建議、保存報告，以及追蹤你在 ChatGPT / Claude / Gemini 的「AI 曝光監測」</span>，免費註冊就能解鎖。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { sessionStorage.setItem('lp_pending_url', anonResult.url); navigate('/register') }}
+                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-900/50"
+                  >
+                    免費註冊 → 解鎖完整建議 + 啟用 AI 曝光監測
+                  </button>
+                </div>
               )}
 
               {/* social proof + 早鳥 strip 已搬到 PlatformLogoWall 下方（2026-06-06）— 跟「覆蓋哪些 AI」緊接更連貫 */}
