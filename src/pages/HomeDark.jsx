@@ -11,6 +11,7 @@ import EarlybirdBanner from '../components/EarlybirdBanner'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
+import { trackPixelCustom } from '../lib/pixel'
 import { normalizeUrl } from '../lib/url'
 import { analyzeSEO, fetchPageContent, parseHTML, checkBotAccessibility } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
@@ -516,18 +517,26 @@ export default function HomeDark() {
         })(),
       ])
 
-      // 未登入：不寫 DB，直接 inline 顯示 4 大分數 + 引導註冊（value-first）
+      // 未登入：不寫 audit DB，直接 inline 顯示 4 大分數 + 引導註冊（value-first）
       if (!user) {
-        setAnonResult({
+        const anon = {
           url: cleanUrl,
           name: new URL(cleanUrl).hostname,
           seo: seoResult?.score ?? null,
           aeo: aeoResult?.score ?? null,
           geo: geoResult?.score ?? null,
           eeat: eeatResult?.score ?? null,
-        })
+        }
+        setAnonResult(anon)
         setStatus('')
         setLoading(false)
+        // 讓「未登入掃描完成」看得到（value-first 後 audit 表不會記）：
+        // (1) Pixel 自訂事件 → Ads Manager 量這一步漏斗
+        trackPixelCustom('AnonScanComplete', { content_name: anon.name })
+        // (2) 輕量後臺日誌 → 在 Supabase 看「有沒有人在掃」（fire-and-forget、失敗不影響）
+        supabase.from('anon_scan_events').insert({
+          url: anon.url, name: anon.name, seo: anon.seo, aeo: anon.aeo, geo: anon.geo, eeat: anon.eeat,
+        }).then(({ error }) => { if (error) console.warn('anon_scan_events insert failed:', error.message) })
         return
       }
 

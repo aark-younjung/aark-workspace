@@ -29,3 +29,8 @@ export function initPixel() {
 export function trackPixel(event, params) {
   if (typeof window !== 'undefined' && window.fbq) window.fbq('track', event, params)
 }
+
+// 自訂事件（非 FB 標準事件名）— 用 trackCustom，Ads Manager 會列為自訂轉換
+export function trackPixelCustom(event, params) {
+  if (typeof window !== 'undefined' && window.fbq) window.fbq('trackCustom', event, params)
+}
