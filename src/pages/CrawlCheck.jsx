@@ -260,7 +260,8 @@ export default function CrawlCheck() {
             你的網站，被 ChatGPT 看得到嗎？
           </h1>
           <p style={{ color: T.textMid, fontSize: 15, lineHeight: 1.6 }}>
-            30 秒模擬 4 種爬蟲身份測試你的網站，看 anti-bot 設定有沒有把 AI 爬蟲一起擋掉
+            想查 AI 機器人來過你的網站幾次？先確認它<strong style={{ color: T.text }}>進不進得來</strong>——被擋在門外的網站，log 永遠是 0。
+            <br />30 秒模擬 4 種爬蟲身份，看 anti-bot 設定有沒有把 AI 爬蟲一起擋掉。
           </p>
         </section>
 
@@ -426,9 +427,13 @@ export default function CrawlCheck() {
             傳統 SEO 工具只測「Google 排名」。但 ChatGPT、Claude、Perplexity 用的是它們自己的爬蟲（ChatGPTBot / ClaudeBot / PerplexityBot），
             這些爬蟲常常被 Cloudflare、WAF、anti-bot 服務跟「假冒 Googlebot」一起擋掉。
           </p>
-          <p>
+          <p style={{ marginBottom: 10 }}>
             結果：<strong style={{ color: T.text }}>你的網站 Google 排第一，但 ChatGPT 從沒推薦過你</strong>。
             這個工具就是設計來抓這個盲點。
+          </p>
+          <p>
+            <strong style={{ color: T.text }}>這是 GEO 的第 0 步</strong>：進得來 → 才會被爬 → 才有機會被引用。我們先幫你確認第一關「門開著」。
+            （門開了之後，「ChatGPT 到底有沒有推薦你」用我們的 <strong style={{ color: T.text }}>AI 曝光監測</strong> 直接問 5 大 AI 量出來。）
           </p>
         </section>
       </main>
