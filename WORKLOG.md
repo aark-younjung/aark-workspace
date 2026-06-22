@@ -27,6 +27,15 @@
 
 ---
 
+### 2026-06-19（/crawl-check 文案接「機器人來過嗎」熱度 + GEO 教育貼文）
+
+**背景：** 同業 FB 貼文教用 Claude Code 讀 server log 查 AI 爬蟲來訪次數，爆紅。我們做不到（沒用戶 server log），但可誠實接熱度：「進得來」是「來過」的前提，被 Cloudflare 擋的站 log 永遠 0。
+
+- [CrawlCheck.jsx](src/pages/CrawlCheck.jsx) 副標加鉤子（想查來幾次？先確認進不進得來）+ 教育區加「GEO 第 0 步：進得來→被爬→被引用」框架、橋接 AI 曝光監測。誠實守線：只講 accessibility、不假裝看 log。
+- 另寫 GEO 教育貼文（FB 長文 + Threads 5 則串、CTA → /crawl-check），對話交付、未入庫。發布管道建議：FB 粉專 / Threads（自架站 Claude Code 群）/ 代理商社團。
+
+---
+
 ### 2026-06-19（廣告漏斗大修：LP 折線 + value-first 拆登入牆）
 
 **背景：** 廣告上線、後台零掃描紀錄。診斷流程（重要方法）：
