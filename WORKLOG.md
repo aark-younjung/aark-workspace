@@ -27,6 +27,18 @@
 
 ---
 
+### 2026-06-21（接上 LP→value-first 動線 + agency 候補上移 + 未登入掃描可見化）
+
+**廣告 agency campaign 0 轉換深挖（1,019 LP 訪客→0 掃描→0 候補）：**
+- **斷點 1**：LP 掃描鈕 `navigate(user?'/':'/register')`——未登入丟去註冊牆，**沒接到 6/19 改的 value-first 首頁**。修：LP 一律 `navigate('/')`。
+- **斷點 2**：首頁 pending-url useEffect `if(!user)return`——未登入連網址都不帶入。修：未登入也帶入 + **自動掃描**（`handleSubmit(null, pending)`，handleSubmit 加 `urlOverride`）。AuthContext `{!loading && children}` 確保 user 已定、無 race。E2E 驗證：LP 掃→首頁自動掃出 inline 分數、不撞 /register、0 錯誤。
+- **agency 候補 CTA 上移**：原本埋在 1340px。在掃描框下方加「或，你是代理商？→ 申請首批代理商資格」（只 agency 變體顯示、`content.waitlistCta` gate）。第一屏 386 掃描 / 514 候補。
+- **未登入掃描可見化**：value-first 後 audit 表不記未登入掃描 → 後臺看似「沒人掃」（誤判）。未登入掃完時 (1) 發 Pixel 自訂事件 `AnonScanComplete`（Ads Manager 量）(2) fire-and-forget 寫 `anon_scan_events`（url+4分數+時間、Supabase 看）。**待用戶在 Supabase 建表+RLS**。
+
+**量測心法（重要）：** value-first 後「未登入掃描」不在後臺 audit 表，要看 Ads Manager 的 `AnonScanComplete` + Supabase `anon_scan_events`；後臺只剩「註冊數 + 登入後掃描」。詳見 [[project_ad_funnel_valuefirst]]。
+
+---
+
 ### 2026-06-19（/crawl-check 文案接「機器人來過嗎」熱度 + GEO 教育貼文）
 
 **背景：** 同業 FB 貼文教用 Claude Code 讀 server log 查 AI 爬蟲來訪次數，爆紅。我們做不到（沒用戶 server log），但可誠實接熱度：「進得來」是「來過」的前提，被 Cloudflare 擋的站 log 永遠 0。
