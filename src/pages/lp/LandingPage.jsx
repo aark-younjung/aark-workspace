@@ -180,9 +180,29 @@ export default function LandingPage() {
           </button>
         </form>
         {/* CTA 微文案 — 拆「會不會被推銷/要不要付錢」的心理防線 */}
-        <p className="text-xs mb-8 flex items-center gap-1.5" style={{ color: '#64748b' }}>
+        <p className="text-xs mb-5 flex items-center gap-1.5" style={{ color: '#64748b' }}>
           <span style={{ color: '#18c590' }}>✓</span> 免費・不用綁卡・30 秒出結果
         </p>
+
+        {/* agency 變體：第一屏就給「申請代理商」入口 — 這才是代理商的主要轉換動作，
+            不該埋在頁尾 1340px。只有 agency 版有 waitlistCta、其他變體自動不顯示。 */}
+        {content.waitlistCta && (
+          <div className="w-full max-w-md mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="flex-1 h-px" style={{ background: 'rgba(148,163,184,0.2)' }} />
+              <span className="text-xs whitespace-nowrap" style={{ color: '#64748b' }}>或，你是代理商？</span>
+              <span className="flex-1 h-px" style={{ background: 'rgba(148,163,184,0.2)' }} />
+            </div>
+            <button
+              type="button"
+              onClick={handleWaitlist}
+              className="w-full py-3 rounded-xl font-bold border transition-colors hover:bg-white/5"
+              style={{ color: '#18c590', borderColor: 'rgba(24,197,144,0.45)', background: 'transparent' }}
+            >
+              🤝 {content.waitlistCta}
+            </button>
+          </div>
+        )}
 
         {/* 範例儀表板（證據、移到掃描框下方）— 拆「我自己問 AI 就好」異議 */}
         <p className="text-sm mb-3 text-center font-medium" style={{ color: '#cbd5e1' }}>↓ 30 秒，你會拿到這樣的即時報告（範例）</p>
