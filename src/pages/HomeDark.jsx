@@ -296,15 +296,16 @@ export default function HomeDark() {
       .catch(() => {})
   }, [])
 
-  // 落地頁（/lp/*）帶過來的待掃網址 — 用戶註冊/登入完回到首頁，自動帶入輸入框（2026-06-13）
-  // 只帶入、不自動觸發掃描：讓用戶按下按鈕保留主控感，也避免未確認網址就扣免費站數額度
+  // 落地頁（/lp/*）帶過來的待掃網址 — 一進首頁就帶入並「自動掃描」（2026-06-21 改）
+  // 為什麼自動掃：用戶已在 LP 按過「掃描」、意圖明確；不自動掃會讓人「跑到首頁還要再按一次」而流失（廣告實測 0 轉換主因之一）。
+  // 未登入也帶入＋掃（value-first：未登入掃出 inline 分數、不寫 DB）。AuthContext loading 完才 render，user 已是最終值、無 race。
   useEffect(() => {
-    if (!user) return
     const pending = sessionStorage.getItem('lp_pending_url')
-    if (pending) {
-      setUrl(pending)
-      sessionStorage.removeItem('lp_pending_url')
-    }
+    if (!pending) return
+    sessionStorage.removeItem('lp_pending_url')
+    setUrl(pending)
+    handleSubmit(null, pending)   // 直接帶網址自動掃，不等 state 更新
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   // 打字動畫:循環打/刪範例網址,只在已登入且 input 為空時跑
@@ -433,11 +434,13 @@ export default function HomeDark() {
     init()
   }, [])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e, urlOverride) => {
+    e?.preventDefault?.()
     // value-first：未登入也能掃（SEO/AEO/GEO/EEAT 都是瀏覽器端算、不花 LLM 錢）。
     // 結果 inline 顯示分數 + 摘要；完整建議/保存/AI 曝光監測再引導註冊。
-    if (!url) return
+    // urlOverride：給「落地頁帶網址自動掃」用——state 還沒更新時直接吃傳入值
+    const rawUrl = (urlOverride ?? url ?? '').trim()
+    if (!rawUrl) return
     setLoading(true)
     setScanLogs([])
     setErrorInfo(null)   // 開新一輪掃描清掉前次錯誤 banner
@@ -450,7 +453,7 @@ export default function HomeDark() {
     try {
       // 用 normalizeUrl helper 把 URL 變體統一（拿 www. / trailing slash / query string / hash 等）
       // 避免「同一網站不同變體」被當成不同網站，造成 dedup 失效（pilotoptical 案例 Leo 帳號被建 3 筆 row）
-      cleanUrl = normalizeUrl(url)
+      cleanUrl = normalizeUrl(rawUrl)
       if (!cleanUrl) throw new Error('URL 格式錯誤')
 
       // 只有登入用戶才建/找 website row（未登入快掃不寫 DB）

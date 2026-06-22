@@ -100,13 +100,14 @@ export default function LandingPage() {
   // 未知 variant → 回首頁（防亂打網址 404 體驗）
   if (!content) return <Navigate to="/" replace />
 
-  // 掃描漏斗：記下待掃網址 + Lead 事件 → 已登入直接回首頁（自動帶入）、未登入去註冊
+  // 掃描漏斗：記下待掃網址 + Lead 事件 → 一律導首頁自動掃（2026-06-21 改）。
+  // 首頁已 value-first：未登入也能掃出 inline 分數，不再卡 /register 註冊牆（廣告 0 轉換主因之一）。
   const handleScanSubmit = (e) => {
     e.preventDefault()
     if (!url.trim()) return
     trackPixel('Lead', { content_name: `lp_${variant}` })
     sessionStorage.setItem('lp_pending_url', url.trim())
-    navigate(user ? '/' : '/register')
+    navigate('/')
   }
 
   // 代理商候補（次要 CTA）：Lead 事件單獨標記、與掃描 Lead 區分以利成效分析
