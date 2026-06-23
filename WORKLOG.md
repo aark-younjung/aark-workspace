@@ -27,6 +27,12 @@
 
 ---
 
+### 2026-06-21（首頁加「本週 N 次免費快掃」即時社會見證）
+
+public-stats 多回 `anon_week`（7 天 anon_scan_events count）。HomeDark 在「次檢測」後加脈動小點 +「本週已有 N 次免費快掃」，**門檻 `>=10` 才顯示**（小數字反效果、寧可不顯示）。真實數據、隨漏斗長大。`vite build` exit 0。
+
+---
+
 ### 2026-06-21（首頁社會見證納入未登入快掃）
 
 用戶要首頁使用數更有社會見證力。`/api/public?action=stats`（[public.js](api/public.js) public-stats）原本「Y 次檢測」= 4 個 audit 表 row 數加總、**漏算未登入快掃**（低估真實使用）。加入 `anon_scan_events` count ×4（每次快掃同樣跑 4 訊號層、統一計數），首頁「已協助 X 品牌完成 Y 次檢測」自動變大且更準。誠實：用真實 anon 掃描數、非灌水；endpoint 有 5 分 CDN cache。前端 HomeDark 顯示不用改（吃 publicStats.reports）。
