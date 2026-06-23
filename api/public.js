@@ -337,7 +337,7 @@ function recommendBrand(totalResults) {
 async function handleStats(req, res, supabase) {
   try {
     // 並行 9 查（4 個 audit 表 + 3 個 aivis 表 + 1 個早鳥已售名額 + 未登入快掃），head:true 只回 count 不抓 row 資料
-    const [brandsRes, seoRes, aeoRes, geoRes, eeatRes, mentionsRes, scansRes, earlybirdRes, anonRes] = await Promise.all([
+    const [brandsRes, seoRes, aeoRes, geoRes, eeatRes, mentionsRes, scansRes, earlybirdRes, anonRes, anonWeekRes] = await Promise.all([
       supabase.from('aivis_brands').select('*', { count: 'exact', head: true }),
       supabase.from('seo_audits').select('*', { count: 'exact', head: true }),
       supabase.from('aeo_audits').select('*', { count: 'exact', head: true }),
@@ -348,6 +348,8 @@ async function handleStats(req, res, supabase) {
       supabase.from('aivis_newebpay_pending').select('*', { count: 'exact', head: true })
         .eq('pack', 'earlybird').eq('status', 'paid').neq('refund_status', 'completed'),
       supabase.from('anon_scan_events').select('*', { count: 'exact', head: true }),
+      supabase.from('anon_scan_events').select('*', { count: 'exact', head: true })
+        .gte('created_at', new Date(Date.now() - 7 * 864e5).toISOString()),   // 本週未登入快掃數（即時社會見證用）
     ])
 
     const brands = brandsRes.count || 0
@@ -358,10 +360,11 @@ async function handleStats(req, res, supabase) {
     const mentions = mentionsRes.count || 0
     const scans = scansRes.count || 0
     const earlybird_taken = earlybirdRes.count || 0
+    const anon_week = anonWeekRes.count || 0   // 本週未登入快掃數（首頁即時社會見證、前端只在達門檻才顯示）
 
     // 5 分鐘 CDN cache + 10 分鐘 stale-while-revalidate
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300, stale-while-revalidate=600')
-    return res.status(200).json({ brands, reports, mentions, scans, earlybird_taken })
+    return res.status(200).json({ brands, reports, mentions, scans, earlybird_taken, anon_week })
   } catch (err) {
     console.error('[public/stats] query failed:', err)
     return res.status(500).json({ error: 'Failed to load stats' })

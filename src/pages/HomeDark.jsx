@@ -1267,6 +1267,18 @@ export default function HomeDark() {
                 <strong className="text-white font-mono text-base">{publicStats.reports.toLocaleString()}</strong>
                 次 AI 能見度檢測
               </span>
+              {/* 本週免費快掃即時數 — 門檻 ≥10 才顯示，避免「本週 1 次」反而像沒人用。脈動點＝正在被使用的活躍感。 */}
+              {publicStats.anon_week >= 10 && (
+                <>
+                  <span className="text-white/15">·</span>
+                  <span className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#18c590' }} />
+                    本週已有
+                    <strong className="text-white font-mono text-base">{publicStats.anon_week.toLocaleString()}</strong>
+                    次免費快掃
+                  </span>
+                </>
+              )}
               {publicStats.earlybird_taken < 100 && (
                 <>
                   <span className="text-white/15">·</span>
