@@ -27,6 +27,12 @@
 
 ---
 
+### 2026-06-21（首頁社會見證納入未登入快掃）
+
+用戶要首頁使用數更有社會見證力。`/api/public?action=stats`（[public.js](api/public.js) public-stats）原本「Y 次檢測」= 4 個 audit 表 row 數加總、**漏算未登入快掃**（低估真實使用）。加入 `anon_scan_events` count ×4（每次快掃同樣跑 4 訊號層、統一計數），首頁「已協助 X 品牌完成 Y 次檢測」自動變大且更準。誠實：用真實 anon 掃描數、非灌水；endpoint 有 5 分 CDN cache。前端 HomeDark 顯示不用改（吃 publicStats.reports）。
+
+---
+
 ### 2026-06-21（後臺加「未登入快掃」區塊）
 
 用戶要在後臺看得到未登入掃描。`/admin/websites` 頂部加區塊讀 `anon_scan_events`：近 7 天/累計次數 + 最近 30 筆（網站/4 分數/時間）。admin select RLS 已建。`vite build` exit 0。CLAUDE.md 已記表 + 頁面。

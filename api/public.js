@@ -336,8 +336,8 @@ function recommendBrand(totalResults) {
 // ───────────────────────────────────────────────────────────
 async function handleStats(req, res, supabase) {
   try {
-    // 並行 8 查（4 個 audit 表 + 3 個 aivis 表 + 1 個早鳥已售名額），head:true 只回 count 不抓 row 資料
-    const [brandsRes, seoRes, aeoRes, geoRes, eeatRes, mentionsRes, scansRes, earlybirdRes] = await Promise.all([
+    // 並行 9 查（4 個 audit 表 + 3 個 aivis 表 + 1 個早鳥已售名額 + 未登入快掃），head:true 只回 count 不抓 row 資料
+    const [brandsRes, seoRes, aeoRes, geoRes, eeatRes, mentionsRes, scansRes, earlybirdRes, anonRes] = await Promise.all([
       supabase.from('aivis_brands').select('*', { count: 'exact', head: true }),
       supabase.from('seo_audits').select('*', { count: 'exact', head: true }),
       supabase.from('aeo_audits').select('*', { count: 'exact', head: true }),
@@ -347,10 +347,14 @@ async function handleStats(req, res, supabase) {
       supabase.from('aivis_responses').select('*', { count: 'exact', head: true }),
       supabase.from('aivis_newebpay_pending').select('*', { count: 'exact', head: true })
         .eq('pack', 'earlybird').eq('status', 'paid').neq('refund_status', 'completed'),
+      supabase.from('anon_scan_events').select('*', { count: 'exact', head: true }),
     ])
 
     const brands = brandsRes.count || 0
+    // reports = 「次 AI 能見度檢測」= 4 訊號層檢測總數。
+    // 登入掃描：每次寫 4 筆 audit row（seo+aeo+geo+eeat）；未登入快掃：每次同樣跑 4 訊號層、但只記 1 筆 → ×4 統一計數。
     const reports = (seoRes.count || 0) + (aeoRes.count || 0) + (geoRes.count || 0) + (eeatRes.count || 0)
+      + (anonRes.count || 0) * 4
     const mentions = mentionsRes.count || 0
     const scans = scansRes.count || 0
     const earlybird_taken = earlybirdRes.count || 0
