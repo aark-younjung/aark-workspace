@@ -110,6 +110,7 @@ aark-workspace/
 | `eeat_audits` | E-E-A-T 分析結果 |
 | `content_audits` | 內容品質分析結果（15 項檢測，含 heading/word_count/meta/aeo/author/images/links/outbound/multimedia/readability JSONB；2026-05-20 新增，給 `/content-audit/:id` 詳情頁吃 cached + 趨勢迷你圖）|
 | `aivis_brands` | AI 曝光監測模組 — 使用者追蹤的品牌清單（Phase 1，2026-04-23 新增）|
+| `anon_scan_events` | 未登入快掃事件日誌（value-first：url+SEO/AEO/GEO/EEAT 分數+時間，**不寫 audit 表**；2026-06-21 新增）。RLS：anon insert / admin select。在 /admin/websites 頂部「未登入快掃」區塊顯示 |
 
 **訂單表 `is_test_order` 欄位（2026-05-22 新增）：**
 - `aivis_newebpay_pending.is_test_order` + `aivis_newebpay_period.is_test_order` 兩張表都有 BOOLEAN DEFAULT false
@@ -287,7 +288,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 |------|------|------|
 | `/admin` | AdminDashboard | 總覽：用戶數、Pro 數、MRR、最新用戶 |
 | `/admin/users` | AdminUsers | 用戶列表：搜尋、篩選、展開詳情、手動升降級 Pro |
-| `/admin/websites` | AdminWebsites | 掃描紀錄：所有網站 + 四大分數 |
+| `/admin/websites` | AdminWebsites | 掃描紀錄：登入用戶網站 + 四大分數 ＋ 頂部「未登入快掃」區塊（讀 anon_scan_events、value-first 免註冊掃描）|
 | `/admin/revenue` | AdminRevenue | 營收：MRR 估算、Pro 用戶列表、近 6 月增長圖 |
 | `/admin/activity` | AdminActivity | 用戶活躍分析：5 分群 KPI + 流失風險/升級潛力行動名單（2026-06-13） |
 | `/admin/waitlist` | AdminWaitlist | 代理商候補名單檢視（讀 aark_agency_waitlist；2026-06-18）。申請時會 email 通知 aark6465（public.js `?action=agency-waitlist-notify`，fire-and-forget） |

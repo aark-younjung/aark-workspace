@@ -27,6 +27,12 @@
 
 ---
 
+### 2026-06-21（後臺加「未登入快掃」區塊）
+
+用戶要在後臺看得到未登入掃描。`/admin/websites` 頂部加區塊讀 `anon_scan_events`：近 7 天/累計次數 + 最近 30 筆（網站/4 分數/時間）。admin select RLS 已建。`vite build` exit 0。CLAUDE.md 已記表 + 頁面。
+
+---
+
 ### 2026-06-21（接上 LP→value-first 動線 + agency 候補上移 + 未登入掃描可見化）
 
 **廣告 agency campaign 0 轉換深挖（1,019 LP 訪客→0 掃描→0 候補）：**

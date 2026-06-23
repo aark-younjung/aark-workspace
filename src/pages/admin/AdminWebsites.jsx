@@ -13,10 +13,22 @@ export default function AdminWebsites() {
   const [confirmId, setConfirmId] = useState(null)
   const [togglingTest, setTogglingTest] = useState({})  // key=siteId, 防 double-click
   const [filterTest, setFilterTest] = useState('all')  // all / not_test / test_only
+  const [anonScans, setAnonScans] = useState([])        // 未登入快掃事件（value-first、不寫 audit 表）
 
   useEffect(() => {
     fetchWebsites()
+    fetchAnonScans()
   }, [])
+
+  // 未登入快掃日誌（anon_scan_events）— admin RLS 可讀
+  const fetchAnonScans = async () => {
+    const { data } = await supabase
+      .from('anon_scan_events')
+      .select('id, url, name, seo, aeo, geo, eeat, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100)
+    setAnonScans(data || [])
+  }
 
   const fetchWebsites = async () => {
     setLoading(true)
@@ -146,7 +158,49 @@ export default function AdminWebsites() {
         <div className="p-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-white">掃描紀錄</h1>
-            <p className="text-slate-400 text-sm mt-1">共 {websites.length} 個網站</p>
+            <p className="text-slate-400 text-sm mt-1">共 {websites.length} 個網站（登入用戶）</p>
+          </div>
+
+          {/* 未登入快掃（value-first）— anon_scan_events，不寫 audit 表、只記事件供觀察廣告漏斗 */}
+          <div className="mb-8 rounded-xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h2 className="text-lg font-bold text-white">🔓 未登入快掃 <span className="text-sm font-normal text-slate-400">（免註冊、value-first）</span></h2>
+              <div className="text-sm text-slate-400">
+                近 7 天 <span className="text-emerald-400 font-bold">{anonScans.filter(s => Date.now() - new Date(s.created_at).getTime() < 7 * 864e5).length}</span> 次
+                <span className="mx-1.5 text-white/20">·</span>
+                累計 <span className="text-white font-bold">{anonScans.length}</span> 次
+              </div>
+            </div>
+            {anonScans.length === 0 ? (
+              <p className="text-sm text-slate-500">還沒有未登入快掃。廣告流量進來掃描後會出現在這裡。</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-slate-400 text-left">
+                      <th className="py-2 pr-4 font-medium">網站</th>
+                      <th className="py-2 px-2 font-medium">SEO</th>
+                      <th className="py-2 px-2 font-medium">AEO</th>
+                      <th className="py-2 px-2 font-medium">GEO</th>
+                      <th className="py-2 px-2 font-medium">EEAT</th>
+                      <th className="py-2 pl-2 font-medium">時間</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {anonScans.slice(0, 30).map(s => (
+                      <tr key={s.id} className="border-t border-white/5">
+                        <td className="py-2 pr-4 text-white truncate max-w-[200px]">{s.name || s.url}</td>
+                        <td className="py-2 px-2 font-mono text-slate-300">{s.seo ?? '—'}</td>
+                        <td className="py-2 px-2 font-mono text-slate-300">{s.aeo ?? '—'}</td>
+                        <td className="py-2 px-2 font-mono text-slate-300">{s.geo ?? '—'}</td>
+                        <td className="py-2 px-2 font-mono text-slate-300">{s.eeat ?? '—'}</td>
+                        <td className="py-2 pl-2 text-slate-400 whitespace-nowrap">{new Date(s.created_at).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* 搜尋 + 排序 */}
