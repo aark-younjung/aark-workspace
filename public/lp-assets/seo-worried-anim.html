@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>煩惱男子看筆電動畫（man.svg＋微動作）</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:transparent;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+  .stage{position:relative;width:600px;height:600px;background:transparent;overflow:hidden}
+
+  /* 淺藍圓（兼裁切框）*/
+  .disc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+        width:472px;height:472px;border-radius:50%;overflow:hidden;
+        background:radial-gradient(circle at 42% 38%, #e6f7ec 0%, #c9edd6 55%, #b3e4c6 100%)}
+
+  /* 會擺動的人物容器（頭/手隨之微擺，以底部為軸）*/
+  .fig{position:absolute;left:50%;top:56%;width:462px;height:462px;margin:-231px 0 0 -231px;
+       transform-origin:50% 88%;animation:sway 5s ease-in-out infinite}
+  .man{width:462px;height:auto;display:block}
+
+  /* 燈泡光暈（脈動）*/
+  .glow{position:absolute;left:371px;top:108px;width:146px;height:146px;pointer-events:none;
+        transform:translate(-50%,-50%);border-radius:50%;mix-blend-mode:screen;
+        background:radial-gradient(circle, rgba(255,203,134,.9) 0%, rgba(255,203,134,0) 68%);
+        animation:glow 2.2s ease-in-out infinite}
+
+  /* 「…」對話框三點依序閃爍（底墊白遮原點）*/
+  .dots{position:absolute;left:149px;top:57px;transform:translate(-50%,-50%);
+        display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:7px;background:#fff}
+  .dots span{width:10px;height:10px;border-radius:50%;background:#3A3F47;opacity:.2;
+             animation:blink 1.5s ease-in-out infinite}
+  .dots span:nth-child(2){animation-delay:.22s}
+  .dots span:nth-child(3){animation-delay:.44s}
+
+  /* 頭頂紅字 */
+  .think{position:absolute;left:50%;top:24px;transform:translateX(-50%);white-space:nowrap;
+         font-size:52px;font-weight:900;color:#E5484D;letter-spacing:.03em;
+         text-shadow:0 4px 16px rgba(229,72,77,.28)}
+
+  /* ── 動畫 ── */
+  @keyframes sway{
+    0%  {transform:rotate(-1deg) translateY(0)}
+    50% {transform:rotate(1deg)  translateY(-4px)}
+    100%{transform:rotate(-1deg) translateY(0)}
+  }
+  @keyframes glow{
+    0%,100%{opacity:.3;transform:translate(-50%,-50%) scale(.88)}
+    50%    {opacity:.95;transform:translate(-50%,-50%) scale(1.12)}
+  }
+  @keyframes blink{
+    0%,55%,100%{opacity:.2}
+    28%        {opacity:1}
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="disc">
+      <div class="fig">
+        <img class="man" src="man.svg" alt="煩惱看筆電的男子">
+        <div class="glow"></div>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+      <div class="think">AI 看不懂</div>
+    </div>
+  </div>
+</body>
+</html>

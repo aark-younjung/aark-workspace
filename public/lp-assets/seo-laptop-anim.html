@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEO 筆電數據動畫（方形）</title>
+<style>
+  /* ── 全域：置中、方形舞台 ── */
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:transparent;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+  /* 方形舞台（輸出 MP4 時就截這 600×600）*/
+  .stage{position:relative;width:600px;height:600px;background:transparent;overflow:hidden}
+
+  /* ── 步驟①：淺藍圓形背景 ── */
+  .circle{position:absolute;left:50%;top:50%;width:470px;height:470px;border-radius:50%;
+          background:radial-gradient(circle at 42% 38%, #dcefff 0%, #c3e2fb 55%, #b2d8f7 100%);
+          animation:circleIn 9s ease-in-out infinite}
+
+  /* ── 步驟③：背後上升的紅色 SEO 線（SVG 鋪滿舞台）── */
+  .chart{position:absolute;inset:0;width:100%;height:100%;
+         filter:drop-shadow(0 6px 14px rgba(229,72,77,.28))}
+  .chart .line{stroke:#E5484D;stroke-width:7;fill:none;stroke-linecap:round;stroke-linejoin:round;
+               stroke-dasharray:100;animation:drawLine 9s ease-out infinite}
+  .chart .line-fill{fill:url(#redGrad);animation:fillIn 9s ease-in-out infinite}
+  .chart .end-arrow{transform-box:fill-box;transform-origin:center;
+                    animation:endDot 9s ease-out infinite}
+
+  /* ── 黃色 SEO 文字（放在電腦上方）── */
+  .seo-label{position:absolute;left:50%;top:17%;transform:translateX(-50%);white-space:nowrap;
+             font-size:52px;font-weight:900;color:#E5484D;letter-spacing:.03em;
+             text-shadow:0 4px 16px rgba(229,72,77,.28);animation:seoIn 9s ease-out infinite}
+
+  /* ── 步驟②：筆記型電腦 ── */
+  .laptop{position:absolute;left:50%;top:52%;width:360px;
+          animation:laptopIn 9s ease-in-out infinite}
+  .screen{width:300px;height:190px;margin:0 auto;background:#0f1620;border:6px solid #2b2f36;
+          border-radius:16px 16px 4px 4px;box-shadow:0 18px 40px rgba(20,30,50,.25);
+          overflow:hidden;position:relative}
+  .base{width:360px;height:15px;margin:-1px auto 0;background:#2b2f36;
+        border-radius:0 0 12px 12px;position:relative}
+  .base::after{content:"";position:absolute;left:50%;top:4px;transform:translateX(-50%);
+               width:70px;height:5px;border-radius:3px;background:#454b55} /* 觸控板凹槽 */
+
+  /* ── 筆電螢幕內：各種數據 ── */
+  .dash{position:absolute;inset:0;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+  .d-top{display:flex;align-items:flex-end;justify-content:space-between}
+  .d-num{font-size:44px;font-weight:800;color:#4ade80;line-height:1;letter-spacing:-.02em;
+         animation:numPop 9s ease-out infinite} /* 大數字：SEO 分數 */
+  .d-num small{font-size:15px;font-weight:600;color:#93a4bd;margin-left:4px}
+  .d-tag{font-size:12px;font-weight:700;color:#4ade80;background:rgba(74,222,128,.14);
+         padding:4px 9px;border-radius:20px;animation:numPop 9s ease-out infinite}
+  .d-title{font-size:12px;color:#7c8aa3;letter-spacing:.12em;text-align:center;
+           animation:numPop 9s ease-out infinite}
+  /* 螢幕內長條數據 */
+  .d-bars{display:flex;align-items:flex-end;justify-content:center;gap:12px;height:92px}
+  .bar{width:20px;border-radius:5px 5px 0 0;transform:scaleY(0);transform-origin:bottom;
+       animation:barGrow 9s ease-in-out infinite}
+  .b1{height:38px;background:#3b82f6}
+  .b2{height:58px;background:#60a5fa}
+  .b3{height:44px;background:#3b82f6}
+  .b4{height:74px;background:#4ade80} /* 最後一根綠、最高＝成長 */
+
+  /* ── 動畫關鍵影格（cycle = 9s：出現→停留→消失→循環）── */
+  /* 步驟① 圓形 */
+  @keyframes circleIn{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}
+    6%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    84%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    94%{opacity:0;transform:translate(-50%,-50%) scale(.9)}
+    100%{opacity:0}
+  }
+  /* 步驟② 筆電 */
+  @keyframes laptopIn{
+    0%,6%{opacity:0;transform:translate(-50%,-50%) translateY(28px) scale(.98)}
+    18%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)}
+    84%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)}
+    93%{opacity:0;transform:translate(-50%,-50%) translateY(16px) scale(.98)}
+    100%{opacity:0}
+  }
+  /* 螢幕長條（一起長高）*/
+  @keyframes barGrow{
+    0%,20%{transform:scaleY(0);opacity:0}
+    22%{opacity:1}
+    40%{transform:scaleY(1);opacity:1}
+    84%{transform:scaleY(1);opacity:1}
+    92%{transform:scaleY(1);opacity:0}
+    100%{opacity:0}
+  }
+  /* 螢幕大數字／標籤 */
+  @keyframes numPop{
+    0%,26%{opacity:0;transform:translateY(8px)}
+    38%{opacity:1;transform:translateY(0)}
+    84%{opacity:1;transform:translateY(0)}
+    92%{opacity:0}
+    100%{opacity:0}
+  }
+  /* 步驟③ 紅線描繪（stroke-dashoffset 100→0）*/
+  @keyframes drawLine{
+    0%{stroke-dashoffset:100;opacity:0}
+    22%{stroke-dashoffset:100;opacity:0}
+    24%{opacity:1}
+    50%{stroke-dashoffset:0;opacity:1}
+    84%{stroke-dashoffset:0;opacity:1}
+    93%{stroke-dashoffset:0;opacity:0}
+    100%{stroke-dashoffset:100;opacity:0}
+  }
+  /* 紅線下方漸層填色 */
+  @keyframes fillIn{
+    0%,24%{opacity:0}
+    52%{opacity:.16}
+    84%{opacity:.16}
+    92%{opacity:0}
+    100%{opacity:0}
+  }
+  /* 紅線末端圓點 */
+  @keyframes endDot{
+    0%,48%{opacity:0;transform:scale(.3)}
+    56%{opacity:1;transform:scale(1)}
+    84%{opacity:1;transform:scale(1)}
+    92%{opacity:0}
+    100%{opacity:0}
+  }
+  /* 黃色 SEO 文字 */
+  @keyframes seoIn{
+    0%,8%{opacity:0;transform:translateX(-50%) translateY(12px)}
+    17%{opacity:1;transform:translateX(-50%) translateY(0)}
+    84%{opacity:1;transform:translateX(-50%) translateY(0)}
+    92%{opacity:0}
+    100%{opacity:0}
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- ① 淺藍圓形背景 -->
+    <div class="circle"></div>
+
+    <!-- ③ 背後上升的紅色 SEO 線 -->
+    <svg class="chart" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="redGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#E5484D"/>
+          <stop offset="100%" stop-color="#E5484D" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- 線下填色 -->
+      <path class="line-fill" d="M55 475 L140 400 L220 435 L300 320 L380 355 L460 220 L545 120 L545 475 Z"/>
+      <!-- 上升折線（上下起伏的直線段）-->
+      <path class="line" pathLength="100" d="M55 475 L140 400 L220 435 L300 320 L380 355 L460 220 L545 120"/>
+      <!-- 末端箭頭 -->
+      <polygon class="end-arrow" points="545,120 539,144 522,130" fill="#E5484D"/>
+    </svg>
+
+    <!-- 黃色 SEO 文字（電腦上方）-->
+    <div class="seo-label">SEO第一名</div>
+
+    <!-- ② 筆記型電腦 -->
+    <div class="laptop">
+      <div class="screen">
+        <div class="dash">
+          <div class="d-title">數據總覽</div>
+          <div class="d-bars">
+            <span class="bar b1"></span>
+            <span class="bar b2"></span>
+            <span class="bar b3"></span>
+            <span class="bar b4"></span>
+          </div>
+        </div>
+      </div>
+      <div class="base"></div>
+    </div>
+
+  </div>
+</body>
+</html>
