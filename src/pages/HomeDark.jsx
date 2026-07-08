@@ -90,7 +90,7 @@ function DarkScanningOverlay({ logs, targetUrl }) {
   const botColorMap = Object.fromEntries(SCAN_BOTS.map(b => [b.name, b.color]))
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{
+    <div className="fixed inset-0 z-[110] flex flex-col" style={{
       background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
     }}>
       {/* Grain */}
