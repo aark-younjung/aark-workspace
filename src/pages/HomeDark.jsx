@@ -297,13 +297,25 @@ export default function HomeDark() {
       .catch(() => {})
   }, [])
 
-  // 落地頁（/lp/*）帶過來的待掃網址 — 一進首頁就帶入並「自動掃描」（2026-06-21 改）
+  // 落地頁帶過來的待掃網址 — 一進首頁就帶入並「自動掃描」（2026-06-21 改）
   // 為什麼自動掃：用戶已在 LP 按過「掃描」、意圖明確；不自動掃會讓人「跑到首頁還要再按一次」而流失（廣告實測 0 轉換主因之一）。
   // 未登入也帶入＋掃（value-first：未登入掃出 inline 分數、不寫 DB）。AuthContext loading 完才 render，user 已是最終值、無 race。
+  // 兩種來源：① 同源 /lp/* 用 sessionStorage；② 外部靜態落地頁（不同網域）用 ?url= 查詢參數（2026-07-03 加）。
   useEffect(() => {
-    const pending = sessionStorage.getItem('lp_pending_url')
+    let pending = sessionStorage.getItem('lp_pending_url')
+    if (pending) {
+      sessionStorage.removeItem('lp_pending_url')
+    } else {
+      // 外部 LP 交棒：讀 ?url= 後把它從網址列清掉，避免重新整理又自動掃一次
+      const params = new URLSearchParams(window.location.search)
+      const fromQuery = params.get('url')
+      if (fromQuery) {
+        pending = fromQuery
+        params.delete('url')
+        window.history.replaceState({}, '', window.location.pathname + (params.toString() ? '?' + params.toString() : ''))
+      }
+    }
     if (!pending) return
-    sessionStorage.removeItem('lp_pending_url')
     setUrl(pending)
     handleSubmit(null, pending)   // 直接帶網址自動掃，不等 state 更新
     // eslint-disable-next-line react-hooks/exhaustive-deps
