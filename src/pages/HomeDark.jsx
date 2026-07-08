@@ -8,6 +8,7 @@ import AarkMark from '../components/v2/AarkMark'
 // 2026-06-06：本週 AI 趨勢卡 — 訪客也看得到、促進每日 / 每週回訪
 import WeeklyAITrendsCard from '../components/v2/WeeklyAITrendsCard'
 import EarlybirdBanner from '../components/EarlybirdBanner'
+import AnonDiagnosis from '../components/AnonDiagnosis'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
@@ -529,7 +530,7 @@ export default function HomeDark() {
         })(),
       ])
 
-      // 未登入：不寫 audit DB，直接 inline 顯示 4 大分數 + 引導註冊（value-first）
+      // 未登入：不寫 audit DB，直接 inline 顯示「完整診斷」+ 鎖住藥方引導註冊（value-first / B 方案）
       if (!user) {
         const anon = {
           url: cleanUrl,
@@ -538,6 +539,8 @@ export default function HomeDark() {
           aeo: aeoResult?.score ?? null,
           geo: geoResult?.score ?? null,
           eeat: eeatResult?.score ?? null,
+          // 完整逐項檢測結果（給 AnonDiagnosis 渲染「完整診斷」用；不寫 DB）
+          data: { seo: seoResult, aeo: aeoResult, geo: geoResult, eeat: eeatResult },
         }
         setAnonResult(anon)
         setStatus('')
@@ -1034,32 +1037,12 @@ export default function HomeDark() {
                 </p>
               )}
 
-              {/* 未登入快掃結果（value-first teaser）：4 大分數 + 引導註冊解鎖完整建議 + AI 曝光監測 */}
+              {/* 未登入「完整診斷」結果（value-first / B 方案）：逐項診斷全看得到、藥方鎖住引導註冊 */}
               {!user && anonResult && (
-                <div className="mt-6 rounded-2xl border p-5" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.14)' }}>
-                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                    <div className="text-white font-bold text-base truncate">📊 {anonResult.name} 的 AI 能見度快掃</div>
-                    <span className="text-xs px-2.5 py-0.5 rounded-full whitespace-nowrap" style={{ background: `${T.aivis}1f`, border: `1px solid ${T.aivis}55`, color: T.aivis }}>免費快掃</span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2 mb-4">
-                    {[['SEO', anonResult.seo], ['AEO', anonResult.aeo], ['GEO', anonResult.geo], ['E-E-A-T', anonResult.eeat]].map(([label, score]) => (
-                      <div key={label} className="text-center rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.28)' }}>
-                        <div className="text-2xl font-extrabold" style={{ color: score == null ? T.textLow : score >= 70 ? T.pass : score >= 40 ? T.warn : T.fail }}>{score ?? '—'}</div>
-                        <div className="text-xs mt-1" style={{ color: T.textMid }}>{label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-sm mb-4 leading-relaxed" style={{ color: T.textMid }}>
-                    這是你 4 大訊號層的快掃分數。<span className="text-white font-semibold">完整修復建議、保存報告，以及追蹤你在 ChatGPT / Claude / Gemini 的「AI 曝光監測」</span>，免費註冊就能解鎖。
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => { sessionStorage.setItem('lp_pending_url', anonResult.url); navigate('/register') }}
-                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-orange-900/50"
-                  >
-                    免費註冊 → 解鎖完整建議 + 啟用 AI 曝光監測
-                  </button>
-                </div>
+                <AnonDiagnosis
+                  result={anonResult}
+                  onRegister={() => { sessionStorage.setItem('lp_pending_url', anonResult.url); navigate('/register') }}
+                />
               )}
 
               {/* social proof + 早鳥 strip 已搬到 PlatformLogoWall 下方（2026-06-06）— 跟「覆蓋哪些 AI」緊接更連貫 */}
