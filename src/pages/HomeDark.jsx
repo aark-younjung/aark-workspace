@@ -111,10 +111,11 @@ function DarkScanningOverlay({ logs, targetUrl }) {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-6 pb-6">
-        <div className="w-full max-w-5xl grid grid-cols-[1fr_300px] gap-5 h-[480px]">
-          <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-center shadow-sm overflow-hidden">
-            <svg width="420" height="420" viewBox="0 0 420 420">
+      <div className="flex-1 flex items-stretch md:items-center justify-center px-4 sm:px-6 pb-6 min-h-0">
+        {/* 手機：radar 與掃描日誌改直向堆疊、兩者都用 flex-1 撐開 → 掃描中「動的雷達＋跑的日誌」同時看得見，不會像卡住 */}
+        <div className="w-full max-w-5xl flex flex-col md:grid md:grid-cols-[1fr_300px] gap-4 md:gap-5 md:h-[480px] min-h-0">
+          <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-center shadow-sm overflow-hidden flex-1 md:flex-none min-h-[200px]">
+            <svg viewBox="0 0 420 420" className="w-full h-full" style={{ maxWidth: 420, maxHeight: 420 }}>
               <defs>
                 <linearGradient id="scanGradDark" x1="0.5" y1="0.5" x2="1" y2="0.5">
                   <stop offset="0%" stopColor="rgba(249,115,22,0)" />
@@ -187,7 +188,7 @@ function DarkScanningOverlay({ logs, targetUrl }) {
             </svg>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-4 flex flex-col gap-3 overflow-hidden">
+          <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-4 flex flex-col gap-3 overflow-hidden flex-1 md:flex-none min-h-[130px]">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
               <span className="text-white font-semibold text-sm">掃描日誌</span>

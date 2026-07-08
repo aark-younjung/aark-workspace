@@ -1403,13 +1403,14 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
         </div>
 
         {/* ─── 站點體檢總分 + 五角雷達 mini（對齊 prototype-2b 1493-1521） ─── */}
-        <div className="flex items-center gap-5 mb-6 flex-wrap p-5 rounded-xl" style={{
+        {/* 手機：改直向堆疊（分數在上、雷達置中在下），避免固定 220px 雷達把文字擠成一字一行 */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5 mb-6 p-5 rounded-xl" style={{
           background: 'rgba(0,0,0,0.25)',
           border: '1px solid rgba(255,255,255,0.06)',
         }}>
-          {/* 左：大數字 + 副標 */}
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="text-6xl font-black font-mono text-white leading-none" style={{
+          {/* 左：大數字 + 副標（桌機才 flex-1 撐開把雷達推到右邊；手機不 flex-1 免影響直向排版）*/}
+          <div className="flex items-center gap-4 sm:flex-1 sm:min-w-0">
+            <div className="text-6xl font-black font-mono text-white leading-none shrink-0" style={{
               background: 'linear-gradient(135deg, #18c590, #10b981)',
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',
@@ -1417,14 +1418,14 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
             }}>
               {overallScore}
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="text-lg font-bold text-white">站點體檢總分</h3>
               <div className="text-sm text-white/55 mb-1">5 大面向綜合 · 站點層級</div>
               <div className="text-sm text-emerald-300 font-bold">↑ 比上週 +5 分</div>
             </div>
           </div>
-          {/* 右：五角雷達 mini SVG */}
-          <PentaRadar scores={scores} size={220} />
+          {/* 右：五角雷達 mini SVG（手機置中）*/}
+          <div className="self-center sm:self-auto shrink-0"><PentaRadar scores={scores} size={220} /></div>
         </div>
 
         {/* Tab nav — 5 個 face 切換 */}
