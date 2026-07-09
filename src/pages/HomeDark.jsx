@@ -1038,13 +1038,8 @@ export default function HomeDark() {
                 </p>
               )}
 
-              {/* 未登入「完整診斷」結果（value-first / B 方案）：逐項診斷全看得到、藥方鎖住引導註冊 */}
-              {!user && anonResult && (
-                <AnonDiagnosis
-                  result={anonResult}
-                  onRegister={() => { sessionStorage.setItem('lp_pending_url', anonResult.url); navigate('/register') }}
-                />
-              )}
+              {/* 未登入完整診斷（B 方案）已移到 hero grid 之外、改成滿版報告 —
+                  原本擠在左半欄（電腦看起來很窄）。搬到下方 line ~1150。 */}
 
               {/* social proof + 早鳥 strip 已搬到 PlatformLogoWall 下方（2026-06-06）— 跟「覆蓋哪些 AI」緊接更連貫 */}
 
@@ -1148,6 +1143,17 @@ export default function HomeDark() {
             </div>
           </div>
         </div>
+
+        {/* 未登入「完整診斷」（value-first / B 方案）— 掃完後改為滿版報告，
+            電腦不再擠在左半欄（max-w-4xl 置中、手機仍滿版）；元件自帶捲動定位會帶使用者到這 */}
+        {!user && anonResult && (
+          <div className="mx-auto w-full max-w-4xl">
+            <AnonDiagnosis
+              result={anonResult}
+              onRegister={() => { sessionStorage.setItem('lp_pending_url', anonResult.url); navigate('/register') }}
+            />
+          </div>
+        )}
 
         {/* 我的網站 */}
         {user && myWebsites.length > 0 && (
