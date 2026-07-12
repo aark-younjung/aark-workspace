@@ -253,6 +253,8 @@ const SAMPLE_TOP = [
 export default function HomeDark() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
+  // 防重入旗標（用 ref、同步生效）：擋雙擊 / Enter 兩次 / effect 重觸，避免同一網址寫兩筆掃描
+  const scanInFlightRef = useRef(false)
   const [status, setStatus] = useState('')
   // 掃描失敗時的結構化錯誤資訊（title / hint / action / technical）
   // 取代原本黑箱 alert，讓用戶看到具體原因 + 可行動的下一步
@@ -456,6 +458,9 @@ export default function HomeDark() {
     // urlOverride：給「落地頁帶網址自動掃」用——state 還沒更新時直接吃傳入值
     const rawUrl = (urlOverride ?? url ?? '').trim()
     if (!rawUrl) return
+    // 防重入：掃描進行中就直接忽略第二次觸發（同步 ref，比 loading state 更即時、擋得住同一輪的重複呼叫）
+    if (scanInFlightRef.current) return
+    scanInFlightRef.current = true
     setLoading(true)
     setScanLogs([])
     setErrorInfo(null)   // 開新一輪掃描清掉前次錯誤 banner
@@ -691,6 +696,7 @@ export default function HomeDark() {
       setErrorInfo({ ...info, code: error?.code || `HTTP_${status || 'UNKNOWN'}`, status: status || null, technical: detail })
     } finally {
       setLoading(false)
+      scanInFlightRef.current = false   // 解鎖，允許下一次掃描
     }
   }
 
