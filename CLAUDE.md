@@ -110,6 +110,8 @@ aark-workspace/
 | `eeat_audits` | E-E-A-T 分析結果 |
 | `content_audits` | 內容品質分析結果（15 項檢測，含 heading/word_count/meta/aeo/author/images/links/outbound/multimedia/readability JSONB；2026-05-20 新增，給 `/content-audit/:id` 詳情頁吃 cached + 趨勢迷你圖）|
 | `aivis_brands` | AI 曝光監測模組 — 使用者追蹤的品牌清單（Phase 1，2026-04-23 新增）|
+| `aivis_prompts` | 每品牌的監測題庫。`tier`（2026-07-02 新增，`core`/`rotating`/`brand`，DEFAULT `core`）＝三層題庫分流。`generated_by`（auto/user）、`is_active`（是否納入掃描）|
+| `aivis_responses` | 每次掃描 1 筆（1 row = 1 scan＝1 額度）。Claude 主欄 + `engine_results` JSONB（多引擎結果）。額度計數看本表列數 |
 | `anon_scan_events` | 未登入快掃事件日誌（value-first：url+SEO/AEO/GEO/EEAT 分數+時間，**不寫 audit 表**；2026-06-21 新增）。RLS：anon insert / admin select。在 /admin/websites 頂部「未登入快掃」區塊顯示 |
 
 **訂單表 `is_test_order` 欄位（2026-05-22 新增）：**
@@ -233,6 +235,12 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 | Agency 版 | NT$4,990／月起（即將推出） | — | 50 站、白標 PDF、多客戶工作區、優先客服、所有 Pro 功能 |
 
 **aivis 設計原則：** 已整合進 Pro 核心，不可獨立訂閱（5 LLM 共識）。理由：SEO 修復是一次性的，但 AI 引用率天天在變、競爭對手天天在優化 — aivis 是 Pro 持續訂閱的核心鉤子，把它獨立加購會讓用戶「改完就退訂」。
+
+**aivis 三層題庫（2026-07-02）：** 掃描的統計效度靠 `aivis_prompts.tier` 分流 —
+- **core（固定核心）**：品類問句、不含品牌名。每次掃描全跑，是**頭條曝光率與趨勢線的唯一基準**（固定樣本才能有效比較「這週 vs 上週」）。啟用上限 `PROMPT_CAP=10`。
+- **rotating（輪替池）**：長尾品類問句。每次掃描**隨機抽 `ROTATING_SAMPLE_PER_SCAN`（預設 2）條**，擴大覆蓋、抓核心題測不到的盲點、防「應試化」（Goodhart）。
+- **brand（品牌詞）**：帶品牌名。量「AI 認不認得你」、near-deterministic → fetch.js **強制 runs=1**；**刻意排除在頭條曝光率/趨勢之外**（另計 `brandRecogRate`），避免用品牌詞灌水（誠實 + 公平交易法）。
+- 題量在 [generate-prompts.js](api/aivis/generate-prompts.js) 檔頭常數可調；改動連動每次掃描額度花費（≈ core×3 + 抽樣×3 + brand×1）。
 
 **aivis Top-up 加購（隱藏於定價頁，just-in-time 揭露）：**
 - 小包：NT$490 / +40 次（每次 NT$12.25，補檔用）

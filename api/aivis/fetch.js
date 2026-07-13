@@ -71,7 +71,7 @@ export default async function handler(req, res) {
 
   // 為了 curl 測試方便，GET / POST 都吃
   const promptId = req.query.prompt_id || req.body?.prompt_id
-  const runs = Math.min(Number(req.query.runs || req.body?.runs || 3), 5)
+  let runs = Math.min(Number(req.query.runs || req.body?.runs || 3), 5)
 
   if (!promptId) {
     return res.status(400).json({ error: 'prompt_id is required' })
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
     // 取 prompt + brand 名稱
     const { data: prompt, error: promptErr } = await supabase
       .from('aivis_prompts')
-      .select('id, user_id, brand_id, text, is_active, aivis_brands(name, domain)')
+      .select('id, user_id, brand_id, text, is_active, tier, aivis_brands(name, domain)')
       .eq('id', promptId)
       .single()
 
@@ -112,6 +112,11 @@ export default async function handler(req, res) {
     if (!brandName) {
       return res.status(400).json({ error: 'Brand not linked to this prompt' })
     }
+
+    // 三層題庫：brand（品牌詞）幾乎每次都會提到品牌名、near-deterministic，跑 3 次是浪費額度 —
+    // 伺服器端強制夾成 1 次（即使前端忘了傳 runs=1 也守得住）。core / rotating 維持呼叫端指定的次數。
+    const tier = prompt.tier || 'core'
+    if (tier === 'brand') runs = 1
 
     // 拉用戶 profile 看是否為試用用戶 — 試用期額度與付費 Pro 不同（50 vs 150）
     // 試用期計算起始也不一樣：付費 Pro 用 calendar month，試用用 trial_started_at
@@ -419,6 +424,7 @@ export default async function handler(req, res) {
       success: true,
       brand: brandName,
       prompt: prompt.text,
+      tier,          // 三層題庫：讓前端聚合時把 brand 從頭條分數排除、rotating 標記為抽樣覆蓋
       runs,
       // 主指標：Claude（向下相容、之前的 dashboard 看這兩個欄位）
       mentioned_count: claudeMentionedCount,

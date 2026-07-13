@@ -1,13 +1,19 @@
 /**
  * POST /api/aivis/generate-prompts
- * 給定 brand_id，請 Claude 根據品牌的產業/業務/簡介自動產出 5 條
- * 中性、不含品牌名的產業問題 prompt，寫入 aivis_prompts。
+ * 給定 brand_id，請 Claude 根據品牌的產業/業務/簡介自動產出「三層題庫」，寫入 aivis_prompts：
+ *   - core（固定核心）：品類問句、不含品牌名。每次掃描全跑，是頭條分數與趨勢線的基準
+ *     （統計上＝固定樣本，才能有效比較「這週 vs 上週」）。
+ *   - rotating（輪替池）：品類問句、不含品牌名。每次掃描隨機抽幾條，補覆蓋 / 抓盲點、防「應試化」。
+ *   - brand（品牌詞）：帶品牌名。量「AI 認不認得你」，near-deterministic，掃描只跑 1 次、
+ *     且【不計入頭條曝光率】（避免用品牌詞灌水分數）。
+ *
+ * 統計設計理由見對話：固定核心讓你「量得準、比得動」，輪替池讓你「不自欺」。
  *
  * Body / Query:
  *   brand_id          (必填) 品牌 UUID
- *   replace_existing  (選填，預設 true) — 配合 10 條上限，「重新產生」語意
+ *   replace_existing  (選填，預設 true) — 「重新產生」語意
  *                     true（預設）→ 將舊 auto prompts 設為 is_active=false 再新增
- *                     false        → 直接追加，不動舊的（小心撞 10 條上限）
+ *                     false        → 直接追加，不動舊的
  *
  * Headers:
  *   Authorization: Bearer <supabase_access_token>  (必填)
@@ -26,7 +32,13 @@ import { createClient } from '@supabase/supabase-js'
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-haiku-4-5-20251001'
 const MAX_TOKENS = 1024
-const PROMPT_COUNT = 5
+
+// 三層題庫數量（想改題量改這裡；同步影響每次掃描的額度花費，見 fetch.js / AIVisibilityDashboard.jsx）
+// 每次掃描花費 ≈ core×3 + 抽樣輪替×3 + brand×1（brand 只跑 1 次）。
+// 目前 6/6/2：每掃 ≈ 6×3 + 2×3 + 2×1 = 26 次額度（月 150 額度約 5–6 掃/月）。
+const CORE_COUNT = 6      // 固定核心：品類問句、每次全跑、趨勢基準（2026-07-03 由 8 調降為 6 省成本）
+const ROTATING_COUNT = 6  // 輪替池：品類問句、每次抽樣、抓覆蓋盲點
+const BRAND_COUNT = 2     // 品牌詞：帶品牌名、另計、不進頭條分數
 
 const PRICE_INPUT_PER_TOKEN = 1 / 1_000_000
 const PRICE_OUTPUT_PER_TOKEN = 5 / 1_000_000
@@ -96,16 +108,16 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'AI 曝光監測為 Pro 功能，請先升級或啟用 7 天免費試用' })
     }
 
-    // 組 meta prompt 請 Claude 生成
-    const metaPrompt = buildMetaPrompt(brand, PROMPT_COUNT)
+    // 組 meta prompt 請 Claude 生成三層題庫
+    const metaPrompt = buildMetaPrompt(brand, { core: CORE_COUNT, rotating: ROTATING_COUNT, brand: BRAND_COUNT })
     const claudeRes = await callClaude(metaPrompt, ANTHROPIC_API_KEY)
     if (!claudeRes.ok) {
       return res.status(502).json({ error: 'Claude API error', detail: claudeRes.error })
     }
 
-    // 解析 JSON
-    const prompts = parsePromptsJson(claudeRes.text)
-    if (!prompts || prompts.length === 0) {
+    // 解析成 { core:[], rotating:[], brand:[] }
+    const tiered = parseTieredJson(claudeRes.text)
+    if (!tiered || (tiered.core.length + tiered.rotating.length + tiered.brand.length) === 0) {
       return res.status(502).json({
         error: 'Failed to parse Claude response as JSON',
         rawResponse: claudeRes.text,
@@ -121,19 +133,18 @@ export default async function handler(req, res) {
         .eq('generated_by', 'auto')
     }
 
-    // 批次寫入新 prompts
-    const rows = prompts.map(text => ({
-      user_id: brand.user_id,
-      brand_id: brand.id,
-      text,
-      generated_by: 'auto',
-      is_active: true,
-    }))
+    // 批次寫入新 prompts，各自帶 tier（三層分流的資料來源）
+    const base = { user_id: brand.user_id, brand_id: brand.id, generated_by: 'auto', is_active: true }
+    const rows = [
+      ...tiered.core.map(text => ({ ...base, text, tier: 'core' })),
+      ...tiered.rotating.map(text => ({ ...base, text, tier: 'rotating' })),
+      ...tiered.brand.map(text => ({ ...base, text, tier: 'brand' })),
+    ]
 
     const { data: inserted, error: insertErr } = await supabase
       .from('aivis_prompts')
       .insert(rows)
-      .select('id, text, is_active, generated_by')
+      .select('id, text, is_active, generated_by, tier')
 
     if (insertErr) {
       return res.status(500).json({ error: 'Failed to insert prompts', detail: insertErr.message })
@@ -147,6 +158,11 @@ export default async function handler(req, res) {
       success: true,
       brand: brand.name,
       generated_count: inserted.length,
+      by_tier: {
+        core: tiered.core.length,
+        rotating: tiered.rotating.length,
+        brand: tiered.brand.length,
+      },
       replaced_existing: replaceExisting,
       cost_usd: cost,
       input_tokens: claudeRes.inputTokens,
@@ -162,7 +178,7 @@ export default async function handler(req, res) {
 
 // ---------------------- 工具函式 ----------------------
 
-function buildMetaPrompt(brand, count) {
+function buildMetaPrompt(brand, counts) {
   const industry = brand.industry || '（未指定）'
   const description = brand.description || '（未提供）'
   const domain = brand.domain || '（未提供）'
@@ -176,31 +192,30 @@ function buildMetaPrompt(brand, count) {
 - 簡介：${description}
 
 【任務】
-請產出 ${count} 條「該品牌的目標客群（多為台灣中小企業老闆 / 行銷負責人）真的會在 ChatGPT / Claude / Perplexity 上輸入的問題」。
-這些問題會被用來測試該品牌是否會被 AI 主動推薦。
+請產出三組問題，分別放進 core / rotating / brand。這些問題會被送進 ChatGPT / Claude / Gemini，測試該品牌會不會被 AI 主動推薦。
 
-【嚴格要求】
-1. 每條 prompt **絕對不能提到品牌名稱**，要像真人在搜尋框打字的口吻，不是產業分析師寫的題目。
-2. ${count} 條必須涵蓋下列切角，**每種至少 1 條**（剩餘條數可自由分配）：
-   - **地區型**：帶具體台灣地區（如台南 / 高雄 / 台中 / 桃園 / 新北），例：「台南有哪些不錯的 ___ 公司？」
-   - **預算型**：帶具體預算或「中小企業預算內」字眼，例：「預算 10 萬以內想做 ___，有推薦的公司嗎？」
-   - **痛點型**：從一個具體商業痛點切入，不點名解決方案，例：「IG 一直沒人追蹤，有沒有公司可以幫忙？」「想做 Google 廣告但不會操作該找誰？」
-   - **業種型**：從客戶的行業切入，例：「餐廳老闆想做行銷該找什麼公司？」「電商品牌找 ___ 顧問有哪些選擇？」
-   - **比較/列表型**：「台灣有哪些...」或「___ 哪一家比較好」（這類最像產業分析師，最多 1 條）
-3. 必須用繁體中文 + 台灣口語（「找哪家」「值得推薦」「有沒有人推」），不要用「請問」「敬請」這種太正式的詞。
-4. 每條 25–55 字，貼近一句話搜尋的長度。
-5. 每條結尾用「？」（半形或全形皆可），不要用句號。
+【三組定義】
+- **core（固定核心，${counts.core} 條）**：該品牌目標客群「最常問、最具代表性」的品類問句。這組會被長期固定、每次都測，用來追蹤趨勢——所以要選最穩定、最核心的問法。**絕對不能出現品牌名稱。**
+- **rotating（輪替池，${counts.rotating} 條）**：同樣是品類問句，但要**更長尾、更多樣**——不同地區、不同預算、不同痛點、不同業種的變化題，用來擴大覆蓋、抓核心題測不到的盲點。**絕對不能出現品牌名稱**，且不要和 core 重複。
+- **brand（品牌詞，${counts.brand} 條）**：**必須包含品牌名稱「${brand.name}」**，例如「${brand.name} 評價如何？」「${brand.name} 有什麼服務？」。這組用來量「AI 認不認得這個品牌」，是獨立指標。
+
+【core 與 rotating 的共同要求（品類問句）】
+1. 像真人在搜尋框打字的口吻，不是產業分析師寫的題目。
+2. 兩組合計要涵蓋下列切角，每種至少 1 條：
+   - **地區型**：帶具體台灣地區（台南 / 高雄 / 台中 / 桃園 / 新北），例：「台南有哪些不錯的 ___ 公司？」
+   - **預算型**：帶具體預算，例：「預算 10 萬以內想做 ___，有推薦的公司嗎？」
+   - **痛點型**：從具體商業痛點切入、不點名解決方案，例：「IG 一直沒人追蹤，有沒有公司可以幫忙？」
+   - **業種型**：從客戶行業切入，例：「餐廳老闆想做行銷該找什麼公司？」
+   - **比較/列表型**：「台灣有哪些...」或「___ 哪一家比較好」（最像分析師，整體最多 2 條）
+3. 用繁體中文 + 台灣口語（「找哪家」「值得推薦」「有沒有人推」），不要用「請問」「敬請」這種太正式的詞。
+4. 每條 25–55 字，貼近一句話搜尋的長度；結尾用「？」。
 
 【輸出格式】
 **只回傳一段 JSON，不要任何前後說明文字、不要 markdown code fence：**
 {
-  "prompts": [
-    "問題 1...",
-    "問題 2...",
-    "問題 3...",
-    "問題 4...",
-    "問題 5..."
-  ]
+  "core": ["問題...", "..."],
+  "rotating": ["問題...", "..."],
+  "brand": ["${brand.name} ...？", "..."]
 }`
 }
 
@@ -239,14 +254,13 @@ async function callClaude(promptText, apiKey) {
   }
 }
 
-function parsePromptsJson(text) {
+// 解析三層題庫 JSON → { core:[], rotating:[], brand:[] }
+// 相容舊格式：若回傳的是 { prompts:[...] }，整批視為 core（不至於解析失敗）。
+function parseTieredJson(text) {
   // Claude 偶爾會包進 ```json ... ``` 或多寫前後說明，盡量寬鬆抓出 JSON
   let cleaned = text.trim()
-
-  // 去掉 markdown code fence
   cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
 
-  // 找第一個 { 跟最後一個 } 之間
   const start = cleaned.indexOf('{')
   const end = cleaned.lastIndexOf('}')
   if (start === -1 || end === -1 || end < start) return null
@@ -254,8 +268,14 @@ function parsePromptsJson(text) {
   const jsonStr = cleaned.slice(start, end + 1)
   try {
     const parsed = JSON.parse(jsonStr)
-    if (!Array.isArray(parsed.prompts)) return null
-    return parsed.prompts.filter(p => typeof p === 'string' && p.trim().length > 0)
+    const clean = arr => (Array.isArray(arr) ? arr : [])
+      .filter(p => typeof p === 'string' && p.trim().length > 0)
+      .map(p => p.trim())
+    // 舊格式相容
+    if (Array.isArray(parsed.prompts) && !parsed.core) {
+      return { core: clean(parsed.prompts), rotating: [], brand: [] }
+    }
+    return { core: clean(parsed.core), rotating: clean(parsed.rotating), brand: clean(parsed.brand) }
   } catch {
     return null
   }

@@ -3,6 +3,8 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import HeartbeatTrend from '../components/HeartbeatTrend'
+// Phase 1 來源待辦清單：重用掃描用的抓網頁 helper（含 SSL/UA/anti-bot 容錯），不另開 API function
+import { fetchPageContent } from '../services/seoAnalyzer'
 // 2026-06-06：公告改成 SiteHeader 右上角 NotificationBell、AIVisibilityDashboard 不再放卡片
 // 注意：本頁沒用 SiteHeader（自有頁首），鈴鐺要的話得另外加
 
@@ -53,8 +55,11 @@ const T = {
 // aivis 主題色：青綠（與 HomeDark 紅色主題區隔）
 const AIVIS_TEAL = '#18c590'
 const AIVIS_TEAL_DEEP = '#0d7a58'
-const PROMPT_CAP = 10
-const SCAN_RUNS = 3 // 每條 prompt 跑幾次取平均
+const PROMPT_CAP = 10           // 固定核心（core）啟用上限 — 趨勢基準不需太多題
+const SCAN_RUNS = 3             // core / rotating 每條跑幾次取平均（brand 後端強制 1 次）
+// 三層題庫（core / rotating / brand）— 與 api/aivis/generate-prompts.js 的分層對齊
+const ROTATING_SAMPLE_PER_SCAN = 2   // 每次掃描從「啟用中的輪替池」隨機抽幾條（抓覆蓋盲點、防應試化）
+const TIER_LABEL = { core: '核心', rotating: '輪替', brand: '品牌詞' }
 
 // ─── 多引擎顯示（2026-06-10 路線 B：engine_results JSONB） ───
 // 顯示名稱 + 配色。之後加 ChatGPT / Perplexity / Grok 只要在這加一行、其餘自動長出來。
@@ -282,7 +287,14 @@ export default function AIVisibilityDashboard() {
   // ---------- 衍生資料（聚合）----------
   const activePrompts = useMemo(() => prompts.filter(p => p.is_active), [prompts])
   const activeCount = activePrompts.length
-  const atCap = activeCount >= PROMPT_CAP
+  // prompt_id → tier 對照（沒查到的 prompt 一律當 core，向下相容舊資料）
+  const tierByPromptId = useMemo(
+    () => Object.fromEntries(prompts.map(p => [p.id, p.tier || 'core'])), [prompts])
+  const tierOf = id => tierByPromptId[id] || 'core'
+  // 上限只鎖「核心」tier（固定樣本不需太多題）；輪替是抽樣的、品牌詞天生少，都不佔上限
+  const activeCoreCount = useMemo(
+    () => activePrompts.filter(p => (p.tier || 'core') === 'core').length, [activePrompts])
+  const atCap = activeCoreCount >= PROMPT_CAP
 
   // 測試帳號（email 在 VITE_TEST_EMAILS 名單）→ 前端跳過額度攔截，與後端 TEST_EMAILS 對齊。
   // 後端 fetch.js 已對測試帳號放行（hardCap=Infinity），這裡同步讓前端不要先擋下來。
@@ -299,7 +311,13 @@ export default function AIVisibilityDashboard() {
   const atWarn = userMonthQueries >= AIVIS_QUOTA_PER_MONTH * AIVIS_WARN_RATIO        // ≥120 顯示 banner
   const atSoftLimit = userMonthQueries >= AIVIS_QUOTA_PER_MONTH                      // ≥150 月內含已用完
   const atHardCap = userMonthQueries >= AIVIS_HARD_CAP                               // ≥1000 完全擋住
-  const plannedRuns = activeCount * SCAN_RUNS                                        // 本次掃描預計花幾次
+  // 本次掃描預計花幾次額度 = 核心×3 ＋ 抽樣輪替×3 ＋ 品牌詞×1（三層題庫分流）
+  const activeBrandCount = useMemo(
+    () => activePrompts.filter(p => (p.tier || 'core') === 'brand').length, [activePrompts])
+  const activeRotatingCount = useMemo(
+    () => activePrompts.filter(p => (p.tier || 'core') === 'rotating').length, [activePrompts])
+  const sampledRotatingCount = Math.min(activeRotatingCount, ROTATING_SAMPLE_PER_SCAN)
+  const plannedRuns = (activeCoreCount + sampledRotatingCount) * SCAN_RUNS + activeBrandCount * 1
   const wouldExceedHard = userMonthQueries + plannedRuns > AIVIS_HARD_CAP            // 掃下去會破 1000
 
   // mentions 表 by response_id（給舊資料合成 position + 給 byPrompt 用）
@@ -350,9 +368,17 @@ export default function AIVisibilityDashboard() {
   const primaryKey = responses.some(r => r.engine_results?.gemini) ? 'gemini' : 'claude'
   const primaryLabel = primaryKey === 'gemini' ? 'Gemini' : 'Claude'
   let _pTotal = 0, _pMent = 0, _pMonth = 0, _pPosSum = 0, _pPosN = 0
+  // 品牌詞（brand tier）另計，不混進頭條曝光率 — 帶品牌名的問句 AI 幾乎一定會提到，
+  // 混進去只是灌水、不代表「被 AI 主動推薦」。這裡分開統計成「AI 認得你」指標。
+  let _bTotal = 0, _bMent = 0
   for (const r of responses) {
     const v = normEngineResults(r, mentionByRespId)[primaryKey]
     if (!v) continue
+    if (tierOf(r.prompt_id) === 'brand') {
+      _bTotal += 1
+      if (v.mentioned) _bMent += 1
+      continue
+    }
     _pTotal += 1
     if (v.mentioned) {
       _pMent += 1
@@ -363,11 +389,14 @@ export default function AIVisibilityDashboard() {
   const exposureRate = _pTotal > 0 ? Math.round(_pMent / _pTotal * 100) : 0
   const avgPos = _pPosN > 0 ? Math.round(_pPosSum / _pPosN) : 0
   const monthMentions = _pMonth
+  // 品牌認知率（AI 認不認得你）— 只有存在 brand tier 資料時才有意義
+  const brandRecogRate = _bTotal > 0 ? Math.round(_bMent / _bTotal * 100) : null
 
   // 30 天趨勢資料（每日 mention rate）
   const trendData = useMemo(() => {
     const byDay = {} // { 'YYYY-MM-DD': { total, mentioned } }
     for (const r of responses) {
+      if (tierOf(r.prompt_id) === 'brand') continue  // 品牌詞不進趨勢線（同頭條曝光率的排除邏輯）
       const k = dayKey(r.created_at)
       if (!byDay[k]) byDay[k] = { total: 0, mentioned: 0 }
       byDay[k].total += 1
@@ -383,7 +412,7 @@ export default function AIVisibilityDashboard() {
       days.push({ day: d.getDate(), month: d.getMonth() + 1, val, total: stat.total })
     }
     return days
-  }, [responses])
+  }, [responses, tierByPromptId])
 
   // 有掃描資料的「天數」（不是次數）。<3 天畫不出有意義的趨勢 → 用共用 HeartbeatTrend 心跳脈動圖勾住新客戶。
   const daysWithData = useMemo(() => trendData.filter(d => d.total > 0).length, [trendData])
@@ -474,11 +503,33 @@ export default function AIVisibilityDashboard() {
     return min === max ? null : { min, max }
   }, [trendData])
 
+  // 2026-06-30 ②：引擎健康度 — 從「最新一次掃描」+ 歷史推斷哪個副引擎本次被掐（多半是當日免費額度用盡）。
+  //   原理：某引擎歷史上有寫過 engine_results（代表有設定、會跑），但本次掃描整批缺席/不完整 → 標為 degraded。
+  //   不誤報：從未跑過的引擎（everSeen 沒有）一律跳過；Claude 是主引擎、不在此判斷。
+  //   價值：把「無聲縮水」變「有聲告知」，避免把額度造成的偏低誤判成品牌真實能見度下降。不需改 schema。
+  const engineHealth = useMemo(() => {
+    if (recentResults.length === 0) return null
+    const SECONDARY = [{ key: 'gemini', label: 'Gemini' }, { key: 'chatgpt', label: 'ChatGPT' }]
+    const totalPrompts = recentResults.length
+    const everSeen = new Set()
+    for (const r of responses) {
+      const er = r.engine_results
+      if (er && typeof er === 'object') for (const k of Object.keys(er)) everSeen.add(k)
+    }
+    const degraded = []
+    for (const { key, label } of SECONDARY) {
+      if (!everSeen.has(key)) continue // 從未設定/跑過 → 不誤報
+      const got = recentResults.filter(p => p.runs.some(run => run.engines?.[key])).length
+      if (got < totalPrompts) degraded.push({ key, label, got, total: totalPrompts })
+    }
+    return { degraded, totalPrompts }
+  }, [recentResults, responses])
+
   // ---------- 操作：Prompt CRUD ----------
   async function togglePrompt(p) {
-    // 啟用前先檢查上限
-    if (!p.is_active && atCap) {
-      setToast({ kind: 'warn', msg: `已達啟用上限（${PROMPT_CAP} 條），請先停用其他 prompts` })
+    // 啟用前先檢查上限 — 只鎖「核心」tier（固定樣本不需太多；輪替是抽樣、品牌詞天生少，都不佔上限）
+    if (!p.is_active && (p.tier || 'core') === 'core' && atCap) {
+      setToast({ kind: 'warn', msg: `核心題已達啟用上限（${PROMPT_CAP} 條），請先停用其他核心題` })
       setTimeout(() => setToast(null), 2800)
       return
     }
@@ -563,16 +614,33 @@ export default function AIVisibilityDashboard() {
       setShowTopupModal('soft')
       return
     }
-    setScanning(true); setScanPhase(0); setScanTotal(activePrompts.length)
+    // ── 三層題庫分流：決定這次掃描實際要送哪些 prompt ──
+    //   core   ：全部啟用的都送（固定樣本、趨勢基準）
+    //   rotating：從啟用中的輪替池「隨機抽」ROTATING_SAMPLE_PER_SCAN 條（每次不同、擴大覆蓋、防應試化）
+    //   brand  ：全部啟用的都送，但每條只跑 1 次（後端也會強制夾成 1）
+    const coreTargets = activePrompts.filter(p => (p.tier || 'core') === 'core')
+    const brandTargets = activePrompts.filter(p => (p.tier || 'core') === 'brand')
+    const rotatingPool = activePrompts.filter(p => (p.tier || 'core') === 'rotating')
+    const sampledRotating = [...rotatingPool]
+      .sort(() => Math.random() - 0.5)            // 洗牌後取前 N（每次掃描抽不同批）
+      .slice(0, ROTATING_SAMPLE_PER_SCAN)
+    const scanTargets = [
+      ...coreTargets.map(p => ({ p, runs: SCAN_RUNS })),
+      ...sampledRotating.map(p => ({ p, runs: SCAN_RUNS })),
+      ...brandTargets.map(p => ({ p, runs: 1 })),
+    ]
+
+    setScanning(true); setScanPhase(0); setScanTotal(scanTargets.length)
     let totalMentioned = 0, totalRunsCount = 0, totalTopupConsumed = 0
     // 2026-06-10：累計 Gemini 分項、掃描完 toast 直接顯示雙引擎結果
     let geminiMentioned = 0, geminiRunsCount = 0, geminiActive = false
     let geminiStatus = null  // 後端診斷：key_present / attempts / ok / last_error
+    let chatgptStatus = null // 後端診斷：ChatGPT — OpenAI 餘額耗盡是無聲殺手、要一起報
     try {
-      for (let i = 0; i < activePrompts.length; i++) {
-        const p = activePrompts[i]
+      for (let i = 0; i < scanTargets.length; i++) {
+        const { p, runs: promptRuns } = scanTargets[i]
         setScanPhase(i + 1)
-        const r = await fetch(`/api/aivis/fetch?prompt_id=${p.id}&runs=${SCAN_RUNS}`, { method: 'POST' })
+        const r = await fetch(`/api/aivis/fetch?prompt_id=${p.id}&runs=${promptRuns}`, { method: 'POST' })
         const json = await r.json()
         if (!r.ok || !json.success) {
           throw new Error(json.error || json.detail || '掃描失敗')
@@ -580,6 +648,7 @@ export default function AIVisibilityDashboard() {
         totalMentioned += json.mentioned_count
         totalRunsCount += json.runs
         if (json.gemini_status) geminiStatus = json.gemini_status  // 後端 Gemini 診斷（取最後一條）
+        if (json.chatgpt_status) chatgptStatus = json.chatgpt_status // 後端 ChatGPT 診斷（取最後一條）
         // Gemini 分項 — 累計成功次數；geminiActive 改成「真的有成功」才算（修：by_engine.gemini
         // 在全失敗時也存在、會誤判成功顯示 0%、把真正的失敗錯誤吞掉）
         if (json.by_engine?.gemini) {
@@ -620,9 +689,19 @@ export default function AIVisibilityDashboard() {
         }
         engineNote = `平均提及率 ${rate}%${reason}`
       }
+      // 2026-06-30 ①：ChatGPT 診斷獨立於 Gemini（不論 Gemini 成功與否都要報）— 餘額耗盡是無聲殺手
+      if (chatgptStatus && chatgptStatus.key_present) {
+        if (chatgptStatus.quota_exhausted) {
+          engineNote += '（⚠️ ChatGPT 餘額耗盡：OpenAI 帳戶額度用完，請開 auto-recharge 或儲值）'
+          toastKind = 'warn'
+        } else if (chatgptStatus.attempts > 0 && chatgptStatus.ok === 0) {
+          engineNote += `（⚠️ ChatGPT 呼叫失敗：${String(chatgptStatus.last_error || '無錯誤訊息').slice(0, 80)}）`
+          toastKind = 'warn'
+        }
+      }
       setToast({
         kind: toastKind,
-        msg: `✅ 掃描完成 — ${activePrompts.length} prompt × ${SCAN_RUNS} 次 = ${totalRunsCount} 次呼叫${topupNote}，${engineNote}`,
+        msg: `✅ 掃描完成 — ${scanTargets.length} 題（核心${coreTargets.length}＋輪替抽${sampledRotating.length}＋品牌詞${brandTargets.length}）＝ ${totalRunsCount} 次呼叫${topupNote}，${engineNote}`,
       })
       setTimeout(() => setToast(null), 7000)
       loadAll()
@@ -752,6 +831,21 @@ export default function AIVisibilityDashboard() {
           )}
         </div>
 
+        {/* 品牌認知率（另計）：帶品牌名的問句 AI 幾乎必提，是「AI 認不認得你」而非「主動推薦你」。
+            刻意與上方頭條曝光率分開陳列，避免用品牌詞灌水。只有存在 brand tier 資料時才顯示。 */}
+        {!isEmpty && brandRecogRate != null && (
+          <div style={{
+            fontSize: 13, color: T.textMid, margin: '-4px 2px 16px',
+            display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+          }}>
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: '#f59e0b', background: '#f59e0b1c',
+              padding: '1px 6px', borderRadius: 3, letterSpacing: '.04em',
+            }}>品牌詞</span>
+            直接問「{brand?.name || '你的品牌'}」時，{primaryLabel} 有 <b style={{ color: '#f59e0b' }}>{brandRecogRate}%</b> 認得你 —— 這是另計的「AI 認得你」指標，<b>不含在上方曝光率</b>裡。
+          </div>
+        )}
+
         {/* ── 趨勢線（主角）：全寬。AI 即時上網、答案天天在變 → 看趨勢不看單次數字 ── */}
         <div style={{ marginBottom: 18 }}>
           {isLoading ? <TrendSkeleton /> :
@@ -837,7 +931,7 @@ export default function AIVisibilityDashboard() {
                 立即執行掃描
               </div>
               <div style={{ fontSize: 14, color: T.textMid }}>
-                手動觸發 {activeCount} prompt：Claude 各問 {SCAN_RUNS} 次 + Gemini 各問 1 次（省免費額度）· 約耗時 {activeCount * 8} 秒
+                本次送 {activeCoreCount + sampledRotatingCount + activeBrandCount} 題（核心 {activeCoreCount}＋輪替抽 {sampledRotatingCount}＋品牌詞 {activeBrandCount}）· 約花 {plannedRuns} 次額度 · 約耗時 {(activeCoreCount + sampledRotatingCount + activeBrandCount) * 8} 秒
               </div>
             </div>
           </div>
@@ -873,7 +967,7 @@ export default function AIVisibilityDashboard() {
         {/* ── 引用來源（放最下面、預設只顯示 10 個、其餘展開才看） ── */}
         {!isLoading && !isEmpty && (
           <div style={{ marginTop: 18 }}>
-            <CitedSourcesCard sources={citedSources} brandName={brand?.name || ''} />
+            <CitedSourcesCard sources={citedSources} brandName={brand?.name || ''} brandDomain={brand?.domain || ''} degraded={engineHealth?.degraded} />
           </div>
         )}
 
@@ -1215,6 +1309,9 @@ function PromptsPanel({
   prompts, editingId, editText, setEditText, onToggle, onStartEdit,
   onSave, onCancelEdit, onAdd, onRegenerate, activeCount, atCap,
 }) {
+  // 三層題庫啟用計數（給標題列顯示分佈用）
+  const tc = { core: 0, rotating: 0, brand: 0 }
+  for (const p of prompts) if (p.is_active) tc[p.tier || 'core'] = (tc[p.tier || 'core'] || 0) + 1
   return (
     <div style={{
       background: 'rgba(1,8,14,.55)', border: `1px solid ${T.cardBorder}`,
@@ -1227,11 +1324,11 @@ function PromptsPanel({
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>
             Prompts 管理 <span style={{ fontSize: 14, color: T.textLow, fontWeight: 500 }}>
-              · 啟用中 {activeCount}/{prompts.length}（上限 {PROMPT_CAP} 條）
+              · 啟用中 核心 {tc.core}/{PROMPT_CAP}・輪替 {tc.rotating}・品牌詞 {tc.brand}
             </span>
           </div>
           <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
-            這些問題會送進 Claude（每條 {SCAN_RUNS} 次取平均）+ Gemini（每條 1 次、省免費額度）。
+            <b style={{ color: AIVIS_TEAL }}>核心</b>每次全跑（趨勢基準）、<b style={{ color: '#60a5fa' }}>輪替</b>每次隨機抽 {ROTATING_SAMPLE_PER_SCAN} 條（抓盲點）、<b style={{ color: '#f59e0b' }}>品牌詞</b>另計（量「AI 認得你」、不進頭條分數）。核心／輪替送 Claude 各 {SCAN_RUNS} 次取平均＋Gemini 各 1 次。
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -1294,6 +1391,16 @@ function PromptsPanel({
                 flex: 1, fontSize: 14, color: p.is_active ? T.text : T.textMid,
                 lineHeight: 1.55, minWidth: 0, wordBreak: 'break-word',
               }}>
+                {/* 三層題庫 tier 標籤：核心=青綠、輪替=藍、品牌詞=琥珀 */}
+                {(() => {
+                  const t = p.tier || 'core'
+                  const c = t === 'brand' ? '#f59e0b' : t === 'rotating' ? '#60a5fa' : AIVIS_TEAL
+                  return <span style={{
+                    fontSize: 11, fontWeight: 700, color: c, background: c + '1c',
+                    padding: '1px 6px', borderRadius: 3, marginRight: 8,
+                    verticalAlign: 'middle', letterSpacing: '.04em',
+                  }}>{TIER_LABEL[t]}</span>
+                })()}
                 {p.text}
                 {p.generated_by === 'user' && <span style={{
                   fontSize: 14, fontWeight: 700, color: AIVIS_TEAL, letterSpacing: '.06em',
@@ -1590,17 +1697,74 @@ function TrendChart({ data }) {
 // CitedSourcesCard（主打）：AI 接地推薦時參考了哪些網站
 // 核心洞察：AI 是讀這些地方才形成推薦的 → 想被推薦就去這些地方爭取曝光
 // =====================================================
-function CitedSourcesCard({ sources, brandName }) {
+// Phase 1 來源待辦清單：每個來源分析後的三種狀態 + 建議行動
+const SRC_STATUS = {
+  in:    { label: '✓ 你有出現', color: '#34d399', bg: 'rgba(52,211,153,.14)', tip: '你在這頁有露出 👍 AI 可能就是從這提到你的 → 確認資訊正確、持續維護。' },
+  out:   { label: '✗ 沒出現',   color: '#f87171', bg: 'rgba(248,113,113,.14)', tip: 'AI 會讀這頁、卻沒提到你 → 想辦法被這裡收錄／露出（投稿、登錄名錄、請對方補上、衝評論）。' },
+  error: { label: '⚠ 無法檢查', color: '#fbbf24', bg: 'rgba(251,191,36,.14)', tip: '這個來源擋了自動抓取，請手動點開確認你有沒有出現在上面。' },
+}
+const ANALYZE_N = 8   // 只分析前 N 個最常被引用的來源（省成本、聚焦高價值）
+
+function CitedSourcesCard({ sources, brandName, brandDomain, degraded }) {
   const [showAll, setShowAll] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [checked, setChecked] = useState({})   // { uri: 'in' | 'out' | 'error' }
   const has = sources && sources.length > 0
   const visible = has ? (showAll ? sources : sources.slice(0, 10)) : []
   const hidden = has ? sources.length - visible.length : 0
+  const hasDegraded = degraded && degraded.length > 0
+
+  // 比對用的關鍵字：品牌名 + 品牌網域主機名（來源頁只要有其中之一就算「你有出現」）
+  const brandTokens = [
+    (brandName || '').toLowerCase().trim(),
+    (brandDomain || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim(),
+  ].filter(Boolean)
+
+  // 點按鈕才跑（省成本）：抓前 N 個來源網頁 → 檢查品牌名/網域在不在
+  async function analyzeSources() {
+    if (analyzing || !has || brandTokens.length === 0) return
+    setAnalyzing(true)
+    const targets = sources.slice(0, ANALYZE_N)
+    const next = {}
+    await Promise.allSettled(targets.map(async (s) => {
+      try {
+        const { html } = await fetchPageContent(s.uri)
+        const h = (html || '').toLowerCase()
+        next[s.uri] = brandTokens.some(t => t && h.includes(t)) ? 'in' : 'out'
+      } catch {
+        next[s.uri] = 'error'
+      }
+    }))
+    setChecked(next)
+    setAnalyzing(false)
+  }
+
+  const doneCount = Object.keys(checked).length
+  const inCount = Object.values(checked).filter(v => v === 'in').length
+  const outCount = Object.values(checked).filter(v => v === 'out').length
   return (
     <div style={{
       background: `linear-gradient(155deg, ${AIVIS_TEAL}16 0%, rgba(1,8,14,.6) 70%)`,
       border: `1px solid ${AIVIS_TEAL}45`, borderRadius: T.rL, padding: 22, marginBottom: 18,
       boxShadow: `0 8px 24px ${AIVIS_TEAL}12`,
     }}>
+      {/* 2026-06-30 ②：引擎缺席持久警語 — 本次某引擎被額度掐 → 來源/提及率偏低，明確告知避免誤判成「品牌能見度下降」 */}
+      {hasDegraded && (
+        <div style={{
+          display: 'flex', gap: 9, alignItems: 'flex-start',
+          background: 'rgba(255,176,32,.1)', border: '1px solid rgba(255,176,32,.38)',
+          borderRadius: 10, padding: '11px 13px', marginBottom: 15,
+          fontSize: 13.5, color: '#ffce7a', lineHeight: 1.75,
+        }}>
+          <span style={{ flexShrink: 0 }}>⚠️</span>
+          <span>
+            本次掃描 <strong style={{ color: '#ffd98f' }}>{degraded.map(d => d.label).join('、')}</strong> 未完整啟用
+            （多半是當日免費額度用盡）——
+            <strong style={{ color: '#ffd98f' }}>來源數與提及率可能偏低，這不是品牌真實能見度下降</strong>。
+            稍後或明日（太平洋 0 點額度重置）重新掃描即可恢復完整。
+          </span>
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 5, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 17, fontWeight: 800, color: T.text }}>🔗 AI 是參考這些地方在推薦的</span>
         {has && <span style={{
@@ -1616,22 +1780,57 @@ function CitedSourcesCard({ sources, brandName }) {
       </div>
       {has ? (
         <>
+          {/* Phase 1：點按鈕才分析（省成本、不佔一般掃描）— 抓前 N 個來源、檢查你有沒有出現 */}
+          {brandTokens.length > 0 && (
+            <button onClick={analyzeSources} disabled={analyzing} style={{
+              width: '100%', marginBottom: 12,
+              background: analyzing ? 'rgba(255,255,255,.06)' : `linear-gradient(135deg, ${AIVIS_TEAL}, ${AIVIS_TEAL_DEEP})`,
+              border: 'none', color: analyzing ? T.textMid : '#011520',
+              fontSize: 14, fontWeight: 800, padding: '11px', borderRadius: 9,
+              cursor: analyzing ? 'default' : 'pointer', fontFamily: T.font,
+            }}>
+              {analyzing ? '分析中…（抓取來源、比對你的品牌）'
+                : doneCount ? '↻ 重新分析來源'
+                : `🔍 分析來源：看你有沒有出現在前 ${Math.min(ANALYZE_N, sources.length)} 個常被引用的網站`}
+            </button>
+          )}
+          {/* 分析摘要 */}
+          {doneCount > 0 && (
+            <div style={{
+              fontSize: 13.5, color: T.textMid, lineHeight: 1.7, marginBottom: 12,
+              padding: '10px 13px', background: 'rgba(0,6,10,.45)',
+              border: '1px solid rgba(255,255,255,.08)', borderRadius: 9,
+            }}>
+              AI 常參考的前 {doneCount} 個來源裡，你出現在 <strong style={{ color: '#34d399' }}>{inCount}</strong> 個、
+              缺席 <strong style={{ color: '#f87171' }}>{outCount}</strong> 個。
+              {outCount > 0 && <>下面標 <strong style={{ color: '#f87171' }}>✗ 沒出現</strong> 的，就是你最該去攻的地方。</>}
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {visible.map((s, i) => (
-              <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" title={s.uri}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
-                  background: 'rgba(0,6,10,.5)', border: '1px solid rgba(255,255,255,.07)',
+            {visible.map((s, i) => {
+              const st = checked[s.uri]
+              const meta = st ? SRC_STATUS[st] : null
+              return (
+                <div key={i} style={{
+                  background: 'rgba(0,6,10,.5)', border: `1px solid ${meta ? meta.color + '33' : 'rgba(255,255,255,.07)'}`,
                   borderRadius: 8, padding: '11px 13px',
                 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: AIVIS_TEAL, minWidth: 16 }}>{i + 1}.</span>
-                <span style={{ flex: 1, fontSize: 14, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {s.title}
-                </span>
-                {s.count > 1 && <span style={{ fontSize: 13, color: T.textLow, flexShrink: 0 }}>被 {s.count} 題引用</span>}
-                <span style={{ fontSize: 13, color: T.textLow, flexShrink: 0 }}>↗</span>
-              </a>
-            ))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: AIVIS_TEAL, minWidth: 16 }}>{i + 1}.</span>
+                    <a href={s.uri} target="_blank" rel="noopener noreferrer" title={s.uri}
+                      style={{ flex: 1, fontSize: 14, color: T.text, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.title} ↗
+                    </a>
+                    {s.count > 1 && <span style={{ fontSize: 12.5, color: T.textLow, flexShrink: 0 }}>被 {s.count} 題引用</span>}
+                    {meta && <span style={{
+                      fontSize: 12.5, fontWeight: 700, color: meta.color, background: meta.bg,
+                      padding: '2px 9px', borderRadius: 20, flexShrink: 0, whiteSpace: 'nowrap',
+                    }}>{meta.label}</span>}
+                  </div>
+                  {meta && <div style={{ fontSize: 12.5, color: T.textMid, lineHeight: 1.6, marginTop: 7, paddingLeft: 26 }}>{meta.tip}</div>}
+                </div>
+              )
+            })}
           </div>
           {sources.length > 10 && (
             <button onClick={() => setShowAll(v => !v)} style={{

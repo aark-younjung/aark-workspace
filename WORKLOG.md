@@ -6,6 +6,66 @@
 
 ---
 
+### 2026-07-13（Phase 1 來源待辦清單：cited sources → 「你出現了嗎」）
+
+把 aivis 的「AI 參考了哪些網站」從一堆連結升級成**可操作清單**。[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) `CitedSourcesCard` 加一顆「🔍 分析來源」按鈕（**點才跑、省成本、無 AI 費**）：點下去抓前 `ANALYZE_N=8` 個最常被引用的來源網頁（重用 [seoAnalyzer.js](src/services/seoAnalyzer.js) `fetchPageContent`、含 SSL/UA/anti-bot 容錯、不另開 API function），比對品牌名/網域是否出現 → 每列標 ✓你有出現／✗沒出現／⚠無法檢查 + 一句建議 + 頂部摘要「你出現在 X/8 個」。✗ 沒出現 = 最該去攻的來源。Phase 2（正確性監測、需 ground truth + LLM 比對）另議。Vite transform 914 ✓。
+
+---
+
+### 2026-07-03（外部落地頁交棒：HomeDark 讀 `?url=` 自動掃描）
+
+外部靜態落地頁（清新日系 A 組 LP，不同網域）的 CTA 會帶 `?url=<網址>` 進首頁。原本的 LP 交棒只認同源 `sessionStorage.lp_pending_url`（跨網域傳不到）。[HomeDark.jsx](src/pages/HomeDark.jsx) 那支 useEffect 加了第二來源：sessionStorage 沒有時改讀 `?url=` 查詢參數 → 一樣 `setUrl` + `handleSubmit` 自動掃描，並用 `history.replaceState` 把 `?url` 從網址列清掉（防重新整理又掃一次）。未登入也走 value-first inline 掃描。Vite transform 913 ✓。
+
+---
+
+### 2026-07-03（core 題量 8 → 6 省成本）
+
+[generate-prompts.js](api/aivis/generate-prompts.js) `CORE_COUNT` 8 → 6。每掃額度由 ≈32 → **≈26**（6×3 + 抽樣2×3 + brand2×1），月 150 額度約 5–6 掃/月。只影響「重新產生」後新建的題庫；既有品牌要按「重新產生」才會套用新題量。dashboard 的成本/耗時 hint 是讀實際 `activeCoreCount` 動態算、不需改。
+
+---
+
+### 2026-07-02（三層題庫 core / rotating / brand — 統計上「量得準、比得動、不自欺」）
+
+**背景：** 用戶問「送出的 prompt 每次要一樣才準，還是每次換一批？怎麼讓成績好看？」。統計正解＝**固定核心 + 輪替池混合**：固定題組才有有效趨勢（像用同一台體重計量），輪替題防「選題偏差 / 應試化」；而「帶品牌名的問句」AI 幾乎必提、拿來灌頭條分數＝自欺（也踩公平交易法），必須另計。把這套設計落成資料模型與掃描分流。
+
+**Schema（Supabase Dashboard 手動跑，不建 .sql 檔）：**
+```sql
+ALTER TABLE aivis_prompts
+  ADD COLUMN IF NOT EXISTS tier TEXT NOT NULL DEFAULT 'core'
+  CHECK (tier IN ('core','rotating','brand'));
+```
+既有 prompts 全部落 `core` → **完全向下相容**：在有人「重新產生」建出 rotating/brand 之前，行為與今天一模一樣。
+
+**改動：**
+- **[generate-prompts.js](api/aivis/generate-prompts.js)**：改產「三層題庫」— core 8（固定核心品類問句）＋ rotating 6（長尾品類問句、抓盲點）＋ brand 2（帶品牌名）。meta prompt 改要 `{core,rotating,brand}` 三陣列、`parseTieredJson` 解析（相容舊 `{prompts}` 格式）、insert 帶 `tier`。題量在檔頭常數可調。
+- **[fetch.js](api/aivis/fetch.js)**：select 補 `tier`；**brand tier 伺服器端強制 runs=1**（品牌詞 near-deterministic、跑 3 次浪費額度，即使前端忘傳也守得住）；response 回傳 `tier`。
+- **[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)**：
+  - **掃描分流（runScan）**：core 全跑＋brand 全跑（各 1 次）＋rotating **每次隨機抽 `ROTATING_SAMPLE_PER_SCAN`（預設 2）條**（洗牌取前 N、每次不同）。
+  - **誠實護欄（頭條分數）**：`exposureRate / avgPos / monthMentions / 趨勢線` 全部**排除 brand tier**；品牌詞另計為 `brandRecogRate`（「AI 認得你」），在頭條卡下方獨立一行陳列、明講「不含在上方曝光率」。
+  - **上限只鎖 core**（`activeCoreCount ≥ PROMPT_CAP=10`）；rotating 抽樣故不佔、brand 天生少。Prompt 列加 tier 色標籤（核心青綠／輪替藍／品牌詞琥珀）、標題列顯示三層啟用分佈、掃描 hint 改顯示「核心 x＋輪替抽 y＋品牌詞 z＝約 N 次額度」。
+- **額度提醒：** 重新產生後每次掃描約 `core×3 + 抽樣×3 + brand×1`（8+6+2 題預設 ≈ 32 次/掃）比舊 5 題×3=15 次高，月 150 額度 ≈ 4–5 掃/月；題量常數可調。
+
+**已知簡化：** 分數用「當前 prompt.tier」join 回推（未在 response 存掃描當下 tier）；tier 事後被改的舊資料會重新歸類，屬罕見、YAGNI 不處理。
+
+**驗證：** Vite transform 913 模組全 ✓；`node --check` fetch.js / generate-prompts.js 皆過。rolldown minify 本機 Windows native crash 屬環境問題、與本次無關。
+
+---
+
+### 2026-06-30（引擎缺席「有聲告知」— 掃描結果無聲縮水的防護網）
+
+**背景：** 用戶同帳號一天內掃多個品牌，第二品牌結果＋出處「縮水」，重掃又恢復。診斷確認＝**A（引擎當日額度暫時見底）**：Gemini 免費接地有每日上限、第一品牌的 10 條 prompt 先吃掉一大塊，第二品牌掃時接地回 429 → 該引擎答案＋來源整塊消失（出處從 99 掉到個位數）；太平洋 0 點重置後又正常。問題在於這是**無聲失敗**——用戶/客戶會誤判成「工具不準 / 品牌能見度下降」。OpenAI 餘額耗盡（auto-recharge 沒開）同理會無聲掛掉。
+
+**改動（[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)，不動 schema）：**
+- **① runScan 掃描完成訊息補上 ChatGPT 診斷**：原本只讀 `gemini_status`，現加 `chatgptStatus`，`quota_exhausted`（OpenAI 餘額耗盡）/ 呼叫失敗都會 append 進 toast 並轉 warn。後端 `chatgpt_status` 早就有回、前端之前沒接。
+- **② 引用來源卡片持久警語**：新增 `engineHealth` useMemo — 從「最新一次掃描」recentResults + 歷史 responses 推斷哪個副引擎本次缺席（某引擎歷史寫過 engine_results＝有設定，但本次整批/部分缺席＝被掐）。`everSeen` 防止「從未設定的引擎」誤報。degraded 清單傳進 `CitedSourcesCard` 顯示琥珀色警語「本次 X 未完整啟用（多半當日額度用盡）→ 來源/提及率偏低，非品牌真實能見度下降，重掃即恢復」。
+- ③（標題區引擎狀態 chip）暫緩，①② 已把「無聲」變「有聲」。
+
+**治本待辦（非本次）：** Gemini 接地升付費層（拿掉每日免費天花板、一個品牌完整掃約 NT$11）+ OpenAI 開 auto-recharge。⚠️ 後者上線前必做（見 memory [openai-autorecharge-reminder]）。
+
+**驗證：** Vite transform 913 模組全 ✓ 無錯（JSX 語法正確）。注意：Vite 8 rolldown 在本機 Windows minify 階段 native crash（STATUS_STACK_BUFFER_OVERRUN），與 code 無關、dist 自 6/23 起未更新同源、屬環境問題。
+
+---
+
 ### 2026-06-19（AivisHero 5 引擎 chip 換成真實 SVG logo）
 
 **背景：** 用戶提供 5 個引擎 SVG logo（ChatGPT/Claude/Perplexity/Gemini/Grok），要換掉原本的 emoji。
