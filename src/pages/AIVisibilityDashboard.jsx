@@ -63,13 +63,12 @@ const TIER_LABEL = { core: '核心', rotating: '輪替', brand: '品牌詞', inf
 const TIER_COLOR = { core: AIVIS_TEAL, rotating: '#60a5fa', brand: '#f59e0b', info: '#c084fc' }
 
 // ─── 多引擎顯示（2026-06-10 路線 B：engine_results JSONB） ───
-// 顯示名稱 + 配色。之後加 ChatGPT / Perplexity / Grok 只要在這加一行、其餘自動長出來。
+// 顯示名稱 + 配色。目前實跑 3 引擎（Claude / Gemini / ChatGPT）；2026-07-17 決定不上 Perplexity / Grok
+// （較小眾、省成本）。未來要加引擎只要在這加一行、其餘自動長出來。
 const ENGINE_META = {
   claude:     { label: 'Claude',     color: '#d97757' },  // Anthropic 橘
   gemini:     { label: 'Gemini',     color: '#4285f4' },  // Google 藍
-  chatgpt:    { label: 'ChatGPT',    color: '#10a37f' },  // OpenAI 綠（預留）
-  perplexity: { label: 'Perplexity', color: '#20b8cd' },  // 預留
-  grok:       { label: 'Grok',       color: '#888888' },  // 預留
+  chatgpt:    { label: 'ChatGPT',    color: '#10a37f' },  // OpenAI 綠
 }
 function engineLabel(key) { return ENGINE_META[key]?.label || key }
 function engineColor(key) { return ENGINE_META[key]?.color || T.textMid }

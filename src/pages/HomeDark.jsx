@@ -962,7 +962,7 @@ export default function HomeDark() {
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500/15 rounded-full mb-8 border border-orange-500/30">
               <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></span>
-              <span className="text-orange-300 text-sm font-medium">涵蓋 ChatGPT · Claude · Perplexity · Google</span>
+              <span className="text-orange-300 text-sm font-medium">涵蓋 ChatGPT · Claude · Gemini</span>
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold mb-3 leading-tight text-white">
@@ -1260,7 +1260,7 @@ export default function HomeDark() {
         <PlatformLogoWall />
 
         {/* Social proof + 早鳥 strip（2026-06-06 從 Hero 搬到這裡）— 緊接 PlatformLogoWall：
-            「我們覆蓋這 5 個 AI 引擎 → 已協助 X 個品牌跑了 Y 次檢測」的連貫敘事 */}
+            「我們覆蓋這幾個 AI 引擎 → 已協助 X 個品牌跑了 Y 次檢測」的連貫敘事 */}
         {publicStats && (
           <div className="mt-8 max-w-3xl mx-auto rounded-2xl p-4 sm:p-5" style={{
             background: 'rgba(255,255,255,0.03)',
@@ -1451,8 +1451,8 @@ export default function HomeDark() {
                 title: 'aivis',
                 fullName: '跨 LLM 引用追蹤',
                 tag: '結果驗證',
-                desc: '量化你在 5 個 AI 引擎的真實提及率。',
-                items: ['ChatGPT 引用率', 'Claude 引用率', 'Perplexity 引用率', 'Gemini 引用率', 'Grok 引用率'],
+                desc: '量化你在 3 個 AI 引擎的真實提及率。',
+                items: ['ChatGPT 引用率', 'Claude 引用率', 'Gemini 引用率'],
                 color: '#f97316',
               },
             ].map((item) => (

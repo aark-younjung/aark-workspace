@@ -91,7 +91,7 @@ export default function LeadingLaggingGuide({ scores, websiteName }) {
           <ul className="text-sm text-white/70 space-y-1.5">
             <li>
               <span className="text-emerald-300">•</span>{' '}
-              <strong className="text-white">aivis 跨 LLM 引用率</strong>：監測 ChatGPT / Claude / Perplexity 實際提你品牌的次數
+              <strong className="text-white">aivis 跨 LLM 引用率</strong>：監測 ChatGPT / Claude / Gemini 實際提你品牌的次數
             </li>
             <li>
               <span className="text-white/45">•</span>{' '}

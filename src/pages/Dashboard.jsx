@@ -1380,7 +1380,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   </span>
                 </div>
                 <p className="text-sm text-white/70 leading-relaxed">
-                  追蹤品牌在 ChatGPT、Claude、Perplexity、Gemini 中的真實曝光表現。量化「被 AI 主動推薦」的商業機會。
+                  追蹤品牌在 ChatGPT、Claude、Gemini 中的真實曝光表現。量化「被 AI 主動推薦」的商業機會。
                 </p>
               </div>
             </div>

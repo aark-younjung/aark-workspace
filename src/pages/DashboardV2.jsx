@@ -35,9 +35,7 @@ import Footer from '../components/Footer'
 import HeartbeatTrend from '../components/HeartbeatTrend'
 import logoChatGPT from '../assets/engines/chatgpt.svg'
 import logoClaude from '../assets/engines/claude.svg'
-import logoPerplexity from '../assets/engines/perplexity.svg'
 import logoGemini from '../assets/engines/gemini.svg'
-import logoGrok from '../assets/engines/grok.svg'
 import { T } from '../styles/v2-tokens'
 import { analyzeContent } from '../services/contentAnalyzer'
 import { analyzeSEO, fetchPageContent, parseHTML } from '../services/seoAnalyzer'
@@ -965,7 +963,7 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
             {isPro ? 'Pro 核心' : '🔒 Pro 功能'}
           </span>
         </div>
-        <p className="text-base text-white/65 mb-1">追蹤你在 ChatGPT / Claude / Perplexity / Gemini / Grok 的真實提及率</p>
+        <p className="text-base text-white/65 mb-1">追蹤你在 ChatGPT / Claude / Gemini 的真實提及率</p>
         <p className="text-sm text-white/45 mb-6"><span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 font-semibold text-sm">LLMO 結果驗證層</span> · 跟 SEO / AEO / GEO / E-E-A-T 4 訊號層合成總分</p>
 
         {/* 心跳脈動「趨勢成形中」帶：嵌在 hero 卡片內（用戶指定位置）。第一次掃完（trendData ≤1 筆）顯示、
@@ -984,14 +982,13 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
           </div>
         )}
 
-        {/* 5 AI 引擎 chips（真實 logo）— 白底圓角磚確保深色/淺色 logo 都看得見（Grok 黑、ChatGPT 已改深色） */}
-        <div className="grid grid-cols-5 gap-2 mb-6">
+        {/* 3 AI 引擎 chips（真實 logo）— 白底圓角磚確保深色/淺色 logo 都看得見（ChatGPT 已改深色）
+            2026-07-17：從 5 引擎對齊成後端實跑的 3 引擎（拿掉 Perplexity / Grok，較小眾又省成本）*/}
+        <div className="grid grid-cols-3 gap-2 mb-6">
           {[
             { name: 'ChatGPT',    logo: logoChatGPT },
             { name: 'Claude',     logo: logoClaude },
-            { name: 'Perplexity', logo: logoPerplexity },
             { name: 'Gemini',     logo: logoGemini },
-            { name: 'Grok',       logo: logoGrok },
           ].map((e, i) => (
             <div key={i} className="text-center p-2 rounded-lg" style={{
               background: 'rgba(255,255,255,0.04)',
@@ -1021,8 +1018,8 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
                 <div className="text-base font-bold text-white mb-1">尚未啟用 aivis 追蹤</div>
                 <p className="text-sm text-white/55 leading-relaxed">
                   {isPro
-                    ? '設定你想追蹤的品牌名稱（例：金鉑先生、kimbo3899）、aivis 會每天問 5 個 AI 引擎、看你被提及幾次。'
-                    : 'aivis 是 Pro 核心功能 — 追蹤品牌在 5 個 AI 引擎的真實提及率，升 Pro 解鎖。'}
+                    ? '設定你想追蹤的品牌名稱（例：金鉑先生、kimbo3899）、aivis 會在每次檢測問 3 個 AI 引擎、看你被提及幾次。'
+                    : 'aivis 是 Pro 核心功能 — 追蹤品牌在 3 個 AI 引擎的真實提及率，升 Pro 解鎖。'}
                 </p>
               </div>
             </div>
@@ -1219,7 +1216,7 @@ function NoticeStrip() {
     }}>
       <span className="text-base">📡</span>
       <div className="flex-1 text-white/75">
-        <strong className="text-white">aivis 升級到 5 引擎</strong> · 新增 Gemini 監測。對所有 Pro 用戶自動生效、Top-up 餘額不變
+        <strong className="text-white">aivis 升級到 3 引擎</strong> · 新增 Gemini 監測。對所有 Pro 用戶自動生效、Top-up 餘額不變
       </div>
       <button onClick={() => setDismissed(true)} className="text-white/40 hover:text-white/70 text-lg leading-none w-6 h-6 flex items-center justify-center">×</button>
     </div>

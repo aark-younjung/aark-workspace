@@ -574,7 +574,7 @@ function buildWeek6HTML(baselineScores) {
       <div style="margin-bottom:4px;"><strong style="color:#16a34a;">✅ 對</strong>：「最推薦的車用安卓機品牌？」</div>
       <div style="margin-bottom:4px;"><strong style="color:#16a34a;">✅ 對</strong>：「FOC 馬達哪家品牌好？」</div>
       <div style="margin-bottom:4px;"><strong style="color:#dc2626;">❌ 錯</strong>：「金鉑先生車機評價」（這只測自己曝光、不測競爭）</div>
-      <div><strong style="color:${TEXT_LIGHT};">aivis 每 20 分鐘輪詢 5 個 LLM（ChatGPT / Gemini / Claude / Perplexity / Grok）、看你品牌被提到的次數。</strong></div>
+      <div><strong style="color:${TEXT_LIGHT};">aivis 每次掃描會問 3 個 LLM（ChatGPT / Gemini / Claude）、看你品牌被提到的次數。</strong></div>
     </div>
 
     <h3 style="font-size:15px;font-weight:bold;color:${TEXT_DARK};margin:18px 0 8px;">任務 6.2：6 週成果驗收表</h3>

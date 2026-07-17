@@ -128,14 +128,14 @@ export function GEOSignature({ audit, isPro }) {
   // 每家引擎對技術項目的敏感度不同
   const ENGINE_BASES = [
     { name: 'Google AI',    keys: ['llms_txt', 'robots_ai', 'sitemap', 'open_graph', 'json_ld_citation', 'canonical', 'https'], multiplier: 1.0 },
-    { name: 'Bing Copilot', keys: ['llms_txt', 'robots_ai', 'sitemap', 'open_graph', 'twitter_card', 'json_ld_citation', 'https'], multiplier: 0.85 },
+    { name: 'ChatGPT',      keys: ['llms_txt', 'robots_ai', 'sitemap', 'open_graph', 'twitter_card', 'json_ld_citation', 'https'], multiplier: 0.85 },
     { name: 'Claude',       keys: ['llms_txt', 'robots_ai', 'json_ld_citation', 'canonical', 'https'], multiplier: 0.72 },
   ]
   const buildVals = (eng) => {
     if (!audit) {
       const mock = {
         'Google AI':    [88, 72, 58, 32, 24],
-        'Bing Copilot': [72, 65, 48, 28, 18],
+        'ChatGPT':      [72, 65, 48, 28, 18],
         'Claude':       [58, 50, 38, 22, 12],
       }
       return mock[eng.name]

@@ -184,7 +184,7 @@ export default function WeeklyAITrendsCard() {
             <h3 className="text-base font-bold text-white mb-1">本週 AI 趨勢資料蒐集中</h3>
             <p className="text-sm text-white/55 leading-relaxed mb-3">
               aivis 還在累積初期、暫時沒有跨用戶趨勢可顯示。
-              設定追蹤品牌後、aivis 會每天問 5 個 AI 引擎、本週起就有數據。
+              設定追蹤品牌後、aivis 會問 3 個 AI 引擎、掃過就有數據。
             </p>
             <Link
               to="/ai-visibility"
@@ -308,7 +308,7 @@ export default function WeeklyAITrendsCard() {
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-emerald-300">解鎖你的個人 AI 趨勢</div>
             <p className="text-sm text-white/55 mt-0.5">
-              {isPro ? '設定追蹤品牌、aivis 會每天問 5 個 AI、本週起就有你的排名變化' : 'aivis 是 Pro 核心功能 — 升 Pro 解鎖品牌追蹤'}
+              {isPro ? '設定追蹤品牌、aivis 會問 3 個 AI、掃過就有你的排名變化' : 'aivis 是 Pro 核心功能 — 升 Pro 解鎖品牌追蹤'}
             </p>
           </div>
           <Link
@@ -388,7 +388,7 @@ export default function WeeklyAITrendsCard() {
       {/* Footer 小字 — 解釋資料來源 */}
       <p className="mt-3 text-sm text-white/35 leading-relaxed">
         💡 {showPersonal ? '個人區來自你的 aivis 追蹤；' : ''}
-        全平台統計來自 Aark aivis 監測累積（跨用戶匿名）— 涵蓋 ChatGPT / Claude / Perplexity / Gemini / Grok 5 個 AI 引擎、每 5 分鐘更新。
+        全平台統計來自 Aark aivis 監測累積（跨用戶匿名）— 涵蓋 ChatGPT / Claude / Gemini 3 個 AI 引擎。
       </p>
     </section>
   )

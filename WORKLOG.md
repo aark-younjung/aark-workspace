@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-07-17（引擎對齊：引用矩陣 Bing Copilot→ChatGPT；全站行銷從「5 引擎」對齊成實跑 3 引擎）
+
+兩件事。**(1) 引用矩陣修正**：[MetricSignatures.jsx](src/components/v2/MetricSignatures.jsx) `GEOSignature`（引用矩陣 — 引擎 × 關鍵字類型）中間那家錯的 `Bing Copilot` 改成 `ChatGPT`（ENGINE_BASES + mock 值兩處）。**(2) 5→3 引擎對齊**（解決 [project_engine_count_gap] 誠實 gap：行銷掛 5、後端只跑 Claude/Gemini/ChatGPT 3 個 — 用戶決定對齊下來，不上 Perplexity/Grok，較小眾又省成本）。改掉所有「aivis 監測/呼叫/實測 5 個 AI（含 Perplexity/Grok）」的 user-facing 宣稱：
+- [DashboardV2.jsx](src/pages/DashboardV2.jsx)：aivis hero 5 chips→3（拿掉 Perplexity/Grok，grid-cols-5→3，刪 2 個未用 logo import）、描述列、空狀態 CTA、「升級到 5 引擎」banner→3。
+- [HomeDark.jsx](src/pages/HomeDark.jsx)：hero pill「涵蓋…Perplexity·Google」→「ChatGPT·Claude·Gemini」、aivis 卡 5 條引用率→3。
+- [Pricing.jsx](src/pages/Pricing.jsx)：FAQ「呼叫 ChatGPT/Perplexity/Claude」→3、月配額段、「Perplexity 實測」demo→「ChatGPT 實測」、比較表「監測來源」、C7 支援平台 chip（原本錯標 ChatGPT/Gemini「即將推出」+ 假 Perplexity roadmap → 改成 ✓ChatGPT/✓Claude/✓Gemini 三家皆上線）。
+- [Dashboard.jsx](src/pages/Dashboard.jsx) aivis 段、[LeadingLaggingGuide.jsx](src/components/v2/LeadingLaggingGuide.jsx)「監測 …Perplexity」→Gemini、[WeeklyAITrendsCard.jsx](src/components/v2/WeeklyAITrendsCard.jsx) ×2、[llmo6WeekChecklistPDF.js](src/services/llmo6WeekChecklistPDF.js)、[Footer.jsx](src/components/Footer.jsx)、[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) ENGINE_META（刪 perplexity/grok 預留列）。
+- 順手修同句夾帶的假「自動」宣稱：「每天問／每 5 分鐘／每 20 分鐘」→「每次檢測」（守 [project_aivis_module]「未做前禁寫自動」規則）。
+- **刻意保留**（合理、真實）：`PerplexityBot` 等 AI 爬蟲 UA 白名單／robots.txt／llms.txt／GEO·AEO 教育／「AI 時代包含 Perplexity」的產業科普 —— 這些講的是「該對哪些 AI 做優化」，不是「aivis 查了哪些引擎」，Perplexity 是真實存在的 AI、不該從教育內容抹掉。**待用戶確認**：AEO signature 卡（MetricSignatures `AEOSignature`）仍以 Perplexity 當示意引用率（AEO schema 偏好教育、非 aivis 實測）—要不要也換掉。Vite transform 912 ✓。
+
+---
+
 ### 2026-07-17（anti-bot 文案去除寫死的「Cloudflare」— 改中性 WAF／anti-bot）
 
 被擋的站不一定用 Cloudflare（也可能是 Sucuri／Imperva／DataDome／mod_security），警報寫死「Cloudflare 設定太嚴」不精準。把「斷定成因」的 user-facing 文案改中性：[HomeDark.jsx](src/pages/HomeDark.jsx) antiBotModal 兩句 + 403 分支 action（Cloudflare 改成「若你用的是 Cloudflare：…」的條件式範例）、[CrawlCheck.jsx](src/pages/CrawlCheck.jsx) blocked verdict + Pro CTA、[fetch-url.js](api/fetch-url.js) 兩個 hint、[DashboardV2.jsx](src/pages/DashboardV2.jsx) 任務標題「Cloudflare 在擋 ChatGPT」→「anti-bot／WAF 在擋 ChatGPT」、[pdfExport.js](src/services/pdfExport.js) 報告項目標題。保留：程式碼註解、教育型「why」段落與詳情頁修法指引裡把 Cloudflare 當**具體範例**（已同時列 WAF／其他 anti-bot 服務、用「如／等」）。Vite transform 914 ✓。

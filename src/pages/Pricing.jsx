@@ -130,7 +130,7 @@ const FAQ_ITEMS = [
     tag: '產品差異焦慮',
     tagColor: '#8b5cf6',
     q: '免費版和 Pro 版最大的差別是什麼？',
-    a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」+「持續監測」。包含逐項修復建議、修復碼產生器（可直接複製 llms.txt / JSON-LD / FAQ Schema）、歷史趨勢圖、平台別修復指南，以及每月 150 次 AI 曝光監測（aivis）— 直接呼叫 ChatGPT / Perplexity / Claude 看你的品牌是否還在 AI 推薦名單裡。',
+    a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」+「持續監測」。包含逐項修復建議、修復碼產生器（可直接複製 llms.txt / JSON-LD / FAQ Schema）、歷史趨勢圖、平台別修復指南，以及每月 150 次 AI 曝光監測（aivis）— 直接呼叫 ChatGPT / Claude / Gemini 看你的品牌是否還在 AI 推薦名單裡。',
   },
   {
     tag: '競品焦慮',
@@ -777,7 +777,7 @@ export default function Pricing() {
                 className="text-sm max-w-2xl"
                 style={isDark ? { color: T.textMid, lineHeight: 1.7 } : { color: '#64748b' }}
               >
-                Pro 訂閱每月內含 <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>{aivisIncludedPerMonth} 次 AI 引用率實測</span>，足以追蹤單一品牌 10–15 個核心關鍵字。SEO 修復是一次性的，但 AI 在持續更新、競爭對手在持續優化—— aivis 每月幫你看 ChatGPT、Perplexity、Claude 是否還推薦你。
+                Pro 訂閱每月內含 <span className="font-semibold" style={isDark ? { color: T.text } : { color: '#1e293b' }}>{aivisIncludedPerMonth} 次 AI 引用率實測</span>，足以追蹤單一品牌 10–15 個核心關鍵字。SEO 修復是一次性的，但 AI 在持續更新、競爭對手在持續優化—— aivis 每月幫你看 ChatGPT、Claude、Gemini 是否還推薦你。
               </p>
             </div>
 
@@ -793,7 +793,7 @@ export default function Pricing() {
                 <span
                   className="px-2 py-0.5 text-sm rounded-full"
                   style={{ background: '#3b82f6' + '26', color: '#93c5fd', border: '1px solid ' + '#3b82f6' + '40' }}
-                >Perplexity 實測</span>
+                >ChatGPT 實測</span>
                 <span className="text-sm" style={{ color: T.textLow }}>查詢：「台北推薦的數位行銷公司」</span>
               </div>
               <div
@@ -810,7 +810,7 @@ export default function Pricing() {
                 >優勢方舟數位行銷</span>
                 （專注 AI 能見度監測）、A 公司、B 公司⋯⋯
                 <span className="inline-block mt-2 text-sm" style={{ color: T.textLow }}>
-                  — 這就是 aivis 每天幫你監測的「真實 AI 答案」
+                  — 這就是 aivis 每次幫你監測的「真實 AI 答案」
                 </span>
               </div>
             </div>
@@ -852,7 +852,7 @@ export default function Pricing() {
                 <tr style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
                   <td className="py-3 px-3" style={isDark ? { color: T.text } : { color: '#1e293b' }}>監測來源</td>
                   <td className="text-center py-3 px-3" style={isDark ? { color: T.textLow } : { color: '#94a3b8' }}>Google 搜尋結果</td>
-                  <td className="text-center py-3 px-3 font-semibold" style={{ color: T.pass }}>ChatGPT / Perplexity / Claude 真實答案</td>
+                  <td className="text-center py-3 px-3 font-semibold" style={{ color: T.pass }}>ChatGPT / Claude / Gemini 真實答案</td>
                 </tr>
                 <tr style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
                   <td className="py-3 px-3" style={isDark ? { color: T.text } : { color: '#1e293b' }}>修復建議</td>
@@ -1244,7 +1244,7 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
         })}
       </ul>
 
-      {/* C7: 平台支援現況 — 已上線 Claude，其他即將推出 */}
+      {/* C7: 平台支援現況 — 已上線 ChatGPT / Claude / Gemini（2026-07-17：三家皆已上線；不上 Perplexity / Grok）*/}
       <div
         className="mb-6 p-3 rounded-lg border"
         style={isDark
@@ -1256,31 +1256,12 @@ function ProCardBody({ isYearly, proMonthly, proYearly, proYearlyPerMonth, saved
           AI 曝光監測支援平台
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <span
-            className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
-            style={{ background: T.pass + '26', color: T.pass, border: `1px solid ${T.pass}40` }}
-          >✓ Claude</span>
-          <span
-            className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
-            style={isDark
-              ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
-              : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
-            }
-          >ChatGPT・即將推出</span>
-          <span
-            className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
-            style={isDark
-              ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
-              : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
-            }
-          >Perplexity・即將推出</span>
-          <span
-            className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
-            style={isDark
-              ? { background: 'rgba(255,255,255,0.04)', color: T.textLow, border: `1px solid ${T.cardBorder}` }
-              : { background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0' }
-            }
-          >Gemini・即將推出</span>
+          {['ChatGPT', 'Claude', 'Gemini'].map(name => (
+            <span key={name}
+              className="px-2 py-0.5 text-sm rounded inline-flex items-center gap-1"
+              style={{ background: T.pass + '26', color: T.pass, border: `1px solid ${T.pass}40` }}
+            >✓ {name}</span>
+          ))}
         </div>
       </div>
 
