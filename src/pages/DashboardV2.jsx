@@ -104,7 +104,7 @@ function generateQuests({ seoAudit, aeoAudit, geoAudit, eeatAudit, websiteId }) 
     }
     if (seoAudit.bot_accessibility && seoAudit.bot_accessibility.passed === false) {
       quests.push({ id: 'seo-bot', face: 'seo', priority: 10, icon: '🚦',
-        title: 'Cloudflare 在擋 ChatGPT', desc: 'AI 爬蟲根本進不來、修這個分數會跳很多',
+        title: 'anti-bot／WAF 在擋 ChatGPT', desc: 'AI 爬蟲根本進不來、修這個分數會跳很多',
         est: 12, mins: 5, link: `/seo-audit/${websiteId}`, done: false })
     }
   }

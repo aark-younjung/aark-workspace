@@ -213,7 +213,7 @@ export const AARK_MARK_SVG = `
 function buildActionItems({ seoAudit, aeoAudit, geoAudit, eeatAudit }) {
   const items = []
   if (seoAudit?.bot_accessibility && seoAudit.bot_accessibility.passed === false) {
-    items.push({ priority: 10, layer: 'SEO', title: '解除 Cloudflare 對 AI 爬蟲的封鎖', desc: 'GPTBot / Claude / Perplexity 等被擋的話 AI 完全找不到你' })
+    items.push({ priority: 10, layer: 'SEO', title: '解除 anti-bot／WAF 對 AI 爬蟲的封鎖', desc: 'GPTBot / Claude / Perplexity 等被擋的話 AI 完全找不到你' })
   }
   if (aeoAudit && !aeoAudit.json_ld) {
     items.push({ priority: 10, layer: 'AEO', title: '加入 JSON-LD 結構化資料', desc: 'AI 沒辦法理解你的頁面結構、修這個 AI 引用率會大幅提升' })

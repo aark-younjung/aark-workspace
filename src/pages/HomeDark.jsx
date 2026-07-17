@@ -647,8 +647,8 @@ export default function HomeDark() {
         // 走到這代表 partial audit insert 也失敗 — 退而求其次給文字訊息
         info = {
           title: '網站擋下我們的爬蟲',
-          hint: '你的網站對所有爬蟲身份都回 403（Cloudflare / WAF anti-bot 鎖極嚴）。ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎大概率也抓不到 — 這正是你在 AI 答案中隱形的主因。',
-          action: '請聯絡網站管理員調整 Cloudflare → Security → Bots → Super Bot Fight Mode 降為 Standard，並在 WAF Custom Rules 白名單 AI 爬蟲 User-Agent。',
+          hint: '你的網站對所有爬蟲身份都回 403（anti-bot／WAF 鎖極嚴）。ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎大概率也抓不到 — 這正是你在 AI 答案中隱形的主因。',
+          action: '請聯絡網站管理員把 anti-bot／WAF 嚴格度調低，並在防火牆白名單 AI 爬蟲 User-Agent。若你用的是 Cloudflare：Security → Bots → Super Bot Fight Mode 降為 Standard、WAF Custom Rules 放行 AI 爬蟲 UA。',
         }
       } else if (status === 403 || /403/.test(detail)) {
         info = {
@@ -787,7 +787,7 @@ export default function HomeDark() {
               當用戶問 AI「推薦哪一家」時 — <strong style={{ color: '#fca5a5' }}>AI 根本看不見你的存在</strong>。
               <br /><br />
               <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
-                這是 Cloudflare 等 anti-bot 設定太嚴造成的「AI 隱形殺手」，台灣很多中小企業中招而不自知。
+                這通常是 anti-bot／防火牆（WAF）設定太嚴造成的「AI 隱形殺手」，台灣很多中小企業中招而不自知。
               </span>
             </div>
 
@@ -826,7 +826,7 @@ export default function HomeDark() {
 
             {/* footer：小字社會證明 / 緊迫感 */}
             <div className="text-center mt-5" style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
-              💡 修復通常需要請工程師調 Cloudflare 設定或加 robots.txt 白名單，<br />
+              💡 修復通常需要請工程師調 anti-bot／WAF 設定或加 robots.txt 白名單，<br />
               詳情頁有完整的「平台別」修法指引（WordPress / Shopify / 自架 HTML）
             </div>
           </div>

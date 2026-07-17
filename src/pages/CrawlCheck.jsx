@@ -74,7 +74,7 @@ const VERDICTS = {
     color: T.fail,
     icon: '🔴',
     title: '對 AI 完全隱形',
-    summary: '4 種爬蟲身份全部被擋。Cloudflare / WAF anti-bot 鎖極嚴',
+    summary: '4 種爬蟲身份全部被擋。anti-bot／WAF 防火牆鎖極嚴',
     aiImpact: '所有主流 AI 引擎都抓不到你 — 用戶問 AI「推薦哪一家」時你絕對不會被列出',
     riskLevel: 4,
   },
@@ -394,7 +394,7 @@ export default function CrawlCheck() {
             <p style={{ color: T.textMid, fontSize: 14, marginBottom: 18, lineHeight: 1.6 }}>
               這只是 anti-bot 一項。免費註冊看完整報告，含 Meta、H1、Alt、行動相容、頁面速度、SSL、爬蟲可達性 7 大檢測項。
               {verdict.riskLevel >= 2 && (
-                <><br />Pro 還會直接給你 Cloudflare WAF 修復碼，貼進後台就生效。</>
+                <><br />Pro 還會直接給你 anti-bot／WAF 修復碼，貼進後台就生效。</>
               )}
             </p>
             <Link to="/register" style={{

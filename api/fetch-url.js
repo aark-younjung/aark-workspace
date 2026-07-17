@@ -240,8 +240,8 @@ export default async function handler(req, res) {
         proxyFallback,
         antiBotBlocked,
         hint: antiBotBlocked
-            ? '目標網站 anti-bot 鎖極嚴 — 已嘗試 Googlebot / Chrome+瀏覽器指紋頭 / Bingbot / AllOrigins proxy 四種途徑全被擋。這意味著 ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎爬蟲很可能也抓不到此站，AI 引用率會嚴重受影響。請聯絡網站管理員調整 Cloudflare / WAF 設定。'
-            : response.status === 403 ? '目標網站擋下我們的爬蟲（可能是 Cloudflare 等 anti-bot 設定嚴格）'
+            ? '目標網站 anti-bot 鎖極嚴 — 已嘗試 Googlebot / Chrome+瀏覽器指紋頭 / Bingbot / AllOrigins proxy 四種途徑全被擋。這意味著 ChatGPTBot / PerplexityBot / ClaudeBot 等 AI 引擎爬蟲很可能也抓不到此站，AI 引用率會嚴重受影響。請聯絡網站管理員調整 anti-bot／WAF 設定（若用 Cloudflare 尤其檢查 Bot Fight Mode）。'
+            : response.status === 403 ? '目標網站擋下我們的爬蟲（anti-bot／WAF 設定偏嚴，常見於 Cloudflare 等）'
             : response.status === 503 ? '目標網站暫時不可用（過載 / 維護中）'
             : null,
       })

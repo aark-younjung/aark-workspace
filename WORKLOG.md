@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-07-17（anti-bot 文案去除寫死的「Cloudflare」— 改中性 WAF／anti-bot）
+
+被擋的站不一定用 Cloudflare（也可能是 Sucuri／Imperva／DataDome／mod_security），警報寫死「Cloudflare 設定太嚴」不精準。把「斷定成因」的 user-facing 文案改中性：[HomeDark.jsx](src/pages/HomeDark.jsx) antiBotModal 兩句 + 403 分支 action（Cloudflare 改成「若你用的是 Cloudflare：…」的條件式範例）、[CrawlCheck.jsx](src/pages/CrawlCheck.jsx) blocked verdict + Pro CTA、[fetch-url.js](api/fetch-url.js) 兩個 hint、[DashboardV2.jsx](src/pages/DashboardV2.jsx) 任務標題「Cloudflare 在擋 ChatGPT」→「anti-bot／WAF 在擋 ChatGPT」、[pdfExport.js](src/services/pdfExport.js) 報告項目標題。保留：程式碼註解、教育型「why」段落與詳情頁修法指引裡把 Cloudflare 當**具體範例**（已同時列 WAF／其他 anti-bot 服務、用「如／等」）。Vite transform 914 ✓。
+
+---
+
 ### 2026-07-17（修 bug：逾時被誤報成「對 AI 完全隱形」CRITICAL 假警報）
 
 用戶掃 dbgenglish.com 跳出「爬蟲可達性 0 分・完全隱形・4 種爬蟲全被擋」。實測該站：Apache（非 Cloudflare）、Googlebot/Bingbot/Chrome UA 全回 200、連發 6 次都通 → **是假警報**。根因 [fetch-url.js](api/fetch-url.js)：4 輪 fallback 跑完，舊版 `if (!response || !response.ok) antiBotBlocked = true` 把「`response=null`（4 輪全逾時／連不上，從沒拿到任何 HTTP 回應）」跟「真的收到 403/503/429 封鎖」混為一談。但**逾時 ≠ 被擋**：我們的抓取器在 Vercel 美國機房，對回應慢或擋機房 IP 的台灣小站可能連不上，而真正的 AI 爬蟲（ChatGPTBot 等）走自己的 IP → 我們連不上 ≠ AI 連不上。修法：(1) 只有 `response && !response.ok`（真收到封鎖狀態）才設 `antiBotBlocked`；(2) `!response` 改回 `504 + antiBotBlocked:false + timedOut:true` + 誠實 hint（逾時、請重試、非封鎖）。連動 [seoAnalyzer.js](src/services/seoAnalyzer.js) `fetchPageContent` 傳 `err.timedOut`；[HomeDark.jsx](src/pages/HomeDark.jsx) `isTimeout` 認 `error.timedOut` → 走「回應太慢、稍後重掃」而非寫 0 分 partial audit + 跳 CRITICAL modal；[CrawlCheck.jsx](src/pages/CrawlCheck.jsx) `network_error` 文案改「逾時、非封鎖、AI 走自己 IP」。真正的 403/503/429 封鎖行為不變（仍報 anti-bot）。誠實 + 避免公平交易法（別對可正常連的站謊報「對 AI 隱形」）。Vite transform 914 ✓。
