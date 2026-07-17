@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-07-17（修 bug：池子題（rotating/brand/info）掃描一律回「Prompt is disabled」→ 整趟掃描失敗）
+
+用戶加了 info 題後掃描跳「掃描失敗」。根因 [fetch.js](api/aivis/fetch.js) 第 107 行舊守衛 `if (!prompt.is_active) return 'Prompt is disabled'`：這道守衛是 tier 系統之前就有的（本來擋「手動停用的題」），但 tier 系統把 `is_active=false` 改用來當「池子」標記（rotating/brand/info 都 is_active=false、不佔 10 條啟用上限、但**本來就該被掃**）後，這守衛就會誤擋所有池子題。runScan 一跑到池子題（info 或 brand/rotating）→ fetch.js 回 400「Prompt is disabled」→ 掃描 loop throw → 整趟「掃描失敗」。**影響範圍不只 info**：brand/rotating 池子題自 tier 系統上線起就掃不動（只要品牌有池子題，掃描就炸）。修法：把 tier 判斷提到守衛之前，只有【核心題被手動停用】(`tier==='core' && !is_active`) 才拒掃，池子題不受 is_active 影響。UI 本來就不讓 toggle 池子題（顯示 🌀 池中），語意一致。node --check ✓。
+
+---
+
 ### 2026-07-17（引擎對齊：引用矩陣 Bing Copilot→ChatGPT；全站行銷從「5 引擎」對齊成實跑 3 引擎）
 
 兩件事。**(1) 引用矩陣修正**：[MetricSignatures.jsx](src/components/v2/MetricSignatures.jsx) `GEOSignature`（引用矩陣 — 引擎 × 關鍵字類型）中間那家錯的 `Bing Copilot` 改成 `ChatGPT`（ENGINE_BASES + mock 值兩處）。**(2) 5→3 引擎對齊**（解決 [project_engine_count_gap] 誠實 gap：行銷掛 5、後端只跑 Claude/Gemini/ChatGPT 3 個 — 用戶決定對齊下來，不上 Perplexity/Grok，較小眾又省成本）。改掉所有「aivis 監測/呼叫/實測 5 個 AI（含 Perplexity/Grok）」的 user-facing 宣稱：

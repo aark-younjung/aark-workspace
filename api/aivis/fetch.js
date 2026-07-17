@@ -104,7 +104,13 @@ export default async function handler(req, res) {
     if (promptErr || !prompt) {
       return res.status(404).json({ error: 'Prompt not found', detail: promptErr?.message })
     }
-    if (!prompt.is_active) {
+
+    // 題庫分流：core 看 is_active（curated 固定樣本）；rotating/brand/info 是「池子」
+    //   —— is_active=false 只是用來「不佔 10 條啟用上限」，這些題本來就該被掃（掃描時照 tier 抽用）。
+    // 所以只有【核心題被手動停用】才拒掃；池子題不受 is_active 影響。
+    // 2026-07-17 修：舊守衛一律擋 is_active=false，害所有池子題（含 info）掃描回 'Prompt is disabled'、整趟掃描失敗。
+    const tier = prompt.tier || 'core'
+    if (tier === 'core' && !prompt.is_active) {
       return res.status(400).json({ error: 'Prompt is disabled' })
     }
 
@@ -113,9 +119,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Brand not linked to this prompt' })
     }
 
-    // 題庫分流：brand（品牌詞）near-deterministic、info（資訊型）看的是「網域有沒有被引用」，
-    // 兩者都不需要跑 3 次取平均 → 伺服器端強制夾成 1 次（即使前端忘傳也守得住）。core / rotating 維持呼叫端次數。
-    const tier = prompt.tier || 'core'
+    // brand（品牌詞）near-deterministic、info（資訊型）看「網域有沒有被引用」→ 都只跑 1 次
+    // （伺服器端強制夾成 1，即使前端忘傳也守得住）。core / rotating 維持呼叫端次數。
     if (tier === 'brand' || tier === 'info') runs = 1
 
     // 拉用戶 profile 看是否為試用用戶 — 試用期額度與付費 Pro 不同（50 vs 150）
