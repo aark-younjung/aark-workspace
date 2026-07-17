@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-07-17（修 bug：逾時被誤報成「對 AI 完全隱形」CRITICAL 假警報）
+
+用戶掃 dbgenglish.com 跳出「爬蟲可達性 0 分・完全隱形・4 種爬蟲全被擋」。實測該站：Apache（非 Cloudflare）、Googlebot/Bingbot/Chrome UA 全回 200、連發 6 次都通 → **是假警報**。根因 [fetch-url.js](api/fetch-url.js)：4 輪 fallback 跑完，舊版 `if (!response || !response.ok) antiBotBlocked = true` 把「`response=null`（4 輪全逾時／連不上，從沒拿到任何 HTTP 回應）」跟「真的收到 403/503/429 封鎖」混為一談。但**逾時 ≠ 被擋**：我們的抓取器在 Vercel 美國機房，對回應慢或擋機房 IP 的台灣小站可能連不上，而真正的 AI 爬蟲（ChatGPTBot 等）走自己的 IP → 我們連不上 ≠ AI 連不上。修法：(1) 只有 `response && !response.ok`（真收到封鎖狀態）才設 `antiBotBlocked`；(2) `!response` 改回 `504 + antiBotBlocked:false + timedOut:true` + 誠實 hint（逾時、請重試、非封鎖）。連動 [seoAnalyzer.js](src/services/seoAnalyzer.js) `fetchPageContent` 傳 `err.timedOut`；[HomeDark.jsx](src/pages/HomeDark.jsx) `isTimeout` 認 `error.timedOut` → 走「回應太慢、稍後重掃」而非寫 0 分 partial audit + 跳 CRITICAL modal；[CrawlCheck.jsx](src/pages/CrawlCheck.jsx) `network_error` 文案改「逾時、非封鎖、AI 走自己 IP」。真正的 403/503/429 封鎖行為不變（仍報 anti-bot）。誠實 + 避免公平交易法（別對可正常連的站謊報「對 AI 隱形」）。Vite transform 914 ✓。
+
+---
+
 ### 2026-07-17（Phase 2b：內容缺口行動清單 — 該補哪篇文章 + AI 都從哪取材）
 
 把 Phase 2a 的 ✗（你沒被引用）那幾題升級成**可操作的行動清單**，全部從已算好的 `contentExposure` 衍生、**不新增後端/Vercel function**。[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：`contentExposure` useMemo 多回兩欄 —— `missTopics`（你缺席的題目＝該寫的內容主題）、`gapDomains`（把「你缺席那幾題 AI 改引用了誰」跨題彙整＋依次數排名＝AI 的取材來源靶）。新 `ContentGapCard` 元件（橘色 `#fb923c`，渲染在 InfoExposureCard 下方、只在有 ✗ 時顯示）：A 段列該補的內容主題、B 段列「一直被 AI 當來源」的網域 TOP 8（可展開）+ 一句怎麼用（名錄/論壇→上稿；同業→做更強內容比下去）。誠實：框成「命中率最高的靶」不是保證被引用；來源全來自真實 grounding、不編造；引擎當日沒帶來源時 B 段顯示降級提示、仍給主題清單。Vite transform 914 ✓。

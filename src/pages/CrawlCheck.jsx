@@ -82,9 +82,9 @@ const VERDICTS = {
     level: 'unknown',
     color: T.textMid,
     icon: '⚠️',
-    title: '連線失敗',
-    summary: '我們連網站都摸不到 — 可能網址錯、伺服器掛了、或 DNS 問題',
-    aiImpact: '無法判斷 AI 引擎能不能抓取（先確認網址正確並重試）',
+    title: '這次沒連上 / 逾時',
+    summary: '我們的檢測器在國外機房，這次 4 輪都沒收到回應 — 多半是網站回應太慢或暫時性網路問題，不代表被封鎖',
+    aiImpact: '這次測不準：先確認網址正確、稍後重試。真正的 AI 爬蟲走它們自己的 IP，未必會遇到跟我們一樣的狀況',
     riskLevel: -1,
   },
 }

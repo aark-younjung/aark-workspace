@@ -640,7 +640,7 @@ export default function HomeDark() {
       // 規則：先看 status / code 分類，再從 error.message（含 fetch-url 回傳的 hint）萃取人話
       const status = error?.status || error?.code
       const isNetwork = error?.code === 'ENOTFOUND' || error?.code === 'EAI_AGAIN' || /network|fetch failed/i.test(detail)
-      const isTimeout = error?.code === 'ETIMEDOUT' || /timeout/i.test(detail)
+      const isTimeout = error?.timedOut || error?.code === 'ETIMEDOUT' || /timeout|timed out/i.test(detail)
       const isInvalidUrl = error?.code === 'ERR_INVALID_URL' || /URL 格式/i.test(detail)
       let info
       if (error?.antiBotBlocked) {
@@ -670,9 +670,9 @@ export default function HomeDark() {
         }
       } else if (isTimeout) {
         info = {
-          title: '網站回應太慢',
-          hint: '連線超過 30 秒沒回應 — 可能是伺服器負載過高、CDN 設定問題、或防火牆延遲。',
-          action: '稍等幾分鐘再試。如果持續超時，建議檢查網站的伺服器效能。',
+          title: '網站回應太慢，這次沒連上',
+          hint: '我們的檢測器試了 4 種身份，時限內都沒收到回應 — 多半是網站當下回應太慢或暫時性網路問題。這不代表你被封鎖或對 AI 隱形。',
+          action: '稍等一下再掃一次通常就好。若持續超時，再檢查網站伺服器效能／CDN 設定。',
         }
       } else if (isInvalidUrl) {
         info = {

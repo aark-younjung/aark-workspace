@@ -50,6 +50,7 @@ export async function fetchPageContent(url) {
     err.step = 'fetch_url'
     // 把 anti-bot 旗標掛在 err 上，供上層 catch 寫 scan_error_logs 用
     err.antiBotBlocked = !!data?.antiBotBlocked
+    err.timedOut = !!data?.timedOut   // 4 輪全逾時/連不上（≠ 被擋）→ 上層走「回應太慢、請重試」而非誤報「對 AI 隱形」
     err.sslFallback = !!data?.sslFallback
     err.uaFallback = !!data?.uaFallback
     throw err

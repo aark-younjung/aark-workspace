@@ -203,24 +203,31 @@ export default async function handler(req, res) {
       } catch (proxyErr) {
         console.error(`[fetch-url] AllOrigins proxy fallback failed for ${hostname}:`, proxyErr.message)
       }
-      // 4 輪全失敗 → 真的鎖很嚴（含 response=null 的情況）
-      if (!response || !response.ok) {
+      // 4 輪跑完仍失敗才判定 anti-bot：
+      //   response 有回但 !ok（走到這只會是 403/503/429）＝ 伺服器真的擋掉我們 → antiBotBlocked
+      //   response=null（4 輪連一個 HTTP 回應都沒拿到）＝ 逾時/連不上，「不是被擋」→ 不設 antiBotBlocked
+      //   （2026-07-17 修：舊版把「連不上」也算 blocked，害可正常連的站被誤報 CRITICAL「對 AI 完全隱形」）
+      if (response && !response.ok) {
         antiBotBlocked = true
       }
     }
 
     const fetchTime = Date.now() - startTime
 
-    // response=null（4 輪全 throw，從未拿到任何 response）→ 回 503 + antiBotBlocked，讓上層 catch 走 partial audit
+    // response=null（4 輪連一個 HTTP 回應都沒拿到）＝ 逾時/連不上，不是被「擋」。
+    // 我們的抓取器在美國機房，對「回應慢」或「擋機房 IP」的台灣小站可能連不上；
+    // 但真正的 AI 引擎（ChatGPTBot 等）走自己的 IP —— 我們連不上 ≠ AI 連不上。
+    // 所以這裡不謊報「對 AI 完全隱形」，回逾時、請重試（2026-07-17 修 false CRITICAL 警報）。
     if (!response) {
-      return res.status(503).json({
-        error: 'All fetch rounds failed',
+      return res.status(504).json({
+        error: 'All fetch rounds timed out',
         fetchTime,
         sslFallback,
         uaFallback,
         proxyFallback,
-        antiBotBlocked: true,
-        hint: '目標網站 4 種爬蟲身份都連不上 — 可能網域 DNS 異常、SSL 配置錯、防火牆全擋。同樣的問題會讓 AI 引擎抓不到此站。',
+        antiBotBlocked: false,   // 逾時 ≠ 封鎖，別誤報「對 AI 隱形」
+        timedOut: true,
+        hint: '4 輪嘗試都沒能連上目標網站（多半是回應太慢或暫時性網路問題）——這不代表你被封鎖或對 AI 隱形。請稍後重試；若持續失敗，再確認網址／DNS 是否正常。',
       })
     }
 
