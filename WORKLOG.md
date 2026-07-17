@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-07-17（Phase 2a+：手動新增自訂 `info` 題）
+
+承上，讓資訊型題不只能 AI 自動產、也能手動加（給有做 SEO 的客戶把「要主打的內容主題」釘成監測題、做 before/after ROI 迴圈）。[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：`addPrompt(tier='core')` 參數化 —— `info` 以 `is_active:false` 進池子、**不受 10 條啟用上限（atCap）限制**、預填知識型 placeholder；`PromptsPanel` 加 `onAddInfo` prop + 標題列計數多顯示「資訊 {tc.info}」+ 說明列補資訊層一句（紫）；prompt 列表底部新增一顆紫色虛線鈕「＋ 加一條資訊型題（知識問句・不佔上限）」；編輯 info 題時 textarea placeholder 改提示「知識/how-to 問句、不要放品牌名」。Vite transform 914 ✓。
+
+---
+
 ### 2026-07-17（Phase 2a：資訊型問句層 `info` tier + 網域引用計分）
 
 新增第四層題庫 `info`（資訊型／擦邊知識問句，例：「電波拉皮術後要注意什麼？」「多益怎麼準備？」）。核心差別：**不含品牌名、不看有沒有被念名字，改看「AI 這題的引用來源裡有沒有你的網域」** —— 量的是內容行銷有沒有打進 AI（被當知識來源），不是品牌認知度。

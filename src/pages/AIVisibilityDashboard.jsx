@@ -596,11 +596,15 @@ export default function AIVisibilityDashboard() {
     }
   }
 
-  async function addPrompt() {
-    if (atCap) return
+  // tier='core'：品類題，佔 10 條啟用上限、is_active=true
+  // tier='info'：資訊型知識問句，進「池子」（is_active=false、不佔上限），計分看網域引用
+  async function addPrompt(tier = 'core') {
+    const isInfo = tier === 'info'
+    if (!isInfo && atCap) return   // 只有核心題才受啟用上限限制；資訊型進池子不擋
     const { data, error } = await supabase.from('aivis_prompts').insert({
-      user_id: user.id, brand_id: id, text: '（請輸入 prompt）',
-      generated_by: 'user', is_active: true,
+      user_id: user.id, brand_id: id,
+      text: isInfo ? '（請輸入資訊型問句，例：術後要注意什麼？切記不要放品牌名）' : '（請輸入 prompt）',
+      tier, generated_by: 'user', is_active: !isInfo,
     }).select().single()
     if (error) {
       setToast({ kind: 'warn', msg: `新增失敗：${error.message}` })
@@ -923,7 +927,8 @@ export default function AIVisibilityDashboard() {
                 setEditText={setEditText} onToggle={togglePrompt}
                 onStartEdit={startEdit} onSave={saveEdit}
                 onCancelEdit={() => setEditingId(null)}
-                onAdd={addPrompt} onRegenerate={regeneratePrompts}
+                onAdd={() => addPrompt('core')} onAddInfo={() => addPrompt('info')}
+                onRegenerate={regeneratePrompts}
                 activeCount={activeCount} atCap={atCap}
               />
           }
@@ -1352,10 +1357,10 @@ function ErrorCard({ title, message, onRetry }) {
 // =====================================================
 function PromptsPanel({
   prompts, editingId, editText, setEditText, onToggle, onStartEdit,
-  onSave, onCancelEdit, onAdd, onRegenerate, activeCount, atCap,
+  onSave, onCancelEdit, onAdd, onAddInfo, onRegenerate, activeCount, atCap,
 }) {
-  // 三層題庫計數（給標題列顯示分佈用）：核心看啟用；輪替／品牌詞是池子、照 tier 全算
-  const tc = { core: 0, rotating: 0, brand: 0 }
+  // 四層題庫計數（給標題列顯示分佈用）：核心看啟用；輪替／品牌詞／資訊型是池子、照 tier 全算
+  const tc = { core: 0, rotating: 0, brand: 0, info: 0 }
   for (const p of prompts) {
     const t = p.tier || 'core'
     if (t === 'core') { if (p.is_active) tc.core += 1 }
@@ -1373,11 +1378,11 @@ function PromptsPanel({
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3 }}>
             Prompts 管理 <span style={{ fontSize: 14, color: T.textLow, fontWeight: 500 }}>
-              · 啟用中 核心 {tc.core}/{PROMPT_CAP}・輪替 {tc.rotating}・品牌詞 {tc.brand}
+              · 啟用中 核心 {tc.core}/{PROMPT_CAP}・輪替 {tc.rotating}・品牌詞 {tc.brand}・資訊 {tc.info}
             </span>
           </div>
           <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
-            <b style={{ color: AIVIS_TEAL }}>核心</b>每次全跑（趨勢基準）、<b style={{ color: '#60a5fa' }}>輪替</b>每次隨機抽 {ROTATING_SAMPLE_PER_SCAN} 條（抓盲點）、<b style={{ color: '#f59e0b' }}>品牌詞</b>另計（量「AI 認得你」、不進頭條分數）。核心／輪替送 Claude 各 {SCAN_RUNS} 次取平均＋Gemini 各 1 次。
+            <b style={{ color: AIVIS_TEAL }}>核心</b>每次全跑（趨勢基準）、<b style={{ color: '#60a5fa' }}>輪替</b>每次隨機抽 {ROTATING_SAMPLE_PER_SCAN} 條（抓盲點）、<b style={{ color: '#f59e0b' }}>品牌詞</b>另計（量「AI 認得你」）、<b style={{ color: INFO_PURPLE }}>資訊</b>另計（量「你的內容有沒有被 AI 引用」）。品牌詞／資訊都不進主分數。核心／輪替送 Claude 各 {SCAN_RUNS} 次取平均＋Gemini 各 1 次。
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -1433,7 +1438,9 @@ function PromptsPanel({
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
                 <textarea value={editText} onChange={e => setEditText(e.target.value)}
                   rows={2} autoFocus
-                  placeholder="輸入產業 prompt（中性語氣、不直接點名你的品牌）"
+                  placeholder={(p.tier || 'core') === 'info'
+                    ? '知識/how-to 問句（例：電波拉皮術後要注意什麼？切記不要放品牌名）'
+                    : '輸入產業 prompt（中性語氣、不直接點名你的品牌）'}
                   style={{
                     width: '100%', background: 'rgba(0,6,10,.6)',
                     border: `1px solid ${AIVIS_TEAL}55`, borderRadius: 6, color: T.text,
@@ -1481,6 +1488,16 @@ function PromptsPanel({
         })}
 
         <AddPromptButton atCap={atCap} onAdd={onAdd} />
+        {/* 資訊型題：進池子、永遠不佔 10 條啟用上限 → 沒有 atCap 限制。計分看網域引用（不進主分數）*/}
+        <button onClick={onAddInfo}
+          title="資訊型知識問句（例：術後要注意什麼？）— 進池子、不佔啟用上限。計分看「AI 這題有沒有引用你的網域」"
+          style={{
+            width: '100%', marginTop: 4, background: 'transparent',
+            border: `1px dashed ${INFO_PURPLE}55`, color: INFO_PURPLE,
+            padding: '10px 12px', borderRadius: 8, fontSize: 14, cursor: 'pointer', fontFamily: T.font,
+          }}>
+          ＋ 加一條資訊型題（知識問句・不佔上限）
+        </button>
       </div>
     </div>
   )
