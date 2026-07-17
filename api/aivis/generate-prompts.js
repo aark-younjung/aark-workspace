@@ -134,11 +134,14 @@ export default async function handler(req, res) {
     }
 
     // 批次寫入新 prompts，各自帶 tier（三層分流的資料來源）
-    const base = { user_id: brand.user_id, brand_id: brand.id, generated_by: 'auto', is_active: true }
+    // ⚠️ DB 有「每品牌最多 10 條啟用」硬限制。所以只有【核心】預設啟用（算進 10 條上限）；
+    //    【輪替／品牌詞】放進「池子」但預設 is_active=false，不佔上限。
+    //    掃描時前端照 tier 從池子抓（見 AIVisibilityDashboard runScan），不看 is_active，功能不受影響。
+    const base = { user_id: brand.user_id, brand_id: brand.id, generated_by: 'auto' }
     const rows = [
-      ...tiered.core.map(text => ({ ...base, text, tier: 'core' })),
-      ...tiered.rotating.map(text => ({ ...base, text, tier: 'rotating' })),
-      ...tiered.brand.map(text => ({ ...base, text, tier: 'brand' })),
+      ...tiered.core.map(text => ({ ...base, text, tier: 'core', is_active: true })),
+      ...tiered.rotating.map(text => ({ ...base, text, tier: 'rotating', is_active: false })),
+      ...tiered.brand.map(text => ({ ...base, text, tier: 'brand', is_active: false })),
     ]
 
     const { data: inserted, error: insertErr } = await supabase

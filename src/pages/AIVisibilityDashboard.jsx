@@ -312,10 +312,11 @@ export default function AIVisibilityDashboard() {
   const atSoftLimit = userMonthQueries >= AIVIS_QUOTA_PER_MONTH                      // ≥150 月內含已用完
   const atHardCap = userMonthQueries >= AIVIS_HARD_CAP                               // ≥1000 完全擋住
   // 本次掃描預計花幾次額度 = 核心×3 ＋ 抽樣輪替×3 ＋ 品牌詞×1（三層題庫分流）
+  // 輪替／品牌詞是「池子」（is_active=false、不佔 10 條啟用上限），計數與掃描都照 tier 從全部 prompts 抓、不看 is_active
   const activeBrandCount = useMemo(
-    () => activePrompts.filter(p => (p.tier || 'core') === 'brand').length, [activePrompts])
+    () => prompts.filter(p => (p.tier || 'core') === 'brand').length, [prompts])
   const activeRotatingCount = useMemo(
-    () => activePrompts.filter(p => (p.tier || 'core') === 'rotating').length, [activePrompts])
+    () => prompts.filter(p => (p.tier || 'core') === 'rotating').length, [prompts])
   const sampledRotatingCount = Math.min(activeRotatingCount, ROTATING_SAMPLE_PER_SCAN)
   const plannedRuns = (activeCoreCount + sampledRotatingCount) * SCAN_RUNS + activeBrandCount * 1
   const wouldExceedHard = userMonthQueries + plannedRuns > AIVIS_HARD_CAP            // 掃下去會破 1000
@@ -619,9 +620,10 @@ export default function AIVisibilityDashboard() {
     //   core   ：全部啟用的都送（固定樣本、趨勢基準）
     //   rotating：從啟用中的輪替池「隨機抽」ROTATING_SAMPLE_PER_SCAN 條（每次不同、擴大覆蓋、防應試化）
     //   brand  ：全部啟用的都送，但每條只跑 1 次（後端也會強制夾成 1）
+    // core 看 is_active（curated 固定樣本）；輪替／品牌詞是池子，照 tier 從全部 prompts 抓（不看 is_active）
     const coreTargets = activePrompts.filter(p => (p.tier || 'core') === 'core')
-    const brandTargets = activePrompts.filter(p => (p.tier || 'core') === 'brand')
-    const rotatingPool = activePrompts.filter(p => (p.tier || 'core') === 'rotating')
+    const brandTargets = prompts.filter(p => (p.tier || 'core') === 'brand')
+    const rotatingPool = prompts.filter(p => (p.tier || 'core') === 'rotating')
     const sampledRotating = [...rotatingPool]
       .sort(() => Math.random() - 0.5)            // 洗牌後取前 N（每次掃描抽不同批）
       .slice(0, ROTATING_SAMPLE_PER_SCAN)
@@ -1310,9 +1312,13 @@ function PromptsPanel({
   prompts, editingId, editText, setEditText, onToggle, onStartEdit,
   onSave, onCancelEdit, onAdd, onRegenerate, activeCount, atCap,
 }) {
-  // 三層題庫啟用計數（給標題列顯示分佈用）
+  // 三層題庫計數（給標題列顯示分佈用）：核心看啟用；輪替／品牌詞是池子、照 tier 全算
   const tc = { core: 0, rotating: 0, brand: 0 }
-  for (const p of prompts) if (p.is_active) tc[p.tier || 'core'] = (tc[p.tier || 'core'] || 0) + 1
+  for (const p of prompts) {
+    const t = p.tier || 'core'
+    if (t === 'core') { if (p.is_active) tc.core += 1 }
+    else tc[t] = (tc[t] || 0) + 1
+  }
   return (
     <div style={{
       background: 'rgba(1,8,14,.55)', border: `1px solid ${T.cardBorder}`,
@@ -1346,14 +1352,22 @@ function PromptsPanel({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-        {prompts.map((p, idx) => (
+        {prompts.map((p, idx) => {
+          // 輪替／品牌詞是「池子」：is_active=false 但永遠算「在用」（掃描時自動抽），只有核心用 is_active 勾選
+          const inPool = (p.tier || 'core') !== 'core'
+          const on = p.is_active || inPool
+          return (
           <div key={p.id} style={{
             display: 'flex', alignItems: editingId === p.id ? 'flex-start' : 'center', gap: 10,
-            background: p.is_active ? 'rgba(13,122,88,.07)' : 'rgba(255,255,255,.02)',
-            border: `1px solid ${p.is_active ? AIVIS_TEAL + '24' : 'rgba(255,255,255,.05)'}`,
+            background: on ? 'rgba(13,122,88,.07)' : 'rgba(255,255,255,.02)',
+            border: `1px solid ${on ? AIVIS_TEAL + '24' : 'rgba(255,255,255,.05)'}`,
             borderRadius: 8, padding: '10px 12px',
-            opacity: p.is_active ? 1 : 0.55, transition: 'all .2s',
+            opacity: on ? 1 : 0.55, transition: 'all .2s',
           }}>
+            {inPool ? (
+              <span title="輪替／品牌詞：放在池子裡，掃描時自動抽用（不佔 10 條啟用上限）"
+                style={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🌀</span>
+            ) : (
             <button onClick={() => onToggle(p)} style={{
               width: 18, height: 18, borderRadius: 4, flexShrink: 0,
               marginTop: editingId === p.id ? 2 : 0,
@@ -1366,6 +1380,7 @@ function PromptsPanel({
                   strokeLinecap="round" strokeLinejoin="round" fill="none" />
               </svg>}
             </button>
+            )}
 
             <span style={{
               fontSize: 14, fontWeight: 700, color: T.textLow, minWidth: 18,
@@ -1389,7 +1404,7 @@ function PromptsPanel({
               </div>
             ) : (
               <span style={{
-                flex: 1, fontSize: 14, color: p.is_active ? T.text : T.textMid,
+                flex: 1, fontSize: 14, color: on ? T.text : T.textMid,
                 lineHeight: 1.55, minWidth: 0, wordBreak: 'break-word',
               }}>
                 {/* 三層題庫 tier 標籤：核心=青綠、輪替=藍、品牌詞=琥珀 */}
@@ -1412,15 +1427,16 @@ function PromptsPanel({
             )}
 
             {editingId !== p.id && (
-              <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 5, flexShrink: 0, alignItems: 'center' }}>
                 <button onClick={() => onStartEdit(p)} style={iconBtn()}>編輯</button>
-                <button onClick={() => onToggle(p)} style={iconBtn()}>
-                  {p.is_active ? '停用' : '啟用'}
-                </button>
+                {inPool
+                  ? <span style={{ fontSize: 12, color: T.textLow, whiteSpace: 'nowrap' }}>池中</span>
+                  : <button onClick={() => onToggle(p)} style={iconBtn()}>{p.is_active ? '停用' : '啟用'}</button>}
               </div>
             )}
           </div>
-        ))}
+          )
+        })}
 
         <AddPromptButton atCap={atCap} onAdd={onAdd} />
       </div>
