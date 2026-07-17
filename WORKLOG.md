@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-07-17（Phase 2b：內容缺口行動清單 — 該補哪篇文章 + AI 都從哪取材）
+
+把 Phase 2a 的 ✗（你沒被引用）那幾題升級成**可操作的行動清單**，全部從已算好的 `contentExposure` 衍生、**不新增後端/Vercel function**。[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：`contentExposure` useMemo 多回兩欄 —— `missTopics`（你缺席的題目＝該寫的內容主題）、`gapDomains`（把「你缺席那幾題 AI 改引用了誰」跨題彙整＋依次數排名＝AI 的取材來源靶）。新 `ContentGapCard` 元件（橘色 `#fb923c`，渲染在 InfoExposureCard 下方、只在有 ✗ 時顯示）：A 段列該補的內容主題、B 段列「一直被 AI 當來源」的網域 TOP 8（可展開）+ 一句怎麼用（名錄/論壇→上稿；同業→做更強內容比下去）。誠實：框成「命中率最高的靶」不是保證被引用；來源全來自真實 grounding、不編造；引擎當日沒帶來源時 B 段顯示降級提示、仍給主題清單。Vite transform 914 ✓。
+
+---
+
 ### 2026-07-17（Phase 2a+：手動新增自訂 `info` 題）
 
 承上，讓資訊型題不只能 AI 自動產、也能手動加（給有做 SEO 的客戶把「要主打的內容主題」釘成監測題、做 before/after ROI 迴圈）。[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：`addPrompt(tier='core')` 參數化 —— `info` 以 `is_active:false` 進池子、**不受 10 條啟用上限（atCap）限制**、預填知識型 placeholder；`PromptsPanel` 加 `onAddInfo` prop + 標題列計數多顯示「資訊 {tc.info}」+ 說明列補資訊層一句（紫）；prompt 列表底部新增一顆紫色虛線鈕「＋ 加一條資訊型題（知識問句・不佔上限）」；編輯 info 題時 textarea placeholder 改提示「知識/how-to 問句、不要放品牌名」。Vite transform 914 ✓。

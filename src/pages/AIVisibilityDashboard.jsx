@@ -510,6 +510,7 @@ export default function AIVisibilityDashboard() {
     const hostMatch = (a, b) => a === b || a.endsWith('.' + b) || b.endsWith('.' + a)
     const infoItems = recentResults.filter(r => tierOf(r.promptId) === 'info')
     if (infoItems.length === 0) return null
+    const gapMap = {}   // Phase 2b：把「你缺席那幾題、AI 改引用了誰」跨題彙整＋排名 → 內容缺口靶
     const items = infoItems.map(r => {
       const others = new Set()
       let cited = false
@@ -523,10 +524,21 @@ export default function AIVisibilityDashboard() {
           }
         }
       }
-      return { promptId: r.promptId, text: r.promptText, cited, others: [...others].slice(0, 4) }
+      const otherArr = [...others]
+      if (!cited) for (const h of otherArr) {   // 只統計「你沒被引用」那幾題的來源（那才是缺口）
+        if (!gapMap[h]) gapMap[h] = { host: h, count: 0 }
+        gapMap[h].count += 1
+      }
+      return { promptId: r.promptId, text: r.promptText, cited, others: otherArr.slice(0, 4) }
     })
     const citedCount = items.filter(i => i.cited).length
-    return { items, citedCount, total: items.length, rate: Math.round(citedCount / items.length * 100) }
+    const gapDomains = Object.values(gapMap).sort((a, b) => b.count - a.count || a.host.localeCompare(b.host))
+    return {
+      items, citedCount, total: items.length,
+      rate: Math.round(citedCount / items.length * 100),
+      gapDomains,                                       // Phase 2b：AI 取材來源排名
+      missTopics: items.filter(i => !i.cited).map(i => i.text),   // Phase 2b：該補的內容主題
+    }
   }, [recentResults, brand, tierByPromptId])
 
   // 近 7 天提及率「區間」（顯示範圍而非單一數字，把日常波動框成預期內、不讓客戶誤會成不準）
@@ -1011,6 +1023,13 @@ export default function AIVisibilityDashboard() {
         {!isLoading && !isEmpty && contentExposure && (
           <div style={{ marginTop: 18 }}>
             <InfoExposureCard data={contentExposure} />
+          </div>
+        )}
+
+        {/* ── 內容缺口（Phase 2b）：AI 沒用到你的那幾題 → 該補什麼內容、AI 都從哪取材 ── */}
+        {!isLoading && !isEmpty && contentExposure && (
+          <div style={{ marginTop: 18 }}>
+            <ContentGapCard data={contentExposure} />
           </div>
         )}
 
@@ -1996,6 +2015,105 @@ function InfoExposureCard({ data }) {
         }}>
           {showAll ? '收合 ▴' : `顯示其餘 ${hidden} 題 ▾`}
         </button>
+      )}
+    </div>
+  )
+}
+
+// =====================================================
+// ContentGapCard（Phase 2b）：把「AI 沒用到你」那幾題 → 該補什麼內容 + AI 都從哪取材
+// 誠實原則：這是「命中率最高的靶」不是保證；用真實 grounding 來源彙整、不編造。
+// =====================================================
+const GAP_ORANGE = '#fb923c'
+function ContentGapCard({ data }) {
+  const [showAllDomains, setShowAllDomains] = useState(false)
+  if (!data || !data.missTopics || data.missTopics.length === 0) return null   // 全被引用 = 沒缺口、不顯示
+  const { missTopics, gapDomains } = data
+  const visibleDomains = showAllDomains ? gapDomains : gapDomains.slice(0, 8)
+  const hiddenDomains = gapDomains.length - visibleDomains.length
+  return (
+    <div style={{
+      background: `linear-gradient(155deg, ${GAP_ORANGE}14 0%, rgba(1,8,14,.6) 70%)`,
+      border: `1px solid ${GAP_ORANGE}45`, borderRadius: T.rL, padding: 22, marginBottom: 18,
+      boxShadow: `0 8px 24px ${GAP_ORANGE}12`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 5, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 17, fontWeight: 800, color: T.text }}>🎯 內容缺口 · 下一步該補什麼</span>
+        <span style={{
+          fontSize: 13, fontWeight: 700, color: GAP_ORANGE,
+          background: GAP_ORANGE + '18', border: `1px solid ${GAP_ORANGE}40`,
+          padding: '2px 10px', borderRadius: 20,
+        }}>{missTopics.length} 個機會</span>
+      </div>
+      <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.75, marginBottom: 16, maxWidth: 760 }}>
+        下面這 <strong style={{ color: T.text }}>{missTopics.length}</strong> 題知識問題，AI 回答時沒引用到你。
+        <strong style={{ color: T.text }}>把每題各寫／強化一篇好內容，是命中率最高的「被 AI 引用」機會</strong>
+        —— 不保證一定被收錄，但這是最直接的靶。
+      </div>
+
+      {/* A. 該補的內容主題 */}
+      <div style={{ fontSize: 13.5, fontWeight: 700, color: GAP_ORANGE, marginBottom: 8, letterSpacing: '.04em' }}>
+        ✍️ 該補的內容主題
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
+        {missTopics.map((t, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 10, alignItems: 'baseline',
+            background: 'rgba(0,6,10,.5)', border: '1px solid rgba(255,255,255,.07)',
+            borderRadius: 8, padding: '10px 13px',
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: GAP_ORANGE, minWidth: 16 }}>{i + 1}.</span>
+            <span style={{ flex: 1, fontSize: 14, color: T.text, lineHeight: 1.5 }}>{t}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* B. AI 目前的取材來源排名（跨題彙整） */}
+      {gapDomains.length > 0 ? (
+        <>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: GAP_ORANGE, marginBottom: 8, letterSpacing: '.04em' }}>
+            📍 這些地方一直被 AI 當來源（你缺席的那幾題）
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {visibleDomains.map((d, i) => (
+              <div key={d.host} style={{
+                display: 'flex', gap: 10, alignItems: 'center',
+                background: 'rgba(0,6,10,.5)', border: '1px solid rgba(255,255,255,.07)',
+                borderRadius: 8, padding: '10px 13px',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.textLow, minWidth: 16 }}>{i + 1}.</span>
+                <a href={`https://${d.host}`} target="_blank" rel="noopener noreferrer" title={d.host}
+                  style={{ flex: 1, fontSize: 14, color: T.text, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {d.host} ↗
+                </a>
+                <span style={{ fontSize: 12.5, color: T.textLow, flexShrink: 0, whiteSpace: 'nowrap' }}>被 {d.count} 題引用</span>
+              </div>
+            ))}
+          </div>
+          {gapDomains.length > 8 && (
+            <button onClick={() => setShowAllDomains(v => !v)} style={{
+              marginTop: 10, width: '100%', background: 'transparent',
+              border: `1px solid ${GAP_ORANGE}40`, color: GAP_ORANGE,
+              fontSize: 14, fontWeight: 600, padding: '9px', borderRadius: 8,
+              cursor: 'pointer', fontFamily: T.font,
+            }}>
+              {showAllDomains ? '收合 ▴' : `顯示其餘 ${hiddenDomains} 個來源 ▾`}
+            </button>
+          )}
+          <div style={{
+            fontSize: 13, color: T.textMid, lineHeight: 1.7, marginTop: 12,
+            padding: '10px 13px', background: 'rgba(0,6,10,.4)',
+            border: '1px solid rgba(255,255,255,.07)', borderRadius: 8,
+          }}>
+            怎麼用：<strong style={{ color: T.text }}>名錄／論壇／媒體</strong>（如各大醫療院所、Dcard、健康媒體）→ 想辦法投稿、被收錄、有存在感；
+            <strong style={{ color: T.text }}>同業網站</strong> → 針對同一主題做出更完整、更新、更好的內容把它比下去。
+          </div>
+        </>
+      ) : (
+        <div style={{ fontSize: 13.5, color: T.textLow, lineHeight: 1.7, padding: '10px 13px',
+          background: 'rgba(0,6,10,.4)', border: '1px dashed rgba(255,255,255,.1)', borderRadius: 8 }}>
+          這次沒抓到 AI 的引用來源（可能引擎當日未接地、未帶來源）—— 先以上面的主題清單為準，下次掃描接地正常時這裡會列出 AI 的取材來源。
+        </div>
       )}
     </div>
   )
