@@ -588,13 +588,14 @@ export default function AIVisibilityDashboard() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const json = await r.json()
-      if (!r.ok || !json.success) throw new Error(json.error || json.detail || '產生失敗')
+      // error + detail 都帶出來（detail 才是真正的 DB 錯誤原因，之前被藏住了）
+      if (!r.ok || !json.success) throw new Error([json.error, json.detail].filter(Boolean).join(' — ') || '產生失敗')
       setToast({ kind: 'success', msg: `✅ 已重新產生 ${json.generated_count} 條 prompt` })
       setTimeout(() => setToast(null), 3500)
       loadAll()
     } catch (err) {
       setToast({ kind: 'warn', msg: `產生失敗：${err.message}` })
-      setTimeout(() => setToast(null), 4000)
+      setTimeout(() => setToast(null), 6000)
     }
   }
 
