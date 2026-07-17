@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-07-17（Phase 2a：資訊型問句層 `info` tier + 網域引用計分）
+
+新增第四層題庫 `info`（資訊型／擦邊知識問句，例：「電波拉皮術後要注意什麼？」「多益怎麼準備？」）。核心差別：**不含品牌名、不看有沒有被念名字，改看「AI 這題的引用來源裡有沒有你的網域」** —— 量的是內容行銷有沒有打進 AI（被當知識來源），不是品牌認知度。
+
+- **題庫產生** [generate-prompts.js](api/aivis/generate-prompts.js)：`INFO_COUNT=5`，Meta prompt 加第 4 類定義（知識/how-to 問句、絕不含品牌名）+ JSON `info` 陣列；parser 回 `{core,rotating,brand,info}`；info 以 `is_active:false` 進「池子」（不佔 10 條啟用上限）；`by_tier` 回傳含 info。
+- **掃描** [fetch.js](api/aivis/fetch.js)：`info` 與 `brand` 一樣 `runs=1`。
+- **儀表板** [AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：`TIER_LABEL/TIER_COLOR` 加 info（紫 #c084fc）；計分迴圈 `if (rt==='info') continue`（**完全排除**在頭條曝光率/趨勢/月提及之外，跟 brand 一樣不灌水）；trendData 排除 info；`runScan` 把 info 題以 runs=1 全掃（固定內容記分卡、不抽樣）；`plannedRuns` 加 `infoCount×1`；新 `contentExposure` useMemo：比對品牌網域主機名 vs 每題引用來源 hostname（normalize www + endsWith 子網域）→ 內容引用率 + 每題 ✓有引用你／✗沒引用你（✗ 列出 AI 改引用了誰＝競品內容缺口）；新 `InfoExposureCard` 元件（獨立紫色卡、渲染在 CitedSourcesCard 上方）。
+- **DB**：需先跑一行 SQL 把 `'info'` 加進 `aivis_prompts.tier` 的 CHECK 約束（給用戶手動在 Supabase 跑）。
+- 誠實原則：info 不進頭條曝光率、跟 brand 詞一樣另計，不會用「AI 有讀到你官網」灌能見度分數。Vite transform 914 ✓。
+
+---
+
 ### 2026-07-13（Phase 1 來源待辦清單：cited sources → 「你出現了嗎」）
 
 把 aivis 的「AI 參考了哪些網站」從一堆連結升級成**可操作清單**。[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx) `CitedSourcesCard` 加一顆「🔍 分析來源」按鈕（**點才跑、省成本、無 AI 費**）：點下去抓前 `ANALYZE_N=8` 個最常被引用的來源網頁（重用 [seoAnalyzer.js](src/services/seoAnalyzer.js) `fetchPageContent`、含 SSL/UA/anti-bot 容錯、不另開 API function），比對品牌名/網域是否出現 → 每列標 ✓你有出現／✗沒出現／⚠無法檢查 + 一句建議 + 頂部摘要「你出現在 X/8 個」。✗ 沒出現 = 最該去攻的來源。Phase 2（正確性監測、需 ground truth + LLM 比對）另議。Vite transform 914 ✓。

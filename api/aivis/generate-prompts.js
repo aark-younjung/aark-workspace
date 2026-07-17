@@ -39,6 +39,7 @@ const MAX_TOKENS = 1024
 const CORE_COUNT = 6      // 固定核心：品類問句、每次全跑、趨勢基準（2026-07-03 由 8 調降為 6 省成本）
 const ROTATING_COUNT = 6  // 輪替池：品類問句、每次抽樣、抓覆蓋盲點
 const BRAND_COUNT = 2     // 品牌詞：帶品牌名、另計、不進頭條分數
+const INFO_COUNT = 5      // 資訊型：知識/how-to 問句、每次全掃、計分看「網域有沒有被引用」（Phase 2a、2026-07-13）
 
 const PRICE_INPUT_PER_TOKEN = 1 / 1_000_000
 const PRICE_OUTPUT_PER_TOKEN = 5 / 1_000_000
@@ -108,16 +109,16 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'AI 曝光監測為 Pro 功能，請先升級或啟用 7 天免費試用' })
     }
 
-    // 組 meta prompt 請 Claude 生成三層題庫
-    const metaPrompt = buildMetaPrompt(brand, { core: CORE_COUNT, rotating: ROTATING_COUNT, brand: BRAND_COUNT })
+    // 組 meta prompt 請 Claude 生成四層題庫
+    const metaPrompt = buildMetaPrompt(brand, { core: CORE_COUNT, rotating: ROTATING_COUNT, brand: BRAND_COUNT, info: INFO_COUNT })
     const claudeRes = await callClaude(metaPrompt, ANTHROPIC_API_KEY)
     if (!claudeRes.ok) {
       return res.status(502).json({ error: 'Claude API error', detail: claudeRes.error })
     }
 
-    // 解析成 { core:[], rotating:[], brand:[] }
+    // 解析成 { core:[], rotating:[], brand:[], info:[] }
     const tiered = parseTieredJson(claudeRes.text)
-    if (!tiered || (tiered.core.length + tiered.rotating.length + tiered.brand.length) === 0) {
+    if (!tiered || (tiered.core.length + tiered.rotating.length + tiered.brand.length + tiered.info.length) === 0) {
       return res.status(502).json({
         error: 'Failed to parse Claude response as JSON',
         rawResponse: claudeRes.text,
@@ -142,6 +143,7 @@ export default async function handler(req, res) {
       ...tiered.core.map(text => ({ ...base, text, tier: 'core', is_active: true })),
       ...tiered.rotating.map(text => ({ ...base, text, tier: 'rotating', is_active: false })),
       ...tiered.brand.map(text => ({ ...base, text, tier: 'brand', is_active: false })),
+      ...tiered.info.map(text => ({ ...base, text, tier: 'info', is_active: false })),   // 資訊型：池子、每次全掃、看網域引用
     ]
 
     const { data: inserted, error: insertErr } = await supabase
@@ -165,6 +167,7 @@ export default async function handler(req, res) {
         core: tiered.core.length,
         rotating: tiered.rotating.length,
         brand: tiered.brand.length,
+        info: tiered.info.length,
       },
       replaced_existing: replaceExisting,
       cost_usd: cost,
@@ -195,12 +198,13 @@ function buildMetaPrompt(brand, counts) {
 - 簡介：${description}
 
 【任務】
-請產出三組問題，分別放進 core / rotating / brand。這些問題會被送進 ChatGPT / Claude / Gemini，測試該品牌會不會被 AI 主動推薦。
+請產出四組問題，分別放進 core / rotating / brand / info。這些問題會被送進 ChatGPT / Claude / Gemini，測試該品牌的 AI 能見度。
 
-【三組定義】
+【四組定義】
 - **core（固定核心，${counts.core} 條）**：該品牌目標客群「最常問、最具代表性」的品類問句。這組會被長期固定、每次都測，用來追蹤趨勢——所以要選最穩定、最核心的問法。**絕對不能出現品牌名稱。**
 - **rotating（輪替池，${counts.rotating} 條）**：同樣是品類問句，但要**更長尾、更多樣**——不同地區、不同預算、不同痛點、不同業種的變化題，用來擴大覆蓋、抓核心題測不到的盲點。**絕對不能出現品牌名稱**，且不要和 core 重複。
 - **brand（品牌詞，${counts.brand} 條）**：**必須包含品牌名稱「${brand.name}」**，例如「${brand.name} 評價如何？」「${brand.name} 有什麼服務？」。這組用來量「AI 認不認得這個品牌」，是獨立指標。
+- **info（資訊型，${counts.info} 條）**：**知識/how-to 問句，不是找推薦、也絕不含品牌名**。是這個產業的**潛在客人在購買前會問的資訊題**——AI 回答時，很可能會引用這個品牌部落格/衛教文章當來源。例如英文補教會問「如何快速提升英文口說？」「多益怎麼準備？」；醫美會問「電波拉皮術後要注意什麼？」「音波拉提可以維持多久？」。**要問「怎麼做/為什麼/多久/幾歲/如何選」這類，而不是「推薦哪家」。**
 
 【core 與 rotating 的共同要求（品類問句）】
 1. 像真人在搜尋框打字的口吻，不是產業分析師寫的題目。
@@ -218,7 +222,8 @@ function buildMetaPrompt(brand, counts) {
 {
   "core": ["問題...", "..."],
   "rotating": ["問題...", "..."],
-  "brand": ["${brand.name} ...？", "..."]
+  "brand": ["${brand.name} ...？", "..."],
+  "info": ["如何...？", "為什麼...？", "..."]
 }`
 }
 
@@ -257,7 +262,7 @@ async function callClaude(promptText, apiKey) {
   }
 }
 
-// 解析三層題庫 JSON → { core:[], rotating:[], brand:[] }
+// 解析四層題庫 JSON → { core:[], rotating:[], brand:[], info:[] }
 // 相容舊格式：若回傳的是 { prompts:[...] }，整批視為 core（不至於解析失敗）。
 function parseTieredJson(text) {
   // Claude 偶爾會包進 ```json ... ``` 或多寫前後說明，盡量寬鬆抓出 JSON
@@ -276,9 +281,9 @@ function parseTieredJson(text) {
       .map(p => p.trim())
     // 舊格式相容
     if (Array.isArray(parsed.prompts) && !parsed.core) {
-      return { core: clean(parsed.prompts), rotating: [], brand: [] }
+      return { core: clean(parsed.prompts), rotating: [], brand: [], info: [] }
     }
-    return { core: clean(parsed.core), rotating: clean(parsed.rotating), brand: clean(parsed.brand) }
+    return { core: clean(parsed.core), rotating: clean(parsed.rotating), brand: clean(parsed.brand), info: clean(parsed.info) }
   } catch {
     return null
   }

@@ -59,7 +59,8 @@ const PROMPT_CAP = 10           // 固定核心（core）啟用上限 — 趨勢
 const SCAN_RUNS = 3             // core / rotating 每條跑幾次取平均（brand 後端強制 1 次）
 // 三層題庫（core / rotating / brand）— 與 api/aivis/generate-prompts.js 的分層對齊
 const ROTATING_SAMPLE_PER_SCAN = 2   // 每次掃描從「啟用中的輪替池」隨機抽幾條（抓覆蓋盲點、防應試化）
-const TIER_LABEL = { core: '核心', rotating: '輪替', brand: '品牌詞' }
+const TIER_LABEL = { core: '核心', rotating: '輪替', brand: '品牌詞', info: '資訊' }
+const TIER_COLOR = { core: AIVIS_TEAL, rotating: '#60a5fa', brand: '#f59e0b', info: '#c084fc' }
 
 // ─── 多引擎顯示（2026-06-10 路線 B：engine_results JSONB） ───
 // 顯示名稱 + 配色。之後加 ChatGPT / Perplexity / Grok 只要在這加一行、其餘自動長出來。
@@ -311,14 +312,16 @@ export default function AIVisibilityDashboard() {
   const atWarn = userMonthQueries >= AIVIS_QUOTA_PER_MONTH * AIVIS_WARN_RATIO        // ≥120 顯示 banner
   const atSoftLimit = userMonthQueries >= AIVIS_QUOTA_PER_MONTH                      // ≥150 月內含已用完
   const atHardCap = userMonthQueries >= AIVIS_HARD_CAP                               // ≥1000 完全擋住
-  // 本次掃描預計花幾次額度 = 核心×3 ＋ 抽樣輪替×3 ＋ 品牌詞×1（三層題庫分流）
-  // 輪替／品牌詞是「池子」（is_active=false、不佔 10 條啟用上限），計數與掃描都照 tier 從全部 prompts 抓、不看 is_active
+  // 本次掃描預計花幾次額度 = 核心×3 ＋ 抽樣輪替×3 ＋ 品牌詞×1 ＋ 資訊型×1（四層題庫分流）
+  // 輪替／品牌詞／資訊型都是「池子」（is_active=false、不佔 10 條啟用上限），計數與掃描都照 tier 從全部 prompts 抓
   const activeBrandCount = useMemo(
     () => prompts.filter(p => (p.tier || 'core') === 'brand').length, [prompts])
   const activeRotatingCount = useMemo(
     () => prompts.filter(p => (p.tier || 'core') === 'rotating').length, [prompts])
+  const infoCount = useMemo(
+    () => prompts.filter(p => (p.tier || 'core') === 'info').length, [prompts])
   const sampledRotatingCount = Math.min(activeRotatingCount, ROTATING_SAMPLE_PER_SCAN)
-  const plannedRuns = (activeCoreCount + sampledRotatingCount) * SCAN_RUNS + activeBrandCount * 1
+  const plannedRuns = (activeCoreCount + sampledRotatingCount) * SCAN_RUNS + activeBrandCount * 1 + infoCount * 1
   const wouldExceedHard = userMonthQueries + plannedRuns > AIVIS_HARD_CAP            // 掃下去會破 1000
 
   // mentions 表 by response_id（給舊資料合成 position + 給 byPrompt 用）
@@ -375,7 +378,9 @@ export default function AIVisibilityDashboard() {
   for (const r of responses) {
     const v = normEngineResults(r, mentionByRespId)[primaryKey]
     if (!v) continue
-    if (tierOf(r.prompt_id) === 'brand') {
+    const rt = tierOf(r.prompt_id)
+    if (rt === 'info') continue   // 資訊型另計（看網域引用、不看品牌提及），完全不進頭條曝光率
+    if (rt === 'brand') {
       _bTotal += 1
       if (v.mentioned) _bMent += 1
       continue
@@ -397,7 +402,8 @@ export default function AIVisibilityDashboard() {
   const trendData = useMemo(() => {
     const byDay = {} // { 'YYYY-MM-DD': { total, mentioned } }
     for (const r of responses) {
-      if (tierOf(r.prompt_id) === 'brand') continue  // 品牌詞不進趨勢線（同頭條曝光率的排除邏輯）
+      const rt = tierOf(r.prompt_id)
+      if (rt === 'brand' || rt === 'info') continue  // 品牌詞/資訊型不進趨勢線（同頭條曝光率的排除邏輯）
       const k = dayKey(r.created_at)
       if (!byDay[k]) byDay[k] = { total: 0, mentioned: 0 }
       byDay[k].total += 1
@@ -495,6 +501,33 @@ export default function AIVisibilityDashboard() {
     }
     return Object.values(map).sort((a, b) => b.count - a.count)
   }, [recentResults])
+
+  // 內容型曝光（Phase 2a）：資訊型（info tier）問句 → 看「AI 這題的引用來源裡，有沒有你的網域」。
+  //   成功訊號＝你的內容被 AI 當來源（不是品牌被念名字）。✗ 的列出 AI 引用了誰（競品）。
+  const contentExposure = useMemo(() => {
+    const raw = (brand?.domain || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim()
+    if (!raw) return null
+    const hostMatch = (a, b) => a === b || a.endsWith('.' + b) || b.endsWith('.' + a)
+    const infoItems = recentResults.filter(r => tierOf(r.promptId) === 'info')
+    if (infoItems.length === 0) return null
+    const items = infoItems.map(r => {
+      const others = new Set()
+      let cited = false
+      for (const run of r.runs) {
+        for (const eng of Object.values(run.engines || {})) {
+          for (const s of (eng?.sources || [])) {
+            if (!s?.uri) continue
+            let h; try { h = new URL(s.uri).hostname.toLowerCase().replace(/^www\./, '') } catch { continue }
+            if (hostMatch(h, raw)) cited = true
+            else others.add(h)
+          }
+        }
+      }
+      return { promptId: r.promptId, text: r.promptText, cited, others: [...others].slice(0, 4) }
+    })
+    const citedCount = items.filter(i => i.cited).length
+    return { items, citedCount, total: items.length, rate: Math.round(citedCount / items.length * 100) }
+  }, [recentResults, brand, tierByPromptId])
 
   // 近 7 天提及率「區間」（顯示範圍而非單一數字，把日常波動框成預期內、不讓客戶誤會成不準）
   const recentRange = useMemo(() => {
@@ -620,9 +653,10 @@ export default function AIVisibilityDashboard() {
     //   core   ：全部啟用的都送（固定樣本、趨勢基準）
     //   rotating：從啟用中的輪替池「隨機抽」ROTATING_SAMPLE_PER_SCAN 條（每次不同、擴大覆蓋、防應試化）
     //   brand  ：全部啟用的都送，但每條只跑 1 次（後端也會強制夾成 1）
-    // core 看 is_active（curated 固定樣本）；輪替／品牌詞是池子，照 tier 從全部 prompts 抓（不看 is_active）
+    // core 看 is_active（curated 固定樣本）；輪替／品牌詞／資訊型是池子，照 tier 從全部 prompts 抓（不看 is_active）
     const coreTargets = activePrompts.filter(p => (p.tier || 'core') === 'core')
     const brandTargets = prompts.filter(p => (p.tier || 'core') === 'brand')
+    const infoTargets = prompts.filter(p => (p.tier || 'core') === 'info')   // 資訊型：每次全掃、每條 1 次（計分看網域引用）
     const rotatingPool = prompts.filter(p => (p.tier || 'core') === 'rotating')
     const sampledRotating = [...rotatingPool]
       .sort(() => Math.random() - 0.5)            // 洗牌後取前 N（每次掃描抽不同批）
@@ -631,6 +665,7 @@ export default function AIVisibilityDashboard() {
       ...coreTargets.map(p => ({ p, runs: SCAN_RUNS })),
       ...sampledRotating.map(p => ({ p, runs: SCAN_RUNS })),
       ...brandTargets.map(p => ({ p, runs: 1 })),
+      ...infoTargets.map(p => ({ p, runs: 1 })),
     ]
 
     setScanning(true); setScanPhase(0); setScanTotal(scanTargets.length)
@@ -966,6 +1001,13 @@ export default function AIVisibilityDashboard() {
               setActiveHistoryId={setActiveHistoryDay}
             />
         }
+
+        {/* ── 內容型曝光（Phase 2a）：資訊型問句 → AI 有沒有用你的內容 ── */}
+        {!isLoading && !isEmpty && contentExposure && (
+          <div style={{ marginTop: 18 }}>
+            <InfoExposureCard data={contentExposure} />
+          </div>
+        )}
 
         {/* ── 引用來源（放最下面、預設只顯示 10 個、其餘展開才看） ── */}
         {!isLoading && !isEmpty && (
@@ -1407,10 +1449,10 @@ function PromptsPanel({
                 flex: 1, fontSize: 14, color: on ? T.text : T.textMid,
                 lineHeight: 1.55, minWidth: 0, wordBreak: 'break-word',
               }}>
-                {/* 三層題庫 tier 標籤：核心=青綠、輪替=藍、品牌詞=琥珀 */}
+                {/* tier 標籤：核心=青綠、輪替=藍、品牌詞=琥珀、資訊=紫 */}
                 {(() => {
                   const t = p.tier || 'core'
-                  const c = t === 'brand' ? '#f59e0b' : t === 'rotating' ? '#60a5fa' : AIVIS_TEAL
+                  const c = TIER_COLOR[t] || AIVIS_TEAL
                   return <span style={{
                     fontSize: 11, fontWeight: 700, color: c, background: c + '1c',
                     padding: '1px 6px', borderRadius: 3, marginRight: 8,
@@ -1867,6 +1909,76 @@ function CitedSourcesCard({ sources, brandName, brandDomain, degraded }) {
         }}>
           執行一次掃描後，這裡會列出 AI 形成推薦時參考的網站來源（目前 Gemini 已支援接地、會帶來源）。
         </div>
+      )}
+    </div>
+  )
+}
+
+// =====================================================
+// InfoExposureCard（Phase 2a）：資訊型問句 → AI 有沒有把「你的內容」當來源
+// 核心洞察：不是被念名字，而是被 AI 當知識來源引用。✗ 的列出 AI 引用了誰（競品內容缺口）。
+// =====================================================
+const INFO_PURPLE = '#c084fc'
+function InfoExposureCard({ data }) {
+  const [showAll, setShowAll] = useState(false)
+  if (!data) return null   // 品牌沒填網域、或這次沒掃到資訊型題 → 不顯示
+  const { items, citedCount, total, rate } = data
+  const visible = showAll ? items : items.slice(0, 6)
+  const hidden = items.length - visible.length
+  return (
+    <div style={{
+      background: `linear-gradient(155deg, ${INFO_PURPLE}14 0%, rgba(1,8,14,.6) 70%)`,
+      border: `1px solid ${INFO_PURPLE}45`, borderRadius: T.rL, padding: 22, marginBottom: 18,
+      boxShadow: `0 8px 24px ${INFO_PURPLE}12`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 5, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 17, fontWeight: 800, color: T.text }}>📄 內容型曝光 · AI 有沒有用你的內容</span>
+        <span style={{
+          fontSize: 13, fontWeight: 700, color: INFO_PURPLE,
+          background: INFO_PURPLE + '18', border: `1px solid ${INFO_PURPLE}40`,
+          padding: '2px 10px', borderRadius: 20,
+        }}>內容引用率 {rate}%</span>
+      </div>
+      <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.75, marginBottom: 16, maxWidth: 760 }}>
+        這些是<strong style={{ color: T.text }}>不含品牌名的知識型問題</strong>（例：「術後要注意什麼」「怎麼準備」）。
+        當使用者這樣問，AI 會去讀網路上的內容來回答 ——
+        <strong style={{ color: T.text }}>你的網站有沒有被當成來源引用</strong>，就是你內容行銷有沒有打進 AI 的證據。
+        目前 <strong style={{ color: INFO_PURPLE }}>{total}</strong> 題裡，AI 引用到你的內容 <strong style={{ color: '#34d399' }}>{citedCount}</strong> 題。
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {visible.map((it, i) => (
+          <div key={it.promptId || i} style={{
+            background: 'rgba(0,6,10,.5)',
+            border: `1px solid ${it.cited ? 'rgba(52,211,153,.33)' : 'rgba(255,255,255,.07)'}`,
+            borderRadius: 8, padding: '11px 13px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ flex: 1, fontSize: 14, color: T.text, lineHeight: 1.5 }}>{it.text}</span>
+              <span style={{
+                fontSize: 12.5, fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap',
+                color: it.cited ? '#34d399' : '#f87171',
+                background: it.cited ? 'rgba(52,211,153,.14)' : 'rgba(248,113,113,.14)',
+                padding: '2px 9px', borderRadius: 20,
+              }}>{it.cited ? '✓ 有引用你' : '✗ 沒引用你'}</span>
+            </div>
+            {/* ✗ 的：AI 這題引用了誰（= 你該補內容 or 該去爭取露出的競品/來源） */}
+            {!it.cited && it.others.length > 0 && (
+              <div style={{ fontSize: 12.5, color: T.textLow, lineHeight: 1.6, marginTop: 7 }}>
+                AI 改引用了：{it.others.join('、')}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {items.length > 6 && (
+        <button onClick={() => setShowAll(v => !v)} style={{
+          marginTop: 10, width: '100%', background: 'transparent',
+          border: `1px solid ${INFO_PURPLE}40`, color: INFO_PURPLE,
+          fontSize: 14, fontWeight: 600, padding: '9px', borderRadius: 8,
+          cursor: 'pointer', fontFamily: T.font,
+        }}>
+          {showAll ? '收合 ▴' : `顯示其餘 ${hidden} 題 ▾`}
+        </button>
       )}
     </div>
   )

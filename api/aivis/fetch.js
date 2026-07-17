@@ -113,10 +113,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Brand not linked to this prompt' })
     }
 
-    // 三層題庫：brand（品牌詞）幾乎每次都會提到品牌名、near-deterministic，跑 3 次是浪費額度 —
-    // 伺服器端強制夾成 1 次（即使前端忘了傳 runs=1 也守得住）。core / rotating 維持呼叫端指定的次數。
+    // 題庫分流：brand（品牌詞）near-deterministic、info（資訊型）看的是「網域有沒有被引用」，
+    // 兩者都不需要跑 3 次取平均 → 伺服器端強制夾成 1 次（即使前端忘傳也守得住）。core / rotating 維持呼叫端次數。
     const tier = prompt.tier || 'core'
-    if (tier === 'brand') runs = 1
+    if (tier === 'brand' || tier === 'info') runs = 1
 
     // 拉用戶 profile 看是否為試用用戶 — 試用期額度與付費 Pro 不同（50 vs 150）
     // 試用期計算起始也不一樣：付費 Pro 用 calendar month，試用用 trial_started_at
