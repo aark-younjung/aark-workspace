@@ -415,13 +415,30 @@ export default function AIVisibilityDashboard() {
       const k = d.toISOString().slice(0, 10)
       const stat = byDay[k] || { total: 0, mentioned: 0 }
       const val = stat.total > 0 ? Math.round(stat.mentioned / stat.total * 100) : 0
-      days.push({ day: d.getDate(), month: d.getMonth() + 1, val, total: stat.total })
+      days.push({ key: k, day: d.getDate(), month: d.getMonth() + 1, val, total: stat.total })
     }
     return days
   }, [responses, tierByPromptId])
 
   // 有掃描資料的「天數」（不是次數）。<3 天畫不出有意義的趨勢 → 用共用 HeartbeatTrend 心跳脈動圖勾住新客戶。
   const daysWithData = useMemo(() => trendData.filter(d => d.total > 0).length, [trendData])
+
+  // 核心題庫變更日 → 趨勢線上畫「基準已變更」虛線。
+  // 為什麼：core 是趨勢的固定量尺，改了 core（新增／編輯／停用）等於換了一把尺，
+  // 變更前後的提及率不該直接比較 —— 標出來避免被誤讀成「成效變好／變差」。
+  // 只看 core：輪替／品牌詞／資訊型本來就不進趨勢線，改它們不影響基準。
+  const baselineChangeDays = useMemo(() => {
+    const s = new Set()
+    for (const p of prompts) {
+      if ((p.tier || 'core') !== 'core') continue
+      for (const ts of [p.created_at, p.updated_at]) {
+        if (!ts) continue
+        const t = new Date(ts)
+        if (!isNaN(t)) s.add(t.toISOString().slice(0, 10))   // 對齊 trendData 的 key 格式
+      }
+    }
+    return s
+  }, [prompts])
 
   // 歷史掃描日期 chips（distinct days，最近 7 天）
   const historyDays = useMemo(() => {
@@ -925,7 +942,7 @@ export default function AIVisibilityDashboard() {
                     }
                   />
                 ) :
-                  <TrendChart data={trendData} />
+                  <TrendChart data={trendData} baselineDays={baselineChangeDays} />
           }
         </div>
 
@@ -1641,7 +1658,7 @@ function TrendGhostRadar({ onStart, scanning, disabled }) {
   )
 }
 
-function TrendChart({ data }) {
+function TrendChart({ data, baselineDays }) {
   // 全寬呈現：用寬扁 viewBox（760×200，~3.8:1），避免 SVG 依寬度等比放大導致高度過高、軸標籤過大
   const W = 760, H = 200, padL = 44, padR = 16, padT = 22, padB = 30
   const innerW = W - padL - padR, innerH = H - padT - padB
@@ -1659,6 +1676,12 @@ function TrendChart({ data }) {
   const last = data[data.length - 1] || { val: 0 }
   const first = data[0] || { val: 0 }
   const delta = last.val - first.val
+
+  // 核心題庫變更日的索引 → 畫垂直虛線（基準換了、前後不宜直接比）
+  const BASELINE_C = '#f59e0b'
+  const marks = baselineDays
+    ? data.map((d, i) => (d.key && baselineDays.has(d.key) ? i : -1)).filter(i => i >= 0)
+    : []
 
   const [hoverIdx, setHoverIdx] = useState(null)
   const svgRef = useRef(null)
@@ -1739,6 +1762,17 @@ function TrendChart({ data }) {
             </circle>
           )}
 
+          {marks.map(i => {
+            const mx = padL + i * xStep
+            return (
+              <g key={`bl-${i}`}>
+                <line x1={mx} y1={padT - 4} x2={mx} y2={padT + innerH}
+                  stroke={BASELINE_C} strokeOpacity=".5" strokeWidth="1.5" strokeDasharray="4 4" />
+                <circle cx={mx} cy={padT - 6} r="3" fill={BASELINE_C} />
+              </g>
+            )
+          })}
+
           {hoverIdx !== null && points[hoverIdx] && (
             <g>
               <line x1={points[hoverIdx][0]} y1={padT} x2={points[hoverIdx][0]} y2={padT + innerH}
@@ -1771,6 +1805,11 @@ function TrendChart({ data }) {
               </div>
               <div style={{ fontWeight: 700, color: AIVIS_TEAL }}>提及率 {data[hoverIdx].val}%</div>
               <div style={{ fontSize: 14, color: T.textLow }}>{data[hoverIdx].total} 次掃描</div>
+              {baselineDays && data[hoverIdx].key && baselineDays.has(data[hoverIdx].key) && (
+                <div style={{ fontSize: 13, color: BASELINE_C, marginTop: 3, fontWeight: 700 }}>
+                  ⚑ 核心題庫在這天變更
+                </div>
+              )}
             </div>
           )
         })()}
@@ -1782,6 +1821,9 @@ function TrendChart({ data }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
       }}>
         <span>💡 <span style={{ color: T.textMid }}>滑過折線可查看每日數據</span></span>
+        {marks.length > 0 && (
+          <span style={{ color: BASELINE_C, whiteSpace: 'nowrap' }}>⚑ 虛線＝核心題庫變更，前後基準不同</span>
+        )}
       </div>
     </div>
   )

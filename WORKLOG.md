@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-07-18（趨勢線標記「核心題庫變更」— 防止換了尺還直接比）
+
+提及率是比率（`_pMent / _pTotal`），**不會因為題目數量變多而變高**；但**核心題（core）是趨勢線的固定量尺，改了 core 等於換尺**，變更前後的數字不該直接比較，否則會被誤讀成「成效變好／變差」。[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：新增 `baselineChangeDays` useMemo（掃 `prompts` 裡 tier=core 的 `created_at`／`updated_at`，正規化成 `YYYY-MM-DD` Set，對齊 trendData 的 key；輪替／品牌詞／資訊型不算，因為它們本來就不進趨勢線）；`trendData` 每日物件補 `key`；`TrendChart` 收 `baselineDays` prop → 在對應日期畫**琥珀色垂直虛線 + 頂端圓點**，hover tooltip 多一行「⚑ 核心題庫在這天變更」，footer 有變更時顯示圖例「⚑ 虛線＝核心題庫變更，前後基準不同」。資料本來就齊（toggle／saveEdit／generate-prompts 都有寫 `updated_at`），無需改 schema。Vite transform 912 ✓。
+
+---
+
 ### 2026-07-17（修 bug：池子題（rotating/brand/info）掃描一律回「Prompt is disabled」→ 整趟掃描失敗）
 
 用戶加了 info 題後掃描跳「掃描失敗」。根因 [fetch.js](api/aivis/fetch.js) 第 107 行舊守衛 `if (!prompt.is_active) return 'Prompt is disabled'`：這道守衛是 tier 系統之前就有的（本來擋「手動停用的題」），但 tier 系統把 `is_active=false` 改用來當「池子」標記（rotating/brand/info 都 is_active=false、不佔 10 條啟用上限、但**本來就該被掃**）後，這守衛就會誤擋所有池子題。runScan 一跑到池子題（info 或 brand/rotating）→ fetch.js 回 400「Prompt is disabled」→ 掃描 loop throw → 整趟「掃描失敗」。**影響範圍不只 info**：brand/rotating 池子題自 tier 系統上線起就掃不動（只要品牌有池子題，掃描就炸）。修法：把 tier 判斷提到守衛之前，只有【核心題被手動停用】(`tier==='core' && !is_active`) 才拒掃，池子題不受 is_active 影響。UI 本來就不讓 toggle 池子題（顯示 🌀 池中），語意一致。node --check ✓。
