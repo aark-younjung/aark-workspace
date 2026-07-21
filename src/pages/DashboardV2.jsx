@@ -1022,11 +1022,13 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
               <span className="text-2xl flex-shrink-0">📡</span>
               <div className="flex-1">
                 <div className="text-base font-bold text-white mb-1">
-                  {canStartTrial ? '你剛看完「網站體質」——但 AI 到底推不推薦你？' : '尚未啟用 aivis 追蹤'}
+                  {isPro || isTrial
+                    ? '只差一步：告訴我們你的品牌叫什麼'
+                    : canStartTrial ? '你剛看完「網站體質」——但 AI 到底推不推薦你？' : '尚未啟用 aivis 追蹤'}
                 </div>
                 <p className="text-sm text-white/55 leading-relaxed">
                   {isPro || isTrial
-                    ? '設定你想追蹤的品牌名稱（例：金鉑先生、kimbo3899）、aivis 會在每次檢測問 3 個 AI 引擎、看你被提及幾次。'
+                    ? <>只要填品牌名稱（例：金鉑先生、kimbo3899），我們就會<span className="text-white font-semibold">實際去問 ChatGPT、Claude、Gemini「推薦哪一家」</span>，告訴你有沒有被講出來。</>
                     : canStartTrial
                       ? <>剛才的分數看的是「你的網站體質好不好」。<span className="text-white font-semibold">AI 曝光監測</span>是直接去問 ChatGPT、Claude、Gemini「推薦哪一家」，看你的品牌有沒有被講出來——這才是客戶真正在用的通路。<span className="text-white font-semibold">你的帳號有 7 天免費試用，不用綁卡。</span></>
                       : 'aivis 是 Pro 核心功能 — 追蹤品牌在 3 個 AI 引擎的真實提及率，升 Pro 解鎖。'}
@@ -1057,12 +1059,19 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
                 {trialErr && <div className="text-center text-xs text-red-300 mt-1.5">{trialErr}</div>}
               </>
             ) : (
-              <Link
-                to={isPro || isTrial ? '/ai-visibility' : '/pricing'}
-                className="block w-full text-center px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
-              >
-                {isPro || isTrial ? '設定追蹤品牌 →' : '升 Pro 解鎖 aivis →'}
-              </Link>
+              <>
+                <Link
+                  to={isPro || isTrial ? '/ai-visibility' : '/pricing'}
+                  className="block w-full text-center px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
+                >
+                  {/* CTA 講「你會得到什麼」而不是「你要做什麼工」——「設定追蹤品牌」聽起來像雜事，
+                      會把剛開通試用的熱度澆掉；改成延續同一個承諾（看 AI 推不推薦我）*/}
+                  {isPro || isTrial ? '立即設定 → 看 AI 推不推薦我' : '升 Pro 解鎖 aivis →'}
+                </Link>
+                {(isPro || isTrial) && (
+                  <div className="text-center text-xs text-white/40 mt-2">只要填品牌名稱，約 30 秒</div>
+                )}
+              </>
             )}
           </div>
         ) : (
