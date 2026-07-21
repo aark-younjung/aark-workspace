@@ -88,6 +88,10 @@ export const THEMES = {
   light: {
     label: '亮白 · 橘',
     beta: true,
+    // 2026-07-21：先從公開切換器隱藏。覆蓋層還有沒對到的角落，訪客點到會看到破版。
+    // 走「元件草稿 → 頁面草稿 → 定稿再實作」的流程，做完再把這行拿掉。
+    // 自己要測：主控台跑 localStorage.setItem('aark_theme','light') 後重整。
+    hidden: true,
     swatch: ['#ff6e34', '#f5f6f7', '#00003e'],
     vars: {
       '--t-accent': '#e85114',          // 亮底上要壓深一點才看得清楚

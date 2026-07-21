@@ -57,7 +57,7 @@ export default function ThemeSwitcher() {
           }}
         >
           <div className="px-2.5 py-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>介面配色</div>
-          {Object.entries(themes).map(([key, t]) => {
+          {Object.entries(themes).filter(([, t]) => !t.hidden).map(([key, t]) => {
             const active = theme === key
             return (
               <button

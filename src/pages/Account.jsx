@@ -598,7 +598,7 @@ export default function Account() {
               選一個你看得舒服的配色，整站會立即套用。設定只存在這台裝置的瀏覽器。
             </p>
             <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-              {Object.entries(themes).map(([key, t]) => {
+              {Object.entries(themes).filter(([, t]) => !t.hidden).map(([key, t]) => {
                 const active = theme === key
                 return (
                   <button
