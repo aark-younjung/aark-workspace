@@ -169,6 +169,9 @@ export default function AdminWebsites() {
                 近 7 天 <span className="text-emerald-400 font-bold">{anonScans.filter(s => Date.now() - new Date(s.created_at).getTime() < 7 * 864e5).length}</span> 次
                 <span className="mx-1.5 text-white/20">·</span>
                 累計 <span className="text-white font-bold">{anonScans.length}</span> 次
+                {/* 獨立訪客：沒有 session_id 的是加欄位之前的舊資料，不計入 */}
+                <span className="mx-1.5 text-white/20">·</span>
+                約 <span className="text-white font-bold">{new Set(anonScans.filter(s => s.session_id).map(s => s.session_id)).size}</span> 位訪客
               </div>
             </div>
             {anonScans.length === 0 ? (
@@ -179,6 +182,7 @@ export default function AdminWebsites() {
                   <thead>
                     <tr className="text-slate-400 text-left">
                       <th className="py-2 pr-4 font-medium">網站</th>
+                      <th className="py-2 px-2 font-medium">訪客</th>
                       <th className="py-2 px-2 font-medium">SEO</th>
                       <th className="py-2 px-2 font-medium">AEO</th>
                       <th className="py-2 px-2 font-medium">GEO</th>
@@ -190,6 +194,15 @@ export default function AdminWebsites() {
                     {anonScans.slice(0, 30).map(s => (
                       <tr key={s.id} className="border-t border-white/5">
                         <td className="py-2 pr-4 text-white truncate max-w-[200px]">{s.name || s.url}</td>
+                        {/* 同色＝同一位訪客。用 session_id 尾 4 碼當代號（純隨機碼、非個資）*/}
+                        <td className="py-2 px-2 font-mono text-xs">
+                          {s.session_id
+                            ? <span className="px-1.5 py-0.5 rounded" style={{
+                                background: `hsl(${(parseInt(s.session_id.slice(-4), 36) || 0) % 360} 65% 22%)`,
+                                color: `hsl(${(parseInt(s.session_id.slice(-4), 36) || 0) % 360} 75% 78%)`,
+                              }}>{s.session_id.slice(-4)}</span>
+                            : <span className="text-slate-600">—</span>}
+                        </td>
                         <td className="py-2 px-2 font-mono text-slate-300">{s.seo ?? '—'}</td>
                         <td className="py-2 px-2 font-mono text-slate-300">{s.aeo ?? '—'}</td>
                         <td className="py-2 px-2 font-mono text-slate-300">{s.geo ?? '—'}</td>

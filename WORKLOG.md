@@ -6,6 +6,19 @@
 
 ---
 
+### 2026-07-21（匿名 session id + 回訪軟提示 — 不加登入牆的轉換做法）
+
+**背景**：後台看到同一站被連掃 7 次，但 `anon_scan_events` 沒有任何訪客識別 → 分不出「一個人回訪 7 次」還是「7 個人」。查證後確認該訪客是**同業網頁設計公司**：免登入本來就看得到「逐項哪裡不合格」（只鎖修法步驟），對會寫 code 的人來說診斷本身就夠用 → **決定不加登入牆**（value-first 不動），改用軟提示把行為變成註冊理由。
+
+- 新增 [src/lib/anonSession.js](src/lib/anonSession.js)：`getAnonSessionId()`（localStorage 隨機碼，無個資、不碰 IP、storage 不可用回 null 不影響掃描）、`bumpAnonScanCount()`。
+- [HomeDark.jsx](src/pages/HomeDark.jsx)：匿名 insert 帶 `session_id`；掃完累加次數存 state 傳給 AnonDiagnosis。沿用先前的「欄位未建就退回舊格式重寫」保險。
+- [AnonDiagnosis.jsx](src/components/AnonDiagnosis.jsx)：`repeatCount >= 3`（`REPEAT_HINT_AT`）時，報告最上方顯示軟提示 —— 「這是你第 N 次檢測，目前結果不會被保存，註冊後可看**改前 vs 改後**」+ CTA。**不是牆**：不擋任何既有功能。門檻設 3 的理由：1–2 次多是好奇試用，第 3 次幾乎都是「改了再驗」的迴圈，那種人才真的需要歷史對照。
+- [AdminWebsites.jsx](src/pages/admin/AdminWebsites.jsx)：統計列加「約 N 位訪客」（去重 session_id），表格加「訪客」欄，用 session_id 尾 4 碼 + 依碼上色，同一位訪客同色，一眼看出回訪。
+
+需跑 SQL：`ALTER TABLE anon_scan_events ADD COLUMN IF NOT EXISTS session_id TEXT;`。Vite transform 913 ✓。
+
+---
+
 ### 2026-07-21（GEO 分數穩定性：逾時≠沒有、GEO 不再重抓頁面、匿名快掃存逐項）
 
 **起因**：後台看到同一站（injerry.com）2 分鐘內連掃分數在兩組數值間來回跳（AEO 50↔75、GEO 75↔88、EEAT 63↔88，SEO 幾乎不動）。**實測 30 個請求（6 循序 + 3 輪×8 並發）全部成功、無法重現失敗**；且 **eeatAnalyzer 完全不發網路請求**（8 項全讀 DOM）→ 它會跳只可能是抓到的 HTML 真的不同 → **結論：那次是對方自己在加 schema + CDN 快取新舊交替，不是我們的 bug**（最後停在高分，今日抓取確實有 JSON-LD）。但過程中挖出三個真的該修的問題：

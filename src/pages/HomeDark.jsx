@@ -14,6 +14,7 @@ import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import { trackPixelCustom } from '../lib/pixel'
 import { normalizeUrl } from '../lib/url'
+import { getAnonSessionId, bumpAnonScanCount } from '../lib/anonSession'
 import { analyzeSEO, fetchPageContent, parseHTML, checkBotAccessibility } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
@@ -261,6 +262,7 @@ export default function HomeDark() {
   const [errorInfo, setErrorInfo] = useState(null)
   // 未登入快掃結果（value-first）：不寫 DB、inline 顯示 4 大分數 + 引導註冊解鎖完整報告 + aivis
   const [anonResult, setAnonResult] = useState(null)
+  const [anonScanCount, setAnonScanCount] = useState(0)   // 這個瀏覽器累計掃過幾次（軟提示用）
   // anti-bot 鎖極嚴的聳動 modal — 取代瀏覽器原生 alert，用紅色警示 + 強烈衝擊文案
   // 4 輪爬蟲全擋 → 用戶網站對 AI 完全隱形，這是核心商業價值「AI 看不見你」最有衝擊力的展示瞬間
   const [antiBotModal, setAntiBotModal] = useState({ open: false, websiteId: null, url: '' })
@@ -549,6 +551,7 @@ export default function HomeDark() {
           data: { seo: seoResult, aeo: aeoResult, geo: geoResult, eeat: eeatResult },
         }
         setAnonResult(anon)
+        setAnonScanCount(bumpAnonScanCount())   // 回訪次數 → 決定要不要顯示「保存紀錄」軟提示（不是牆）
         setStatus('')
         setLoading(false)
         // 讓「未登入掃描完成」看得到（value-first 後 audit 表不會記）：
@@ -563,11 +566,12 @@ export default function HomeDark() {
         const base = { url: anon.url, name: anon.name, seo: anon.seo, aeo: anon.aeo, geo: anon.geo, eeat: anon.eeat }
         supabase.from('anon_scan_events').insert({
           ...base,
+          session_id: getAnonSessionId(),   // 把散落的紀錄歸戶：一個人回訪 N 次 vs N 個不同的人
           details: { seo: flags(seoResult), aeo: flags(aeoResult), geo: flags(geoResult), eeat: flags(eeatResult) },
         }).then(({ error }) => {
           if (!error) return
-          // details 欄位還沒建（SQL 未跑）→ 退回舊格式再寫一次，別讓匿名快掃日誌整個斷掉
-          console.warn('anon_scan_events insert failed, retrying without details:', error.message)
+          // details / session_id 欄位還沒建（SQL 未跑）→ 退回舊格式再寫一次，別讓匿名快掃日誌整個斷掉
+          console.warn('anon_scan_events insert failed, retrying without extras:', error.message)
           supabase.from('anon_scan_events').insert(base)
             .then(({ error: e2 }) => { if (e2) console.warn('anon_scan_events retry failed:', e2.message) })
         })
@@ -1169,6 +1173,7 @@ export default function HomeDark() {
           <div className="mx-auto w-full max-w-4xl">
             <AnonDiagnosis
               result={anonResult}
+              repeatCount={anonScanCount}
               onRegister={() => { sessionStorage.setItem('lp_pending_url', anonResult.url); navigate('/register') }}
             />
           </div>

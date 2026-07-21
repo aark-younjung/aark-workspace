@@ -62,7 +62,12 @@ const LOCKED = [
   { icon: '📡', title: 'AI 曝光監測', desc: '定期問 ChatGPT・Claude・Gemini「推薦哪家」，追蹤你有沒有被 AI 主動提到。' },
 ]
 
-export default function AnonDiagnosis({ result, onRegister }) {
+// 回訪第幾次開始顯示「保存紀錄」軟提示。
+// 為什麼是 3：掃 1～2 次多半是好奇試用，掃到第 3 次幾乎都是「改了再驗」的迴圈 —
+// 那種人才真的需要歷史對照。太早跳會像逼註冊、失去 value-first 的意義。
+const REPEAT_HINT_AT = 3
+
+export default function AnonDiagnosis({ result, repeatCount = 0, onRegister }) {
   const ref = useRef(null)
   // 掃完自動捲到報告（讓它像個「結果頁」，不再像退回首頁）
   useEffect(() => {
@@ -84,6 +89,29 @@ export default function AnonDiagnosis({ result, onRegister }) {
           免費・免註冊
         </span>
       </div>
+
+      {/* 回訪軟提示（不是牆）：他正在「改了再驗」，而未登入看不到歷史 —
+          用「幫你保存、直接看改前改後」當誘因，比擋住功能有效、也不破壞 value-first */}
+      {repeatCount >= REPEAT_HINT_AT && (
+        <div className="mb-5 rounded-xl px-4 py-3 flex items-start gap-3 flex-wrap"
+          style={{ background: 'rgba(24,197,144,0.09)', border: '1px solid rgba(24,197,144,0.32)' }}>
+          <span className="text-lg leading-none mt-0.5">📈</span>
+          <div className="flex-1 min-w-[200px]">
+            <div className="text-white text-sm font-semibold mb-0.5">
+              這是你第 {repeatCount} 次檢測 — 看起來你正在調整網站 👍
+            </div>
+            <div className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.62)' }}>
+              目前每次結果都不會被保存。免費註冊後我們會自動記錄每一次，讓你直接看到
+              <span className="text-white font-semibold">「改之前 vs 改之後」</span>的分數變化。
+            </div>
+          </div>
+          <button onClick={onRegister}
+            className="text-xs font-bold px-3.5 py-2 rounded-lg whitespace-nowrap transition-opacity hover:opacity-90"
+            style={{ background: '#18c590', color: '#04140f' }}>
+            免費保存這次紀錄
+          </button>
+        </div>
+      )}
 
       {/* 四大分數 */}
       <div className="grid grid-cols-4 gap-2 mb-6">
