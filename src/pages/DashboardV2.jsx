@@ -926,7 +926,13 @@ function TopBar({ website, navigate, onExportPdf, onChecklist, onRescan, rescann
 //   3. has_brands — 用戶有設品牌、列出來、給「看完整監測」入口
 // aivis 真實提及率資料需要等到 aivis monitoring run 才有、目前先讓用戶能正確進入設定流程
 function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
-  const { user } = useAuth()
+  const { user, hasTrialedBefore, startTrial, isTrial } = useAuth()
+  // 「還沒試用過的免費用戶」＝ 最該被邀請試用的人。
+  // 2026-07-21：12 個活躍用戶掃了 2–7 次卻沒有一個啟動試用 —— 查出來原因是這裡只寫「升 Pro 解鎖」
+  // 並把人導去定價頁，等於在他最有興趣的當下跟他要錢，完全沒提「你本來就有 7 天免費試用」。
+  const canStartTrial = !isPro && !isTrial && !hasTrialedBefore
+  const [trialBusy, setTrialBusy] = useState(false)
+  const [trialErr, setTrialErr] = useState('')
   const [brands, setBrands] = useState(null) // null = loading, [] = no brands, [...] = has brands
 
   useEffect(() => {
@@ -1015,20 +1021,49 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
             <div className="flex items-start gap-3 mb-4">
               <span className="text-2xl flex-shrink-0">📡</span>
               <div className="flex-1">
-                <div className="text-base font-bold text-white mb-1">尚未啟用 aivis 追蹤</div>
+                <div className="text-base font-bold text-white mb-1">
+                  {canStartTrial ? '你剛看完「網站體質」——但 AI 到底推不推薦你？' : '尚未啟用 aivis 追蹤'}
+                </div>
                 <p className="text-sm text-white/55 leading-relaxed">
-                  {isPro
+                  {isPro || isTrial
                     ? '設定你想追蹤的品牌名稱（例：金鉑先生、kimbo3899）、aivis 會在每次檢測問 3 個 AI 引擎、看你被提及幾次。'
-                    : 'aivis 是 Pro 核心功能 — 追蹤品牌在 3 個 AI 引擎的真實提及率，升 Pro 解鎖。'}
+                    : canStartTrial
+                      ? <>剛才的分數看的是「你的網站體質好不好」。<span className="text-white font-semibold">AI 曝光監測</span>是直接去問 ChatGPT、Claude、Gemini「推薦哪一家」，看你的品牌有沒有被講出來——這才是客戶真正在用的通路。<span className="text-white font-semibold">你的帳號有 7 天免費試用，不用綁卡。</span></>
+                      : 'aivis 是 Pro 核心功能 — 追蹤品牌在 3 個 AI 引擎的真實提及率，升 Pro 解鎖。'}
                 </p>
               </div>
             </div>
-            <Link
-              to={isPro ? '/ai-visibility' : '/pricing'}
-              className="block w-full text-center px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
-            >
-              {isPro ? '設定追蹤品牌 →' : '升 Pro 解鎖 aivis →'}
-            </Link>
+            {canStartTrial ? (
+              <>
+                <button
+                  type="button"
+                  disabled={trialBusy}
+                  onClick={async () => {
+                    setTrialBusy(true); setTrialErr('')
+                    const r = await startTrial()   // 回傳 { ok, error }，error 是字串代碼
+                    setTrialBusy(false)
+                    if (!r?.ok) {
+                      setTrialErr({
+                        already_trialed: '這個帳號已經用過免費試用了。',
+                        not_authenticated: '請先登入再啟用試用。',
+                      }[r?.error] || '啟用失敗，請稍後再試，或聯絡我們協助開通。')
+                    }
+                  }}
+                  className="block w-full text-center px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30 disabled:opacity-60"
+                >
+                  {trialBusy ? '啟用中…' : '免費試用 7 天 → 看 AI 推不推薦我'}
+                </button>
+                <div className="text-center text-xs text-white/40 mt-2">免費・不用綁卡・隨時可取消</div>
+                {trialErr && <div className="text-center text-xs text-red-300 mt-1.5">{trialErr}</div>}
+              </>
+            ) : (
+              <Link
+                to={isPro || isTrial ? '/ai-visibility' : '/pricing'}
+                className="block w-full text-center px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30"
+              >
+                {isPro || isTrial ? '設定追蹤品牌 →' : '升 Pro 解鎖 aivis →'}
+              </Link>
+            )}
           </div>
         ) : (
           // 用戶有設定品牌 — 列出 + 「看完整監測」入口
