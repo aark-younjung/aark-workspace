@@ -9,28 +9,45 @@ const API_BASE = '/api/fetch-url'
 /**
  * 1. llms.txt 檢測 (AI 爬蟲說明文件)
  */
+/**
+ * 探測子資源（llms.txt / robots.txt / sitemap.xml）
+ *
+ * 2026-07-21：把「確定沒有這個檔案（目標回 404/410）」跟「這次沒查到（逾時／網路錯誤／5xx）」分開。
+ * 舊版兩者都回 passed:false —— 網路抖一下就會被記成「這個站沒有 sitemap」，分數莫名其妙掉，
+ * 客戶連掃兩次拿到不同分數會直接不信任產品（跟先前「逾時 ≠ 被擋」是同一類錯誤）。
+ * 現在：逾時會重試一次；仍失敗回 unknown，計分時從分母剔除（不因為量不到就扣分）。
+ *
+ * @returns {{found:true,data:object}|{found:false}|{unknown:true}}
+ */
+async function probeResource(url, retries = 1) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(`${API_BASE}?url=${encodeURIComponent(url)}`)
+      const data = await response.json().catch(() => null)
+      if (response.ok && data?.success) return { found: true, data }
+      // 目標明確回 404/410 → 確定沒有這個檔案（這是真的「不通過」，不重試）
+      if (response.status === 404 || response.status === 410) return { found: false }
+      // 其他（504 逾時 / 5xx / 空回應）→ 落到重試
+    } catch { /* 網路層失敗 → 落到重試 */ }
+  }
+  return { unknown: true }
+}
+
 async function checkLLMsTxt(baseUrl) {
-  try {
-    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/llms.txt')}`)
-    if (response.ok) {
-      const data = await response.json()
-      return { passed: data.success === true }
-    }
-  } catch {}
-  return { passed: false }
+  const r = await probeResource(baseUrl + '/llms.txt')
+  if (r.unknown) return { passed: false, unknown: true }
+  return { passed: !!r.found }
 }
 
 /**
  * 2. robots.txt AI 開放性檢測 (是否允許 GPTBot、PerplexityBot、Google-Extended)
  */
 async function checkRobotsAI(baseUrl) {
+  const probe = await probeResource(baseUrl + '/robots.txt')
+  if (probe.unknown) return { passed: false, unknown: true, blocked: [], allowed: [], hasRobotsTxt: false }
+  if (!probe.found) return { passed: false, blocked: [], allowed: [], hasRobotsTxt: false }
   try {
-    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/robots.txt')}`)
-    if (!response.ok) return { passed: false, blocked: [], allowed: [] }
-
-    const data = await response.json()
-    if (!data.success) return { passed: false, blocked: [], allowed: [] }
-
+    const data = probe.data
     const text = (data.content || '').toLowerCase()
     const aiBots = ['gptbot', 'perplexitybot', 'google-extended', 'claudebot', 'anthropic-ai']
 
@@ -68,14 +85,9 @@ async function checkRobotsAI(baseUrl) {
  * 3. Sitemap 檢測 (幫助 AI 爬蟲探索頁面)
  */
 async function checkSitemap(baseUrl) {
-  try {
-    const response = await fetch(`${API_BASE}?url=${encodeURIComponent(baseUrl + '/sitemap.xml')}`)
-    if (response.ok) {
-      const data = await response.json()
-      return { passed: data.success === true }
-    }
-  } catch {}
-  return { passed: false }
+  const r = await probeResource(baseUrl + '/sitemap.xml')
+  if (r.unknown) return { passed: false, unknown: true }
+  return { passed: !!r.found }
 }
 
 /**
@@ -238,7 +250,7 @@ function checkLastmod(doc) {
 /**
  * 完整的 GEO 分析
  */
-export async function analyzeGEO(url) {
+export async function analyzeGEO(url, providedDoc = null) {
   console.log('Starting GEO analysis for:', url)
 
   let cleanUrl = url.trim()
@@ -255,15 +267,19 @@ export async function analyzeGEO(url) {
     checkSitemap(baseUrl)
   ])
 
-  // 取得頁面 HTML 做同步檢測
-  let doc = null
-  try {
-    const { fetchPageContent, parseHTML } = await import('./seoAnalyzer')
-    // fetchPageContent 自 2026-05-22 改回傳 { html, sslFallback }，這裡只用 html
-    const { html } = await fetchPageContent(cleanUrl)
-    if (html) doc = parseHTML(html)
-  } catch (error) {
-    console.warn('Could not fetch page for GEO analysis:', error)
+  // 優先用呼叫端已經抓好的 doc（HomeDark 掃描時本來就抓過一次頁面）。
+  // 2026-07-21：舊版一律自己再抓一次 —— (1) 多一趟沒必要的請求
+  // (2) 抓到的可能跟 AEO/EEAT 讀的不是同一份 HTML（網站/CDN 交替供版時，同一次掃描的各面向會互相打架）
+  // (3) 那次重抓只要失敗，openGraph/twitterCard/jsonLdCitation/canonical 4 項同時歸零、GEO 直接掉 50 分。
+  let doc = providedDoc
+  if (!doc) {
+    try {
+      const { fetchPageContent, parseHTML } = await import('./seoAnalyzer')
+      const { html } = await fetchPageContent(cleanUrl)
+      if (html) doc = parseHTML(html)
+    } catch (error) {
+      console.warn('Could not fetch page for GEO analysis:', error)
+    }
   }
 
   const openGraph = doc ? checkOpenGraph(doc) : { passed: false }
@@ -279,8 +295,11 @@ export async function analyzeGEO(url) {
   const lastmod = doc ? checkLastmod(doc) : { passed: false, hasLastmod: false }
 
   const checks = [llmsTxt, robotsAI, sitemap, openGraph, twitterCard, jsonLdCitation, canonical, https]
-  const passedCount = checks.filter(c => c.passed).length
-  const score = Math.round((passedCount / 8) * 100)
+  // unknown（這次量不到）從分母剔除 —— 量不到就不該扣分。
+  // 否則網路抖一下分數就掉，客戶連掃兩次拿到不同數字，整個產品的可信度就沒了。
+  const measured = checks.filter(c => !c.unknown)
+  const passedCount = measured.filter(c => c.passed).length
+  const score = measured.length > 0 ? Math.round((passedCount / measured.length) * 100) : 0
 
   const result = {
     url: cleanUrl,

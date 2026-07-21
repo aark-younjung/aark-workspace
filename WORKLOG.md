@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-07-21（GEO 分數穩定性：逾時≠沒有、GEO 不再重抓頁面、匿名快掃存逐項）
+
+**起因**：後台看到同一站（injerry.com）2 分鐘內連掃分數在兩組數值間來回跳（AEO 50↔75、GEO 75↔88、EEAT 63↔88，SEO 幾乎不動）。**實測 30 個請求（6 循序 + 3 輪×8 並發）全部成功、無法重現失敗**；且 **eeatAnalyzer 完全不發網路請求**（8 項全讀 DOM）→ 它會跳只可能是抓到的 HTML 真的不同 → **結論：那次是對方自己在加 schema + CDN 快取新舊交替，不是我們的 bug**（最後停在高分，今日抓取確實有 JSON-LD）。但過程中挖出三個真的該修的問題：
+
+1. **逾時被當成「檔案不存在」** [geoAnalyzer.js](src/services/geoAnalyzer.js)：`checkLLMsTxt/checkRobotsAI/checkSitemap` 舊版 `catch {} → return {passed:false}`，網路抖一下就記成「這站沒有 sitemap」。新增 `probeResource()`：**404/410 = 確定沒有**（不重試）、**逾時/5xx/網路錯誤 = 重試一次、仍失敗回 `unknown`**。計分時 `unknown` **從分母剔除**（量不到就不扣分），分母由固定 /8 改為 `measured.length`。
+2. **GEO 每次都重抓頁面** — `analyzeGEO(url)` 只吃 url、**完全忽略呼叫端傳進來的 doc**（HomeDark:523、DashboardV2:309 本來就有傳）。造成多一趟請求、可能讀到跟 AEO/EEAT 不同版本的 HTML、且重抓一失敗 4 項同時歸零（GEO 直接 -50）。改成 `analyzeGEO(url, providedDoc)` 優先用傳入的 doc，未傳才自己抓（其餘 caller 向下相容）。
+3. **查不出來** — `anon_scan_events` 只存 4 個總分。[HomeDark.jsx](src/pages/HomeDark.jsx) 匿名 insert 加 `details` JSONB（只留 boolean 旗標，很小），下次有落差 30 秒查得出是哪幾項翻掉。**含保險**：欄位未建時 insert 失敗會自動退回舊格式重寫一次，日誌不會斷。
+
+需跑 SQL：`ALTER TABLE anon_scan_events ADD COLUMN IF NOT EXISTS details JSONB;`。Vite transform 912 ✓。
+
+---
+
 ### 2026-07-18（趨勢線標記「核心題庫變更」— 防止換了尺還直接比）
 
 提及率是比率（`_pMent / _pTotal`），**不會因為題目數量變多而變高**；但**核心題（core）是趨勢線的固定量尺，改了 core 等於換尺**，變更前後的數字不該直接比較，否則會被誤讀成「成效變好／變差」。[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)：新增 `baselineChangeDays` useMemo（掃 `prompts` 裡 tier=core 的 `created_at`／`updated_at`，正規化成 `YYYY-MM-DD` Set，對齊 trendData 的 key；輪替／品牌詞／資訊型不算，因為它們本來就不進趨勢線）；`trendData` 每日物件補 `key`；`TrendChart` 收 `baselineDays` prop → 在對應日期畫**琥珀色垂直虛線 + 頂端圓點**，hover tooltip 多一行「⚑ 核心題庫在這天變更」，footer 有變更時顯示圖例「⚑ 虛線＝核心題庫變更，前後基準不同」。資料本來就齊（toggle／saveEdit／generate-prompts 都有寫 `updated_at`），無需改 schema。Vite transform 912 ✓。

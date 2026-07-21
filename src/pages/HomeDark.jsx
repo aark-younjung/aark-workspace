@@ -555,9 +555,22 @@ export default function HomeDark() {
         // (1) Pixel 自訂事件 → Ads Manager 量這一步漏斗
         trackPixelCustom('AnonScanComplete', { content_name: anon.name })
         // (2) 輕量後臺日誌 → 在 Supabase 看「有沒有人在掃」（fire-and-forget、失敗不影響）
+        // 逐項結果（只留 boolean 旗標，很小）— 之後同一站分數有落差時，
+        // 才查得出「是哪幾項翻掉」，不用像 2026-07-21 那次要跑一堆探測用猜的
+        const flags = o => o ? Object.fromEntries(
+          Object.entries(o).filter(([, v]) => typeof v === 'boolean')
+        ) : null
+        const base = { url: anon.url, name: anon.name, seo: anon.seo, aeo: anon.aeo, geo: anon.geo, eeat: anon.eeat }
         supabase.from('anon_scan_events').insert({
-          url: anon.url, name: anon.name, seo: anon.seo, aeo: anon.aeo, geo: anon.geo, eeat: anon.eeat,
-        }).then(({ error }) => { if (error) console.warn('anon_scan_events insert failed:', error.message) })
+          ...base,
+          details: { seo: flags(seoResult), aeo: flags(aeoResult), geo: flags(geoResult), eeat: flags(eeatResult) },
+        }).then(({ error }) => {
+          if (!error) return
+          // details 欄位還沒建（SQL 未跑）→ 退回舊格式再寫一次，別讓匿名快掃日誌整個斷掉
+          console.warn('anon_scan_events insert failed, retrying without details:', error.message)
+          supabase.from('anon_scan_events').insert(base)
+            .then(({ error: e2 }) => { if (e2) console.warn('anon_scan_events retry failed:', e2.message) })
+        })
         return
       }
 
