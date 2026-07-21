@@ -28,6 +28,21 @@ export function getAnonSessionId() {
   }
 }
 
+const MODAL_KEY = 'aark_repeat_modal_seen'
+
+/**
+ * 回訪 pop-up 是否已經出現過（只彈一次）。
+ * 注意：storage 不可用時回 true（＝不彈）—— 因為記不住「已關閉」，寧可不彈也不要每次都彈，
+ * 會踩到 pop-up 的正好是「改了再驗」的高意向使用者，煩走他比少一次曝光更虧。
+ */
+export function hasSeenRepeatModal() {
+  try { return localStorage.getItem(MODAL_KEY) === '1' } catch { return true }
+}
+
+export function markRepeatModalSeen() {
+  try { localStorage.setItem(MODAL_KEY, '1') } catch {}
+}
+
 /** 累加並回傳「這個瀏覽器累計掃過幾次」；storage 不可用時回 0（＝不會觸發軟提示） */
 export function bumpAnonScanCount() {
   try {

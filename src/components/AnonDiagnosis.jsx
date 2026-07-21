@@ -11,7 +11,8 @@
  *   result    — { url, name, seo, aeo, geo, eeat, data:{seo,aeo,geo,eeat} }
  *   onRegister— 點「免費註冊解鎖」的 callback（帶著 url 去 /register）
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { hasSeenRepeatModal, markRepeatModalSeen } from '../lib/anonSession'
 
 // 逐項檢測定義：label = 中文標籤，read = 從結果物件判斷該項有沒有過
 // SEO 每項是 { passed } 物件；AEO/GEO/EEAT 每項是布林值 → 用各自 read()
@@ -74,6 +75,26 @@ export default function AnonDiagnosis({ result, repeatCount = 0, onRegister }) {
     const t = setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
     return () => clearTimeout(t)
   }, [])
+
+  // 回訪 pop-up：橫幅容易被略過（使用者一掃完眼睛就衝去看分數），所以再補一次中央提醒。
+  // 三道紀律避免煩到高意向使用者：① 只彈一次（關掉就記住）② 延遲 2.5 秒讓他先看到分數
+  // ③ 關掉後仍保留上方橫幅當常駐入口。
+  const [showModal, setShowModal] = useState(false)
+  useEffect(() => {
+    if (repeatCount < REPEAT_HINT_AT || hasSeenRepeatModal()) return
+    const t = setTimeout(() => setShowModal(true), 2500)
+    return () => clearTimeout(t)
+  }, [repeatCount])
+
+  const closeModal = useCallback(() => { markRepeatModalSeen(); setShowModal(false) }, [])
+
+  // Esc 關閉
+  useEffect(() => {
+    if (!showModal) return
+    const onKey = e => { if (e.key === 'Escape') closeModal() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showModal, closeModal])
 
   const scores = { seo: result.seo, aeo: result.aeo, geo: result.geo, eeat: result.eeat }
 
@@ -181,6 +202,59 @@ export default function AnonDiagnosis({ result, repeatCount = 0, onRegister }) {
         </button>
         <div className="text-center text-xs mt-2.5" style={{ color: 'rgba(255,255,255,0.4)' }}>免費・不用綁卡・30 秒完成</div>
       </div>
+
+      {/* 回訪 pop-up（只彈一次、可關、關了還有上方橫幅當常駐入口）*/}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(3px)' }}
+          onClick={closeModal}
+          role="dialog" aria-modal="true" aria-labelledby="anon-repeat-title"
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl p-6 sm:p-7 text-center"
+            style={{
+              background: 'linear-gradient(160deg, rgba(13,45,36,0.98) 0%, rgba(6,18,16,1) 70%)',
+              border: '1px solid rgba(24,197,144,0.4)',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+              animation: 'anonPopIn .22s ease-out',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button type="button" onClick={closeModal} aria-label="關閉"
+              className="absolute top-3 right-3 w-8 h-8 rounded-lg flex items-center justify-center text-lg leading-none"
+              style={{ color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.06)' }}>×</button>
+
+            <div className="text-4xl mb-3">📈</div>
+            <div id="anon-repeat-title" className="text-white font-extrabold text-xl mb-2 leading-snug">
+              你已經檢測 {repeatCount} 次了
+            </div>
+            <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.68)' }}>
+              看起來你正在調整網站 👍 但<span className="text-white font-semibold">目前每次結果都不會被保存</span>，
+              關掉頁面就沒了。<br />免費註冊後我們會自動記錄每一次，讓你直接看到
+              <span className="font-semibold" style={{ color: '#18c590' }}>「改之前 vs 改之後」</span>的分數變化。
+            </p>
+
+            <button type="button" onClick={onRegister}
+              className="w-full py-3.5 font-bold rounded-xl transition-opacity hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg,#18c590,#0d7a58)', color: '#04140f' }}>
+              免費註冊 → 保存我的檢測紀錄
+            </button>
+            <button type="button" onClick={closeModal}
+              className="w-full mt-2 py-2.5 text-sm rounded-xl"
+              style={{ color: 'rgba(255,255,255,0.5)', background: 'transparent' }}>
+              先繼續看報告
+            </button>
+            <div className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.34)' }}>
+              免費・不用綁卡・這個提醒只會出現一次
+            </div>
+          </div>
+          <style>{`
+            @keyframes anonPopIn { from { opacity:0; transform:translateY(10px) scale(.97) } to { opacity:1; transform:none } }
+            @media (prefers-reduced-motion: reduce) { @keyframes anonPopIn { from{opacity:1} to{opacity:1} } }
+          `}</style>
+        </div>
+      )}
     </div>
   )
 }
