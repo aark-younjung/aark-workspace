@@ -570,8 +570,16 @@ export default function HomeDark() {
           details: { seo: flags(seoResult), aeo: flags(aeoResult), geo: flags(geoResult), eeat: flags(eeatResult) },
         }).then(({ error }) => {
           if (!error) return
-          // details / session_id 欄位還沒建（SQL 未跑）→ 退回舊格式再寫一次，別讓匿名快掃日誌整個斷掉
-          console.warn('anon_scan_events insert failed, retrying without extras:', error.message)
+          // ⚠️ 只有「欄位不存在」才退回舊格式重寫（details / session_id 的 SQL 還沒跑的過渡期）。
+          // 其他錯誤（逾時、連線中斷）**一律不重試** —— 那種情況伺服器端很可能已經寫進去了，
+          // 只是回應沒回到瀏覽器，盲目重試會產生重複紀錄（2026-07-21 實際踩到）。
+          const missingColumn = error.code === 'PGRST204'
+            || /column .*does not exist|Could not find the .* column/i.test(error.message || '')
+          if (!missingColumn) {
+            console.warn('anon_scan_events insert failed（不重試，避免寫成重複紀錄）:', error.message)
+            return
+          }
+          console.warn('anon_scan_events 缺欄位，退回舊格式重寫:', error.message)
           supabase.from('anon_scan_events').insert(base)
             .then(({ error: e2 }) => { if (e2) console.warn('anon_scan_events retry failed:', e2.message) })
         })

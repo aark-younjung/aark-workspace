@@ -24,7 +24,7 @@ export default function AdminWebsites() {
   const fetchAnonScans = async () => {
     const { data } = await supabase
       .from('anon_scan_events')
-      .select('id, url, name, seo, aeo, geo, eeat, created_at')
+      .select('id, url, name, seo, aeo, geo, eeat, created_at, session_id, details')
       .order('created_at', { ascending: false })
       .limit(100)
     setAnonScans(data || [])
