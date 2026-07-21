@@ -188,3 +188,45 @@ html.dark-theme .border-purple-300 { border-color: rgba(216, 180, 254, 0.4) !imp
 @media (max-width: 880px) {
   .v2-hero-grid { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   亮色主題覆蓋層（2026-07-21，測試中）
+
+   全站約 994 處寫死 text-white(703) / bg-white\/xx(134) / text-slate-3xx(157)，
+   全都假設背景是深色。與其改那 994 處（風險高、無法逐頁驗證），
+   這層在亮色主題啟用時把它們重新對應成亮底該有的顏色。
+
+   ⚠️ 這是全域重寫，一定有角落沒對到 —— 靠實際回報逐個補，
+      不要無限擴張這個區塊。長期解法仍是把元件改成主題感知。
+   ══════════════════════════════════════════════════════════════ */
+:root[data-theme="light"] { color-scheme: light; }
+
+/* 白字 → 深藍墨色（彩色按鈕上的白字在最下面例外處理） */
+:root[data-theme="light"] .text-white { color: var(--t-ink) !important; }
+:root[data-theme="light"] [class*="text-white/"] { color: var(--t-ink-mid) !important; }
+
+/* 深底專用的淺灰字 → 亮底可讀的中灰 */
+:root[data-theme="light"] [class*="text-slate-3"],
+:root[data-theme="light"] [class*="text-slate-4"],
+:root[data-theme="light"] [class*="text-slate-5"] { color: var(--t-ink-mid) !important; }
+
+/* 玻璃卡：深底的半透明白 → 亮底的極淡深色 */
+:root[data-theme="light"] [class*="bg-white/"] { background-color: var(--t-surface) !important; }
+:root[data-theme="light"] [class*="border-white/"] { border-color: var(--t-surface-border) !important; }
+
+/* 深色底板（header / 面板）→ 白卡 */
+:root[data-theme="light"] [class*="bg-black/"] { background-color: rgba(255,255,255,0.8) !important; }
+
+/* 雜訊疊層在亮底會髒，關掉 */
+:root[data-theme="light"] svg[class*="mix-blend"],
+:root[data-theme="light"] [style*="mix-blend-mode: soft-light"] { opacity: 0 !important; }
+
+/* 例外：彩色 CTA（漸層／實心橘綠）上的文字維持白色，否則按鈕會變深藍字看不清 */
+:root[data-theme="light"] [class*="bg-gradient-to"] .text-white,
+:root[data-theme="light"] [class*="bg-gradient-to"].text-white,
+:root[data-theme="light"] [class*="bg-orange-"] .text-white,
+:root[data-theme="light"] [class*="bg-orange-"].text-white,
+:root[data-theme="light"] [class*="bg-emerald-"] .text-white,
+:root[data-theme="light"] [class*="bg-emerald-"].text-white,
+:root[data-theme="light"] button[class*="from-"] .text-white,
+:root[data-theme="light"] a[class*="from-"] .text-white { color: #fff !important; }

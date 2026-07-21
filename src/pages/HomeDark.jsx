@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Footer from '../components/Footer'
 // 2026-06-06：公告改成右上角 NotificationBell — HomeDark 用自己內嵌 header（不是 SiteHeader）、要單獨 import
 import NotificationBell from '../components/v2/NotificationBell'
+import ThemeSwitcher from '../components/v2/ThemeSwitcher'
 // 2026-06-06：上 C 方向 logo mark
 import AarkMark from '../components/v2/AarkMark'
 // 2026-06-06：本週 AI 趨勢卡 — 訪客也看得到、促進每日 / 每週回訪
@@ -920,6 +921,8 @@ export default function HomeDark() {
             </nav>
 
             <div className="flex items-center gap-2 flex-shrink-0">
+              {/* 配色切換（2026-07-21）— 跟 SiteHeader 同步，未登入訪客也能切 */}
+              <ThemeSwitcher />
               {/* 公告鈴鐺（2026-06-06）— 跟 SiteHeader 同步、0 條未讀時自動隱藏 */}
               <NotificationBell />
               {user ? (

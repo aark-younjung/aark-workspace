@@ -80,6 +80,34 @@ export const THEMES = {
       '--t-bg': 'linear-gradient(155deg, #4a4a54 0%, #3a3a42 12%, #232329 30%, #141417 52%, #0a0a0c 74%)',
     },
   },
+
+  // 亮白 + 橘（Mailchimp 式亮底）—— ⚠️ 測試中
+  // 全站約 994 處寫死 text-white / bg-white\/xx / text-slate-3xx 都假設深底，
+  // 靠 index.css 的 [data-theme="light"] 覆蓋層把它們重新對應成亮底該有的顏色。
+  // 覆蓋層是「全域重寫」性質，一定有角落沒對到 → UI 標「測試中」，靠回報逐個修。
+  light: {
+    label: '亮白 · 橘',
+    beta: true,
+    swatch: ['#ff6e34', '#f5f6f7', '#00003e'],
+    vars: {
+      '--t-accent': '#e85114',          // 亮底上要壓深一點才看得清楚
+      '--t-accent-deep': '#c23f0c',
+      '--t-cta': '#ff6e34',
+      '--t-cta-deep': '#e85114',
+      '--t-text': '#00003e',            // 深藍當「黑」
+      '--t-text-mid': '#4f4f68',
+      '--t-text-low': '#9a9aa8',
+      '--t-card-bg': 'rgba(255,255,255,0.92)',
+      '--t-card-border': 'rgba(0,0,62,0.12)',
+      '--t-card-border-hover': 'rgba(255,110,52,0.45)',
+      '--t-bg': 'linear-gradient(155deg, #ffffff 0%, #f7f8fa 22%, #f5f6f7 48%, #eef0f4 100%)',
+      // 給覆蓋層用（只有亮色主題需要）
+      '--t-ink': '#00003e',
+      '--t-ink-mid': '#4f4f68',
+      '--t-surface': 'rgba(0,0,62,0.04)',
+      '--t-surface-border': 'rgba(0,0,62,0.1)',
+    },
+  },
 }
 
 export const DEFAULT_THEME = 'teal'
