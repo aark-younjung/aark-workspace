@@ -6,6 +6,21 @@
 
 ---
 
+### 2026-07-21（配色主題引擎：使用者可自選介面配色）
+
+把寫死的顏色改成 CSS 變數驅動，讓使用者能自選配色。**關鍵在於零元件改動**：全站 1,414 處 `T.xxx` 只要把 T 的值換成 `var(--t-xxx, fallback)`，切主題時就會一起變。
+
+- 新增 [styles/themes.js](src/styles/themes.js)：`THEMES` 三組（青綠·夜＝現行預設／深藍·夜＝#00003e+#ff6e34／石墨·夜）＋ `applyTheme()` 寫 CSS 變數到 `<html>`，未知主題安全退回預設。新增配色只要加一組數值，選色器自動長出來。
+- [v2-tokens.js](src/styles/v2-tokens.js)：主題色（accent/cta/text/card/bg）改走 `var()`；**語意色（seo/aeo/geo/eeat/content/pass/fail/warn）刻意維持 hex** —— 全站有 124 處 `${T.pass}33`、`T.aeo + '26'` 這種「色碼＋透明度」串接，改成 `var()` 會變成無效 CSS，而它們本來就不隨主題變。
+- 主題色的 27 處同類串接用腳本改成 `color-mix(in srgb, var 15%, transparent)`（hex→百分比換算由腳本算，避免手改算錯）。
+- 背景漸層原本 **23 個頁面各寫一份**，腳本統一換成 `var(--t-bg, 原漸層)`，共 26 處。
+- [ThemeContext.jsx](src/context/ThemeContext.jsx)：加 `theme / setTheme / themes`，存 localStorage；保留 `isDark` 向下相容。
+- [Account.jsx](src/pages/Account.jsx)：加「介面配色」卡，色票直接呈現三個代表色、點了立即全站套用。
+
+**⚠️ 目前只放深色主題。** 全站約 994 處寫死 `text-white`(703) / `bg-white/xx`(134) / `text-slate-3xx`(157) 都假設深底，在掃乾淨之前開放亮色會變成白字配白底、不能看。亮色（Mailchimp 風暖白＋深藍＋橘）等那階段做完再開。Vite transform 914 ✓。
+
+---
+
 ### 2026-07-21（匿名快掃重複紀錄修復 + 後台「依訪客分組」檢視）
 
 **重複紀錄**：後台出現同站同時間的重複列。查證後分兩種——(a) `tabio.com` 兩筆**同 session_id、同分數、同時間** → 一次掃描寫兩次，根因是我當天稍早加的 insert 重試「**對任何 error 都重寫一次**」，但 error ≠ 沒寫進去（逾時／連線中斷時伺服器端可能已寫入）。改成**只有 `PGRST204` / 「欄位不存在」才重試**（唯一確定沒寫入的情況）。(b) `suntour.tw` 兩筆分數不同（SEO 93 vs 99）且無 session_id → 是 session 功能部署前的舊資料，屬兩次真實掃描，非 bug。另修：[AdminWebsites.jsx](src/pages/admin/AdminWebsites.jsx) 的 `anon_scan_events` 查詢**漏 select `session_id` / `details`**，導致新加的訪客欄與獨立訪客數永遠是空的。

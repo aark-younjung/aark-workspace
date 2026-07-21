@@ -589,7 +589,7 @@ function PageBg({ children }) {
     <div className="min-h-screen relative overflow-hidden" style={{ background: '#000' }}>
       <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
         height: '3000px',
-        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
         mixBlendMode: 'lighten',
       }} />
       <div className="absolute inset-0 pointer-events-none z-0" style={{

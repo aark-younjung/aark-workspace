@@ -93,7 +93,7 @@ export default function Login() {
       {/* 上方青綠 → 深藍漸層（lighten 混合） */}
       <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
         height: '3000px',
-        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
         mixBlendMode: 'lighten',
       }} />
       {/* 右下青綠漸層光暈（335deg = 155deg 雙軸鏡像） */}

@@ -123,7 +123,7 @@ export default function LandingPage() {
         className="absolute top-0 left-0 right-0 pointer-events-none z-0"
         style={{
           height: '1600px',
-          background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+          background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
           mixBlendMode: 'lighten',
         }}
       />

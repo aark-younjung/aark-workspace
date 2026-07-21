@@ -1447,7 +1447,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                             <span>⏱</span><span>{tip.time}</span>
                           </span>
                           {!isPro && (
-                            <span className="flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded border whitespace-nowrap" style={{ background: `${T.orange}26`, color: '#fdba74', borderColor: `${T.orange}66` }}>
+                            <span className="flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded border whitespace-nowrap" style={{ background: `color-mix(in srgb, ${T.orange} 15%, transparent)`, color: '#fdba74', borderColor: `color-mix(in srgb, ${T.orange} 40%, transparent)` }}>
                               <span>🔒</span><span>Pro</span>
                             </span>
                           )}
@@ -1950,7 +1950,7 @@ function PageBg({ children }) {
         className="pointer-events-none absolute inset-x-0 top-0"
         style={{
           height: 3000,
-          background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+          background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
           mixBlendMode: 'lighten',
           zIndex: 0,
         }}

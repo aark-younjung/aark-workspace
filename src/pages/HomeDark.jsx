@@ -92,7 +92,7 @@ function DarkScanningOverlay({ logs, targetUrl }) {
 
   return (
     <div className="fixed inset-0 z-[110] flex flex-col" style={{
-      background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+      background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
     }}>
       {/* Grain */}
       <div className="absolute inset-0 pointer-events-none" style={{
@@ -873,7 +873,7 @@ export default function HomeDark() {
          使用 mix-blend-mode: lighten 確保和下方漸層重疊時亮色不會被蓋掉 */}
       <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
         height: '3000px',
-        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
         mixBlendMode: 'lighten',
       }} />
 
@@ -1249,7 +1249,7 @@ export default function HomeDark() {
                 <button onClick={() => document.querySelector('input[type="text"]')?.focus()}
                   className="flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-2xl p-4 transition-all min-h-[120px]"
                   style={{ borderColor: 'rgba(255,255,255,0.15)', color: T.textMid }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = T.orange + '66'; e.currentTarget.style.color = T.orange }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = `color-mix(in srgb, ${T.orange} 40%, transparent)`; e.currentTarget.style.color = T.orange }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = T.textMid }}
                 >
                   <span className="text-2xl">＋</span>
@@ -1341,8 +1341,8 @@ export default function HomeDark() {
             <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3" style={{
-                  background: T.aivis + '1f',
-                  border: `1px solid ${T.aivis}55`,
+                  background: `color-mix(in srgb, ${T.aivis} 12%, transparent)`,
+                  border: `1px solid color-mix(in srgb, ${T.aivis} 33%, transparent)`,
                 }}>
                   <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.aivis }} />
                   <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>本週榜單</span>
@@ -1411,8 +1411,8 @@ export default function HomeDark() {
           {/* Section header */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4" style={{
-              background: T.aivis + '1f',
-              border: `1px solid ${T.aivis}55`,
+              background: `color-mix(in srgb, ${T.aivis} 12%, transparent)`,
+              border: `1px solid color-mix(in srgb, ${T.aivis} 33%, transparent)`,
             }}>
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: T.aivis }} />
               <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: T.aivis }}>LLMO Signal Stack</span>

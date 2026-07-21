@@ -260,7 +260,7 @@ export default function AEOAudit() {
                 {!isPro && (
                   <span
                     className="text-sm px-2 py-1 rounded-full font-semibold"
-                    style={{ background: T.orange + '26', color: '#fdba74' }}
+                    style={{ background: `color-mix(in srgb, ${T.orange} 15%, transparent)`, color: '#fdba74' }}
                   >Pro 功能</span>
                 )}
               </div>
@@ -314,7 +314,7 @@ function PageBg({ children }) {
       {/* 上方青綠漸層光暈 — 從頁首左上往中央漸隱至純黑 */}
       <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
         height: '3000px',
-        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
         mixBlendMode: 'lighten',
       }} />
       {/* 下方青綠漸層光暈 — 從頁尾右下往左上擴散（335deg = 155deg 雙軸鏡像） */}

@@ -381,7 +381,7 @@ export default function SchemaCheck() {
                 未登入：免費註冊 → /register
                 已登入：直接跳首頁掃描 → / */}
             <section style={{
-              background: `linear-gradient(135deg, ${T.aeo}22, ${T.aivis}22)`,
+              background: `linear-gradient(135deg, ${T.aeo}22, color-mix(in srgb, ${T.aivis} 13%, transparent))`,
               border: `1px solid ${T.aeo}55`,
               borderRadius: T.rL, padding: 24, marginBottom: 24, textAlign: 'center',
             }}>

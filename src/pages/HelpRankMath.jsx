@@ -328,7 +328,7 @@ function PageBg({ children }) {
   return (
     <div style={{ minHeight: '100vh', background: BG, position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 3000, pointerEvents: 'none', zIndex: 0,
-        background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+        background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
         mixBlendMode: 'lighten',
       }} />
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 3600, pointerEvents: 'none', zIndex: 0,

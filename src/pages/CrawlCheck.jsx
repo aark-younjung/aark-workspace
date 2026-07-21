@@ -383,8 +383,8 @@ export default function CrawlCheck() {
             風險越高、CTA 文案越緊急（已從 verdict.riskLevel 拿到風險等級 0-4）*/}
         {result && verdict && verdict.riskLevel >= 0 && (
           <section style={{
-            background: `linear-gradient(135deg, ${T.orange}22, ${T.aivis}22)`,
-            border: `1px solid ${T.orange}55`,
+            background: `linear-gradient(135deg, color-mix(in srgb, ${T.orange} 13%, transparent), color-mix(in srgb, ${T.aivis} 13%, transparent))`,
+            border: `1px solid color-mix(in srgb, ${T.orange} 33%, transparent)`,
             borderRadius: T.rL,
             padding: 24, marginBottom: 24, textAlign: 'center',
           }}>
@@ -433,7 +433,7 @@ export default function CrawlCheck() {
           </p>
           <p>
             <strong style={{ color: T.text }}>這是 GEO 的第 0 步</strong>：進得來 → 才會被爬 → 才有機會被引用。我們先幫你確認第一關「門開著」。
-            （門開了之後，「ChatGPT 到底有沒有推薦你」用我們的 <strong style={{ color: T.text }}>AI 曝光監測</strong> 直接問 5 大 AI 量出來。）
+            （門開了之後，「ChatGPT 到底有沒有推薦你」用我們的 <strong style={{ color: T.text }}>AI 曝光監測</strong> 直接問 ChatGPT / Claude / Gemini 量出來。）
           </p>
         </section>
       </main>

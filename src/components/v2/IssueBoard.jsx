@@ -313,8 +313,8 @@ function IssueLockCTA({ lane }) {
       </div>
       <span style={{
         fontSize: 14, fontWeight: 700, padding: '5px 10px', borderRadius: 5,
-        background: T.orange + '26', color: '#fdba74', whiteSpace: 'nowrap',
-        border: `1px solid ${T.orange}40`,
+        background: `color-mix(in srgb, ${T.orange} 15%, transparent)`, color: '#fdba74', whiteSpace: 'nowrap',
+        border: `1px solid color-mix(in srgb, ${T.orange} 25%, transparent)`,
       }}>升級 →</span>
     </Link>
   )

@@ -190,7 +190,7 @@ export default function FAQ() {
         <>
           <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
             height: '2400px',
-            background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+            background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
             mixBlendMode: 'lighten',
           }} />
           <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
@@ -283,7 +283,7 @@ export default function FAQ() {
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-6"
             style={isDark
-              ? { background: T.orange + '1f', border: `1px solid ${T.orange}55`, color: T.orange }
+              ? { background: `color-mix(in srgb, ${T.orange} 12%, transparent)`, border: `1px solid color-mix(in srgb, ${T.orange} 33%, transparent)`, color: T.orange }
               : { background: '#fed7aa55', color: '#ea580c' }
             }
           >

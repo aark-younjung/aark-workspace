@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import { T } from '../styles/v2-tokens'
 import { GlassCard } from '../components/v2'
 
 export default function Account() {
   const { user, profile, isPro, isTrial, trialEndsAt, trialDaysRemaining, userName, signOut, fetchProfile } = useAuth()
+  const { theme, setTheme, themes } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [cancelling, setCancelling] = useState(false)
@@ -319,7 +321,7 @@ export default function Account() {
   const PageBg = ({ children }) => (
     <div
       className="min-h-screen relative overflow-hidden"
-      style={{ background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)' }}
+      style={{ background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))' }}
     >
       {/* 雜訊疊層 — 與 HomeDark / Login 一致 */}
       <div className="absolute inset-0 pointer-events-none z-0" style={{
@@ -454,7 +456,7 @@ export default function Account() {
                   ) : (
                     <span
                       className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-sm font-semibold rounded-full"
-                      style={{ background: T.orange + '26', color: '#fdba74' }}
+                      style={{ background: `color-mix(in srgb, ${T.orange} 15%, transparent)`, color: '#fdba74' }}
                     >
                       免費版
                     </span>
@@ -588,6 +590,47 @@ export default function Account() {
           </GlassCard>
 
           {/* Email 週報 — 暫時停用，等 Pro 訂閱完整接通再開 */}
+
+          {/* 介面配色 — 使用者自選，存 localStorage、換裝置不同步（不進 DB、不算個資） */}
+          <GlassCard style={{ padding: 24 }}>
+            <h3 className="text-sm font-semibold uppercase tracking-wide mb-2" style={{ color: T.textMid }}>介面配色</h3>
+            <p className="text-sm mb-4" style={{ color: T.textLow }}>
+              選一個你看得舒服的配色，整站會立即套用。設定只存在這台裝置的瀏覽器。
+            </p>
+            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+              {Object.entries(themes).map(([key, t]) => {
+                const active = theme === key
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setTheme(key)}
+                    aria-pressed={active}
+                    className="text-left rounded-xl p-3 transition-all"
+                    style={{
+                      background: active ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
+                      border: `1.5px solid ${active ? T.aivis : 'rgba(255,255,255,0.1)'}`,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {/* 色票：直接秀該主題的三個代表色，不用文字描述 */}
+                    <div className="flex gap-1.5 mb-2.5">
+                      {t.swatch.map((c, i) => (
+                        <span key={i} style={{
+                          width: 26, height: 26, borderRadius: 7, background: c,
+                          border: '1px solid rgba(255,255,255,0.14)', display: 'block',
+                        }} />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-semibold" style={{ color: T.text }}>{t.label}</span>
+                      {active && <span className="text-xs" style={{ color: T.aivis }}>✓ 使用中</span>}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </GlassCard>
 
           {/* 排行榜公開設定 — 個別網站可勾選「不在首頁 TOP 8 公開」 */}
           {userWebsites.length > 0 && (

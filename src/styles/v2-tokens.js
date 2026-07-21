@@ -1,31 +1,39 @@
 // v2 設計系統共用 tokens（從 docs/AI_ v2.html 抽出，所有 v2 頁面共用）
 // 改這裡會影響所有後續移植過來的頁面，動之前確認
 
+// 2026-07-21：值全部改走 CSS 變數（定義見 styles/themes.js），這樣切換配色時
+// 這裡的 1,400+ 處 T.xxx 用法會一起變，元件一行都不用改。
+// 後面的 fallback 是「變數還沒套上時」的保底值 = 原本的青綠夜配色。
 export const T = {
-  // 四大面向 + 內容品質（語意色，不可改）
+  // 四大面向 + 內容品質（語意色 — 代表資料的意義，不隨主題改）
+  // ⚠️ 刻意保持純色碼：全站有 124 處 `${T.pass}33`、`T.aeo + '26'` 這種「色碼＋透明度」
+  // 串接寫法，改成 var() 會變成無效 CSS。反正它們不隨主題變，維持 hex 最單純也最安全。
   seo: '#3b82f6',
   aeo: '#8b5cf6',
   geo: '#10b981',
   eeat: '#f59e0b',
   content: '#ec4899',
 
-  // 品牌色（橘紅漸層為主 CTA、青綠為 aivis 模組強調色）
-  orange: '#f97316',
-  orangeDeep: '#c2031c',
-  aivis: '#18c590',
-  aivisDeep: '#0d7a58',
+  // 品牌色（orange = 主 CTA、aivis = 模組強調色）
+  orange: 'var(--t-cta, #f97316)',
+  orangeDeep: 'var(--t-cta-deep, #c2031c)',
+  aivis: 'var(--t-accent, #18c590)',
+  aivisDeep: 'var(--t-accent-deep, #0d7a58)',
 
-  // 文字（白色透明分層 — 高對比 / 中等 / 弱化）
-  text: 'rgba(255,255,255,0.93)',
-  textMid: 'rgba(255,255,255,0.58)',
-  textLow: 'rgba(255,255,255,0.32)',
+  // 文字（高對比 / 中等 / 弱化）
+  text: 'var(--t-text, rgba(255,255,255,0.93))',
+  textMid: 'var(--t-text-mid, rgba(255,255,255,0.58))',
+  textLow: 'var(--t-text-low, rgba(255,255,255,0.32))',
 
-  // 卡片表面（玻璃擬態：深底 + 青綠邊）
-  cardBg: 'rgba(1,8,14,0.55)',
-  cardBorder: 'rgba(13,122,88,0.22)',
-  cardBorderHover: 'rgba(24,197,144,0.45)',
+  // 卡片表面（玻璃擬態）
+  cardBg: 'var(--t-card-bg, rgba(1,8,14,0.55))',
+  cardBorder: 'var(--t-card-border, rgba(13,122,88,0.22))',
+  cardBorderHover: 'var(--t-card-border-hover, rgba(24,197,144,0.45))',
 
-  // 狀態色
+  // 全站背景漸層（原本散在 App/Account/各 Audit 頁各寫一份，現在集中到這）
+  bg: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
+
+  // 狀態色（同上，語意色維持 hex）
   pass: '#10b981',
   fail: '#ef4444',
   warn: '#f59e0b',

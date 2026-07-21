@@ -161,7 +161,7 @@ export default function OrgSchemaGenerator() {
           </h3>
           <span style={{
             fontSize: 14, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
-            background: T.orange + '26', color: T.orange, border: `1px solid ${T.orange}55`,
+            background: `color-mix(in srgb, ${T.orange} 15%, transparent)`, color: T.orange, border: `1px solid color-mix(in srgb, ${T.orange} 33%, transparent)`,
           }}>Pro 限定</span>
         </div>
         <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 14 }}>

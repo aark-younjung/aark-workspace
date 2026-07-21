@@ -116,7 +116,7 @@ export default function AIVisibility() {
       {/* 青綠漸層背景：覆蓋在原 HomeDark 紅色背景之上，僅作用於 aivis 頁面 */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: -1,
-        background: `linear-gradient(155deg, #18c590 0%, #0d7a58 18%, #084773 32%, #011520 52%, #000000 72%)`,
+        background: `var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))`,
       }} />
     <div className="min-h-screen">
       {/* 頂部導覽列（返回首頁） */}

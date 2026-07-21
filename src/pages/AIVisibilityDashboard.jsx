@@ -816,7 +816,7 @@ export default function AIVisibilityDashboard() {
       {/* 青綠漸層背景：覆蓋在原 HomeDark 紅色背景之上，僅作用於 aivis 頁面 */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: -1,
-        background: `linear-gradient(155deg, ${AIVIS_TEAL} 0%, ${AIVIS_TEAL_DEEP} 18%, #084773 32%, #011520 52%, #000000 72%)`,
+        background: `var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))`,
       }} />
 
       {/* 公告改成 SiteHeader 右上角鈴鐺、本頁不再放卡片（2026-06-06） */}
@@ -1175,7 +1175,7 @@ function OverviewCard({ icon, label, value, sub, color, prefix = '', suffix = ''
   return (
     <div style={{
       background: highlight
-        ? `linear-gradient(155deg, ${AIVIS_TEAL}1c 0%, rgba(1,8,14,.65) 70%)`
+        ? `var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))`
         : 'rgba(1,8,14,.6)',
       border: highlight ? `1px solid ${AIVIS_TEAL}55` : `1px solid ${T.cardBorder}`,
       borderRadius: T.rL, padding: '18px 18px 16px', position: 'relative',
@@ -1425,7 +1425,7 @@ function PromptsPanel({
             background: `linear-gradient(135deg, ${T.orange}, #b91c1c)`,
             border: 'none', color: '#fff', fontSize: 14, fontWeight: 700,
             padding: '9px 16px', borderRadius: 8, cursor: 'pointer',
-            boxShadow: `0 4px 12px ${T.orange}55`, whiteSpace: 'nowrap', fontFamily: T.font,
+            boxShadow: `0 4px 12px color-mix(in srgb, ${T.orange} 33%, transparent)`, whiteSpace: 'nowrap', fontFamily: T.font,
           }}>✨ 重新產生 5 條</button>
           <span style={{
             fontSize: 14, color: T.textLow, lineHeight: 1.4, textAlign: 'right', maxWidth: 180,
@@ -1880,7 +1880,7 @@ function CitedSourcesCard({ sources, brandName, brandDomain, degraded }) {
   const outCount = Object.values(checked).filter(v => v === 'out').length
   return (
     <div style={{
-      background: `linear-gradient(155deg, ${AIVIS_TEAL}16 0%, rgba(1,8,14,.6) 70%)`,
+      background: `var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))`,
       border: `1px solid ${AIVIS_TEAL}45`, borderRadius: T.rL, padding: 22, marginBottom: 18,
       boxShadow: `0 8px 24px ${AIVIS_TEAL}12`,
     }}>
@@ -2483,7 +2483,7 @@ function UsageBanner({ used, quota, remaining, atSoftLimit, atHardCap, hardCap, 
     ctaText = '查看詳情'
   } else if (atSoftLimit) {
     mainColor = T.orange
-    bgGrad = `linear-gradient(135deg, ${T.orange}1a, ${T.orange}08)`
+    bgGrad = `linear-gradient(135deg, color-mix(in srgb, ${T.orange} 10%, transparent), color-mix(in srgb, ${T.orange} 3%, transparent))`
     title = `本月內含 ${quota} 次已用完`
     hint = `已使用 ${used.toLocaleString()} 次（含 Top-up ${overUsed} 次）· 距硬上限還剩 ${remainingHard.toLocaleString()} 次 · 加購次數包繼續使用`
     ctaText = '加購次數包'

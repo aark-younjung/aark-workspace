@@ -60,7 +60,7 @@ function PricingFAQ({ items, isDark }) {
               background: T.cardBg,                              // 玻璃擬態深底
               backdropFilter: 'blur(28px)',
               WebkitBackdropFilter: 'blur(28px)',
-              border: `1px solid ${T.orange}28`,                 // 橘色透明邊框（與其他 GlassCard 一致）
+              border: `1px solid color-mix(in srgb, ${T.orange} 16%, transparent)`,                 // 橘色透明邊框（與其他 GlassCard 一致）
               borderRadius: T.rL,                                // 16px 圓角
               padding: 24,
               boxShadow: '0 2px 20px rgba(0,0,0,.45)',           // 與 GlassCard 預設投影一致
@@ -330,7 +330,7 @@ export default function Pricing() {
         <>
           <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
             height: '2400px',
-            background: 'linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
+            background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
             mixBlendMode: 'lighten',
           }} />
           <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
@@ -900,7 +900,7 @@ export default function Pricing() {
             <div
               className="p-8 rounded-2xl border-2 text-center"
               style={isDark
-                ? { background: T.orange + '0d', borderColor: T.orange + '4d', backdropFilter: 'blur(16px)' }
+                ? { background: `color-mix(in srgb, ${T.orange} 5%, transparent)`, borderColor: `color-mix(in srgb, ${T.orange} 30%, transparent)`, backdropFilter: 'blur(16px)' }
                 : { background: 'rgba(249,115,22,0.05)', borderColor: 'rgba(249,115,22,0.3)' }
               }
             >
@@ -1037,7 +1037,7 @@ export default function Pricing() {
           to="/"
           className="w-full py-3 text-center rounded-xl font-medium block transition-all"
           style={isDark
-            ? { background: T.orange + '1a', border: `1px solid ${T.orange}55`, color: T.orange }
+            ? { background: `color-mix(in srgb, ${T.orange} 10%, transparent)`, border: `1px solid color-mix(in srgb, ${T.orange} 33%, transparent)`, color: T.orange }
             : { background: '#ffedd5', border: '1px solid #fed7aa', color: '#1e293b' }
           }
         >
