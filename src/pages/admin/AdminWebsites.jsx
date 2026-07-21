@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from './AdminLayout'
@@ -14,6 +14,7 @@ export default function AdminWebsites() {
   const [togglingTest, setTogglingTest] = useState({})  // key=siteId, 防 double-click
   const [filterTest, setFilterTest] = useState('all')  // all / not_test / test_only
   const [anonScans, setAnonScans] = useState([])        // 未登入快掃事件（value-first、不寫 audit 表）
+  const [anonView, setAnonView] = useState('time')      // time = 依時間；visitor = 依訪客分組
 
   useEffect(() => {
     fetchWebsites()
@@ -29,6 +30,30 @@ export default function AdminWebsites() {
       .limit(100)
     setAnonScans(data || [])
   }
+
+  // 依訪客把快掃紀錄收成一組一組（同一個瀏覽器 = 同一個 session_id）。
+  // 為什麼要這個：散著看只是一堆網址，看不出「同一個人連掃 3 個醫美站」這種高價值訊號。
+  // 沒有 session_id 的是加欄位之前的舊資料，統一歸到最後一組「未識別」。
+  const anonVisitorGroups = useMemo(() => {
+    const map = new Map()
+    for (const s of anonScans) {
+      const key = s.session_id || '__legacy__'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key).push(s)
+    }
+    return [...map.entries()]
+      .map(([sid, scans]) => ({
+        sid,
+        scans,                                   // 已依 created_at 由新到舊（查詢時就排好）
+        count: scans.length,
+        sites: new Set(scans.map(s => s.name || s.url)).size,
+        last: scans[0]?.created_at,
+        first: scans[scans.length - 1]?.created_at,
+      }))
+      // 未識別那組永遠沉底；其餘依「最近活動」由新到舊
+      .sort((a, b) => (a.sid === '__legacy__') - (b.sid === '__legacy__')
+        || new Date(b.last) - new Date(a.last))
+  }, [anonScans])
 
   const fetchWebsites = async () => {
     setLoading(true)
@@ -174,8 +199,67 @@ export default function AdminWebsites() {
                 約 <span className="text-white font-bold">{new Set(anonScans.filter(s => s.session_id).map(s => s.session_id)).size}</span> 位訪客
               </div>
             </div>
+
+            {/* 檢視切換：時間流水 vs 依訪客分組（分組才看得出「同一人連掃多個同產業網站」）*/}
+            {anonScans.length > 0 && (
+              <div className="flex gap-1.5 mb-3">
+                {[['time', '⏱ 依時間'], ['visitor', '👤 依訪客分組']].map(([v, label]) => (
+                  <button key={v} onClick={() => setAnonView(v)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                      anonView === v
+                        ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300 font-semibold'
+                        : 'bg-white/[0.03] border-white/10 text-slate-400 hover:text-slate-200'
+                    }`}>{label}</button>
+                ))}
+              </div>
+            )}
+
             {anonScans.length === 0 ? (
               <p className="text-sm text-slate-500">還沒有未登入快掃。廣告流量進來掃描後會出現在這裡。</p>
+            ) : anonView === 'visitor' ? (
+              <div className="space-y-3">
+                {anonVisitorGroups.map(g => {
+                  const legacy = g.sid === '__legacy__'
+                  const hue = legacy ? 0 : (parseInt(g.sid.slice(-4), 36) || 0) % 360
+                  return (
+                    <div key={g.sid} className="rounded-lg border border-white/10 bg-black/20 p-3">
+                      <div className="flex items-center gap-2.5 mb-2 flex-wrap">
+                        {legacy ? (
+                          <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/5 text-slate-500">未識別（舊資料）</span>
+                        ) : (
+                          <span className="text-xs font-mono px-2 py-0.5 rounded" style={{
+                            background: `hsl(${hue} 65% 22%)`, color: `hsl(${hue} 75% 78%)`,
+                          }}>{g.sid.slice(-4)}</span>
+                        )}
+                        <span className="text-sm text-white font-semibold">{g.count} 次掃描</span>
+                        <span className="text-xs text-slate-500">·</span>
+                        <span className="text-sm text-slate-400">{g.sites} 個不同網站</span>
+                        {!legacy && g.sites >= 2 && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300">
+                            🔍 多站比較
+                          </span>
+                        )}
+                        <span className="ml-auto text-xs text-slate-500 whitespace-nowrap">
+                          最近 {new Date(g.last).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {g.scans.map(s => (
+                          <div key={s.id} className="flex items-center gap-3 text-sm py-1 border-t border-white/5 first:border-t-0">
+                            <span className="text-white truncate flex-1 min-w-0">{s.name || s.url}</span>
+                            <span className="font-mono text-slate-400 text-xs whitespace-nowrap">
+                              {s.seo ?? '—'}/{s.aeo ?? '—'}/{s.geo ?? '—'}/{s.eeat ?? '—'}
+                            </span>
+                            <span className="text-slate-500 text-xs whitespace-nowrap">
+                              {new Date(s.created_at).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
