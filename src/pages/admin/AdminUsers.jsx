@@ -1554,7 +1554,7 @@ export default function AdminUsers() {
 
               {/* 寄件人提示 */}
               <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 mb-4 text-sm text-slate-400">
-                <p>📤 寄件人：<span className="text-slate-300 font-medium">AI 雷達客服 &lt;support@aark.io&gt;</span></p>
+                <p>📤 寄件人：<span className="text-slate-300 font-medium">AI 雷達客服 &lt;support@a-ark.com.tw&gt;</span></p>
                 <p className="mt-1">📝 此次操作會記錄至 <code className="bg-slate-700/50 px-1 rounded">admin_history</code> JSONB 供日後稽核</p>
               </div>
 

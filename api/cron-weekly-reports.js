@@ -278,7 +278,7 @@ async function processTrials({ supabase, RESEND_API_KEY, SITE_URL }) {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'AI 雷達 <report@aark.io>',
+          from: 'AI 雷達 <report@a-ark.com.tw>',
           to: [row.email],
           subject: '您的 Pro 試用已結束 — 隨時可升級延續',
           html,
@@ -349,7 +349,7 @@ async function processTrials({ supabase, RESEND_API_KEY, SITE_URL }) {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'AI 雷達 <report@aark.io>',
+          from: 'AI 雷達 <report@a-ark.com.tw>',
           to: [row.email],
           subject,
           html,
@@ -430,7 +430,7 @@ async function processWeeklyReports({ supabase, RESEND_API_KEY, SITE_URL }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'AI 雷達 <report@aark.io>',
+          from: 'AI 雷達 <report@a-ark.com.tw>',
           to: [sub.email],
           subject,
           html,

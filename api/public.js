@@ -146,7 +146,7 @@ async function handleAgencyWaitlistNotify(req, res) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'AI 雷達 <report@aark.io>',
+        from: 'AI 雷達 <report@a-ark.com.tw>',
         to: WAITLIST_NOTIFY_TO,
         reply_to: String(email),
         subject: `🤝 新代理商候補申請：${escHtml(company_name) || escHtml(email)}`,

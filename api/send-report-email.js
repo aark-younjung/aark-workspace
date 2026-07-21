@@ -203,7 +203,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'AI 雷達 <report@aark.io>',
+        from: 'AI 雷達 <report@a-ark.com.tw>',
         to: [email],
         subject,
         html,
@@ -346,7 +346,7 @@ async function handleAdminCustomEmail({ req, res, RESEND_API_KEY }) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'AI 雷達客服 <support@aark.io>',
+        from: 'AI 雷達客服 <support@a-ark.com.tw>',
         to: [recipient.email],
         subject,
         html,
