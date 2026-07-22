@@ -95,7 +95,7 @@ export default function AdminUsers() {
     try {
       let query = supabase
         .from('profiles')
-        .select('id, name, email, is_pro, is_admin, created_at, marketing_consent, pro_expires_at, admin_history, payment_gateway')
+        .select('id, name, email, is_pro, is_admin, created_at, marketing_consent, pro_expires_at, admin_history, payment_gateway, is_trial, trial_ends_at')
         .order('created_at', { ascending: false })
 
       // server-side 預篩：付費類細分（早鳥/年繳/月繳/授予）一律是 is_pro=true，先 server 過濾減少 client load
@@ -610,8 +610,11 @@ export default function AdminUsers() {
     if (filter === 'earlybird' && u.subscriptionType !== 'earlybird') return false
     if (filter === 'yearly' && u.subscriptionType !== 'yearly') return false
     if (filter === 'monthly' && u.subscriptionType !== 'monthly') return false
-    // granted = is_pro=true 但 subscriptionType=null（手動授予，無付費紀錄）
-    if (filter === 'granted' && !(u.is_pro && !u.subscriptionType)) return false
+    // trial = 試用中（is_pro=true + is_trial=true，無付費紀錄）
+    if (filter === 'trial' && !u.is_trial) return false
+    // granted = 手動授予：is_pro=true、無付費紀錄、且「不是試用」——
+    // 少了 !u.is_trial 這條，試用中的人會被算成手動授予（2026-07-22 修）
+    if (filter === 'granted' && !(u.is_pro && !u.subscriptionType && !u.is_trial)) return false
     // refunded = 有退款紀錄
     if (filter === 'refunded' && !u.hasRefund) return false
     // 2. 搜尋關鍵字
@@ -703,6 +706,7 @@ export default function AdminUsers() {
                 ['earlybird', '🐣 早鳥'],
                 ['yearly', '⭐ 年繳'],
                 ['monthly', '📅 月繳'],
+                ['trial', '🎁 試用'],
                 ['granted', '⭐ 授予'],
                 ['refunded', '↩️ 退款'],
               ].map(([val, label]) => (
@@ -757,6 +761,18 @@ export default function AdminUsers() {
                         {(() => {
                           if (!u.is_pro) {
                             return <span className="text-sm px-2 py-1 rounded-full font-semibold bg-slate-700 text-slate-400">Free</span>
+                          }
+                          // 試用要最先判 —— 啟用試用會把 is_pro 設成 true 但沒有付款紀錄，
+                          // 沒有這條就會全部掉進最後的「手動授予」，看不出誰在試用、剩幾天（2026-07-22 修）
+                          if (u.is_trial) {
+                            const left = u.trial_ends_at
+                              ? Math.max(0, Math.ceil((new Date(u.trial_ends_at) - Date.now()) / 864e5))
+                              : null
+                            return (
+                              <span className="text-sm px-2 py-1 rounded-full font-semibold bg-sky-500/20 text-sky-300">
+                                🎁 試用{left != null ? ` · 剩 ${left} 天` : ''}
+                              </span>
+                            )
                           }
                           if (u.subscriptionType === 'earlybird') {
                             return <span className="text-sm px-2 py-1 rounded-full font-semibold bg-amber-500/20 text-amber-400">🐣 早鳥</span>
