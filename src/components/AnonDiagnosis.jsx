@@ -57,10 +57,12 @@ const DIMS = [
 const scoreColor = (s) => s == null ? 'rgba(255,255,255,0.35)' : s >= 70 ? '#34d399' : s >= 40 ? '#fbbf24' : '#f87171'
 
 // 鎖住的「藥方」卡片內容
+// 2026-07-24：aivis 排第一。技術型使用者（做網站的、代理商）自己就會看報告改網站，
+//   「修復建議」對他們沒吸引力；真正自己驗不了、只有我們能給的是「AI 到底推不推薦你」→ 那才是註冊誘因。
 const LOCKED = [
+  { icon: '📡', title: 'AI 曝光監測（你自己驗不了的）', desc: '實際去問 ChatGPT・Claude・Gemini「推薦哪一家」，看你的品牌有沒有被講出來。改完網站到底有沒有用，這裡才知道。' },
   { icon: '🔧', title: '一鍵修復建議', desc: '每個沒過的項目，給你可直接照做的修法（含 WordPress / Shopify 平台別步驟）。' },
   { icon: '📈', title: '儲存並追蹤變化', desc: '把這份報告存起來，看你優化後分數怎麼動、歷史趨勢一目了然。' },
-  { icon: '📡', title: 'AI 曝光監測', desc: '定期問 ChatGPT・Claude・Gemini「推薦哪家」，追蹤你有沒有被 AI 主動提到。' },
 ]
 
 // 回訪第幾次開始顯示「保存紀錄」軟提示。
@@ -179,9 +181,10 @@ export default function AnonDiagnosis({ result, repeatCount = 0, onRegister }) {
 
       {/* 藥方（鎖住）+ 註冊 CTA */}
       <div className="rounded-xl border p-4 sm:p-5" style={{ background: 'rgba(0,0,0,0.25)', borderColor: 'rgba(249,115,22,0.35)' }}>
-        <div className="text-white font-bold text-sm mb-1">看得到問題了，怎麼修？</div>
-        <div className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>
-          診斷免費看，<span className="text-white font-semibold">行動方案</span>免費註冊解鎖：
+        <div className="text-white font-bold text-base mb-1">網站體質看完了 —— 但 AI 現在到底推不推薦你？</div>
+        <div className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.62)' }}>
+          你已經看到哪裡要修了。真正的問題是：改完之後，ChatGPT、Claude、Gemini 會不會推薦你？
+          <span className="text-white font-semibold">這件事你自己驗不了，我們幫你問</span>——免費註冊解鎖：
         </div>
         <div className="space-y-2.5 mb-5">
           {LOCKED.map(l => (
@@ -198,7 +201,7 @@ export default function AnonDiagnosis({ result, repeatCount = 0, onRegister }) {
         </div>
         <button type="button" onClick={onRegister}
           className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-900/50">
-          免費註冊 → 解鎖修復建議 + 啟用 AI 曝光監測
+          免費註冊 → 看 AI 推不推薦我（含 7 天試用）
         </button>
         <div className="text-center text-xs mt-2.5" style={{ color: 'rgba(255,255,255,0.4)' }}>免費・不用綁卡・30 秒完成</div>
       </div>
