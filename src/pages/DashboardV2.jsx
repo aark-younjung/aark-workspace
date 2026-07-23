@@ -443,7 +443,7 @@ export default function DashboardV2() {
                 <AivisHero isPro={isPro} websiteName={website.name} overallScore={overallScore} trendData={trendData} />
               </div>
               <div className="lg:col-span-4">
-                <GamifyRail gamify={gamify} />
+                <GamifyRail gamify={gamify} onRescan={handleFirstScan} rescanning={scanning} />
               </div>
             </section>
 
@@ -1110,7 +1110,7 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
 }
 
 // 右側 Gamify Rail — Level 卡 + Streak 卡 + Badges 卡
-function GamifyRail({ gamify }) {
+function GamifyRail({ gamify, onRescan, rescanning }) {
   return (
     <div className="flex flex-col gap-3">
       {/* Level 卡 */}
@@ -1184,6 +1184,30 @@ function GamifyRail({ gamify }) {
           ))}
         </div>
       </div>
+
+      {/* 重新檢測（2026-07-22）— 主要重掃入口。TopBar 那顆太不明顯，改在徽章下放一顆橘色大鈕。
+          放這裡的心理動線也順：改完網站 → 回來看等級/連續天數 → 重新檢測累積下一次。 */}
+      {onRescan && (
+        <button
+          onClick={onRescan}
+          disabled={rescanning}
+          className="w-full py-3.5 rounded-2xl font-bold text-white inline-flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+          style={{
+            background: 'linear-gradient(135deg, #ff6e34, #e85114)',
+            boxShadow: '0 8px 20px rgba(255,110,52,0.32)',
+          }}
+          title="重跑 SEO / AEO / GEO / E-E-A-T 4 大檢測、寫入新一筆紀錄、趨勢圖 +1 點"
+        >
+          {rescanning ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+              檢測中…
+            </>
+          ) : (
+            <>🔄 重新檢測</>
+          )}
+        </button>
+      )}
     </div>
   )
 }
