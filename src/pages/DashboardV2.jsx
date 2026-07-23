@@ -884,21 +884,8 @@ function TopBar({ website, navigate, onExportPdf, onChecklist, onRescan, rescann
         >
           ← 切回舊版
         </button>
-        <button
-          onClick={onRescan}
-          disabled={rescanning}
-          className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
-          title="重跑 SEO / AEO / GEO / E-E-A-T 4 大 audit、寫入新一筆紀錄"
-        >
-          {rescanning ? (
-            <>
-              <span className="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              <span className="hidden sm:inline">檢測中…</span>
-            </>
-          ) : (
-            <>🔄<span className="hidden sm:inline ml-1">重新檢測</span></>
-          )}
-        </button>
+        {/* 2026-07-22：TopBar 的「重新檢測」已移除 —— 主要入口統一到徽章區下方那顆橘色大鈕，
+            避免同頁兩顆「重新檢測」讓人以為功能不同。onRescan/rescanning 仍由 GamifyRail 使用。 */}
         <button
           onClick={onExportPdf}
           className="px-3 py-1.5 text-sm text-white/70 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10"
@@ -1185,28 +1172,37 @@ function GamifyRail({ gamify, onRescan, rescanning }) {
         </div>
       </div>
 
-      {/* 重新檢測（2026-07-22）— 主要重掃入口。TopBar 那顆太不明顯，改在徽章下放一顆橘色大鈕。
-          放這裡的心理動線也順：改完網站 → 回來看等級/連續天數 → 重新檢測累積下一次。 */}
+      {/* 重新檢測（2026-07-22）— 唯一的重掃入口（TopBar 那顆已移除，避免兩顆讓人以為功能不同）。
+          放徽章下方、心理動線順：改完網站 → 看等級/連續天數 → 重新檢測累積下一次。
+          文案寫清楚「檢測什麼」，不靠 tooltip（手機看不到 tooltip）。 */}
       {onRescan && (
-        <button
-          onClick={onRescan}
-          disabled={rescanning}
-          className="w-full py-3.5 rounded-2xl font-bold text-white inline-flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
-          style={{
-            background: 'linear-gradient(135deg, #ff6e34, #e85114)',
-            boxShadow: '0 8px 20px rgba(255,110,52,0.32)',
-          }}
-          title="重跑 SEO / AEO / GEO / E-E-A-T 4 大檢測、寫入新一筆紀錄、趨勢圖 +1 點"
-        >
-          {rescanning ? (
-            <>
-              <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
-              檢測中…
-            </>
-          ) : (
-            <>🔄 重新檢測</>
-          )}
-        </button>
+        <div className="rounded-2xl p-3" style={{
+          background: 'linear-gradient(135deg, rgba(255,110,52,0.1), rgba(0,0,0,0.3))',
+          border: '1px solid rgba(255,110,52,0.28)',
+        }}>
+          <button
+            onClick={onRescan}
+            disabled={rescanning}
+            className="w-full py-3 rounded-xl font-bold text-white inline-flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+            style={{
+              background: 'linear-gradient(135deg, #ff6e34, #e85114)',
+              boxShadow: '0 6px 16px rgba(255,110,52,0.32)',
+            }}
+          >
+            {rescanning ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                重新檢測中…
+              </>
+            ) : (
+              <>🔄 重新檢測這個網站</>
+            )}
+          </button>
+          <p className="text-sm text-white/55 leading-relaxed mt-2 text-center">
+            重跑 <b className="text-white/75">SEO・AEO・GEO・E-E-A-T</b> 四大面向<br />
+            更新分數，並在趨勢圖多記一筆
+          </p>
+        </div>
       )}
     </div>
   )
