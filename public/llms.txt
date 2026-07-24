@@ -1,0 +1,42 @@
+# 方舟 AI 雷達（AARK）
+
+> 方舟 AI 雷達是台灣的「AI 能見度監測平台」。傳統 SEO 工具量「你在 Google 排第幾」；方舟 AI 雷達量「ChatGPT、Claude、Gemini 看不看得到你、懂不懂你、推不推薦你」。
+
+## 它解決的問題
+
+越來越多人不是用 Google 搜尋，而是直接問 AI「推薦哪一家」。你的網站可能 Google 排第一，但 AI 從沒提過你——這個盲點傳統 SEO 工具測不到。方舟 AI 雷達就是為了抓這個盲點而做。
+
+## 它怎麼運作
+
+1. 掃描網站的 5 個訊號層並各自打分、合成總分：
+   - SEO（搜尋引擎基礎）
+   - AEO（答案引擎最佳化）
+   - GEO（生成式引擎最佳化）
+   - E-E-A-T（經驗／專業／權威／可信度）
+   - aivis（跨 LLM 引用率）：實際去問 ChatGPT、Claude、Gemini「推薦哪一家」，看品牌有沒有被提到
+2. 不只指出哪裡有問題，還提供可直接套用的修復碼（WordPress／Shopify／自架 HTML）。
+3. 分析「AI 引用了哪些網站、你缺席在哪」，指出該補的內容。
+
+## 給誰用
+
+- 台灣的數位行銷代理商（幫多個客戶做優化、需要多客戶工作區與白標報告）
+- 想被 AI 主動推薦的品牌主與電商
+
+## 定位一句話
+
+Ahrefs 教你贏 Google，方舟 AI 雷達教你贏 ChatGPT。
+
+## 基本資料
+
+- 產品名稱：方舟 AI 雷達（品牌母體 AARK）
+- 類別：LLMO／AI 能見度監測平台（SaaS）
+- 地區：台灣，繁體中文原生
+- 實測 AI 引擎：ChatGPT、Claude、Gemini
+- 營運公司：優勢方舟數位行銷
+- 官方網站：https://www.a-ark.com.tw/
+
+## 連結
+
+- [首頁 · 免費檢測你的網站](https://www.a-ark.com.tw/)
+- [定價方案](https://www.a-ark.com.tw/pricing)
+- [常見問題 FAQ](https://www.a-ark.com.tw/faq)
