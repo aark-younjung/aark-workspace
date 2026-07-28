@@ -26,7 +26,7 @@ const SEO_CHECKS = [
   {
     id: 'meta_title', name: 'Meta 標題', icon: '🏷️',
     description: '頁面標題是搜尋結果的第一印象，建議長度 30–60 字，包含主要關鍵字',
-    recommendation: '在 <head> 加入 <title>頁面主題 | 品牌名稱</title>，長度控制在 30–60 字，將目標關鍵字放在前半段',
+    recommendation: 'WordPress 用 Rank Math／Yoast 的「SEO 標題」欄位、Shopify／Wix 在 SEO 設定填「頁面主題 | 品牌名稱」，長度 30–60 字、關鍵字放前半段；自架站在 <head> 放 <title>。',
     priority: 'P1',
     getValue: (audit) => {
       if (isPartialAudit(audit)) return NOT_CHECKED
@@ -41,7 +41,7 @@ const SEO_CHECKS = [
   {
     id: 'meta_desc', name: 'Meta 描述', icon: '📝',
     description: 'Meta 描述出現在搜尋結果摘要，好的描述能提升點擊率（CTR），建議 70–155 字',
-    recommendation: '在 <head> 加入 <meta name="description" content="...">，自然帶入關鍵字，並以行動呼籲結尾，長度 70–155 字',
+    recommendation: 'WordPress 用 Rank Math／Yoast 的「Meta 描述」欄位、Shopify／Wix 在 SEO 設定填 70–155 字，帶關鍵字並以行動呼籲結尾；自架站在 <head> 加 <meta name="description">。',
     priority: 'P1',
     getValue: (audit) => {
       if (isPartialAudit(audit)) return NOT_CHECKED

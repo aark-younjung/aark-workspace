@@ -8,7 +8,7 @@ export const FIX_GUIDES = {
 
   // ─── SEO ────────────────────────────────────────────────────
   meta_title: {
-    summary: '在網頁 <head> 加入 30–60 字的 <title> 標籤，前半段放關鍵字',
+    summary: 'WordPress 用 Rank Math／Yoast 的「SEO 標題」欄位（Shopify／Wix 在 SEO 設定）填 30–60 字、前半段放關鍵字；自架站在 <head> 放 <title>。',
     platforms: {
       wordpress: {
         steps: [
@@ -52,7 +52,7 @@ export const FIX_GUIDES = {
   },
 
   meta_desc: {
-    summary: '在 <head> 加入 70–155 字的 Meta 描述，自然帶入關鍵字並加行動呼籲',
+    summary: 'WordPress 用 Rank Math／Yoast 的「Meta 描述」欄位（Shopify／Wix 在 SEO 設定）填 70–155 字、帶關鍵字並加行動呼籲；自架站在 <head> 加 <meta name="description">。',
     platforms: {
       wordpress: {
         steps: [
