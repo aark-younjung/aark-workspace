@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { metaLengthVerdict } from '../lib/metaLength'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { useAuth } from '../context/AuthContext'
 import { T } from '../styles/v2-tokens'
@@ -25,32 +26,32 @@ const NOT_CHECKED = { passed: true, detail: '此次未檢測（爬蟲被擋導�
 const SEO_CHECKS = [
   {
     id: 'meta_title', name: 'Meta 標題', icon: '🏷️',
-    description: '頁面標題是搜尋結果的第一印象，建議長度 30–60 字，包含主要關鍵字',
-    recommendation: 'WordPress 用 Rank Math／Yoast 的「SEO 標題」欄位、Shopify／Wix 在 SEO 設定填「頁面主題 | 品牌名稱」，長度 30–60 字、關鍵字放前半段；自架站在 <head> 放 <title>。',
+    description: '頁面標題是搜尋結果的第一印象，中文約 15–40 字、英文 30–60 字，包含主要關鍵字',
+    recommendation: 'WordPress 用 Rank Math／Yoast 的「SEO 標題」欄位、Shopify／Wix 在 SEO 設定填「頁面主題 | 品牌名稱」（中文約 15–40 字、英文 30–60 字），關鍵字放前半段；自架站在 <head> 放 <title>。',
     priority: 'P1',
     getValue: (audit) => {
       if (isPartialAudit(audit)) return NOT_CHECKED
       const content = audit?.meta_tags?.titleContent
-      const len = content?.length || 0
       if (!content) return { passed: false, detail: '未設置 Meta 標題' }
-      if (len < 30) return { passed: false, detail: `標題過短（${len} 字），建議至少 30 字` }
-      if (len > 60) return { passed: false, detail: `標題過長（${len} 字），建議縮短至 60 字以內` }
-      return { passed: true, detail: `「${content.length > 35 ? content.substring(0, 35) + '...' : content}」（${len} 字）` }
+      const r = metaLengthVerdict(content, 'title')   // 中英文分開判
+      if (r.verdict === 'short') return { passed: false, detail: `標題過短（${r.chars} 字），建議至少 ${r.min} 字` }
+      if (r.verdict === 'long') return { passed: false, detail: r.isCJK ? `標題過長（${r.chars} 字），中文約 ${r.max} 字 Google 就截斷` : `標題過長（${r.chars} 字），建議縮短至 ${r.max} 字以內` }
+      return { passed: true, detail: `「${content.length > 35 ? content.substring(0, 35) + '...' : content}」（${r.chars} 字）` }
     },
   },
   {
     id: 'meta_desc', name: 'Meta 描述', icon: '📝',
-    description: 'Meta 描述出現在搜尋結果摘要，好的描述能提升點擊率（CTR），建議 70–155 字',
-    recommendation: 'WordPress 用 Rank Math／Yoast 的「Meta 描述」欄位、Shopify／Wix 在 SEO 設定填 70–155 字，帶關鍵字並以行動呼籲結尾；自架站在 <head> 加 <meta name="description">。',
+    description: 'Meta 描述出現在搜尋結果摘要，好的描述能提升點擊率（CTR），中文約 40–80 字、英文 70–155 字',
+    recommendation: 'WordPress 用 Rank Math／Yoast 的「Meta 描述」欄位、Shopify／Wix 在 SEO 設定填內容（中文約 40–80 字、英文 70–155 字），帶關鍵字並以行動呼籲結尾；自架站在 <head> 加 <meta name="description">。',
     priority: 'P1',
     getValue: (audit) => {
       if (isPartialAudit(audit)) return NOT_CHECKED
       const content = audit?.meta_tags?.descriptionContent
-      const len = content?.length || 0
       if (!content) return { passed: false, detail: '未設置 Meta 描述' }
-      if (len < 70) return { passed: false, detail: `描述過短（${len} 字），建議至少 70 字` }
-      if (len > 155) return { passed: false, detail: `描述過長（${len} 字），超過搜尋結果顯示上限` }
-      return { passed: true, detail: `${len} 字，長度符合建議範圍` }
+      const r = metaLengthVerdict(content, 'desc')   // 中英文分開判
+      if (r.verdict === 'short') return { passed: false, detail: `描述過短（${r.chars} 字），建議至少 ${r.min} 字` }
+      if (r.verdict === 'long') return { passed: false, detail: r.isCJK ? `描述過長（${r.chars} 字），中文約 ${r.max} 字 Google 就截斷、後面看不到` : `描述過長（${r.chars} 字），超過搜尋結果顯示上限` }
+      return { passed: true, detail: `${r.chars} 字，長度符合建議範圍` }
     },
   },
   {

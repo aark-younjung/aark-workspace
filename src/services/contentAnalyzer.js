@@ -13,6 +13,8 @@
  * 9. 可讀性（段落長度）
  */
 
+import { metaLengthVerdict } from '../lib/metaLength'
+
 const API_BASE = '/api/fetch-url'
 
 export async function fetchArticleContent(url) {
@@ -84,10 +86,10 @@ function checkMetaTags(doc) {
   return {
     title,
     titleLength: title.length,
-    hasTitleOptimal: title.length >= 30 && title.length <= 60,
+    hasTitleOptimal: metaLengthVerdict(title, 'title').verdict === 'ok',   // 中英文分開判
     description: desc,
     descLength: desc.length,
-    hasDescOptimal: desc.length >= 70 && desc.length <= 155,
+    hasDescOptimal: metaLengthVerdict(desc, 'desc').verdict === 'ok',
     hasOgTitle: !!ogTitle,
     hasOgDesc: !!ogDesc,
     hasOgImage: !!ogImage,

@@ -6,6 +6,20 @@
 
 ---
 
+### 2026-07-27（檢測準確度：@graph schema + Meta 中文長度 — 都是「規則沒考慮 WP/中文」）
+
+用戶拿真實 WordPress + Rank Math 網站（darkred-squid…hostingersite.com）測，抓出兩個對台灣客群的系統性誤判，都用「抓真原始碼比對」驗證後修好：
+
+1. **@graph schema 漏偵測**（真 bug）：[eeatAnalyzer.js](src/services/eeatAnalyzer.js) 的 Organization／作者／日期用 `[].concat(JSON.parse())` 只拿最外層節點，沒展開 `@graph`。但 Rank Math／Yoast 都把 schema 包進 `{ @graph:[...] }` → 大量 WP 站的 Organization 被誤判「沒有」、E-E-A-T 系統性低報，還會叫用戶手動加一份 → 跟外掛打架。修：新增 `collectJsonLdNodes()` 遞迴展開 @graph；Organization 比對支援 `@type` 陣列（`["LegalService","Organization"]`）+ `*Business`/`*Organization` 子型別。實測目標站：舊版 false-negative → 新版正確 PASS。（AEO/GEO 本來就有處理 @graph，只有 eeat 漏。）
+
+2. **Meta 標題/描述長度沒分中英文**：舊門檻是英文的（title 30–60、desc 70–155）。中文全形字寬約兩倍、Google 早截斷 → 兩頭誤判：27 字中文標題被判「過短」（其實剛好）、100 字中文描述被判「OK」（Google 其實已截斷）。新增 [lib/metaLength.js](src/lib/metaLength.js) `metaLengthVerdict()`：中文佔比 ≥40% 走中文門檻（title 15–40、desc 40–80），否則英文。接到 [SEOAudit.jsx](src/pages/SEOAudit.jsx) 兩個檢測 + [contentAnalyzer.js](src/services/contentAnalyzer.js) 的 optimal 判斷，detail 文案也會講「中文約 X 字 Google 就截斷」。
+
+3. **Meta 修法建議點出「去哪改」**：原本免費可見的建議只寫「在 <head> 加 <meta>」，對 WordPress 客群等於沒講。改成先講 Rank Math/Yoast 哪個欄位（含 Shopify/Wix），完整逐步驟仍留 Pro。
+
+意義：這幾項都是「工具規則沒考慮到用戶實際環境（WordPress、中文）」，會直接侵蝕信任——尤其「叫用戶加已存在的 schema」等於幫客戶把網站弄壞。全靠用戶拿真站測才抓到。Vite transform 916 ✓。
+
+---
+
 ### 2026-07-21（配色主題引擎：使用者可自選介面配色）
 
 把寫死的顏色改成 CSS 變數驅動，讓使用者能自選配色。**關鍵在於零元件改動**：全站 1,414 處 `T.xxx` 只要把 T 的值換成 `var(--t-xxx, fallback)`，切主題時就會一起變。
