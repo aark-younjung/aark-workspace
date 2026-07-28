@@ -6,6 +6,31 @@
 import { fetchPageContent, parseHTML } from './seoAnalyzer'
 
 /**
+ * 把頁面裡所有 JSON-LD 攤平成「節點陣列」——關鍵是要展開 @graph。
+ *
+ * 2026-07-27 修：Rank Math / Yoast 等現代 WordPress SEO 外掛，會把 Organization、
+ * Person、WebSite… 全部包進一個 { "@graph": [...] } 裡。舊版用 [].concat(JSON.parse())
+ * 只拿到最外層那顆（@type=undefined），@graph 內的節點全看不到 → Organization/作者/日期
+ * 在大量 WP 網站被誤判成「沒有」、E-E-A-T 分數被系統性壓低。這裡遞迴展開 @graph 修掉它。
+ */
+function collectJsonLdNodes(doc) {
+  const nodes = []
+  const push = (o) => {
+    if (!o || typeof o !== 'object') return
+    if (Array.isArray(o)) { o.forEach(push); return }
+    nodes.push(o)
+    if (Array.isArray(o['@graph'])) o['@graph'].forEach(push)   // 展開 @graph
+  }
+  for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
+    try { push(JSON.parse(script.textContent)) } catch { /* 壞掉的 JSON-LD 跳過 */ }
+  }
+  return nodes
+}
+
+// 節點的 @type 可能是字串或陣列（如 ["LegalService","Organization"]）→ 一律轉成陣列比對
+const typesOf = (node) => [].concat(node?.['@type'] || [])
+
+/**
  * 1. 作者資訊 - 頁面是否有可識別的作者
  */
 function checkAuthorInfo(doc) {
@@ -13,13 +38,8 @@ function checkAuthorInfo(doc) {
   if (doc.querySelectorAll('[rel="author"], [itemprop="author"]').length > 0) return { passed: true }
   // 常見作者 class
   if (doc.querySelector('.author, .byline, .post-author, .article-author')) return { passed: true }
-  // JSON-LD 中的 author 欄位
-  for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
-    try {
-      const schemas = [].concat(JSON.parse(script.textContent))
-      if (schemas.some(s => s.author || s['@type'] === 'Person')) return { passed: true }
-    } catch {}
-  }
+  // JSON-LD（含 @graph）中的 author 欄位或 Person 節點
+  if (collectJsonLdNodes(doc).some(s => s.author || typesOf(s).includes('Person'))) return { passed: true }
   return { passed: false }
 }
 
@@ -68,18 +88,12 @@ function checkPrivacyPolicy(doc) {
  * 5. Organization Schema - 是否有機構/品牌結構化資料
  */
 function checkOrganizationSchema(doc) {
-  const orgTypes = ['Organization', 'LocalBusiness', 'Corporation', 'NGO',
+  // LegalService/Dentist 等各種 *Business 子型別都算「機構 schema」；用 endsWith 兜住沒列到的
+  const orgTypes = ['Organization', 'LocalBusiness', 'Corporation', 'NGO', 'LegalService',
     'EducationalOrganization', 'MedicalOrganization', 'Store', 'Restaurant', 'Hotel']
-  for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
-    try {
-      const schemas = [].concat(JSON.parse(script.textContent))
-      if (schemas.some(s => {
-        const types = [].concat(s['@type'] || [])
-        return types.some(t => orgTypes.includes(t))
-      })) return { passed: true }
-    } catch {}
-  }
-  return { passed: false }
+  const isOrg = t => orgTypes.includes(t) || t.endsWith('Business') || t.endsWith('Organization')
+  const hit = collectJsonLdNodes(doc).some(s => typesOf(s).some(isOrg))
+  return { passed: hit }
 }
 
 /**
@@ -90,13 +104,8 @@ function checkDatePublished(doc) {
   if (doc.querySelector('meta[property="article:published_time"], meta[property="article:modified_time"], meta[name="date"], meta[name="last-modified"]')) return { passed: true }
   // <time> 元素
   if (doc.querySelector('time[datetime]')) return { passed: true }
-  // JSON-LD
-  for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
-    try {
-      const schemas = [].concat(JSON.parse(script.textContent))
-      if (schemas.some(s => s.datePublished || s.dateModified)) return { passed: true }
-    } catch {}
-  }
+  // JSON-LD（含 @graph）
+  if (collectJsonLdNodes(doc).some(s => s.datePublished || s.dateModified)) return { passed: true }
   return { passed: false }
 }
 
