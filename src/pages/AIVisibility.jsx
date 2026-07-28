@@ -139,7 +139,7 @@ export default function AIVisibility() {
           </div>
           <h1 className="text-4xl font-bold text-white mb-3">AI 曝光監測</h1>
           <p className="text-white/70 text-base max-w-2xl leading-relaxed">
-            追蹤你的品牌在 ChatGPT、Claude、Perplexity、Gemini 等生成式 AI 中的曝光表現。
+            追蹤你的品牌在 ChatGPT、Claude、Gemini 等生成式 AI 中的曝光表現。
             量化「被 AI 主動推薦」的真實數據，找出流失的商業機會。
           </p>
         </div>
@@ -155,7 +155,7 @@ export default function AIVisibility() {
               </div>
               <h2 className="text-2xl font-bold text-white mb-3">AI 曝光監測為 Pro 功能</h2>
               <p className="text-white/70 text-sm leading-relaxed mb-6">
-                追蹤品牌在 ChatGPT、Claude、Perplexity、Gemini 的曝光表現需要持續呼叫多家 AI 平台，
+                追蹤品牌在 ChatGPT、Claude、Gemini 的曝光表現需要持續呼叫多家 AI 平台，
                 屬於 Pro 訂閱方案內含（每月 150 次掃描）。
                 <br />
                 你也可以啟用 <strong className="text-emerald-300">7 天免費試用</strong>體驗完整功能。

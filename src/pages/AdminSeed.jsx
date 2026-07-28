@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import AdminGuard from './admin/AdminGuard'  // 守衛：非管理員不得進入（否則任何人可寫 20 站假資料）
 
 const SEED_SITES = [
   { name: '彩泥窯',            url: 'https://saideigama.com',          category: '陶芸', seo: 48, aeo: 28, geo: 22, eeat: 55 },
@@ -113,6 +114,7 @@ export default function AdminSeed() {
   }
 
   return (
+    <AdminGuard>
     <div className="min-h-screen bg-slate-900 p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-white mb-2">Admin Seed Tool</h1>
@@ -149,5 +151,6 @@ export default function AdminSeed() {
         )}
       </div>
     </div>
+    </AdminGuard>
   )
 }

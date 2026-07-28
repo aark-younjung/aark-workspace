@@ -6,6 +6,30 @@
 
 ---
 
+### 2026-07-28（改版實作 Batch 1：資料地基 — aivis_brands.website_id + websites「一頁一筆」發現）
+
+**Batch 1 完成**（純 DB、零 app code，SQL 於 Supabase SQL Editor 手動跑）：
+1. `aivis_brands` 加 `website_id`（FK→`websites.id`、可空、`on delete set null`）+ index。
+2. 用網域正規化 backfill：品牌連到「該網域**最短 URL（首頁）**那筆」websites（同站多筆時挑首頁）。結果 **6 連結 / 2 未連結**（未連結＝domain 空或無對應網站，正常，留 null 走 UI 手動連）。
+
+**過程中的發現**：Step 2 review 揭露 `websites` 表其實是「一頁一筆」（金鉑先生 kimbo3899 一站被掃 96 頁＝96 筆）。根因 [HomeDark.jsx:481](src/pages/HomeDark.jsx) 的 normalizeUrl 只統一 www/斜線/query、不拿掉路徑，dedup 鍵是完整 URL。診斷（每用戶 row 數 vs distinct host）顯示**重複幾乎只在 1 個用戶**（`882810a8`：96→3 站、93 重複），其餘乾淨。站數上限（[HomeDark.jsx:367](src/pages/HomeDark.jsx)）是算 row（頁）不是網域、且主掃描流程沒硬擋＝顯示/計數誤導、非阻擋 bug。
+
+**決定（不做破壞性 migration）**：重複頁是不同頁的真實體檢紀錄，硬合併會刪真資料 → 改版在查詢/UI 層「依 host 分組」呈現一站一卡、站數改算 distinct host（Batch 2/3）。CLAUDE.md 待辦已更新。
+
+---
+
+### 2026-07-28（改版 IA 二層驗證定案 + 兩個誠實/安全修正）
+
+**改版資訊架構經 Codex 二層驗證**：把改版前 22 個面向用戶路由與新版 6 格左選單做覆蓋度對照。我在 [_design/redesign-spec.md](_design/redesign-spec.md) 預先點名的孤兒（排行榜/競品/多客戶/批次掃描/公開摘要/法律頁/legacy）Codex 全數獨立命中（交叉驗證通過）；另抓到我漏的重點：`websites.id` 與 `aivis_brands.id` 兩套 UUID 不能共用 `:id`、首頁把技術快掃謊稱「AI 能見度分數」、幾個既有守衛漏洞。四個商業決策定案並寫入 spec 第五節：①一站一品牌（1:1，加 `aivis_brands.website_id` FK）②「內容缺口」窄用（僅 aivis-info 引用缺口，文章/批次歸網站體檢）③Agency 兩級 Starter30/Plus100（以 [limits.js](src/lib/limits.js) 為準）④公開 crawl/schema 保留雙角色（落地頁 + 登入分頁）。URL 契約 `/app/:websiteId/<區塊>`、舊 URL 全 1:1 轉址、每分頁真 URL。
+
+**兩個修正（改到 production 頁，動前有問用戶）**：
+1. **誠實**：[AIVisibility.jsx](src/pages/AIVisibility.jsx) 兩處（:142/:158）把監測引擎寫成「ChatGPT、Claude、Perplexity、Gemini」＝謊稱監測 Perplexity（7/17 全站 5→3 對齊漏網一處）→ 移除，改三引擎。保留全站爬蟲/教育類 `PerplexityBot` 字樣不動。
+2. **安全**：`/admin/seed`（[AdminSeed.jsx](src/pages/AdminSeed.jsx)）原本無任何守衛，任何人開頁點按鈕就能寫 20 站假資料 → self-wrap `<AdminGuard>`。
+
+CLAUDE.md 站數上限更正 Agency 50 → Starter30/Plus100。Vite transform 917 ✓。**待辦（併改版一起做）**：aivis/fetch 補呼叫者 token 驗證（P1）、AIVisibilityDashboard 補 Pro/Trial 守衛、BulkScan 未登入死路、/clients 登入返回。
+
+---
+
 ### 2026-07-27（信任落差：只掃一頁卻用全站口氣 → 檢測範圍誠實化 + sitemap 其他頁一鍵補掃）
 
 用戶點出頭號信任殺手：「照建議改了分數卻不動」「我明明有 FAQ、你卻說沒有」。根因是**只掃單頁、卻用全站口氣講**（FAQ 在別頁，我們掃首頁說「沒有」＝冤枉人）。做兩件（第三件「改前/改後可見進步」待辦）：

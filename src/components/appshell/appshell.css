@@ -1,0 +1,134 @@
+/* ══════════════════════════════════════════════════════════════
+   改版 app-shell 樣式（亮色版）— 全部 scope 在 .appshell 底下，
+   不外洩、不與全域暗色主題打架。token 值對齊設計稿 redesign-app.html。
+   ══════════════════════════════════════════════════════════════ */
+
+/* 根：亮色 token + 不透明底（蓋住全域 GlobalDarkBg 的暗色背景） */
+.appshell{
+  --bg:#f4f5f7; --surface:#ffffff; --surface-2:#eef0f4; --surface-3:#e6e9ef;
+  --ink:#00003e; --ink-2:#4a4a63; --ink-3:#9a9aad;
+  --line:rgba(0,0,62,.08); --line-2:rgba(0,0,62,.14);
+  --accent:#ff6e34; --accent-2:#e85114; --accent-soft:rgba(255,110,52,.1);
+  --pop:#8298ff;
+  --seo:#2563eb; --aeo:#7c3aed; --geo:#059669; --eeat:#b45309;
+  --sh-sm:0 1px 2px rgba(0,0,62,.05);
+  --sh:0 1px 2px rgba(0,0,62,.04), 0 14px 32px rgba(0,0,62,.07);
+  --r:12px; --r-lg:18px; --r-xl:24px;
+  --font:"PingFang TC","Microsoft JhengHei","Noto Sans TC",system-ui,-apple-system,sans-serif;
+  --mono:"SFMono-Regular","Cascadia Code","Consolas",ui-monospace,monospace;
+
+  position:relative; z-index:0;               /* 蓋過 -z-20 的全域暗底 */
+  min-height:100vh; background:var(--bg); color:var(--ink);
+  font-family:var(--font); -webkit-font-smoothing:antialiased;
+  display:grid; grid-template-columns:236px 1fr;
+}
+.appshell *{box-sizing:border-box;}
+.appshell .num{font-variant-numeric:tabular-nums;}
+
+/* 左側選單 */
+.appshell .as-side{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px;
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+.appshell .as-brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;}
+.appshell .as-brand .nm{font-weight:800;font-size:16px;}
+.appshell .sweep{transform-origin:center;animation:as-sweep 4s linear infinite;}
+@keyframes as-sweep{to{transform:rotate(360deg);}}
+.appshell .as-nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;font-size:14.5px;
+  color:var(--ink-2);font-weight:600;cursor:pointer;transition:.14s;margin-bottom:2px;text-decoration:none;}
+.appshell .as-nav svg{flex:none;color:var(--ink-3);}
+.appshell .as-nav:hover{background:var(--surface-2);}
+.appshell .as-nav.on{background:var(--accent-soft);color:var(--accent-2);font-weight:750;}
+.appshell .as-nav.on svg{color:var(--accent);}
+.appshell .as-nav .tag{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.04em;
+  background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;}
+.appshell .as-sp{flex:1;min-height:16px;}
+.appshell .as-acct{display:flex;align-items:center;gap:10px;padding:11px 8px;border-top:1px solid var(--line);}
+.appshell .as-acct .av{width:32px;height:32px;border-radius:9px;flex:none;
+  background:linear-gradient(140deg,var(--pop),#5866c4);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;}
+.appshell .as-acct .an{font-size:13px;font-weight:700;line-height:1.3;}
+.appshell .as-acct .as{font-size:11px;color:var(--ink-3);}
+
+/* 右側主內容 */
+.appshell .as-main{padding:24px clamp(20px,3.5vw,40px);max-width:1060px;}
+
+/* 情境列（網站切換器） */
+.appshell .as-ctx{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+.appshell .as-switcher{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line-2);
+  border-radius:11px;padding:7px 13px;box-shadow:var(--sh-sm);}
+.appshell .as-switcher .lab{font-size:10.5px;color:var(--ink-3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;}
+.appshell .as-switcher .val{font-size:14px;font-weight:750;}
+
+.appshell .as-phead{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.appshell .as-phead h2{font-size:22px;font-weight:850;margin:0;letter-spacing:-.01em;}
+.appshell .as-phead .sub{font-size:13px;color:var(--ink-3);}
+.appshell .as-seg{margin-left:auto;display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px;}
+.appshell .as-seg button{font-family:var(--font);font-size:12.5px;font-weight:650;padding:6px 13px;border-radius:8px;
+  border:none;background:transparent;color:var(--ink-2);cursor:pointer;transition:.14s;}
+.appshell .as-seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm);font-weight:750;}
+
+.appshell .as-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);}
+
+/* aivis 主角卡 */
+.appshell .as-truth{padding:26px;box-shadow:var(--sh);border-radius:var(--r-xl);display:grid;grid-template-columns:auto 1fr;
+  gap:28px;align-items:center;position:relative;overflow:hidden;}
+.appshell .as-truth::before{content:"";position:absolute;top:-40%;right:-8%;width:320px;height:320px;
+  background:radial-gradient(circle,rgba(255,110,52,.07),transparent 62%);pointer-events:none;}
+.appshell .as-gauge{position:relative;width:142px;height:142px;flex:none;}
+.appshell .as-gauge .cx{position:absolute;inset:0;display:grid;place-items:center;text-align:center;}
+.appshell .as-gauge .big{font-size:42px;font-weight:900;line-height:1;}
+.appshell .as-gauge .cap{font-size:11px;color:var(--ink-3);margin-top:3px;}
+.appshell .as-lbl{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin-bottom:8px;}
+.appshell .as-truth h3{font-size:22px;font-weight:850;margin:0 0 9px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.appshell .as-delta{font-family:var(--mono);font-size:12.5px;font-weight:750;color:var(--geo);background:rgba(5,150,105,.1);
+  border:1px solid rgba(5,150,105,.24);padding:3px 8px;border-radius:7px;display:inline-flex;align-items:center;gap:3px;}
+.appshell .as-truth p{margin:0 0 4px;font-size:14px;color:var(--ink-2);line-height:1.6;max-width:52ch;}
+.appshell .as-truth p b{color:var(--ink);}
+.appshell .as-cta{display:inline-block;margin-top:6px;font-family:var(--font);font-weight:750;border:none;cursor:pointer;
+  border-radius:11px;background:var(--accent);color:#fff;box-shadow:0 6px 15px rgba(255,110,52,.26);padding:9px 17px;font-size:13.5px;text-decoration:none;}
+.appshell .as-cta:hover{background:var(--accent-2);}
+
+/* 技術輔助分數 */
+.appshell .as-support{margin-top:16px;}
+.appshell .as-support .sh{display:flex;align-items:baseline;gap:8px;margin-bottom:11px;}
+.appshell .as-support .sh b{font-size:13px;font-weight:700;color:var(--ink-2);}
+.appshell .as-support .sh span{font-size:12px;color:var(--ink-3);}
+.appshell .as-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.appshell .as-sc{padding:14px 15px;border-radius:var(--r);cursor:pointer;transition:.14s;text-decoration:none;color:inherit;display:block;}
+.appshell .as-sc:hover{transform:translateY(-2px);box-shadow:var(--sh);}
+.appshell .as-sc .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.appshell .as-sc .nm{font-size:12px;font-weight:700;color:var(--ink-2);}
+.appshell .as-sc .n{font-size:24px;font-weight:850;line-height:1;}
+.appshell .as-sc .arrow{font-size:11px;color:var(--ink-3);}
+.appshell .as-sc .bar{height:4px;border-radius:2px;background:var(--surface-3);margin-top:10px;overflow:hidden;}
+.appshell .as-sc .bar i{display:block;height:100%;border-radius:2px;}
+
+/* 下一步 */
+.appshell .as-next{margin-top:16px;padding:17px 20px;border-radius:var(--r-lg);display:flex;align-items:center;gap:15px;flex-wrap:wrap;}
+.appshell .as-next .no{width:36px;height:36px;flex:none;border-radius:11px;background:var(--accent);color:#fff;
+  display:grid;place-items:center;font-weight:900;font-size:16px;box-shadow:0 5px 12px rgba(255,110,52,.3);}
+.appshell .as-next .tx{flex:1;min-width:220px;}
+.appshell .as-next .tx .h{font-size:14.5px;font-weight:750;margin-bottom:2px;}
+.appshell .as-next .tx .d{font-size:13px;color:var(--ink-2);line-height:1.5;}
+.appshell .as-next .tx .d em{font-style:normal;color:var(--ink);font-weight:600;}
+
+/* 建置中占位（誠實 placeholder，不假造數據） */
+.appshell .as-stub{padding:22px;border-radius:var(--r-lg);border:1px dashed var(--line-2);background:var(--surface-2);
+  color:var(--ink-3);font-size:13px;line-height:1.6;margin-top:16px;}
+.appshell .as-stub b{color:var(--ink-2);}
+
+.appshell .as-empty{padding:28px;border-radius:var(--r-lg);border:1px solid var(--line);background:var(--surface);text-align:center;}
+.appshell .as-empty .e-t{font-size:16px;font-weight:800;margin-bottom:6px;}
+.appshell .as-empty .e-d{font-size:13px;color:var(--ink-2);max-width:40ch;margin:0 auto 14px;line-height:1.6;}
+
+.appshell .as-loading{padding:60px;text-align:center;color:var(--ink-3);font-size:14px;}
+
+@media (max-width:900px){
+  .appshell{grid-template-columns:1fr;}
+  .appshell .as-side{position:static;height:auto;flex-direction:row;overflow-x:auto;border-right:none;
+    border-bottom:1px solid var(--line);padding:10px;gap:4px;}
+  .appshell .as-brand,.appshell .as-sp,.appshell .as-acct{display:none;}
+  .appshell .as-nav{white-space:nowrap;margin-bottom:0;}
+  .appshell .as-truth{grid-template-columns:1fr;text-align:center;}
+  .appshell .as-gauge{margin:0 auto;}
+  .appshell .as-scores{grid-template-columns:repeat(2,1fr);}
+  .appshell .as-seg{margin-left:0;}
+}

@@ -109,7 +109,7 @@ aark-workspace/
 | `geo_audits` | GEO 分析結果 |
 | `eeat_audits` | E-E-A-T 分析結果 |
 | `content_audits` | 內容品質分析結果（15 項檢測，含 heading/word_count/meta/aeo/author/images/links/outbound/multimedia/readability JSONB；2026-05-20 新增，給 `/content-audit/:id` 詳情頁吃 cached + 趨勢迷你圖）|
-| `aivis_brands` | AI 曝光監測模組 — 使用者追蹤的品牌清單（Phase 1，2026-04-23 新增）|
+| `aivis_brands` | AI 曝光監測模組 — 使用者追蹤的品牌清單（Phase 1，2026-04-23 新增）。`website_id`（2026-07-28 新增，FK→`websites.id`、可空、`on delete set null`）＝一站一品牌關聯，供改版總覽以網站解析品牌；backfill 用「該網域最短 URL（首頁）那筆」|
 | `aivis_prompts` | 每品牌的監測題庫。`tier`（2026-07-02 新增，`core`/`rotating`/`brand`/`info`，DEFAULT `core`，`info` 於 2026-07-17 加入 CHECK）＝四層題庫分流。`generated_by`（auto/user）、`is_active`（是否納入掃描）|
 | `aivis_responses` | 每次掃描 1 筆（1 row = 1 scan＝1 額度）。Claude 主欄 + `engine_results` JSONB（多引擎結果）。額度計數看本表列數 |
 | `anon_scan_events` | 未登入快掃事件日誌（value-first：url+SEO/AEO/GEO/EEAT 分數+時間，**不寫 audit 表**；2026-06-21 新增）。RLS：anon insert / admin select。在 /admin/websites 頂部「未登入快掃」區塊顯示 |
@@ -232,7 +232,8 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 |------|------|------|------|
 | 免費版 | $0 | — | 5 大面向分數、通過/不通過清單、3 條優化建議、競品比較 2 個、文章分析基本版、追蹤 3 站 |
 | **Pro 版** | NT$1,490／月 | NT$13,900（**省 22%・等於免費多用 2.6 個月**） | 修復碼產生器、歷史趨勢圖、平台別修復指南（WP/Shopify/Wix/HTML）、競品比較 4 個、PDF 匯出、Email 週報、文章分析完整版、**AI 曝光監測（aivis）每月 150 次**、追蹤 15 站 |
-| Agency 版 | NT$4,990／月起（即將推出） | — | 50 站、白標 PDF、多客戶工作區、優先客服、所有 Pro 功能 |
+| Agency Starter | NT$4,990／月起（即將推出） | — | 30 站、白標 PDF、多客戶工作區、優先客服、所有 Pro 功能 |
+| Agency Plus | 定價待定（即將推出） | — | 100 站、Agency Starter 全部功能 |
 
 **aivis 設計原則：** 已整合進 Pro 核心，不可獨立訂閱（5 LLM 共識）。理由：SEO 修復是一次性的，但 AI 引用率天天在變、競爭對手天天在優化 — aivis 是 Pro 持續訂閱的核心鉤子，把它獨立加購會讓用戶「改完就退訂」。
 
@@ -259,7 +260,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 
 **聯盟分潤：** 暫不上線。等正式推出後依市場反應再決定（pending）。
 
-**網站追蹤上限：** Free = 3 個、Pro = 15 個、Agency = 50 個
+**網站追蹤上限：** Free = 3 個、Pro = 15 個、Agency Starter = 30 個、Agency Plus = 100 個（唯一規格以 [src/lib/limits.js](src/lib/limits.js) 為準；2026-07-28 更正，原誤植「Agency 50」）
 
 付款流程：**Phase 1 NewebPay**（TW/NT$、主力，沙盒審核中）→ Notify → `profiles.is_pro = true`；**Phase 2 Stripe Atlas**（國際/USD、備用，因 HK 帳號鎖死暫緩）保留 code（`/api/aivis/checkout-topup.js`、`stripe-webhook.js`）。
 
@@ -339,7 +340,7 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 
 ## 待開發 / 未完成功能
 
-- **歷史 websites row 合併**（2026-05-22 加入待辦）：normalizeUrl 已實作於 [src/lib/url.js](src/lib/url.js) 並接入 HomeDark.jsx，但**只影響新建 row**。在這之前同一個 user 用不同 URL 變體（含 trailing slash / www / query string）建出的多筆 row 仍存在。要清乾淨需另寫 migration SQL：(1) 找出同 user_id 且正規化後 URL 相同的 websites（GROUP BY normalized_url, user_id HAVING COUNT > 1）(2) 挑最早建立的 row 當主、把其他 row 的 audits.website_id 改指向主 row (3) 刪 orphan websites row。先記錄不做，等實際資料量決定何時整理（用 `SELECT url, user_id, COUNT(*) FROM websites GROUP BY ... HAVING COUNT > 1` 查看影響範圍）。
+- **websites「一頁一筆」→ 改版用「依網域分組」解（2026-07-28 定案，不做破壞性 migration）**：websites 以「完整 URL（含路徑）＋user_id」為鍵，同站不同頁各建一筆（[HomeDark.jsx:481](src/pages/HomeDark.jsx) 的 normalizeUrl 只統一 www/斜線/query，**不拿掉路徑**）。2026-07-28 診斷（每用戶 row 數 vs distinct host）：重複幾乎**只集中在 1 個用戶**（`882810a8`：96 row→3 站、93 筆重複頁），其餘用戶乾淨。那些「重複頁」其實是不同頁的**真實體檢紀錄**，硬合併會刪真資料 → **決定不合併、不刪 row**。改版改在查詢/UI 層「依正規化 host 分組」呈現「一站一卡」，站數計數改算 distinct host（現行 [HomeDark.jsx:367](src/pages/HomeDark.jsx) 的 `myWebsites.length` 是算 row／算頁、且主掃描流程沒硬擋上限＝顯示/計數誤導、非阻擋 bug）。品牌↔網站關聯已於 Batch 1 backfill 到 `aivis_brands.website_id`（連到該網域首頁那筆）。
 - ~~**pilotoptical.com.tw 類 analyzer 失敗診斷**~~（2026-05-22 已查到並修復）：根因是 SSL 憑證鏈不完整（`UNABLE_TO_VERIFY_LEAF_SIGNATURE`），台灣很多小網站都這樣設定。已在 [api/fetch-url.js](api/fetch-url.js) 加 SSL 容錯 fallback（undici Agent 放寬驗證重試）。
 - **前端錯誤回報強化**（2026-05-22 加入待辦）：HomeDark.jsx analyzer 流程 try/catch 只有 `console.error`，掛了沒寫進 DB 也沒回報給用戶。建議加錯誤紀錄表 `error_logs` 寫進 supabase（user_id、url、step、error_code、created_at），方便客服日後查具體錯誤訊息。
 - ~~`/content-audit`~~：✅ 已完成。15 項檢測（內容結構/字數/Meta/AEO/E-E-A-T/可讀性），免費看分數+清單，Pro 解鎖修復建議
