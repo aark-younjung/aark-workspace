@@ -16,6 +16,7 @@ import { supabase } from '../lib/supabase'
 import { trackPixelCustom } from '../lib/pixel'
 import { normalizeUrl } from '../lib/url'
 import { getAnonSessionId, bumpAnonScanCount } from '../lib/anonSession'
+import { fetchSitemapUrls } from '../lib/sitemap'
 import { analyzeSEO, fetchPageContent, parseHTML, checkBotAccessibility } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
 import { analyzeGEO } from '../services/geoAnalyzer'
@@ -264,6 +265,7 @@ export default function HomeDark() {
   // 未登入快掃結果（value-first）：不寫 DB、inline 顯示 4 大分數 + 引導註冊解鎖完整報告 + aivis
   const [anonResult, setAnonResult] = useState(null)
   const [anonScanCount, setAnonScanCount] = useState(0)   // 這個瀏覽器累計掃過幾次（軟提示用）
+  const [sitemapPages, setSitemapPages] = useState([])    // 同站其他頁面（sitemap）→ 一鍵補掃、解「只掃一頁」信任落差
   // anti-bot 鎖極嚴的聳動 modal — 取代瀏覽器原生 alert，用紅色警示 + 強烈衝擊文案
   // 4 輪爬蟲全擋 → 用戶網站對 AI 完全隱形，這是核心商業價值「AI 看不見你」最有衝擊力的展示瞬間
   const [antiBotModal, setAntiBotModal] = useState({ open: false, websiteId: null, url: '' })
@@ -555,6 +557,9 @@ export default function HomeDark() {
         setAnonScanCount(bumpAnonScanCount())   // 回訪次數 → 決定要不要顯示「保存紀錄」軟提示（不是牆）
         setStatus('')
         setLoading(false)
+        // 非阻塞：抓 sitemap 列出同站其他頁，讓用戶知道「這次只掃這頁、你還有別頁可掃」
+        setSitemapPages([])
+        fetchSitemapUrls(cleanUrl).then(setSitemapPages).catch(() => {})
         // 讓「未登入掃描完成」看得到（value-first 後 audit 表不會記）：
         // (1) Pixel 自訂事件 → Ads Manager 量這一步漏斗
         trackPixelCustom('AnonScanComplete', { content_name: anon.name })
@@ -1185,6 +1190,8 @@ export default function HomeDark() {
             <AnonDiagnosis
               result={anonResult}
               repeatCount={anonScanCount}
+              sitemapPages={sitemapPages}
+              onScanPage={(u) => { setUrl(u); handleSubmit(null, u) }}
               onRegister={() => { sessionStorage.setItem('lp_pending_url', anonResult.url); navigate('/register') }}
             />
           </div>

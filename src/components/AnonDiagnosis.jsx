@@ -13,6 +13,7 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { hasSeenRepeatModal, markRepeatModalSeen } from '../lib/anonSession'
+import { pageLabel } from '../lib/sitemap'
 
 // 逐項檢測定義：label = 中文標籤，read = 從結果物件判斷該項有沒有過
 // SEO 每項是 { passed } 物件；AEO/GEO/EEAT 每項是布林值 → 用各自 read()
@@ -70,7 +71,7 @@ const LOCKED = [
 // 那種人才真的需要歷史對照。太早跳會像逼註冊、失去 value-first 的意義。
 const REPEAT_HINT_AT = 3
 
-export default function AnonDiagnosis({ result, repeatCount = 0, onRegister }) {
+export default function AnonDiagnosis({ result, repeatCount = 0, sitemapPages = [], onScanPage, onRegister }) {
   const ref = useRef(null)
   // 掃完自動捲到報告（讓它像個「結果頁」，不再像退回首頁）
   useEffect(() => {
@@ -105,12 +106,18 @@ export default function AnonDiagnosis({ result, repeatCount = 0, onRegister }) {
       style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.14)', scrollMarginTop: '16px' }}>
 
       {/* 標題 */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
         <div className="text-white font-bold text-lg truncate">📊 {result.name} 的 AI 能見度完整診斷</div>
         <span className="text-xs px-2.5 py-0.5 rounded-full whitespace-nowrap"
           style={{ background: 'rgba(24,197,144,0.12)', border: '1px solid rgba(24,197,144,0.4)', color: '#18c590' }}>
           免費・免註冊
         </span>
+      </div>
+
+      {/* 檢測範圍說明（2026-07-27）：明講「只掃這一頁」，不讓人以為是全站 —— 避免「我明明有 FAQ，你卻說沒有」的誤會 */}
+      <div className="mb-5 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+        本次檢測範圍：<span className="font-mono" style={{ color: 'rgba(255,255,255,0.7)' }}>{pageLabel(result.url)}</span> 這一頁。
+        像 FAQ、H1、Meta 這類是<span style={{ color: 'rgba(255,255,255,0.7)' }}>逐頁</span>檢查的——如果某項顯示✗，可能只是「這一頁」沒有，你其他頁面可能已經有了。
       </div>
 
       {/* 回訪軟提示（不是牆）：他正在「改了再驗」，而未登入看不到歷史 —
@@ -178,6 +185,26 @@ export default function AnonDiagnosis({ result, repeatCount = 0, onRegister }) {
           )
         })}
       </div>
+
+      {/* 同站其他頁面一鍵檢測（2026-07-27）：直接解「只掃一頁」的信任落差 ——
+          FAQ 在別頁的話，點那頁就掃得到；也讓用戶知道「檢測是逐頁的，不是壞掉」 */}
+      {sitemapPages.length > 0 && onScanPage && (
+        <div className="mb-5 rounded-xl border p-4" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.12)' }}>
+          <div className="text-white font-semibold text-sm mb-1">📄 你的網站還有這些頁面</div>
+          <div className="text-xs mb-3" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            上面只檢測了首頁。想看 FAQ 頁、服務頁的分數？點一下就單獨檢測那頁。
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {sitemapPages.map(u => (
+              <button key={u} type="button" onClick={() => onScanPage(u)} title={u}
+                className="text-xs px-3 py-1.5 rounded-lg font-mono transition-colors max-w-full truncate"
+                style={{ background: 'rgba(24,197,144,0.1)', border: '1px solid rgba(24,197,144,0.3)', color: '#8fe9c8' }}>
+                {pageLabel(u)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 藥方（鎖住）+ 註冊 CTA */}
       <div className="rounded-xl border p-4 sm:p-5" style={{ background: 'rgba(0,0,0,0.25)', borderColor: 'rgba(249,115,22,0.35)' }}>

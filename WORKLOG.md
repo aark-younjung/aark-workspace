@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-07-27（信任落差：只掃一頁卻用全站口氣 → 檢測範圍誠實化 + sitemap 其他頁一鍵補掃）
+
+用戶點出頭號信任殺手：「照建議改了分數卻不動」「我明明有 FAQ、你卻說沒有」。根因是**只掃單頁、卻用全站口氣講**（FAQ 在別頁，我們掃首頁說「沒有」＝冤枉人）。做兩件（第三件「改前/改後可見進步」待辦）：
+
+1. **檢測範圍誠實化** [AnonDiagnosis.jsx](src/components/AnonDiagnosis.jsx)：標題下加一行「本次檢測範圍：<這一頁>。FAQ/H1/Meta 是逐頁檢查的，某項 ✗ 可能只是這頁沒有、其他頁可能已有」。不再讓人以為是全站、不冤枉人。
+2. **sitemap 其他頁一鍵補掃**：新增 [lib/sitemap.js](src/lib/sitemap.js) `fetchSitemapUrls()`——掃完首頁後（非阻塞）抓 sitemap 列出同站其他頁，點一下就改掃那頁（FAQ 在別頁就掃得到）。HomeDark 存 `sitemapPages` + 傳 `onScanPage` callback。
+   - ⚠️ 又一個「沒考慮 WP 慣例」bug：原本只找 `/sitemap.xml`，但 Rank Math/Yoast 用 `/sitemap_index.xml`、WP 核心用 `/wp-sitemap.xml`。改成**先讀 robots.txt 的 `Sitemap:` 宣告、再退回多個常見路徑、還會展開 sitemap index 的子 sitemap**。實測 shining-dental / hc-nice（真實 Rank Math 站）：robots.txt 宣告 `/sitemap_index.xml` → 正確展開抓到 8 個內頁。
+
+策略定調（查證 Kuroma 後）：不蓋全站爬蟲（那是替 Ahrefs 打工、Kuroma 根本不爬站）；單頁做到「多頁夠用、不尷尬」即可，力氣留給 AI 監測+修+在地校準。Vite transform 917 ✓。
+
+---
+
 ### 2026-07-27（檢測準確度：@graph schema + Meta 中文長度 — 都是「規則沒考慮 WP/中文」）
 
 用戶拿真實 WordPress + Rank Math 網站（darkred-squid…hostingersite.com）測，抓出兩個對台灣客群的系統性誤判，都用「抓真原始碼比對」驗證後修好：
