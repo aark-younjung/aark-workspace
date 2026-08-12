@@ -530,11 +530,19 @@ async function handleLlms(req, res, supabase) {
   const isInternal = req.headers['x-aark-internal'] === 'true'
   if (website.is_public_optout && !isInternal) return res.status(403).send('This llms.txt is not publicly available')
 
+  // 即時抓首頁 meta（真品牌名 + 真描述，比存起來的 audit 更即時準確）+ 驗證 sitemap 是否真存在（都失敗則優雅 fallback 回原邏輯）
+  const [liveMeta, hasSitemap] = await Promise.all([
+    fetchLiveMeta(website.url),
+    checkSitemapExists(website.url),
+  ])
+
   const llmsTxt = generateLlmsTxt({
     website,
     seoAudit: seoRes.data,
     aeoAudit: aeoRes.data,
     eeatAudit: eeatRes.data,
+    liveMeta,
+    hasSitemap,
   })
 
   // 記錄訪問日誌 — 排除我們自己內部 fetch（GEO 詳情頁 preview；isInternal 已在上方定義）
@@ -562,18 +570,49 @@ async function handleLlms(req, res, supabase) {
   return res.status(200).send(llmsTxt)
 }
 
+// 即時抓首頁、萃取真實品牌名/描述（llms.txt 標題與 blockquote 用真資料，不用網域/罐頭）。任何失敗回 {}、優雅退回舊邏輯。
+async function fetchLiveMeta(url) {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AARK-llms/1.0)' },
+      signal: AbortSignal.timeout(6000),
+    })
+    if (!res.ok) return {}
+    const html = await res.text()
+    const pick = (re) => { const m = html.match(re); return m ? m[1].replace(/\s+/g, ' ').trim() : null }
+    return {
+      siteName: pick(/property=["']og:site_name["'][^>]*content=["']([^"']+)["']/i),
+      title: pick(/<title[^>]*>([^<]+)<\/title>/i),
+      description: pick(/name=["']description["'][^>]*content=["']([^"']*)["']/i)
+        || pick(/property=["']og:description["'][^>]*content=["']([^"']*)["']/i),
+    }
+  } catch { return {} }
+}
+
+// 驗證 /sitemap.xml 是否真存在且為 XML sitemap（noindex 站常沒有 → llms.txt 不放 404 死連結）。
+async function checkSitemapExists(url) {
+  try {
+    const res = await fetch(url.replace(/\/$/, '') + '/sitemap.xml', {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(6000),
+      redirect: 'follow',
+    })
+    if (!res.ok) return false
+    return /<(urlset|sitemapindex)[\s>]/i.test((await res.text()).slice(0, 500))
+  } catch { return false }
+}
+
 /**
  * 從 audit 資料生成 llms.txt 標準格式（llmstxt.org）
  */
-function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
+function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit, liveMeta = {}, hasSitemap = false }) {
   const hostname = safeHostname(website.url)
-  const title = website.name || hostname
+  // 標題：優先用即時首頁的品牌名（og:site_name > <title>）。website.name 建站時存的是 hostname、非品牌名，只當最後 fallback。
+  const title = liveMeta.siteName || liveMeta.title || (website.name && website.name !== hostname ? website.name : null) || hostname
   const metaDesc = seoAudit?.meta_tags?.description?.trim()
   const ogDesc = aeoAudit?.open_graph?.description?.trim()
-  // ponytail: 抓不到 meta/OG 描述時用中性 fallback——絕不可寫死本工具標語，
-  // 否則每個沒寫 meta 的客戶站都會被誤標成「AI 能見度檢測網站」，污染 llms.txt 最關鍵的 blockquote。
-  // 上限：無描述的站只能給中性句；未來可從首頁正文/title tag 萃取真實業別描述。
-  const description = metaDesc || ogDesc || `${title} 官方網站`
+  // 描述：優先即時 meta（最準）→ 存起來的 audit → 中性 fallback。絕不寫死本工具標語（否則污染最關鍵的 blockquote）。
+  const description = (liveMeta.description || metaDesc || ogDesc || `${title} 官方網站`).replace(/\s+/g, ' ').slice(0, 300).trim()
   const today = new Date().toISOString().split('T')[0]
   const baseUrl = website.url.replace(/\/$/, '')
   const hasOrgSchema = !!eeatAudit?.organization_schema
@@ -589,7 +628,8 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
   lines.push('## Site information')
   lines.push('')
   lines.push(`- [Homepage](${baseUrl}): ${title}`)
-  lines.push(`- [Sitemap](${baseUrl}/sitemap.xml): XML sitemap with all site URLs`)
+  // sitemap 只在確認真的存在時才列（避免放 404 死連結 —— noindex 站常沒 sitemap）
+  if (hasSitemap) lines.push(`- [Sitemap](${baseUrl}/sitemap.xml): XML sitemap with all site URLs`)
   // ponytail: eeat audit 只回 about/contact 的 boolean（passed），沒存實際 URL。
   // 不可瞎編 /about、/contact——Astro/Joomla/自架站路徑常不同，編出來的連結會 404，
   // llms.txt 裡放 404 等於告訴 AI「這站壞了」，比不放更糟。只列保證存在的 Homepage + Sitemap。
@@ -626,7 +666,8 @@ function generateLlmsTxt({ website, seoAudit, aeoAudit, eeatAudit }) {
 
   lines.push('## Optional')
   lines.push('')
-  lines.push(`- [AI visibility report](https://aark-workspace.vercel.app/website-summary/${website.id}): public summary of this site's AI visibility scores`)
+  // AI 能見度報告只在網站「公開」時列（opt-out 站的 summary 頁是 403，不放死連結）
+  if (!website.is_public_optout) lines.push(`- [AI visibility report](https://aark-workspace.vercel.app/website-summary/${website.id}): public summary of this site's AI visibility scores`)
   lines.push(`- [llms.txt specification](https://llmstxt.org/): about this file format`)
   lines.push('')
   lines.push('---')
