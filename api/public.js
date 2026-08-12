@@ -524,7 +524,11 @@ async function handleLlms(req, res, supabase) {
 
   const website = websiteRes.data
   if (!website) return res.status(404).send('Website not found')
-  if (website.is_public_optout) return res.status(403).send('This llms.txt is not publicly available')
+  // 內部請求（GEO 詳情頁擁有者自己的預覽/複製/下載，帶 X-AARK-Internal header）永遠可取用自己的 llms.txt；
+  // 只有「公開代管 URL」（無此 header）才尊重排行榜 opt-out。llms.txt 本質是要放上公開網站的內容，
+  // 不該因「不出現在排行榜」就連擁有者自己都看不到 —— 修先前 bug：整張 GEO llms.txt 卡片對 opt-out 站全掛掉。
+  const isInternal = req.headers['x-aark-internal'] === 'true'
+  if (website.is_public_optout && !isInternal) return res.status(403).send('This llms.txt is not publicly available')
 
   const llmsTxt = generateLlmsTxt({
     website,
@@ -533,8 +537,7 @@ async function handleLlms(req, res, supabase) {
     eeatAudit: eeatRes.data,
   })
 
-  // 記錄訪問日誌 — 排除我們自己內部 fetch（GEO 詳情頁 preview）
-  const isInternal = req.headers['x-aark-internal'] === 'true'
+  // 記錄訪問日誌 — 排除我們自己內部 fetch（GEO 詳情頁 preview；isInternal 已在上方定義）
   if (!isInternal) {
     const ua = req.headers['user-agent'] || ''
     const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim()
