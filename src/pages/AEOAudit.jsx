@@ -228,7 +228,7 @@ export default function AEOAudit() {
               位置選擇：IssueBoard 後、/schema-check 微入口前 — 用戶看完「缺什麼 schema」立刻看到「我可以幫你生」
               對應 YouTube 影片教用戶用 ChatGPT 生 code 的痛點，我們直接做成永久儲存 + 一鍵複製的工具 */}
           <div style={{ marginBottom: 24 }}>
-            <OrgSchemaGenerator />
+            <OrgSchemaGenerator websiteId={id} websiteUrl={website?.url} />
           </div>
 
           {/* /schema-check 微入口 — 既有用戶 cross-link 到獨立 schema 健檢工具

@@ -68,7 +68,7 @@ function generateSchemaCode(data) {
   return `<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n</script>`
 }
 
-export default function OrgSchemaGenerator() {
+export default function OrgSchemaGenerator({ websiteId, websiteUrl }) {
   const { user, isPro, loading: authLoading } = useAuth()
   const [form, setForm] = useState(EMPTY_FORM)
   const [loading, setLoading] = useState(true)
@@ -77,15 +77,15 @@ export default function OrgSchemaGenerator() {
   const [copied, setCopied] = useState(false)
   const [editMode, setEditMode] = useState(false)   // true 顯示表單、false 顯示產生 code
 
-  // mount 拉用戶既有資料 — 有資料切預覽模式，沒資料留編輯模式
+  // mount 依「這個網站」拉既有資料 —— 每站一份，代理商多客戶不互相汙染（原本存在 profiles、一帳號一份會跨站沿用）。
   useEffect(() => {
     if (authLoading) return
-    if (!user?.id) { setLoading(false); return }
+    if (!user?.id || !websiteId) { setLoading(false); return }
     let cancelled = false
     supabase
-      .from('profiles')
+      .from('websites')
       .select('org_schema_data')
-      .eq('id', user.id)
+      .eq('id', websiteId)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return
@@ -99,12 +99,14 @@ export default function OrgSchemaGenerator() {
           })
           setEditMode(false)   // 有資料 → 預覽模式
         } else {
-          setEditMode(true)    // 沒資料 → 編輯模式
+          // 這個網站還沒填過 → 用該站 URL 預填、進編輯模式（品牌名/描述留給用戶填該客戶真實資料，不沿用別站）
+          setForm({ ...EMPTY_FORM, url: websiteUrl || '' })
+          setEditMode(true)
         }
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [user?.id, authLoading])
+  }, [websiteId, websiteUrl, user?.id, authLoading])
 
   const updateField = useCallback((key, value) => {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -119,13 +121,14 @@ export default function OrgSchemaGenerator() {
 
   async function handleSave() {
     if (!form.name?.trim()) { setSaveMessage('⚠️ 請至少填寫公司名稱'); return }
-    if (!user?.id) return
+    if (!user?.id || !websiteId) return
     setSaving(true)
     setSaveMessage('')
+    // 存到「這個網站」的 org_schema_data（每站獨立，不寫進 profiles 那份跨站共用的）
     const { error } = await supabase
-      .from('profiles')
+      .from('websites')
       .update({ org_schema_data: form })
-      .eq('id', user.id)
+      .eq('id', websiteId)
     setSaving(false)
     if (error) {
       setSaveMessage('❌ 儲存失敗：' + error.message)
@@ -165,11 +168,11 @@ export default function OrgSchemaGenerator() {
           }}>Pro 限定</span>
         </div>
         <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 14 }}>
-          填一次品牌資料（公司名 / 網址 / 聯絡方式 / 社群連結等）→ 永久存著 →
+          填一次品牌資料（公司名 / 網址 / 聯絡方式 / 社群連結等）→ 這個網站永久存著 →
           自動產出**客製化** Organization JSON-LD code →一鍵複製貼網站 head。
         </p>
         <p style={{ fontSize: 14, color: T.textLow, lineHeight: 1.65, marginBottom: 16 }}>
-          免費版可看通用範本（要自己填空），Pro 版自動帶入你的資料、未來都用同一份、不必每次重填。
+          免費版可看通用範本（要自己填空），Pro 版自動帶入、每個網站各存一份、不必每次重填（代理商多客戶不互相汙染）。
         </p>
         <Link to="/pricing" style={{
           display: 'inline-block', padding: '10px 20px',
