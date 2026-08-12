@@ -121,6 +121,176 @@
 
 .appshell .as-loading{padding:60px;text-align:center;color:var(--ink-3);font-size:14px;}
 
+/* 我的網站：依正規化 host 分組後的扁平卡片清單 */
+.appshell .as-sites-head .as-sites-add{margin-top:0;margin-left:auto;}
+.appshell .as-sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.appshell .as-sitecard{padding:18px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);
+  box-shadow:var(--sh-sm);text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s,border-color .15s;}
+.appshell .as-sitecard:hover{transform:translateY(-2px);box-shadow:var(--sh);border-color:var(--line-2);}
+.appshell .as-sitecard:focus-visible,.appshell .as-addsite:focus-visible,.appshell .as-sites-add:focus-visible{
+  outline:3px solid rgba(130,152,255,.55);outline-offset:3px;}
+.appshell .as-sitecard .s-nm{font-size:15px;font-weight:800;margin-bottom:2px;overflow-wrap:anywhere;}
+.appshell .as-sitecard .s-url{font-size:11.5px;color:var(--ink-3);font-family:var(--mono);margin-bottom:14px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.appshell .as-sitecard .s-row{display:flex;gap:18px;align-items:flex-start;}
+.appshell .as-sitecard .s-metric{min-width:0;flex:1;}
+.appshell .as-sitecard .s-metric .m-l{font-size:11px;color:var(--ink-3);margin-bottom:3px;}
+.appshell .as-sitecard .s-metric .m-v{font-size:22px;font-weight:850;line-height:1;min-height:22px;}
+.appshell .as-sitecard .s-metric .m-v.is-score{color:var(--ink-2);}
+.appshell .as-sitecard .s-metric .m-v.is-pending,.appshell .as-sitecard .s-metric .m-v.is-setup{
+  font-size:12px;line-height:22px;color:var(--ink-3);white-space:nowrap;}
+.appshell .as-sitecard .s-metric .m-v.is-setup{color:var(--accent-2);}
+.appshell .as-sitecard .s-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;
+  color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;}
+
+/* 我的網站：新增站點卡，對齊核可稿的虛線樣式 */
+.appshell .as-addsite{border:1.5px dashed var(--line-2);background:transparent;display:grid;place-items:center;
+  text-align:center;min-height:140px;color:var(--ink-3);cursor:pointer;border-radius:var(--r-lg);text-decoration:none;
+  transition:color .15s,background-color .15s,border-color .15s;touch-action:manipulation;}
+.appshell .as-addsite:hover{border-color:var(--accent);color:var(--accent-2);background:var(--accent-soft);}
+.appshell .as-addsite span{display:block;}
+.appshell .as-addsite .plus{font-size:28px;line-height:1;}
+.appshell .as-addsite .add-label{font-size:13px;font-weight:700;margin-top:6px;}
+.appshell .as-addsite .add-note{font-size:11.5px;margin-top:2px;}
+
+/* 網站體檢：六分類真 URL tabs，對齊核可稿的底線導覽 */
+.appshell .as-health-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;flex-wrap:wrap;}
+.appshell .as-health-tab{font-family:var(--font);font-size:13.5px;font-weight:650;padding:10px 15px;color:var(--ink-2);
+  text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .14s,border-color .14s;}
+.appshell .as-health-tab:hover{color:var(--ink);}
+.appshell .as-health-tab.on{color:var(--accent-2);border-bottom-color:var(--accent);font-weight:750;}
+.appshell .as-health-tab .b{font-family:var(--mono);font-size:11px;margin-left:5px;color:var(--ink-3);}
+.appshell .as-health-tab:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:5px;}
+
+/* 網站體檢：誠實揭露單頁與站台層檔案範圍 */
+.appshell .as-health-scope{font-size:12px;color:var(--ink-3);background:var(--surface-2);border-radius:9px;padding:9px 13px;
+  margin-bottom:16px;line-height:1.6;display:flex;align-items:flex-start;gap:7px;overflow-wrap:anywhere;}
+.appshell .as-health-scope b{color:var(--ink-2);}
+
+/* 網站體檢：保留既有 IssueBoard 行為，僅在 app-shell 內轉為核可亮色系 */
+.appshell .as-health-board .v2-issue-board{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;}
+.appshell .as-health-board .v2-issue-board>div{background:var(--surface)!important;border-radius:var(--r-lg)!important;
+  box-shadow:var(--sh-sm)!important;}
+.appshell .as-health-board .v2-issue-board>div>div:not(:first-child){background:var(--surface)!important;}
+.appshell .as-health-board .v2-issue-board>div>div:first-child>div>div:first-child{color:var(--ink)!important;}
+.appshell .as-health-board .v2-issue-board>div>div:first-child>div>div:last-child{color:var(--ink-3)!important;}
+.appshell .as-health-board .v2-issue-board button>div:first-child>span:nth-child(2){color:var(--ink)!important;}
+.appshell .as-health-board .v2-issue-board button>div:nth-child(2){color:var(--ink-2)!important;}
+.appshell .as-health-board .v2-issue-fix-panel{background:var(--surface-2)!important;}
+.appshell .as-health-board .v2-issue-fix-panel div,.appshell .as-health-board .v2-issue-fix-panel li{color:var(--ink-2);}
+.appshell .as-health-board .v2-issue-fix-panel pre{background:var(--ink)!important;color:#eef0f4!important;}
+.appshell .as-health-board .v2-issue-board button:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:-3px;}
+
+/* 網站體檢：爬蟲與 Schema 專項工具入口，不在載入時自動重掃 */
+.appshell .as-health-tool{margin-top:16px;padding:16px 18px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);
+  display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:var(--sh-sm);}
+.appshell .as-health-tool div{display:flex;flex-direction:column;gap:3px;}
+.appshell .as-health-tool b{font-size:13.5px;}
+.appshell .as-health-tool span{font-size:12px;color:var(--ink-3);line-height:1.5;}
+.appshell .as-health-tool-link{font-size:13px;font-weight:750;color:var(--accent-2);text-decoration:none;white-space:nowrap;}
+.appshell .as-health-tool-link:hover{text-decoration:underline;}
+.appshell .as-health-tool-link:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:3px;border-radius:4px;}
+
+/* AI 曝光監測：頁首控制與旗艦 KPI，版面對齊核可稿的 1.5 / 1 / 1 欄 */
+.appshell .as-vis-phead .as-vis-rescan{margin:0 0 0 10px;padding:8px 14px;white-space:nowrap;}
+.appshell .as-vis-kpis{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.appshell .as-vis-kpi{padding:20px;min-width:0;position:relative;overflow:hidden;}
+.appshell .as-vis-kpi .label{font-size:12px;color:var(--ink-3);font-weight:650;margin-bottom:7px;
+  display:flex;align-items:center;gap:6px;}
+.appshell .as-vis-kpi .info{width:15px;height:15px;border:1px solid var(--line-2);border-radius:50%;display:inline-grid;
+  place-items:center;font-family:var(--mono);font-size:9px;color:var(--ink-3);cursor:help;}
+.appshell .as-vis-kpi .value{font-size:44px;font-weight:900;letter-spacing:-.04em;line-height:1;color:var(--accent);display:inline-block;}
+.appshell .as-vis-kpi .value.small{font-size:27px;color:var(--ink);letter-spacing:-.02em;margin-top:7px;}
+.appshell .as-vis-kpi .value small{font-size:13px;color:var(--ink-3);font-weight:650;letter-spacing:0;}
+.appshell .as-vis-kpi .value.pending{font-size:18px;color:var(--ink-3);letter-spacing:0;line-height:1.4;}
+.appshell .as-vis-kpi .delta{font-family:var(--mono);font-size:11px;color:var(--geo);font-weight:750;margin-left:6px;
+  background:rgba(5,150,105,.1);padding:3px 7px;border-radius:6px;vertical-align:6px;}
+.appshell .as-vis-kpi .delta.down{color:#c2410c;background:rgba(194,65,12,.09);}
+.appshell .as-vis-kpi p{font-size:11.5px;color:var(--ink-3);line-height:1.5;margin:8px 0 0;}
+.appshell .as-vis-spark{display:block;width:100%;height:54px;margin-top:8px;overflow:visible;}
+.appshell .as-vis-spark .area{fill:rgba(255,110,52,.12);}
+.appshell .as-vis-spark .line{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.appshell .as-vis-spark circle{fill:var(--accent);stroke:var(--surface);stroke-width:.7;}
+.appshell .as-vis-trend-empty{height:54px;margin-top:8px;border:1px dashed var(--line);border-radius:8px;display:grid;
+  place-items:center;text-align:center;padding:8px;font-size:10.5px;color:var(--ink-3);}
+.appshell .as-vis-engine-rates{display:flex;gap:9px;flex-wrap:wrap;margin-top:7px;font-size:10.5px;color:var(--ink-3);}
+.appshell .as-vis-engine-rates b{color:var(--ink-2);}
+.appshell .as-vis-usage{height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin-top:14px;}
+.appshell .as-vis-usage i{display:block;height:100%;border-radius:inherit;background:var(--accent);}
+
+/* AI 曝光監測：三引擎識別，固定只顯示 ChatGPT / Claude / Gemini */
+.appshell .as-vis-engine-mark{width:19px;height:19px;border-radius:6px;background:var(--engine-color);color:#fff;display:inline-grid;
+  place-items:center;font-family:var(--mono);font-size:9px;font-weight:850;flex:none;}
+
+/* AI 曝光監測：最新批次核心題引用矩陣 */
+.appshell .as-vis-matrix{padding:22px;margin-bottom:16px;overflow:hidden;}
+.appshell .as-vis-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.appshell .as-vis-section-head>div{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.appshell .as-vis-section-head h3{font-size:16px;font-weight:800;margin:0;}
+.appshell .as-vis-section-head>div>span:not(.as-vis-beta){font-size:11.5px;color:var(--ink-3);}
+.appshell .as-vis-time{font-size:11px;color:var(--ink-3);font-family:var(--mono);}
+.appshell .as-vis-matrix .note{font-size:11.5px;color:var(--ink-3);margin:6px 0 14px;line-height:1.55;}
+.appshell .as-vis-table-wrap{overflow-x:auto;}
+.appshell .as-vis-matrix table{width:100%;border-collapse:collapse;min-width:620px;}
+.appshell .as-vis-matrix th,.appshell .as-vis-matrix td{border-top:1px solid var(--line);padding:10px 12px;text-align:center;font-size:12px;}
+.appshell .as-vis-matrix thead th{color:var(--ink-2);font-weight:700;border-top:none;}
+.appshell .as-vis-matrix .question{text-align:left;width:55%;line-height:1.45;}
+.appshell .as-vis-matrix th .engine{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.appshell .as-vis-cell{width:24px;height:24px;border-radius:7px;display:inline-grid;place-items:center;font-family:var(--mono);font-weight:850;}
+.appshell .as-vis-cell.hit{background:var(--geo);color:#fff;}
+.appshell .as-vis-cell.miss{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line);}
+.appshell .as-vis-cell.none{background:transparent;color:var(--ink-3);border:1px dashed var(--line-2);}
+.appshell .as-vis-inline-state{padding:12px 14px;border-radius:9px;background:var(--surface-2);font-size:12px;color:var(--ink-3);
+  line-height:1.55;margin-top:12px;}
+
+/* AI 曝光監測：品牌詞與內容引用兩軸刻意分開，避免灌入主曝光率 */
+.appshell .as-vis-honest{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.appshell .as-vis-honest>.as-card{padding:20px;}
+.appshell .as-vis-honest .title{font-size:13px;font-weight:750;color:var(--ink-2);display:flex;align-items:center;gap:7px;}
+.appshell .as-vis-honest .title span{font-family:var(--mono);font-size:9px;background:var(--surface-2);color:var(--ink-3);
+  padding:2px 6px;border-radius:5px;}
+.appshell .as-vis-honest .value{font-size:32px;font-weight:900;line-height:1;margin:10px 0 8px;}
+.appshell .as-vis-honest .value.citation{color:var(--geo);}
+.appshell .as-vis-honest .value.pending{font-size:17px;color:var(--ink-3);line-height:1.5;}
+.appshell .as-vis-honest p{font-size:12px;color:var(--ink-3);line-height:1.6;margin:0;}
+.appshell .as-vis-honest a{color:var(--accent-2);font-weight:750;text-decoration:none;}
+.appshell .as-vis-honest a:hover{text-decoration:underline;}
+
+/* AI 曝光監測：競品比較。只有自己的真實列可畫比例，其餘不捏造 */
+.appshell .as-vis-compare{padding:22px;margin-bottom:16px;}
+.appshell .as-vis-compare-row{display:grid;grid-template-columns:minmax(130px,180px) 1fr 80px;align-items:center;gap:12px;
+  min-height:42px;border-top:1px solid var(--line);font-size:12.5px;position:relative;}
+.appshell .as-vis-compare-row.you{border-top:none;}
+.appshell .as-vis-compare-row>span{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.appshell .as-vis-compare-row .bar{height:7px;background:var(--surface-3);border-radius:99px;overflow:hidden;}
+.appshell .as-vis-compare-row .bar i{display:block;height:100%;background:var(--accent);border-radius:inherit;}
+.appshell .as-vis-compare-row>b{text-align:right;font-size:12px;color:var(--ink-3);font-weight:650;}
+.appshell .as-vis-compare-row.you>b{color:var(--accent-2);}
+.appshell .as-vis-compare-row.locked>*:not(.lock){filter:blur(3px);opacity:.45;user-select:none;}
+.appshell .as-vis-compare-row .lock{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.78);
+  color:var(--ink-2);font-size:11.5px;font-weight:750;}
+.appshell .as-vis-compare .foot{font-size:11px;color:var(--ink-3);margin:10px 0 0;line-height:1.55;}
+
+/* AI 曝光監測：品牌外部提及 BETA，沿用既有 API 且只在使用者點擊時查詢 */
+.appshell .as-vis-mentions{padding:22px;}
+.appshell .as-vis-beta{font-family:var(--mono);font-size:9px;font-weight:750;letter-spacing:.06em;background:rgba(130,152,255,.14);
+  color:#5866c4;padding:2px 7px;border-radius:5px;}
+.appshell .as-vis-line-button{font-family:var(--font);font-size:12px;font-weight:700;color:var(--ink-2);background:var(--surface);
+  border:1px solid var(--line-2);border-radius:9px;padding:7px 11px;cursor:pointer;}
+.appshell .as-vis-line-button:hover{background:var(--surface-2);}
+.appshell .as-vis-line-button:disabled{cursor:wait;opacity:.55;}
+.appshell .as-vis-mentions>p{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin:8px 0 0;max-width:68ch;}
+.appshell .as-vis-mention-results>b{display:block;font-size:12.5px;margin:14px 0 4px;}
+.appshell .as-vis-mention-item{display:grid;grid-template-columns:140px 1fr auto;align-items:center;gap:10px;padding:9px 0;
+  border-top:1px solid var(--line);text-decoration:none;color:var(--ink-2);font-size:12px;content-visibility:auto;contain-intrinsic-size:40px;}
+.appshell .as-vis-mention-item .src{font-family:var(--mono);font-size:10.5px;background:var(--surface-2);padding:3px 7px;border-radius:6px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.appshell .as-vis-mention-item .title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.appshell .as-vis-mention-item .tag{font-size:10px;color:var(--ink-3);border:1px solid var(--line);padding:2px 7px;border-radius:99px;}
+.appshell .as-vis-mention-item:hover .title{color:var(--accent-2);}
+.appshell .as-vis-rescan:focus-visible,.appshell .as-seg button:focus-visible,.appshell .as-vis-line-button:focus-visible,
+.appshell .as-vis-honest a:focus-visible,.appshell .as-vis-mention-item:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:3px;}
+
 @media (max-width:900px){
   .appshell{grid-template-columns:1fr;}
   .appshell .as-side{position:static;height:auto;flex-direction:row;overflow-x:auto;border-right:none;
@@ -131,4 +301,25 @@
   .appshell .as-gauge{margin:0 auto;}
   .appshell .as-scores{grid-template-columns:repeat(2,1fr);}
   .appshell .as-seg{margin-left:0;}
+  .appshell .as-sites-head .as-sites-add{margin-left:0;}
+  .appshell .as-health-board .v2-issue-board{grid-template-columns:1fr!important;}
+  .appshell .as-health-tool{align-items:flex-start;flex-direction:column;}
+  .appshell .as-vis-kpis{grid-template-columns:1fr 1fr;}
+  .appshell .as-vis-kpi-main{grid-column:1/-1;}
+  .appshell .as-vis-honest{grid-template-columns:1fr;}
+  .appshell .as-vis-phead .as-vis-rescan{margin-left:0;}
+}
+
+@media (max-width:620px){
+  .appshell .as-vis-kpis{grid-template-columns:1fr;}
+  .appshell .as-vis-kpi-main{grid-column:auto;}
+  .appshell .as-vis-compare-row{grid-template-columns:100px 1fr 72px;gap:8px;}
+  .appshell .as-vis-mention-item{grid-template-columns:1fr auto;}
+  .appshell .as-vis-mention-item .title{grid-column:1/-1;grid-row:2;}
+}
+
+/* 動態偏好：網站卡 hover 位移在減少動態時關閉 */
+@media (prefers-reduced-motion:reduce){
+  .appshell .as-sitecard,.appshell .as-addsite,.appshell .as-nav,.appshell .as-seg button{transition:none;}
+  .appshell .as-sitecard:hover{transform:none;}
 }

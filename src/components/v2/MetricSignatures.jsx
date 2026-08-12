@@ -14,19 +14,19 @@ import { T } from '../../styles/v2-tokens'
 //   8 個 boolean 加權算出三家引擎的「技術估算引用率」
 // =====================================================
 export function AEOSignature({ audit, brandName }) {
-  // 各家引擎對技術項目的權重不同（基於業界觀察）
-  // - Perplexity 重 FAQ schema、結構化答案、canonical
+  // 各家引擎對技術項目的權重不同（基於業界觀察）。對齊實際監測的 3 引擎：ChatGPT / Claude / Gemini。
   // - ChatGPT 重 JSON-LD、語意化標題、答案結構
-  // - Google AI（SGE/AIO）重 schema、Open Graph、麵包屑
+  // - Claude 重 FAQ schema、結構化答案、canonical
+  // - Gemini 重 schema、Open Graph、麵包屑
   const ENGINE_WEIGHTS = [
-    { name: 'Perplexity', c: '#5b4aff', w: { json_ld: 12, faq_schema: 22, canonical: 12, breadcrumbs: 4, open_graph: 6, question_headings: 14, meta_desc_length: 8, structured_answer: 22 } },
-    { name: 'ChatGPT',    c: '#10a37f', w: { json_ld: 18, faq_schema: 14, canonical: 8,  breadcrumbs: 4, open_graph: 8, question_headings: 18, meta_desc_length: 12, structured_answer: 18 } },
-    { name: 'Google AI',  c: '#4285f4', w: { json_ld: 16, faq_schema: 16, canonical: 14, breadcrumbs: 12, open_graph: 14, question_headings: 8, meta_desc_length: 10, structured_answer: 10 } },
+    { name: 'ChatGPT', c: '#10a37f', w: { json_ld: 18, faq_schema: 14, canonical: 8,  breadcrumbs: 4, open_graph: 8, question_headings: 18, meta_desc_length: 12, structured_answer: 18 } },
+    { name: 'Claude',  c: '#d97757', w: { json_ld: 12, faq_schema: 22, canonical: 12, breadcrumbs: 4, open_graph: 6, question_headings: 14, meta_desc_length: 8, structured_answer: 22 } },
+    { name: 'Gemini',  c: '#4285f4', w: { json_ld: 16, faq_schema: 16, canonical: 14, breadcrumbs: 12, open_graph: 14, question_headings: 8, meta_desc_length: 10, structured_answer: 10 } },
   ]
   const engines = ENGINE_WEIGHTS.map(e => {
     if (!audit) {
       // mock：保留 v3 原樣示意值
-      const mockRates = { Perplexity: 62, ChatGPT: 45, 'Google AI': 70 }
+      const mockRates = { ChatGPT: 45, Claude: 62, Gemini: 70 }
       return { name: e.name, c: e.c, rate: mockRates[e.name] }
     }
     const rate = Object.entries(e.w).reduce((sum, [key, weight]) => sum + (audit[key] ? weight : 0), 0)
@@ -49,14 +49,14 @@ export function AEOSignature({ audit, brandName }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 9 }}>
           <div style={{
-            width: 16, height: 16, borderRadius: 4, background: '#5b4aff',
+            width: 16, height: 16, borderRadius: 4, background: '#10a37f',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
               <path d="M6 1L9 4.5V11H3V4.5L6 1Z" fill="#fff" />
             </svg>
           </div>
-          <span style={{ fontSize: 14, color: T.textMid }}>Perplexity 對「台南網頁設計推薦」的回答</span>
+          <span style={{ fontSize: 14, color: T.textMid }}>ChatGPT 對「台南代書推薦」的回答</span>
         </div>
         <div style={{ fontSize: 14, color: T.text, lineHeight: 1.7, marginBottom: 10 }}>
           台南優質的網頁設計公司包含
@@ -127,14 +127,14 @@ export function GEOSignature({ audit, isPro }) {
 
   // 每家引擎對技術項目的敏感度不同
   const ENGINE_BASES = [
-    { name: 'Google AI',    keys: ['llms_txt', 'robots_ai', 'sitemap', 'open_graph', 'json_ld_citation', 'canonical', 'https'], multiplier: 1.0 },
+    { name: 'Gemini',       keys: ['llms_txt', 'robots_ai', 'sitemap', 'open_graph', 'json_ld_citation', 'canonical', 'https'], multiplier: 1.0 },
     { name: 'ChatGPT',      keys: ['llms_txt', 'robots_ai', 'sitemap', 'open_graph', 'twitter_card', 'json_ld_citation', 'https'], multiplier: 0.85 },
     { name: 'Claude',       keys: ['llms_txt', 'robots_ai', 'json_ld_citation', 'canonical', 'https'], multiplier: 0.72 },
   ]
   const buildVals = (eng) => {
     if (!audit) {
       const mock = {
-        'Google AI':    [88, 72, 58, 32, 24],
+        'Gemini':       [88, 72, 58, 32, 24],
         'ChatGPT':      [72, 65, 48, 28, 18],
         'Claude':       [58, 50, 38, 22, 12],
       }

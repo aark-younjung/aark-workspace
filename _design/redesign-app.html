@@ -1,0 +1,528 @@
+<style>
+  /* ═══ 設計 token：暖白底 + 深藍 ink + 橘 accent（沿用首頁/總覽同一套） ═══ */
+  :root{
+    --bg:#f4f5f7; --surface:#ffffff; --surface-2:#eef0f4; --surface-3:#e6e9ef;
+    --ink:#00003e; --ink-2:#4a4a63; --ink-3:#9a9aad;
+    --line:rgba(0,0,62,.08); --line-2:rgba(0,0,62,.14);
+    --accent:#ff6e34; --accent-2:#e85114; --accent-soft:rgba(255,110,52,.1);
+    --pop:#8298ff;
+    --seo:#2563eb; --aeo:#7c3aed; --geo:#059669; --eeat:#b45309;
+    --sh-sm:0 1px 2px rgba(0,0,62,.05);
+    --sh:0 1px 2px rgba(0,0,62,.04), 0 14px 32px rgba(0,0,62,.07);
+    --font:"PingFang TC","Microsoft JhengHei","Noto Sans TC",system-ui,-apple-system,sans-serif;
+    --mono:"SFMono-Regular","Cascadia Code","Consolas",ui-monospace,monospace;
+    --r:12px; --r-lg:18px; --r-xl:24px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+  .num{font-variant-numeric:tabular-nums;}
+  h2,h3,h4{margin:0;letter-spacing:-.01em;}
+
+  /* ═══ 頂部草稿提示條 ═══ */
+  .hint{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);
+    padding:8px 20px;background:rgba(244,245,247,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);font-family:var(--mono);}
+  .hint b{color:var(--ink-2);font-family:var(--font);}
+  .hint .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+
+  /* ═══ 通用按鈕 ═══ */
+  .btn{font-family:var(--font);font-weight:700;border:none;cursor:pointer;border-radius:11px;transition:.16s;white-space:nowrap;}
+  .btn-cta{background:var(--accent);color:#fff;box-shadow:0 6px 15px rgba(255,110,52,.26);}
+  .btn-cta:hover{background:var(--accent-2);transform:translateY(-1px);}
+  .btn-line{background:var(--surface);color:var(--ink);border:1px solid var(--line-2);}
+  .btn-line:hover{border-color:var(--ink-3);}
+  .btn-sm{padding:8px 15px;font-size:13px;} .btn-xs{padding:6px 12px;font-size:12px;}
+
+  /* ═══ app 外殼：左選單 236px + 右內容 ═══ */
+  .shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh;}
+  .side{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:33px;height:calc(100vh - 33px);}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;}
+  .brand .nm{font-weight:800;font-size:16px;}
+  .mark .sweep{transform-origin:center;animation:sweep 4s linear infinite;}
+  @keyframes sweep{to{transform:rotate(360deg);}}
+
+  /* 左選單項目：active＝橘軟底 */
+  .nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;font-size:14.5px;
+    color:var(--ink-2);font-weight:600;cursor:pointer;transition:.14s;margin-bottom:2px;text-align:left;width:100%;background:none;border:none;font-family:var(--font);}
+  .nav svg{flex:none;color:var(--ink-3);}
+  .nav:hover{background:var(--surface-2);}
+  .nav.on{background:var(--accent-soft);color:var(--accent-2);font-weight:750;}
+  .nav.on svg{color:var(--accent);}
+  .nav .tag{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.04em;background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;}
+  .side .sp{flex:1;min-height:16px;}
+  .acct{display:flex;align-items:center;gap:10px;padding:11px 8px;border-top:1px solid var(--line);}
+  .acct .av{width:32px;height:32px;border-radius:9px;flex:none;background:linear-gradient(140deg,var(--pop),#5866c4);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;}
+  .acct .an{font-size:13px;font-weight:700;line-height:1.3;}
+  .acct .as{font-size:11px;color:var(--ink-3);}
+
+  /* ═══ 右側主內容 ═══ */
+  .main{padding:24px clamp(20px,3.5vw,40px);max-width:1060px;}
+  .view{display:none;} .view.on{display:block;animation:fade .28s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  /* ═══ 情境切換器：客戶 › 網站/品牌（兩層，代理商才有客戶層） ═══ */
+  .ctx{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .switcher{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line-2);border-radius:11px;padding:7px 13px;cursor:pointer;box-shadow:var(--sh-sm);}
+  .switcher .lab{font-size:10.5px;color:var(--ink-3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;}
+  .switcher .val{font-size:14px;font-weight:750;}
+  .switcher svg{color:var(--ink-3);}
+  .switcher.client{background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.22);}
+  .switcher.client .val{color:var(--aeo);}
+  .ctx .sep{color:var(--ink-3);font-size:16px;}
+  .ctx .roletag{margin-left:4px;font-size:11px;color:var(--ink-3);font-family:var(--mono);}
+
+  .phead{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  .phead h2{font-size:22px;font-weight:850;}
+  .phead .sub{font-size:13px;color:var(--ink-3);}
+  .seg{margin-left:auto;display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px;}
+  .seg button{font-family:var(--font);font-size:12.5px;font-weight:650;padding:6px 13px;border-radius:8px;border:none;background:transparent;color:var(--ink-2);cursor:pointer;transition:.14s;}
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm);font-weight:750;}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);}
+
+  /* ═══ 總覽：aivis 主角卡 ═══ */
+  .truth{padding:26px;box-shadow:var(--sh);border-radius:var(--r-xl);display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;position:relative;overflow:hidden;}
+  .truth::before{content:"";position:absolute;top:-40%;right:-8%;width:320px;height:320px;background:radial-gradient(circle,rgba(255,110,52,.07),transparent 62%);pointer-events:none;}
+  .gauge{position:relative;width:142px;height:142px;flex:none;}
+  .gauge .cx{position:absolute;inset:0;display:grid;place-items:center;text-align:center;}
+  .gauge .big{font-size:42px;font-weight:900;line-height:1;}
+  .gauge .cap{font-size:11px;color:var(--ink-3);margin-top:3px;}
+  .truth .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin-bottom:8px;}
+  .truth h3{font-size:24px;font-weight:850;margin-bottom:9px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .delta{font-family:var(--mono);font-size:12.5px;font-weight:750;color:var(--geo);background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.24);padding:3px 8px;border-radius:7px;display:inline-flex;align-items:center;gap:3px;}
+  .truth p{margin:0 0 14px;font-size:14px;color:var(--ink-2);line-height:1.6;max-width:50ch;}
+  .truth p b{color:var(--ink);}
+
+  /* 技術輔助分數 */
+  .support{margin-top:16px;}
+  .support .sh{display:flex;align-items:baseline;gap:8px;margin-bottom:11px;}
+  .support .sh b{font-size:13px;font-weight:700;color:var(--ink-2);}
+  .support .sh span{font-size:12px;color:var(--ink-3);}
+  .scores{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .sc{padding:14px 15px;border-radius:var(--r);cursor:pointer;transition:.14s;}
+  .sc:hover{transform:translateY(-2px);box-shadow:var(--sh);}
+  .sc .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .sc .nm{font-size:12px;font-weight:700;color:var(--ink-2);}
+  .sc .n{font-size:24px;font-weight:850;line-height:1;}
+  .sc .arrow{font-size:11px;color:var(--ink-3);}
+  .sc .bar{height:4px;border-radius:2px;background:var(--surface-3);margin-top:10px;overflow:hidden;}
+  .sc .bar i{display:block;height:100%;border-radius:2px;}
+
+  .next{margin-top:16px;padding:17px 20px;border-radius:var(--r-lg);display:flex;align-items:center;gap:15px;flex-wrap:wrap;}
+  .next .no{width:36px;height:36px;flex:none;border-radius:11px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:900;font-size:16px;box-shadow:0 5px 12px rgba(255,110,52,.3);}
+  .next .tx{flex:1;min-width:220px;}
+  .next .tx .h{font-size:14.5px;font-weight:750;margin-bottom:2px;}
+  .next .tx .d{font-size:13px;color:var(--ink-2);line-height:1.5;}
+  .next .tx .d em{font-style:normal;color:var(--ink);font-weight:600;}
+
+  /* ═══ 改前/改後 進展（折進總覽；aivis delta 為主角、技術 delta 為小字）═══ */
+  .progress{padding:24px;border-radius:var(--r-xl);margin-top:16px;}
+  .progress .p-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap;}
+  .progress .p-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin-bottom:5px;}
+  .progress .p-hd h3{font-size:17px;font-weight:800;}
+  .progress .p-delta{font-family:var(--mono);font-size:22px;font-weight:900;color:var(--geo);display:flex;align-items:center;gap:5px;}
+  .progress .p-delta span{font-size:11px;font-weight:600;color:var(--ink-3);font-family:var(--font);}
+  .traj{width:100%;height:auto;margin:4px 0 14px;}
+  .p-events{display:flex;flex-direction:column;gap:2px;}
+  .ev{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2);padding:5px 0;}
+  .ev b{color:var(--ink);font-weight:700;}
+  .ev .ev-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);flex:none;}
+  .ev.act .ev-dot{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .ev.now .ev-dot{background:var(--geo);box-shadow:0 0 0 3px rgba(5,150,105,.15);}
+  .p-note{font-size:11.5px;color:var(--ink-3);margin-top:12px;line-height:1.55;background:var(--surface-2);padding:9px 13px;border-radius:9px;}
+  .p-note b{color:var(--ink-2);}
+
+  /* ═══ AI 曝光監測（旗艦）═══ */
+  .kpis{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+  .kpi{padding:20px;border-radius:var(--r-lg);}
+  .kpi .k-lbl{font-size:12px;color:var(--ink-3);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .kpi .k-lbl .info{width:14px;height:14px;border-radius:50%;border:1px solid var(--ink-3);color:var(--ink-3);font-size:9px;display:grid;place-items:center;font-family:var(--mono);cursor:help;}
+  .kpi .k-big{font-size:38px;font-weight:900;line-height:1;letter-spacing:-.02em;display:flex;align-items:baseline;gap:8px;}
+  .kpi .k-big .u{font-size:15px;font-weight:700;color:var(--ink-3);}
+  .kpi.hero{grid-column:1;background:linear-gradient(180deg,#fff,#fffaf7);border-color:rgba(255,110,52,.18);}
+  .kpi .k-sub{font-size:12px;color:var(--ink-3);margin-top:8px;}
+  .kpi .k-mid{font-size:24px;font-weight:850;}
+  .spark{height:60px;margin-top:12px;}
+
+  /* AI logo 小徽章（示意，正式版換官方 SVG） */
+  .ailogo{display:inline-flex;vertical-align:middle;}
+
+  /* 引用矩陣 */
+  .matrix{padding:22px;border-radius:var(--r-lg);margin-bottom:16px;}
+  .matrix .m-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;}
+  .matrix .m-hd h3{font-size:16px;font-weight:800;}
+  .matrix .m-note{font-size:12px;color:var(--ink-3);margin-bottom:14px;line-height:1.5;}
+  .mtable{width:100%;border-collapse:collapse;}
+  .mtable th,.mtable td{padding:11px 8px;text-align:center;border-bottom:1px solid var(--line);}
+  .mtable th{font-size:11.5px;font-weight:700;color:var(--ink-2);}
+  .mtable th.q,.mtable td.q{text-align:left;font-size:13px;color:var(--ink);font-weight:500;width:44%;}
+  .mtable td.q .t{font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;padding:1px 6px;border-radius:5px;margin-right:7px;font-weight:700;}
+  .t.core{background:rgba(255,110,52,.12);color:var(--accent-2);}
+  .t.rot{background:var(--surface-3);color:var(--ink-2);}
+  .th-eng{display:inline-flex;align-items:center;gap:6px;justify-content:center;}
+  .cell{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;}
+  .cell.hit{background:var(--accent);color:#fff;}
+  .cell.miss{background:var(--surface-3);}
+  .cell.miss::after{content:"–";color:var(--ink-3);font-weight:700;}
+
+  /* 兩個誠實分開的指標 */
+  .honest{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  .honest .h-card{padding:20px;border-radius:var(--r-lg);}
+  .honest .h-card .h-t{font-size:13px;font-weight:750;margin-bottom:4px;}
+  .honest .h-card .h-t .pill{font-family:var(--mono);font-size:9px;background:var(--surface-3);color:var(--ink-2);padding:2px 6px;border-radius:5px;margin-left:6px;font-weight:700;letter-spacing:.03em;}
+  .honest .h-card .h-n{font-size:30px;font-weight:900;margin:6px 0;}
+  .honest .h-card .h-d{font-size:12px;color:var(--ink-3);line-height:1.55;}
+
+  /* 競品比較 */
+  .compare{padding:22px;border-radius:var(--r-lg);margin-bottom:16px;}
+  .compare .c-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .compare .c-hd h3{font-size:16px;font-weight:800;}
+  .compare .c-hd .c-note{font-size:12px;color:var(--ink-3);}
+  .crow{display:flex;align-items:center;gap:12px;padding:9px 0;position:relative;}
+  .crow .c-nm{width:130px;flex:none;font-size:13px;font-weight:650;color:var(--ink-2);}
+  .crow.you .c-nm{color:var(--accent-2);font-weight:800;}
+  .crow .c-bar{flex:1;height:12px;background:var(--surface-2);border-radius:6px;overflow:hidden;}
+  .crow .c-bar i{display:block;height:100%;border-radius:6px;background:var(--ink-3);}
+  .crow.you .c-bar i{background:var(--accent);}
+  .crow .c-v{width:42px;text-align:right;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;}
+  .crow.locked .c-nm,.crow.locked .c-bar,.crow.locked .c-v{filter:blur(3px);opacity:.6;}
+  .crow .lockmask{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-2);}
+  .compare .c-foot{margin-top:12px;font-size:12px;color:var(--ink-3);background:var(--surface-2);padding:9px 13px;border-radius:9px;}
+  .compare .c-foot b{color:var(--ink-2);}
+
+  /* 品牌外部提及（BETA） */
+  .mentions{padding:22px;border-radius:var(--r-lg);}
+  .mentions .mt-hd{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .mentions .mt-hd h3{font-size:16px;font-weight:800;}
+  .mentions .beta{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;background:rgba(130,152,255,.14);color:#5866c4;padding:2px 7px;border-radius:5px;}
+  .mentions .mt-hd .btn{margin-left:auto;}
+  .mentions .mt-d{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin:0 0 14px;max-width:62ch;}
+  .mt-item{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2);padding:9px 0;border-top:1px solid var(--line);}
+  .mt-item .mt-src{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);padding:2px 8px;border-radius:6px;flex:none;}
+  .mt-item .mt-tag{margin-left:auto;font-size:10.5px;color:var(--ink-3);border:1px solid var(--line);padding:2px 8px;border-radius:999px;}
+  .mt-item.mt-more{color:var(--ink-3);font-size:12px;justify-content:center;}
+
+  /* ═══ 網站體檢 ═══ */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;flex-wrap:wrap;}
+  .tab{font-family:var(--font);font-size:13.5px;font-weight:650;padding:10px 15px;border:none;background:none;color:var(--ink-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.14s;}
+  .tab.on{color:var(--accent-2);border-bottom-color:var(--accent);font-weight:750;}
+  .tab .b{font-family:var(--mono);font-size:11px;margin-left:5px;color:var(--ink-3);}
+  .scope{font-size:12px;color:var(--ink-3);background:var(--surface-2);border-radius:9px;padding:9px 13px;margin-bottom:16px;line-height:1.5;}
+  .issues .iss{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--r);margin-bottom:8px;background:var(--surface);border:1px solid var(--line);}
+  .iss .ic{width:22px;height:22px;border-radius:6px;flex:none;display:grid;place-items:center;margin-top:1px;}
+  .iss.pass .ic{background:rgba(5,150,105,.12);color:var(--geo);}
+  .iss.fail .ic{background:rgba(220,38,38,.1);color:#dc2626;font-weight:800;}
+  .iss .it{flex:1;} .iss .it .h{font-size:14px;font-weight:700;margin-bottom:3px;} .iss .it .d{font-size:12.5px;color:var(--ink-2);line-height:1.5;}
+  .iss .fix{align-self:center;}
+
+  /* ═══ 內容缺口（窄用）═══ */
+  .gap-intro{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin-bottom:18px;max-width:60ch;}
+  .gap-intro b{color:var(--ink);}
+  .gaprow{padding:16px 18px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);margin-bottom:10px;}
+  .gaprow .g-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .gaprow .g-q{font-size:14.5px;font-weight:700;}
+  .gaprow .g-q .t{font-family:var(--mono);font-size:9.5px;background:rgba(124,58,237,.1);color:var(--aeo);padding:2px 6px;border-radius:5px;margin-right:7px;font-weight:700;}
+  .gaprow .g-stat{font-size:12px;font-weight:700;color:#dc2626;background:rgba(220,38,38,.08);padding:3px 9px;border-radius:7px;white-space:nowrap;}
+  .gaprow .g-cited{font-size:12.5px;color:var(--ink-2);line-height:1.6;}
+  .gaprow .g-cited .src{display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);padding:2px 8px;border-radius:6px;margin:0 4px 4px 0;font-family:var(--mono);font-size:11.5px;}
+  .gaprow .g-cited .src.you{background:rgba(255,110,52,.12);color:var(--accent-2);font-weight:700;}
+
+  /* ═══ 我的網站：客戶分組 ═══ */
+  .sites-note{font-size:12px;color:var(--ink-3);background:var(--surface-2);border-radius:9px;padding:9px 13px;margin-bottom:18px;line-height:1.5;}
+  .cgroup{margin-bottom:22px;}
+  .cgroup .ch{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .cgroup .ch .cfold{color:var(--aeo);}
+  .cgroup .ch .cnm{font-size:15px;font-weight:800;}
+  .cgroup .ch .ccount{font-family:var(--mono);font-size:11px;color:var(--ink-3);background:var(--surface-2);padding:2px 9px;border-radius:6px;}
+  .cgroup .ch .cadd{margin-left:auto;}
+  .sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+  .sitecard{padding:18px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-sm);transition:.15s;cursor:pointer;}
+  .sitecard:hover{transform:translateY(-2px);box-shadow:var(--sh);border-color:var(--line-2);}
+  .sitecard .s-nm{font-size:15px;font-weight:800;margin-bottom:2px;}
+  .sitecard .s-url{font-size:11.5px;color:var(--ink-3);font-family:var(--mono);margin-bottom:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sitecard .s-row{display:flex;gap:18px;}
+  .sitecard .s-metric .m-l{font-size:11px;color:var(--ink-3);margin-bottom:2px;}
+  .sitecard .s-metric .m-v{font-size:22px;font-weight:850;line-height:1;}
+  .sitecard .s-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-3);display:flex;justify-content:space-between;}
+  .addsite{border:1.5px dashed var(--line-2);background:transparent;display:grid;place-items:center;text-align:center;min-height:140px;color:var(--ink-3);cursor:pointer;border-radius:var(--r-lg);transition:.15s;}
+  .addsite:hover{border-color:var(--accent);color:var(--accent-2);background:var(--accent-soft);}
+  .addclient{width:100%;border:1.5px dashed var(--line-2);background:transparent;color:var(--ink-3);padding:14px;border-radius:var(--r-lg);cursor:pointer;font-family:var(--font);font-weight:700;font-size:13.5px;transition:.15s;}
+  .addclient:hover{border-color:var(--aeo);color:var(--aeo);background:rgba(124,58,237,.05);}
+
+  /* ═══ 帳號 ═══ */
+  .acc-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+  .acc-card{padding:22px;border-radius:var(--r-lg);}
+  .acc-card h3{font-size:15px;font-weight:800;margin-bottom:16px;}
+  .plan-badge{display:inline-flex;align-items:center;gap:7px;background:var(--accent-soft);color:var(--accent-2);font-weight:750;font-size:13px;padding:6px 13px;border-radius:9px;margin-bottom:14px;}
+  .usebar{margin-bottom:16px;}
+  .usebar .u-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;}
+  .usebar .u-top b{font-weight:750;}
+  .usebar .u-track{height:8px;background:var(--surface-3);border-radius:4px;overflow:hidden;}
+  .usebar .u-track i{display:block;height:100%;border-radius:4px;background:var(--accent);}
+  .kv{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .kv:last-child{border-bottom:none;} .kv .k{color:var(--ink-3);} .kv .v{font-weight:650;}
+
+  @media (max-width:900px){
+    .shell{grid-template-columns:1fr;}
+    .side{position:static;height:auto;flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line);padding:10px;gap:4px;}
+    .brand,.side .sp,.acct{display:none;} .nav{white-space:nowrap;margin-bottom:0;}
+    .truth{grid-template-columns:1fr;text-align:center;} .gauge{margin:0 auto;}
+    .kpis{grid-template-columns:1fr;} .scores{grid-template-columns:repeat(2,1fr);} .acc-grid{grid-template-columns:1fr;} .honest{grid-template-columns:1fr;}
+    .seg{margin-left:0;} .crow .c-nm{width:96px;}
+  }
+</style>
+
+<div class="hint"><span class="dot"></span><b>高保真草稿 v2</b>&nbsp;· 點左側選單切換六大區塊 · 旗艦「AI 曝光監測」含真 AI logo／競品比較／外部提及</div>
+
+<div class="shell">
+  <!-- ═══ 左側選單 ═══ -->
+  <aside class="side">
+    <div class="brand">
+      <svg class="mark" width="30" height="30" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15.5" fill="none" stroke="rgba(0,0,62,.14)"/><circle cx="17" cy="17" r="10" fill="none" stroke="rgba(0,0,62,.14)"/><g class="sweep"><path d="M17 17 L17 1.5 A15.5 15.5 0 0 1 30 9 Z" fill="#ff6e34" opacity=".9"/></g><circle cx="17" cy="17" r="2.4" fill="#00003e"/></svg>
+      <div class="nm">AI 雷達</div>
+    </div>
+    <button class="nav on" onclick="go('overview',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>總覽</button>
+    <button class="nav" onclick="go('visibility',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M8.5 12a3.5 3.5 0 0 1 3.5-3.5M15.5 12a3.5 3.5 0 0 0-3.5-3.5M5 12a7 7 0 0 1 7-7M19 12a7 7 0 0 0-7-7"/></svg>AI 曝光監測<span class="tag">主力</span></button>
+    <button class="nav" onclick="go('health',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>網站體檢</button>
+    <button class="nav" onclick="go('gap',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>內容缺口</button>
+    <button class="nav" onclick="go('sites',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>我的網站</button>
+    <div class="sp"></div>
+    <button class="nav" onclick="go('account',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>帳號</button>
+    <div class="acct"><span class="av">緯</span><div><div class="an">緯方代書</div><div class="as">試用中 · 剩 5 天</div></div></div>
+  </aside>
+
+  <!-- ═══ 右側主內容 ═══ -->
+  <main class="main">
+
+    <!-- 情境切換器：客戶 › 網站/品牌 -->
+    <div class="ctx">
+      <div class="switcher"><span class="lab">網站 / 品牌</span><span class="val">緯方代書 · darkred-squid…</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+    </div>
+
+    <!-- ─────── ① 總覽 ─────── -->
+    <section class="view on" id="v-overview">
+      <div class="phead"><h2>總覽</h2><span class="sub">緯方代書 在 AI 眼中的整體狀態</span>
+        <div class="seg"><button class="on">本週</button><button>近 30 天</button><button>近 90 天</button></div></div>
+      <div class="card truth">
+        <div class="gauge">
+          <svg width="142" height="142" viewBox="0 0 142 142"><circle cx="71" cy="71" r="60" fill="none" stroke="var(--surface-2)" stroke-width="12"/><circle cx="71" cy="71" r="60" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="143" transform="rotate(-90 71 71)"/></svg>
+          <div class="cx"><div><div class="big num">62</div><div class="cap">AI 能見度</div></div></div>
+        </div>
+        <div>
+          <div class="lbl">真相指標 · AI 實際推不推薦你</div>
+          <h3>AI 目前「偶爾」推薦你 <span class="delta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 15l6-6 6 6"/></svg>8</span></h3>
+          <p>這兩週 AI 提到你的比率上升了。距離「常被推薦」還差一步——把下面那件事做掉，看能不能再往上。</p>
+        </div>
+      </div>
+
+      <!-- 改前/改後 進展：aivis 進步當主角 -->
+      <div class="card progress">
+        <div class="p-hd">
+          <div><div class="p-eyebrow">改前 / 改後</div><h3>你的行動有沒有讓 AI 更看見你？</h3></div>
+          <div class="p-delta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 15l6-6 6 6"/></svg>8<span>近兩週</span></div>
+        </div>
+        <svg class="traj" viewBox="0 0 560 96" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6e34" stop-opacity=".16"/><stop offset="1" stop-color="#ff6e34" stop-opacity="0"/></linearGradient></defs>
+          <path d="M270,60 L365,49 L460,39 L560,32 L560,82 L270,82 Z" fill="url(#pg)"/>
+          <path d="M0,60 L90,63 L185,56 L270,60" fill="none" stroke="#9a9aad" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M270,60 L365,49 L460,39 L560,32" fill="none" stroke="#ff6e34" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+          <line x1="270" y1="12" x2="270" y2="82" stroke="#ff6e34" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>
+          <circle cx="0" cy="60" r="3.5" fill="#9a9aad"/>
+          <circle cx="560" cy="32" r="4.5" fill="#ff6e34"/>
+          <text x="8" y="52" font-family="monospace" font-size="12" font-weight="700" fill="#9a9aad">54 改前</text>
+          <text x="552" y="25" font-family="monospace" font-size="12" font-weight="700" fill="#e85114" text-anchor="end">62 改後</text>
+          <text x="270" y="9" font-family="monospace" font-size="10" fill="#e85114" text-anchor="middle">7/14 改動</text>
+        </svg>
+        <div class="p-events">
+          <div class="ev"><span class="ev-dot"></span><b>7/1</b>　首次檢測 · AI 能見度 <b>54</b></div>
+          <div class="ev act"><span class="ev-dot"></span><b>7/14</b>　你補了「常見問題」頁的 FAQ 結構化資料</div>
+          <div class="ev now"><span class="ev-dot"></span><b>今天</b>　AI 能見度 <b>62</b>（↑8）</div>
+        </div>
+        <div class="p-note">ⓘ 這是<b>時間對照</b>，不是單一改動的必然因果——AI 能見度受多重因素影響。同期<b>技術體質 68 → 74</b>。</div>
+      </div>
+
+      <div class="support">
+        <div class="sh"><b>技術體質</b><span>讓 AI 找得到你的地基 · 輔助指標 · 點卡片看詳情</span></div>
+        <div class="scores">
+          <div class="sc card" onclick="go('health',document.querySelectorAll('.nav')[2])"><div class="top"><span class="nm">SEO</span><span class="arrow">→</span></div><span class="n num" style="color:var(--seo)">95</span><div class="bar"><i style="width:95%;background:var(--seo)"></i></div></div>
+          <div class="sc card" onclick="go('health',document.querySelectorAll('.nav')[2])"><div class="top"><span class="nm">AEO</span><span class="arrow">→</span></div><span class="n num" style="color:var(--aeo)">63</span><div class="bar"><i style="width:63%;background:var(--aeo)"></i></div></div>
+          <div class="sc card" onclick="go('health',document.querySelectorAll('.nav')[2])"><div class="top"><span class="nm">GEO</span><span class="arrow">→</span></div><span class="n num" style="color:var(--geo)">88</span><div class="bar"><i style="width:88%;background:var(--geo)"></i></div></div>
+          <div class="sc card" onclick="go('health',document.querySelectorAll('.nav')[2])"><div class="top"><span class="nm">E-E-A-T</span><span class="arrow">→</span></div><span class="n num" style="color:var(--eeat)">50</span><div class="bar"><i style="width:50%;background:var(--eeat)"></i></div></div>
+        </div>
+      </div>
+      <div class="card next">
+        <div class="no num">1</div>
+        <div class="tx"><div class="h">下一步該做的一件事</div><div class="d">緯方代書的「常見問題」頁缺 <em>FAQ 結構化資料</em>——補上後 AI 才讀得到，這是目前 CP 值最高的一步。</div></div>
+        <button class="btn btn-cta btn-sm">看怎麼修 →</button>
+      </div>
+    </section>
+
+    <!-- ─────── ② AI 曝光監測（旗艦 120%）─────── -->
+    <section class="view" id="v-visibility">
+      <div class="phead"><h2>AI 曝光監測</h2><span class="sub">真的拿緯方代書去問 3 大 AI</span>
+        <div class="seg"><button class="on">本週</button><button>近 30 天</button><button>近 90 天</button></div>
+        <button class="btn btn-cta btn-sm" style="margin-left:10px">重新掃描</button></div>
+
+      <div class="kpis">
+        <div class="kpi hero card">
+          <div class="k-lbl">品類推薦曝光率<span class="info" title="不含品牌名的品類問句（core 固定樣本），AI 回答時提到你的比率。趨勢的唯一基準。">i</span></div>
+          <div class="k-big"><span class="num">41</span><span class="u">%</span> <span class="delta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 15l6-6 6 6"/></svg>6</span></div>
+          <div class="k-sub">10 條核心品類題 × 3 引擎，本週 41% 的回答點到你的名字</div>
+          <svg class="spark" width="100%" viewBox="0 0 520 60" preserveAspectRatio="none">
+            <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6e34" stop-opacity=".2"/><stop offset="1" stop-color="#ff6e34" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,46 L86,48 L173,40 L260,43 L346,30 L433,26 L520,16 L520,60 L0,60 Z" fill="url(#sg)"/>
+            <path d="M0,46 L86,48 L173,40 L260,43 L346,30 L433,26 L520,16" fill="none" stroke="#ff6e34" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="520" cy="16" r="4" fill="#ff6e34"/><circle cx="520" cy="16" r="7" fill="none" stroke="#ff6e34" stroke-opacity=".35"/>
+          </svg>
+        </div>
+        <div class="kpi card"><div class="k-lbl">本月掃描用量</div><div class="k-mid num">38 <span class="u" style="font-size:14px;color:var(--ink-3)">/ 150 次</span></div><div class="k-sub">試用期額度 · 每次掃描＝1 次</div><div class="usebar" style="margin-top:12px"><div class="u-track"><i style="width:25%"></i></div></div></div>
+        <div class="kpi card"><div class="k-lbl">同類領先者</div><div class="k-mid">永信地政士</div><div class="k-sub">同類問句被 AI 提到 58%，領先緯方代書 17 個百分點</div></div>
+      </div>
+
+      <!-- 引用矩陣（含真 AI logo）-->
+      <div class="matrix card">
+        <div class="m-hd"><h3>引用矩陣 · 誰在哪一題被 AI 提到</h3>
+          <div style="display:flex;gap:14px;font-size:11.5px;color:var(--ink-2)">
+            <span style="display:inline-flex;align-items:center;gap:5px"><span class="cell hit" style="width:16px;height:16px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></span>有提到你</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><span class="cell miss" style="width:16px;height:16px"></span>沒提到</span>
+          </div>
+        </div>
+        <div class="m-note">只列「核心品類題」（不含品牌名）。品牌詞題與資訊題另計、不灌入曝光率——見下方。</div>
+        <table class="mtable">
+          <thead><tr><th class="q">品類問句</th>
+            <th><span class="th-eng"><span class="ailogo"><svg width="18" height="18" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#10a37f"/><g fill="#fff"><circle cx="12" cy="6.6" r="2"/><circle cx="16.7" cy="9.3" r="2"/><circle cx="16.7" cy="14.7" r="2"/><circle cx="12" cy="17.4" r="2"/><circle cx="7.3" cy="14.7" r="2"/><circle cx="7.3" cy="9.3" r="2"/></g></svg></span>ChatGPT</span></th>
+            <th><span class="th-eng"><span class="ailogo"><svg width="18" height="18" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#d97757"/><g stroke="#fff" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="4.5" x2="12" y2="19.5"/><line x1="4.5" y1="12" x2="19.5" y2="12"/><line x1="6.7" y1="6.7" x2="17.3" y2="17.3"/><line x1="17.3" y1="6.7" x2="6.7" y2="17.3"/></g></svg></span>Claude</span></th>
+            <th><span class="th-eng"><span class="ailogo"><svg width="18" height="18" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff" stroke="rgba(0,0,62,.14)"/><path d="M12 4.5c.3 4 2.8 6.5 6.8 6.8-4 .3-6.5 2.8-6.8 6.8-.3-4-2.8-6.5-6.8-6.8 4-.3 6.5-2.8 6.8-6.8Z" fill="#4285f4"/></svg></span>Gemini</span></th></tr></thead>
+          <tbody>
+            <tr><td class="q"><span class="t core">核心</span>台北推薦的代書事務所？</td>
+              <td><span class="cell hit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></span></td><td><span class="cell miss"></span></td><td><span class="cell hit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></span></td></tr>
+            <tr><td class="q"><span class="t core">核心</span>買房過戶找誰辦比較安全？</td>
+              <td><span class="cell miss"></span></td><td><span class="cell miss"></span></td><td><span class="cell hit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></span></td></tr>
+            <tr><td class="q"><span class="t core">核心</span>信託登記推薦的地政士？</td>
+              <td><span class="cell hit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></span></td><td><span class="cell hit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></span></td><td><span class="cell hit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></span></td></tr>
+            <tr><td class="q"><span class="t core">核心</span>不動產繼承登記怎麼找專業？</td>
+              <td><span class="cell miss"></span></td><td><span class="cell miss"></span></td><td><span class="cell miss"></span></td></tr>
+            <tr><td class="q"><span class="t rot">輪替</span>預售屋換約要注意什麼、找誰？</td>
+              <td><span class="cell hit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></span></td><td><span class="cell miss"></span></td><td><span class="cell miss"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 兩個誠實分開的軸 -->
+      <div class="honest">
+        <div class="h-card card"><div class="h-t">品牌詞認得率<span class="pill">另計</span></div><div class="h-n num" style="color:var(--ink)">83%</div><div class="h-d">直接問「緯方代書是誰」時 AI 答得出來的比率。量「AI 認不認得你」，刻意不併入曝光率（避免用品牌詞灌水）。</div></div>
+        <div class="h-card card"><div class="h-t">內容引用率<span class="pill">另計</span></div><div class="h-n num" style="color:var(--geo)">22%</div><div class="h-d">回答知識型問題時，AI 的引用來源裡出現你網域的比率。最能反映內容行銷有沒有打進 AI。<b style="color:var(--accent-2);cursor:pointer">→ 看內容缺口</b></div></div>
+      </div>
+
+      <!-- 競品比較（含 Free 鎖住示範）-->
+      <div class="compare card">
+        <div class="c-hd"><h3>競品比較 · 品類曝光率</h3><span class="c-note">同類問句被 AI 提到的比率</span></div>
+        <div class="crow you"><span class="c-nm">緯方代書（你）</span><div class="c-bar"><i style="width:41%"></i></div><span class="c-v">41%</span></div>
+        <div class="crow"><span class="c-nm">永信地政士</span><div class="c-bar"><i style="width:58%"></i></div><span class="c-v">58%</span></div>
+        <div class="crow"><span class="c-nm">安家不動產</span><div class="c-bar"><i style="width:33%"></i></div><span class="c-v">33%</span></div>
+        <div class="crow locked"><span class="c-nm">大同地政</span><div class="c-bar"><i style="width:47%"></i></div><span class="c-v">47%</span>
+          <div class="lockmask"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>升級解鎖更多競品</div></div>
+        <div class="c-foot">👀 <b>「Free 鎖住」示範樣式</b>：免費版比 2 家、Pro 比 4 家。此列刻意鎖住，展示付費閘門長怎樣。</div>
+      </div>
+
+      <!-- 品牌外部提及（BETA）-->
+      <div class="mentions card">
+        <div class="mt-hd"><h3>品牌外部提及</h3><span class="beta">BETA</span><button class="btn btn-line btn-xs">查詢品牌提及</button></div>
+        <p class="mt-d">量的是「全網」有多少地方提到緯方代書（新聞、論壇、目錄）——這是餵給 AI 的「站外信任」訊號，跟 E-E-A-T 相關。需管理員設定 Google API 金鑰後啟用。</p>
+        <div class="mt-item"><span class="mt-src">ptt.cc</span> 「請問緯方代書的過戶服務值得推薦嗎…」<span class="mt-tag">論壇</span></div>
+        <div class="mt-item"><span class="mt-src">591.com.tw</span> 台北地政士合作名單收錄<span class="mt-tag">目錄</span></div>
+        <div class="mt-item mt-more">＋ 還有 12 筆…</div>
+      </div>
+    </section>
+
+    <!-- ─────── ③ 網站體檢 ─────── -->
+    <section class="view" id="v-health">
+      <div class="phead"><h2>網站體檢</h2><span class="sub">讓 AI 找得到緯方代書的技術地基</span></div>
+      <div class="tabs">
+        <button class="tab on">SEO<span class="b">95</span></button><button class="tab">AEO<span class="b">63</span></button><button class="tab">GEO<span class="b">88</span></button><button class="tab">E-E-A-T<span class="b">50</span></button><button class="tab">爬蟲可達性</button><button class="tab">Schema</button>
+      </div>
+      <div class="scope">📍 本次檢測範圍：<b>這一頁（首頁）</b> + 站台層檔案（robots.txt / sitemap / llms.txt）。FAQ、H1、Meta 是逐頁檢查的——某項 ✗ 可能只是這頁沒有，其他頁可能已有。</div>
+      <div class="issues">
+        <div class="iss pass"><span class="ic"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M20 6L9 17l-5-5"/></svg></span><div class="it"><div class="h">Meta 標題長度適中</div><div class="d">27 個中文字，Google 搜尋結果不會被截斷（中文約 40 字內為佳）。</div></div></div>
+        <div class="iss pass"><span class="ic"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M20 6L9 17l-5-5"/></svg></span><div class="it"><div class="h">爬蟲可正常抓取</div><div class="d">三種爬蟲身份測試都通過，AI 引擎讀得到你的頁面。</div></div></div>
+        <div class="iss fail"><span class="ic">✕</span><div class="it"><div class="h">圖片缺 alt 文字（4 張）</div><div class="d">AI 與搜尋引擎看不懂這些圖在講什麼。Rank Math → 編輯圖片 → 替代文字。</div></div><button class="btn btn-line btn-xs fix">看修復碼</button></div>
+        <div class="iss fail"><span class="ic">✕</span><div class="it"><div class="h">頁面載入偏慢（3.8s）</div><div class="d">首圖未壓縮 + 無快取。慢頁會被 AI 爬蟲降權。</div></div><button class="btn btn-line btn-xs fix">看修復碼</button></div>
+      </div>
+    </section>
+
+    <!-- ─────── ④ 內容缺口（窄用）─────── -->
+    <section class="view" id="v-gap">
+      <div class="phead"><h2>內容缺口</h2><span class="sub">緯方代書有內容、AI 卻不引用的地方</span></div>
+      <p class="gap-intro">這裡量的是<b>知識型問題</b>（不含品牌名）：當有人問 AI 這些問題時，AI 引用了誰當來源。<b>你被引用＝你的內容打進了 AI</b>；沒被引用、卻有對手在＝這就是你該補內容的缺口。這是最能做出「改內容 → AI 開始引用你」ROI 的一軸。</p>
+      <div class="gaprow">
+        <div class="g-top"><div class="g-q"><span class="t">資訊題</span>房屋過戶要準備哪些文件？</div><span class="g-stat">AI 沒引用你</span></div>
+        <div class="g-cited">AI 這題引用了：<span class="src">house123.com.tw</span><span class="src">591.com.tw</span><span class="src">永信地政士.tw</span>—— 你有這篇內容但寫得不夠結構化，AI 抓不到。</div>
+      </div>
+      <div class="gaprow">
+        <div class="g-top"><div class="g-q"><span class="t">資訊題</span>繼承登記的期限與罰則？</div><span class="g-stat">AI 沒引用你</span></div>
+        <div class="g-cited">AI 這題引用了：<span class="src">land.moi.gov.tw</span><span class="src">legis-pedia.com</span>—— 你網站根本沒有這個主題的文章，等於缺席。</div>
+      </div>
+      <div class="gaprow" style="border-color:rgba(5,150,105,.3)">
+        <div class="g-top"><div class="g-q"><span class="t" style="background:rgba(5,150,105,.12);color:var(--geo)">資訊題</span>信託登記是什麼、怎麼辦？</div><span class="g-stat" style="color:var(--geo);background:rgba(5,150,105,.1)">✓ AI 引用了你</span></div>
+        <div class="g-cited">AI 這題引用了：<span class="src you">緯方代書</span><span class="src">wikipedia.org</span>—— 這篇內容做得好，繼續保持。</div>
+      </div>
+    </section>
+
+    <!-- ─────── ⑤ 我的網站（扁平卡片清單）─────── -->
+    <section class="view" id="v-sites">
+      <div class="phead"><h2>我的網站</h2><span class="sub">已追蹤 2 / 15 站（Pro）</span>
+        <button class="btn btn-cta btn-sm" style="margin-left:auto">＋ 新增網站</button></div>
+      <div class="sites">
+        <div class="sitecard"><div class="s-nm">緯方代書</div><div class="s-url">darkred-squid…hostingersite.com</div><div class="s-row"><div class="s-metric"><div class="m-l">AI 能見度</div><div class="m-v num" style="color:var(--accent)">62</div></div><div class="s-metric"><div class="m-l">技術體質</div><div class="m-v num" style="color:var(--ink-2)">74</div></div></div><div class="s-foot"><span>最後掃描：2 小時前</span><span style="color:var(--geo)">↑ 本週 +8</span></div></div>
+        <div class="sitecard"><div class="s-nm">青山空間設計</div><div class="s-url">chingshan-design.com</div><div class="s-row"><div class="s-metric"><div class="m-l">AI 能見度</div><div class="m-v num" style="color:var(--accent)">45</div></div><div class="s-metric"><div class="m-l">技術體質</div><div class="m-v num" style="color:var(--ink-2)">81</div></div></div><div class="s-foot"><span>最後掃描：昨天</span><span style="color:var(--ink-3)">→ 持平</span></div></div>
+        <button class="addsite"><div><div style="font-size:28px;line-height:1">＋</div><div style="font-size:13px;font-weight:700;margin-top:6px">新增追蹤網站</div><div style="font-size:11.5px;margin-top:2px">還可再加 13 站</div></div></button>
+      </div>
+    </section>
+
+    <!-- ─────── ⑥ 帳號 ─────── -->
+    <section class="view" id="v-account">
+      <div class="phead"><h2>帳號</h2><span class="sub">方案、用量與發票</span></div>
+      <div class="acc-grid">
+        <div class="acc-card card">
+          <h3>方案與用量</h3>
+          <span class="plan-badge">🎁 Pro 試用中 · 剩 5 天</span>
+          <div class="usebar"><div class="u-top"><span>AI 曝光監測</span><b class="num">38 / 150 次</b></div><div class="u-track"><i style="width:25%"></i></div></div>
+          <div class="usebar"><div class="u-top"><span>追蹤網站</span><b class="num">2 / 15 站</b></div><div class="u-track"><i style="width:13%;background:var(--pop)"></i></div></div>
+          <div style="display:flex;gap:10px;margin-top:18px"><button class="btn btn-cta btn-sm">試用結束前升級 Pro</button><button class="btn btn-line btn-sm">加購掃描次數</button></div>
+        </div>
+        <div class="acc-card card">
+          <h3>帳戶與發票</h3>
+          <div class="kv"><span class="k">Email</span><span class="v">weifang@example.com</span></div>
+          <div class="kv"><span class="k">付款方式</span><span class="v">試用期 · 未綁定</span></div>
+          <div class="kv"><span class="k">發票類型</span><span class="v">個人 / 待設定</span></div>
+          <div class="kv"><span class="k">Email 週報</span><span class="v" style="color:var(--geo)">已開啟</span></div>
+          <div style="margin-top:16px"><button class="btn btn-line btn-sm">管理帳戶設定</button></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;padding:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px"><div style="font-size:14px;font-weight:750;margin-bottom:3px">支援與法律</div><div style="font-size:12.5px;color:var(--ink-3)">費用方案 · 常見問題 · 服務條款 · 隱私權政策 · 消費者權益（皆為公開頁）</div></div>
+        <button class="btn btn-line btn-sm">聯絡客服</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // 左選單切換視圖 + 同步 active
+  function go(id, el){
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on', v.id==='v-'+id));
+    document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
+    if(el && el.classList.contains('nav')) el.classList.add('on');
+    else{ const idx={overview:0,visibility:1,health:2,gap:3,sites:4,account:5}[id]; document.querySelectorAll('.nav')[idx]?.classList.add('on'); }
+    document.querySelector('.main').scrollIntoView({block:'start'});
+  }
+  // 時間標籤 / 體檢分頁 樣式切換（草稿：僅視覺）
+  document.querySelectorAll('.seg,.tabs').forEach(group=>{
+    group.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; group.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
+  });
+  // 儀表弧進場
+  window.addEventListener('load',()=>{
+    const a=document.querySelector('.gauge circle:nth-child(2)');
+    if(a){a.style.transition='stroke-dashoffset 1s cubic-bezier(.2,.7,.3,1)';a.style.strokeDashoffset='377';requestAnimationFrame(()=>requestAnimationFrame(()=>a.style.strokeDashoffset='143'));}
+  });
+</script>

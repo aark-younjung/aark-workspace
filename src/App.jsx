@@ -46,6 +46,9 @@ import HelpRankMath from './pages/HelpRankMath'
 import AppShell from './components/appshell/AppShell'
 import AppOverview from './components/appshell/AppOverview'
 import AppSection from './components/appshell/AppSection'
+import AppSites from './components/appshell/AppSites'
+import AppHealth from './components/appshell/AppHealth'
+import AppVisibility from './components/appshell/AppVisibility'
 
 const DARK_CIRCLES = [65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157]
 
@@ -146,13 +149,14 @@ function AppInner() {
             而非靜默 Navigate to /（會讓用戶誤以為頁面正常但找不到內容） */}
         {/* ── 改版 app-shell（/app/*，與舊路由並存，不取代）── */}
         <Route path="/app/websites" element={<AppShell />}>
-          <Route index element={<AppSection title="我的網站" note="扁平網站/品牌卡片清單。" />} />
+          <Route index element={<AppSites />} />
         </Route>
         <Route path="/app/:websiteId" element={<AppShell />}>
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<AppOverview />} />
-          <Route path="visibility" element={<AppSection title="AI 曝光監測" note="引用矩陣、曝光趨勢、競品比較、外部提及。" />} />
-          <Route path="health" element={<AppSection title="網站體檢" note="SEO / AEO / GEO / E-E-A-T / 爬蟲 / Schema 分頁。" />} />
+          <Route path="visibility" element={<AppVisibility />} />
+          <Route path="health" element={<AppHealth />} />
+          <Route path="health/:healthTab" element={<AppHealth />} />
           <Route path="gap" element={<AppSection title="內容缺口" note="AI 引用缺口（aivis-info）。" />} />
         </Route>
 

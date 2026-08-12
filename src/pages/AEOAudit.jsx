@@ -132,6 +132,8 @@ export default function AEOAudit() {
         breadcrumbs: result.breadcrumbs,
         open_graph: result.open_graph,
         question_headings: result.question_headings,
+        meta_desc_length: result.meta_desc_length,     // bug 修：原本漏存這兩欄 → 詳情頁重算會少算 2 項、跟總覽對不上
+        structured_answer: result.structured_answer,
       }])
       fetchData()
     } catch (error) {
@@ -144,7 +146,10 @@ export default function AEOAudit() {
 
   const passedCount = AEO_CHECKS.filter(check => getCheckStatus(check.id) === 'pass').length
   const totalCount = AEO_CHECKS.length
-  const score = Math.round((passedCount / totalCount) * 100)
+  // 分數以「掃描時存好的 aeo_audits.score」為單一真相 —— 跟總覽同源，避免詳情頁重算與總覽對不上。
+  // （bug：舊資料/handleReanalyze 少存 meta_desc_length、structured_answer 兩欄，重算會少算 → 50 vs 75）
+  // 沒有存 score 的舊資料才 fallback 用打勾數重算。
+  const score = (aeoAudit && aeoAudit.score != null) ? aeoAudit.score : Math.round((passedCount / totalCount) * 100)
 
   // 把 AEO_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
   // 特殊處理 faq_schema：若 faq_visual=true 但 faq_schema=false → 用更精準的 detail 訊息引導用戶補 schema
