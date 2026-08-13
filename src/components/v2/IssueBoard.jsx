@@ -157,7 +157,7 @@ function IssueCard({ check, lane, isOpen, onToggle, isPro }) {
               這是「give first」策略：基本款先給、進階/平台別範例留 Pro */}
           {(isPro || FIX_GUIDES[check.id]?.freeForAll)
             ? <IssueFixPanel check={check} lane={lane} />
-            : <IssueLockCTA lane={lane} />}
+            : <IssueLockCTA check={check} lane={lane} />}
         </div>
       )}
     </div>
@@ -292,31 +292,73 @@ function IssueFixPanel({ check, lane }) {
   )
 }
 
-function IssueLockCTA({ lane }) {
+/* Pro 鎖定改「模糊示例＋浮標」（2026-08-13，Kuroma 實測學來的轉化設計）。守則：
+   ①示例明確標示、②不得誤當自己的結果、③真實摘要照樣露出（部分價值 give first）、
+   ④完整步驟與程式碼隱藏、⑤CTA 講清楚升級後得到什麼 */
+function IssueLockCTA({ check, lane }) {
+  const guide = FIX_GUIDES[check?.id]
+  // 這個 check 實際支援的平台（真實欄位照 Codex 守則露出；沒 guide 就列常見四平台）
+  const platforms = guide
+    ? PLATFORMS.filter(p => guide.platforms?.[p.id]).map(p => p.name)
+    : ['WordPress', 'Shopify', 'Wix', 'HTML']
+
   return (
-    <Link to="/pricing" style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-      background: 'rgba(0,0,0,.3)',
-      border: `1px dashed ${lane.c}55`, borderRadius: 8,
-      padding: '12px 14px', textDecoration: 'none',
-      transition: 'all .2s',
-    }}
-      onMouseEnter={e => { e.currentTarget.style.background = lane.c + '12' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,.3)' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 2 }}>
-          🔒 升級 Pro 解鎖修復指南
-        </div>
-        <div style={{ fontSize: 14, color: T.textLow, lineHeight: 1.5 }}>
-          含 WordPress / Shopify / Wix / 自架 HTML 平台別操作步驟與程式碼
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* 真實建議摘要（不模糊）：give first，讓用戶知道方向、細步驟留 Pro */}
+      <div style={{
+        fontSize: 14, color: T.textMid, lineHeight: 1.7,
+        padding: '10px 12px', background: 'rgba(255,255,255,.03)',
+        border: `1px solid ${T.cardBorder}`, borderRadius: 8,
+      }}>
+        <span style={{ color: lane.c, fontWeight: 700 }}>建議：</span>
+        {guide?.summary || check?.recommendation || '此項目有對應的修復步驟與程式碼。'}
       </div>
-      <span style={{
-        fontSize: 14, fontWeight: 700, padding: '5px 10px', borderRadius: 5,
-        background: `color-mix(in srgb, ${T.orange} 15%, transparent)`, color: '#fdba74', whiteSpace: 'nowrap',
-        border: `1px solid color-mix(in srgb, ${T.orange} 25%, transparent)`,
-      }}>升級 →</span>
-    </Link>
+
+      {/* 平台 chips（真實支援清單、僅展示不可點） */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {platforms.map(name => (
+          <span key={name} style={{
+            fontSize: 12, fontWeight: 700, color: T.textLow, padding: '3px 10px',
+            border: `1px solid ${T.cardBorder}`, borderRadius: 99, opacity: .75,
+          }} translate="no">{name}</span>
+        ))}
+      </div>
+
+      {/* 模糊示例區＋浮標：blur 的是「示例排版」不是用戶真實內容（右上角明確標示） */}
+      <div style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: `1px dashed ${lane.c}55` }}>
+        <div aria-hidden="true" style={{
+          filter: 'blur(4px)', userSelect: 'none', pointerEvents: 'none',
+          padding: '12px 14px', fontFamily: 'monospace', fontSize: 12, lineHeight: 1.8,
+          color: T.textLow, background: 'rgba(0,0,0,.3)',
+        }}>
+          <div>1. 進入後台 → SEO 設定 → 開啟對應欄位</div>
+          <div>{'2. 貼上：<script type="application/ld+json">'}</div>
+          <div>{'   { "@context": "https://schema.org", "@type": "…" }'}</div>
+          <div>3. 儲存後回到 AI 雷達重新檢測驗證 ✓</div>
+        </div>
+        {/* 示例標籤：防止被誤當自己網站的實際內容 */}
+        <span style={{
+          position: 'absolute', top: 6, right: 8, fontSize: 10, fontWeight: 700,
+          color: T.textLow, background: 'rgba(0,0,0,.55)', padding: '2px 8px', borderRadius: 99,
+        }}>示例排版・非你網站的實際內容</span>
+        {/* 浮標 CTA：蓋在模糊區中央，講清楚升級後得到什麼 */}
+        <Link to="/pricing" style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none',
+          background: 'rgba(0,0,0,.35)',
+        }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: T.text }}>🔒 升級 Pro 解鎖完整修復指南</span>
+          <span style={{ fontSize: 12, color: T.textLow, textAlign: 'center', lineHeight: 1.6, maxWidth: '46ch', padding: '0 12px' }}>
+            逐步驟操作指引＋可直接複製的程式碼（{platforms.join('／')} 平台別版本）
+          </span>
+          <span style={{
+            fontSize: 13, fontWeight: 700, padding: '6px 14px', borderRadius: 7, marginTop: 2,
+            background: `color-mix(in srgb, ${T.orange} 20%, transparent)`, color: '#fdba74',
+            border: `1px solid color-mix(in srgb, ${T.orange} 35%, transparent)`,
+          }}>升級 Pro →</span>
+        </Link>
+      </div>
+    </div>
   )
 }
 

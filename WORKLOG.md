@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13j（🟠 第一批 #3：Pro 鎖定改「模糊示例＋浮標」— 已部署，現行+新版共用）
+
+[IssueBoard.jsx](src/components/v2/IssueBoard.jsx) `IssueLockCTA` 從純橫幅升級（Kuroma 實測學來、Codex 五守則）：①真實建議摘要照樣露出（give first）②該 check 實際支援的平台 chips ③模糊「示例排版」區＋右上角「示例排版・非你網站的實際內容」標籤（防誤認）④浮標 CTA 講清楚升級後得到什麼（逐步驟＋可複製 code＋平台別）。IssueBoard 為現行四大 audit 頁與新版 AppHealth 共用 → 一次改全生效。
+
 ### 2026-08-13i（🟠 第一批 #2：AI 講錯你（事實監測台灣版）— 已部署）
 
 三方全票第二張牌（[aivisData.js](src/components/appshell/aivisData.js) `buildFactCheck` + AppVisibility 新區塊「AI 講錯你了嗎」）：**官方事實**（websites.org_schema_data 的電話/地址/Email/網址——Org Schema 產生器填的資料直接複用）×**品牌題 AI 回答原文**機械比對。判定三態：✅ 一致（N 個回答正確出現）／⚠️ 疑似有誤（**只有電話**做此判定——號碼正規化精確比對含 +886→0，列出 AI 寫的錯號碼＋「用 Schema 修正」CTA）／➖ 未提及（明示不算錯）。誠實邊界：不用 LLM 猜語意、地址/Email/網址只做「有無正確出現」不硬判講錯。空狀態雙層：無官方事實→導去填 Org Schema（既有工具复用＝事實庫）；無品牌題回答→導去掃描。同日連發 UX 修：chips 式競品編輯器（修 Enter 只存一筆）、亮色殼 input 被 dark-theme !important 蓋白字、自動選有資料時間窗（7→30→90）、比較列加（提到數/樣本數）防 0% 誤讀、同類領先者卡列觀察名單全員、HomeDark 補 Beta 入口×3、灰選單可點。
