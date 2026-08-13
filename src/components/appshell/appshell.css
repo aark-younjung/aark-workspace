@@ -355,6 +355,21 @@ html.dark-theme .appshell textarea::placeholder{
 /* KPI 卡裡的「設定 →」小錨點連結 */
 .appshell .as-vis-anchor{color:var(--accent-2);font-weight:750;text-decoration:none;}
 .appshell .as-vis-anchor:hover{text-decoration:underline;}
+/* ── AI 怎麼描述你（觀感 Lite）── */
+.appshell .as-vis-voice{padding:22px;margin-bottom:16px;}
+.appshell .as-vis-voice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.appshell .as-vis-voice-card{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.appshell .as-vis-voice-card .vh{display:flex;align-items:center;gap:8px;font-size:13px;}
+.appshell .as-vis-voice-card .vt{margin-left:auto;font-size:10.5px;color:var(--ink-3);font-family:var(--mono);}
+/* 原話引用：直排引號、留白呼吸——這是本區的主角 */
+.appshell .as-vis-voice-card blockquote{margin:0;font-size:13.5px;color:var(--ink);line-height:1.75;}
+.appshell .as-vis-voice-card details summary{cursor:pointer;font-size:12px;color:var(--accent-2);font-weight:700;list-style:none;}
+.appshell .as-vis-voice-card details summary::-webkit-details-marker{display:none;}
+.appshell .as-vis-voice-card details summary:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:6px;}
+/* 完整原文：等寬小字、可捲——查驗用而非閱讀主體 */
+.appshell .as-vis-voice-card .vfull{margin:8px 0 0;font-size:12px;color:var(--ink-2);line-height:1.7;
+  max-height:260px;overflow-y:auto;white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:10px 12px;}
+
 /* ── AI 講錯你（事實監測）── */
 .appshell .as-vis-facts{padding:22px;margin-bottom:16px;}
 .appshell .as-vis-facts-table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -508,6 +523,7 @@ html.dark-theme .appshell textarea::placeholder{
   .appshell .as-vis-kpi-main{grid-column:1/-1;}
   .appshell .as-actions-row{grid-template-columns:1fr;}
   .appshell .as-vis-honest{grid-template-columns:1fr;}
+  .appshell .as-vis-voice-grid{grid-template-columns:1fr;}
   .appshell .as-vis-phead .as-vis-rescan{margin-left:0;}
 }
 

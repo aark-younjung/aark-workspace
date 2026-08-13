@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { hostLabel } from '../../lib/url'
 import { aivisQuotaFor } from '../../lib/limits'
-import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, ENGINE_KEYS, ENGINE_META } from './aivisData'
+import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, buildBrandVoice, ENGINE_KEYS, ENGINE_META } from './aivisData'
 import SiteSwitcher from './SiteSwitcher'
 import Badge from './Badge'
 
@@ -195,6 +195,14 @@ export default function AppVisibility() {
     responses: state.responses,
     rangeDays,
   }), [state.website?.org_schema_data, state.brand, state.prompts, state.responses, rangeDays])
+
+  // AI 怎麼描述你（觀感 Lite v1）：逐引擎摘引品牌題回答原話（不做機器情緒判定）
+  const brandVoice = useMemo(() => buildBrandVoice({
+    brandName: state.brand?.name || '',
+    prompts: state.prompts,
+    responses: state.responses,
+    rangeDays,
+  }), [state.brand?.name, state.prompts, state.responses, rangeDays])
 
   // 競品觀察名單編輯器（chips 式：逐筆加入、可單獨刪除，最多 3 個）
   // 2026-08-13 修：原本單一逗號分隔輸入，按 Enter 會直接送出表單、只存到一筆 → 改逐筆 chip
@@ -435,6 +443,30 @@ export default function AppVisibility() {
               來自近 {rangeDays} 天 <b className="num">{influence.answersWithSources}</b> 個附引用來源的引擎回答（全題型）。
               這些網站正在替 AI「背書答案」——上榜卻不是你，就是內容機會的方向。
             </p>
+          </>
+        )}
+      </section>
+
+      {/* AI 怎麼描述你（觀感 Lite v1）：逐引擎原話摘引＋可展開完整回答——只呈現 AI 真的說了什麼 */}
+      <section className="as-card as-vis-voice">
+        <div className="as-vis-section-head"><div><h3>AI 怎麼描述你</h3><Badge kind="beta" /></div></div>
+        {brandVoice.length === 0 ? (
+          <div className="as-vis-inline-state">近 {rangeDays} 天沒有品牌題回答原文。執行一次掃描後，這裡會逐引擎摘引 AI 描述你品牌的原話。</div>
+        ) : (
+          <>
+            <div className="as-vis-voice-grid">
+              {brandVoice.map(item => (
+                <div className="as-vis-voice-card" key={item.engine}>
+                  <div className="vh"><EngineMark engine={item.engine} /><b translate="no">{ENGINE_META[item.engine].label}</b><span className="vt">{formatScanTime(item.at)}</span></div>
+                  <blockquote>「{item.quote}{item.raw.length > item.quote.length ? '…' : ''}」</blockquote>
+                  <details>
+                    <summary>展開完整回答（原文查驗）</summary>
+                    <p className="vfull">{item.raw}</p>
+                  </details>
+                </div>
+              ))}
+            </div>
+            <p className="foot">摘自各引擎最近一次「品牌題」回答的原文（優先含品牌名的句子），未經改寫；完整回答可展開查驗。情緒與一致性標註待後端彙整功能推出後加入——不用關鍵字亂猜。</p>
           </>
         )}
       </section>

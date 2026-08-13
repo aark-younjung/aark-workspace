@@ -302,6 +302,44 @@ export function buildFactCheck({ orgData, brand, prompts = [], responses = [], r
   return { noFacts: false, basis: texts.length, facts }
 }
 
+/**
+ * AI 怎麼描述你（觀感 Lite v1 · 2026-08-13 第二批 #1）：
+ * 逐引擎摘引「品牌題回答」的原話——優先挑含品牌名的那一句，並保留完整回答供展開查驗（防黑箱）。
+ * 誠實邊界：v1 不做機器情緒判定（keyword 猜情緒容易冤枉 AI、違反誠實線）；
+ * 只呈現「AI 真的說了什麼」，情緒標註等接 LLM 彙整（後端）再上。
+ */
+export function buildBrandVoice({ brandName = '', prompts = [], responses = [], rangeDays = 90, now = new Date() }) {
+  const tierByPromptId = Object.fromEntries(prompts.map(prompt => [prompt.id, prompt.tier || 'core']))
+  const cutoff = new Date(now.getTime() - Math.max(1, rangeDays) * DAY_MS)
+  const latestByEngine = {}
+
+  for (const response of responses) {
+    const time = new Date(response.created_at)
+    if (Number.isNaN(time.getTime()) || time < cutoff || time > now) continue
+    if (tierByPromptId[response.prompt_id] !== 'brand') continue
+    const engines = normalizeEngineResults(response, {})
+    for (const key of ENGINE_KEYS) {
+      const raw = typeof engines[key]?.raw === 'string' ? engines[key].raw.trim() : ''
+      if (!raw) continue
+      const existing = latestByEngine[key]
+      if (!existing || response.created_at > existing.at) {
+        latestByEngine[key] = { engine: key, raw, at: response.created_at }
+      }
+    }
+  }
+
+  return ENGINE_KEYS
+    .filter(key => latestByEngine[key])
+    .map(key => {
+      const item = latestByEngine[key]
+      // 摘句：優先「含品牌名」的第一句；沒有就取開頭第一句（照樣是原話、不改寫）
+      const sentences = item.raw.split(/(?<=[。！？!?])\s*|\n+/).map(part => part.trim()).filter(Boolean)
+      const hit = brandName ? sentences.find(part => part.includes(brandName)) : null
+      const quote = (hit || sentences[0] || item.raw).slice(0, 160)
+      return { ...item, quote, hasBrandName: Boolean(hit) }
+    })
+}
+
 export function buildVisibilityModel({
   brand,
   prompts = [],
