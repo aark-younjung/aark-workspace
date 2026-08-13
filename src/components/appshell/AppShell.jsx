@@ -35,18 +35,21 @@ export default function AppShell() {
         {wsItem('overview', I.overview, '總覽')}
         {wsItem('visibility', I.radar, 'AI 曝光監測', '主力')}
         {wsItem('health', I.pulse, '網站體檢')}
-        {wsItem('gap', I.target, '內容缺口')}
+        {/* 2026-08-13 改名：內容缺口 → 內容機會（正向框架、日後承接文章工具與任務單；URL 維持 /gap 不破壞深連結） */}
+        {wsItem('gap', I.target, '內容機會')}
         <NavLink to="/app/websites" className={navCls}>{I.globe}我的網站</NavLink>
+        {/* 競品格（AI 提及比較）：功能上線後加在此處＝選單最後一項，現在不佔位（2026-08-13 定案） */}
 
         <div className="as-sp" />
-        <NavLink to="/account" className={navCls}>{I.user}帳號</NavLink>
-        <div className="as-acct">
+        {/* 帳號移到左下個人區（Codex IA 建議）：整塊可點、直達 /account，不佔主導覽格 */}
+        <NavLink to="/account" className="as-acct" aria-label="帳號與方案設定">
           <span className="av">{(userName || 'U').slice(0, 1).toUpperCase()}</span>
           <div>
             <div className="an">{userName || '使用者'}</div>
             <div className="as">{isTrial ? `試用中 · 剩 ${trialDaysRemaining ?? '?'} 天` : (tierName || '')}</div>
           </div>
-        </div>
+          <span className="go" aria-hidden="true">⚙</span>
+        </NavLink>
       </aside>
 
       <main className="as-main">

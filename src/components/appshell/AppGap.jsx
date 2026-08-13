@@ -45,7 +45,7 @@ export default function AppGap() {
         })
       } catch (error) {
         console.error('AppGap load error:', error)
-        if (!cancelled) setState({ loading: false, error: error.message || '內容缺口資料載入失敗', website: null, brand: null, prompts: [], responses: [], mentions: [] })
+        if (!cancelled) setState({ loading: false, error: error.message || '內容機會資料載入失敗', website: null, brand: null, prompts: [], responses: [], mentions: [] })
       }
     }
     if (websiteId) load()
@@ -61,7 +61,7 @@ export default function AppGap() {
   if (state.loading) return <div className="as-loading" aria-live="polite">載入中…</div>
   if (state.error || !state.website) return (
     <div className="as-empty" role="alert">
-      <div className="e-t">內容缺口資料暫時讀不到</div>
+      <div className="e-t">內容機會資料暫時讀不到</div>
       <div className="e-d">{state.error || '網站不存在，或你沒有權限查看。'}</div>
       <Link className="as-cta" to="/app/websites">回我的網站</Link>
     </div>
@@ -71,7 +71,7 @@ export default function AppGap() {
   const head = (
     <>
       <div className="as-ctx"><div className="as-switcher"><span className="lab">網站</span><span className="val">{title}</span></div></div>
-      <div className="as-phead"><h2>內容缺口</h2><span className="sub">AI 回答你領域的知識題時，引用名單裡有沒有你</span></div>
+      <div className="as-phead"><h2>內容機會</h2><span className="sub">AI 回答你領域的知識題時，引用名單裡有沒有你</span></div>
     </>
   )
 
@@ -80,8 +80,8 @@ export default function AppGap() {
     <>
       {head}
       <div className="as-empty">
-        <div className="e-t">設定 aivis 後才能分析內容缺口</div>
-        <div className="e-d">內容缺口來自 aivis 的資訊題掃描（AI 回答知識題時引用了哪些網站）。先連結品牌才有資料。</div>
+        <div className="e-t">設定 aivis 後才能分析內容機會</div>
+        <div className="e-d">內容機會來自 aivis 的資訊題掃描（AI 回答知識題時引用了哪些網站）。先連結品牌才有資料。</div>
         <Link className="as-cta" to="/ai-visibility">設定 aivis →</Link>
       </div>
     </>
@@ -126,7 +126,7 @@ export default function AppGap() {
           <p>{citation.total} 題知識題中，<b className="num">{citation.citedCount}</b> 題的 AI 引用名單裡有你的網站</p>
         </div>
         <div className="as-card as-gap-kpi">
-          <div className="label">內容機會</div>
+          <div className="label">機會題數</div>
           <div className={`value num${gaps.length ? ' is-gap' : ''}`}>{gaps.length} 題</div>
           <p>{gaps.length ? 'AI 答這些題時引用了別人、沒引用你——每一題都是一篇內容的機會' : '目前掃描的知識題 AI 都有引用你，繼續保持內容更新'}</p>
         </div>
@@ -174,6 +174,20 @@ export default function AppGap() {
       <div className="as-gap-scope">
         📍 以上僅涵蓋 aivis 已掃描的 {citation.total} 題資訊題（近 90 天最新一次掃描）。AI 的引用會隨時間變動；不代表你的內容在所有知識題的表現。
       </div>
+
+      {/* 內容工具入口（2026-08-13 IA 定案：文章工具收編進「內容機會」；工具本體沿用現有頁、不重建） */}
+      <section className="as-gap-tools" aria-label="內容工具">
+        <Link className="as-card as-gap-tool" to={`/content-audit/${websiteId}`}>
+          <b>📝 單篇文章體檢</b>
+          <span>15 項內容檢測（結構／字數／AEO 格式／可讀性），逐篇看要補什麼。</span>
+          <span className="go">開啟 →</span>
+        </Link>
+        <Link className="as-card as-gap-tool" to={`/bulk-scan/${websiteId}`}>
+          <b>📚 批次文章掃描</b>
+          <span>從 sitemap 自動找出文章、批次體檢，一次看全站內容的健康度。</span>
+          <span className="go">開啟 →</span>
+        </Link>
+      </section>
     </>
   )
 }

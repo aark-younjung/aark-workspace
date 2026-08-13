@@ -6,6 +6,13 @@
 
 ---
 
+### 2026-08-13f（改版 IA 修正案：內容機會改名收編 + 帳號移左下 — 已部署、仍藏 /app/*）
+
+Kuroma 三方對照後用戶拍板兩案：
+1. **「內容缺口」→「內容機會」**（[AppShell](src/components/appshell/AppShell.jsx) 選單＋[AppGap](src/components/appshell/AppGap.jsx) 全文案；URL 維持 `/gap` 不破壞深連結；KPI 卡撞名改「機會題數」）＋**收編文章工具**：頁尾加「單篇文章體檢」「批次文章掃描」入口卡（連現有 `/content-audit/:id`、`/bulk-scan/:id`，工具本體不重建）。spec 五已補修正案。
+2. **帳號移左下個人區**（Codex IA 案）：主導覽拿掉「帳號」格，左下個人區整塊變 `<NavLink to="/account">`（hover 齒輪、focus-visible；手機縮成頭像鈕——原本手機會藏個人區、現在它是帳號唯一入口不能藏）。**競品格定案**：現在不佔位，功能上線後加在主選單最後一項。
+`npx vite build` 933 modules ✓。
+
 ### 2026-08-13e（改版 🔴 上線前批次：polish×3 + 詞彙表卡 + 重點行動卡 — 已部署、仍藏 /app/*）
 
 依 [redesign-additions.md](_design/redesign-additions.md) 🔴 清單（僅剩「轉址+接導覽」＝上線動作、待用戶拍板）：
