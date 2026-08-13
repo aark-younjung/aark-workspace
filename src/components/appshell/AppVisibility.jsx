@@ -17,6 +17,12 @@ const VIS_TABS = [
   { key: 'voice', label: 'AI 怎麼說你' },
 ]
 
+// 觀察名單防呆：名單項「長得像網址」就警告——AI 回答寫的是品牌名、幾乎不寫網址，
+// 拿網址比對永遠 0%（2026-08-13 實案：用戶填了三個競品官網網址、全 0%）
+function looksLikeUrl(value) {
+  return /^https?:\/\//i.test(value) || /\.(com|tw|net|org|cc|co|io)(\/|$)/i.test(value)
+}
+
 // 品牌資料完整度（Kuroma 學來的一石二鳥：引導填資料＝提升題庫/判定準度＋收齊品牌檔案）
 // 只算 schema 真的有的欄位、不畫大餅；每項都講清楚「為什麼要填」
 function brandCompleteness(brand) {
@@ -435,7 +441,7 @@ export default function AppVisibility() {
             {compEditor.names.length > 0 && (
               <div className="chips">
                 {compEditor.names.map(name => (
-                  <span className="chip" key={name} translate="no">
+                  <span className={`chip${looksLikeUrl(name) ? ' warn' : ''}`} key={name} translate="no">
                     {name}
                     <button type="button" aria-label={`移除 ${name}`} onClick={() => setCompEditor(current => ({ ...current, names: current.names.filter(item => item !== name) }))}>×</button>
                   </span>
@@ -455,6 +461,12 @@ export default function AppVisibility() {
               <button className="as-vis-line-button" type="button" onClick={addDraft} disabled={!compEditor.draft.trim() || compEditor.names.length >= 3}>＋ 加入</button>
               <button className="as-cta" type="button" onClick={saveCompetitors} disabled={compEditor.busy}>{compEditor.busy ? '儲存中…' : `儲存名單（${compEditor.names.length + (compEditor.draft.trim() ? 1 : 0)}）`}</button>
             </div>
+            {compEditor.names.some(looksLikeUrl) && (
+              <div className="warnline" role="alert">
+                ⚠️ 名單裡有「網址」——AI 回答幾乎不會寫出網址，比對會一直是 0%。
+                請改成 AI 會寫的<b>品牌常用名稱</b>（例：「SO Easy 美語」而不是 soeasyedu.com）。
+              </div>
+            )}
             {compEditor.error && <div className="err" role="alert">{compEditor.error}</div>}
           </div>
         )}
@@ -483,6 +495,9 @@ export default function AppVisibility() {
                 <span className={`as-vis-delta ${row.delta > 0 ? 'ahead' : row.delta < 0 ? 'behind' : 'even'}`}>
                   {row.delta > 0 ? `領先你 +${row.delta}` : row.delta < 0 ? `落後你 ${row.delta}` : '與你持平'}
                 </span>
+                {looksLikeUrl(row.name) && row.rate === 0 && (
+                  <span className="as-vis-row-warn">⚠️ 這是網址——AI 寫的是品牌名，請到「編輯觀察名單」改成常用名稱</span>
+                )}
               </div>
             ))}
             <p className="foot">

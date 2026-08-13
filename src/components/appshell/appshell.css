@@ -345,6 +345,12 @@ html.dark-theme .appshell textarea::placeholder{
   font-size:14px;line-height:1;padding:2px 6px;border-radius:99px;}
 .appshell .as-vis-comp-editor .chip button:hover{background:rgba(255,110,52,.18);}
 .appshell .as-vis-comp-editor .chip button:focus-visible{outline:2px solid rgba(130,152,255,.55);}
+/* 網址型名單項：琥珀警告色——AI 不寫網址、比對必 0%，提醒改品牌名 */
+.appshell .as-vis-comp-editor .chip.warn{background:#fffaf0;color:#b45309;border-color:#f0d9ae;}
+.appshell .as-vis-comp-editor .warnline{margin-top:8px;font-size:12px;color:#8a6d3b;background:#fffaf0;
+  border:1px solid #f0d9ae;border-radius:8px;padding:8px 12px;line-height:1.6;}
+/* 比較列的網址警告：跨滿整列（grid 自動排會擠到格子裡） */
+.appshell .as-vis-row-warn{grid-column:1/-1;font-size:11.5px;color:#8a6d3b;padding:2px 0 4px;}
 /* 「已完成比對」聲明條：綠框＝完成訊號，跟灰色的「還沒資料」inline-state 區隔 */
 .appshell .as-vis-inline-state.done{background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.25);color:var(--ink-2);}
 /* 比較列的 (提到數/樣本數) 小字：把 0% 的意義講死（0/34＝34 個回答裡 0 次） */
