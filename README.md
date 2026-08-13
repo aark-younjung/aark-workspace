@@ -289,6 +289,9 @@ ANTHROPIC_API_KEY=...
 
 | 日期 | 更新內容 |
 |------|----------|
+| 2026-08-14 | **🚀 新版介面（亮色 app-shell）硬切上線成為預設**：舊 URL 1:1 轉址（/dashboard→/app/:id/overview、四大 audit→/app/:id/health/:tab），逃生口 /dashboard-v2 觀察期保留。新版六區：總覽（品牌等級・重點行動卡・真曝光率儀表・五分數卡・趨勢圖・詞彙表・PDF×2・重新掃描）/ AI 曝光監測五分頁（監測總覽・監測題目〔題庫管理+執行掃描〕・競品比較・引用來源・AI 怎麼說你）/ 網站體檢六分頁（含 Org Schema 產生器與 llms.txt 工具）/ 內容機會（缺口+任務單+文章工具入口）/ 我的網站（host 分組+切換器）/ 帳號（左下個人區） |
+| 2026-08-13 | **Kuroma 三方對標 → 11 個新功能**：競品同題比較（觀察名單×既有回答比對，零額外掃描）、誰在影響 AI 的答案（來源影響力+七類分類）、AI 講錯你（事實監測）、AI 怎麼描述你（逐引擎原話）、內容任務單（一鍵複製交付）、品牌 AI 能見度等級（六級里程碑制）、全域網站切換器、統一徽章系統、指標詞彙表、重點行動卡、品牌資料完整度。共用掃描 service（修掉 aeo_audits 靜默寫入失敗的月級 bug、需 SQL 補 meta_desc_length/structured_answer 兩欄） |
+| 2026-08-13 | **檢測誠實三修**：頁型判斷（首頁不因缺麵包屑/FAQ 扣分）、站台層複查（首頁報缺自動去其他頁實查）、Meta 描述分語言判定（中 40–80 字/英 70–155 字元、修掉寫死 120–160 的舊 bug）；快取新鮮度提示（LiteSpeed 等五種外掛偵測）；E-E-A-T 三項校正（外連排除社群、聯絡認 LINE、作者訊號分頁型） |
 | 2026-05-11 | **NewebPay 藍新金流 Phase 1 Step 1 完成**：Top-up MPG 一次性付款後端 + 前端串接。新增 aivis_newebpay_pending 暫存表、newebpay.js 加解密 helper、checkout-topup-newebpay endpoint、newebpay-notify NotifyURL handler，前端 handleBuy 切換為 NewebPay form-submit 流程。Stripe code 完整保留供 Phase 2 切回 |
 | 2026-05-10 | Dashboard 5 張分數卡可點進詳情頁、全站路由切換自動捲回頂端（App.jsx ScrollToTop） |
 | 2026-05-07 | 站內公告系統上線：announcements 表 + AdminAnnouncements 後臺 CRUD + AnnouncementBanner 公開元件（HomeDark / Dashboard / aivis 三處掛載） |
