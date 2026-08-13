@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import { hostLabel } from '../../lib/url'
 import { isHomepage } from '../../lib/pageAudit'
 import { coreExposureRates, buildCompetitorComparison } from './aivisData'
@@ -50,6 +51,11 @@ function buildTopActions(audits, onHome, websiteId) {
 
 export default function AppOverview() {
   const { websiteId } = useParams()
+  const navigate = useNavigate()
+  // 試用一鍵開通（轉址前檢查：這條 4% 斷點修復不能只活在經典版）
+  const { user, isPro, isTrial, hasTrialedBefore, startTrial } = useAuth()
+  const [trialBusy, setTrialBusy] = useState(false)
+  const [trialErr, setTrialErr] = useState('')
   const [loading, setLoading] = useState(true)
   const [website, setWebsite] = useState(null)
   const [audits, setAudits] = useState({})   // 各面向最新完整 audit row（給分數 + 行動卡）
@@ -57,6 +63,7 @@ export default function AppOverview() {
   const [aivisRate, setAivisRate] = useState(null) // 近 30 天品類推薦曝光率（無資料 = null）
   const [aivisRaw, setAivisRaw] = useState(null)   // 90 天題庫+回應（品牌等級判定用）
   const [scanning, setScanning] = useState(false)  // 重新掃描中（共用 scanService）
+  const [contentScore, setContentScore] = useState(null) // 內容品質（第 5 分數，content_audits 最新一筆）
   const [pdfOpen, setPdfOpen] = useState(false)        // 客戶提案 PDF modal（沿用 v2 元件）
   const [checklistOpen, setChecklistOpen] = useState(false) // 6 週清單 PDF modal（沿用 v2 元件）
 
@@ -84,6 +91,12 @@ export default function AppOverview() {
         })
         const linkedBrand = br.data?.[0] || null
         setBrand(linkedBrand)
+
+        // 內容品質（第 5 分數）：content_audits 最新一筆
+        const { data: contentRows } = await supabase
+          .from('content_audits').select('score').eq('website_id', websiteId)
+          .order('created_at', { ascending: false }).limit(1)
+        if (!cancelled) setContentScore(contentRows?.[0]?.score ?? null)
 
         // 有連結品牌 → 抓近 30 天題庫+回應算真曝光率（共用聚合，與 AI 曝光監測數字一致）
         if (linkedBrand) {
@@ -125,6 +138,28 @@ export default function AppOverview() {
   const scores = Object.fromEntries(DIMS.map(d => [d.key, audits[d.key]?.score ?? null]))
   const onHome = isHomepage(website.url)
   const topActions = buildTopActions(audits, onHome, websiteId)
+
+  // 試用一鍵開通：成功直接帶去設定品牌（預填名稱/網域）——與經典版 AivisHero 同一條斷點修復
+  const canStartTrial = !isPro && !isTrial && !hasTrialedBefore
+  async function handleStartTrial() {
+    if (trialBusy) return
+    setTrialBusy(true); setTrialErr('')
+    const result = await startTrial()
+    setTrialBusy(false)
+    if (!result?.ok) {
+      setTrialErr({
+        already_trialed: '這個帳號已經用過免費試用了。',
+        not_authenticated: '請先登入再啟用試用。',
+      }[result?.error] || '啟用失敗，請稍後再試。')
+      return
+    }
+    navigate('/ai-visibility', {
+      state: {
+        prefillName: website?.name || '',
+        prefillDomain: (website?.url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, ''),
+      },
+    })
+  }
 
   // 重新掃描（硬切前置：搬進新版；走共用 scanService、與經典版同一支寫入邏輯）
   async function handleRescan() {
@@ -232,8 +267,20 @@ export default function AppOverview() {
       ) : (
         <div className="as-empty">
           <div className="e-t">還沒設定 AI 曝光監測</div>
-          <div className="e-d">設定後，我們會真的拿你的品牌去問 ChatGPT／Claude／Gemini，量 AI 到底推不推薦你。</div>
-          <Link className="as-cta" to={`/app/${websiteId}/visibility`}>設定 AI 曝光監測 →</Link>
+          <div className="e-d">
+            設定後，我們會真的拿你的品牌去問 ChatGPT／Claude／Gemini，量 AI 到底推不推薦你。
+            {canStartTrial && <>　<b>你的帳號有 7 天免費試用，不用綁卡。</b></>}
+          </div>
+          {canStartTrial ? (
+            <>
+              <button type="button" className="as-cta" onClick={handleStartTrial} disabled={trialBusy}>
+                {trialBusy ? '啟用中…' : '免費試用 7 天 → 看 AI 推不推薦我'}
+              </button>
+              {trialErr && <div className="e-d" role="alert" style={{ color: '#b4231f', marginTop: 8 }}>{trialErr}</div>}
+            </>
+          ) : (
+            <Link className="as-cta" to={`/app/${websiteId}/visibility`}>設定 AI 曝光監測 →</Link>
+          )}
         </div>
       )}
 
@@ -261,7 +308,7 @@ export default function AppOverview() {
       {/* 技術體質 — 真實分數，點卡片進體檢 */}
       <div className="as-support">
         <div className="sh"><b>技術體質</b><span>讓 AI 找得到你的地基 · 輔助指標 · 點卡片看詳情</span></div>
-        <div className="as-scores">
+        <div className="as-scores as-scores-5">
           {DIMS.map(d => {
             const v = scores[d.key]
             return (
@@ -272,6 +319,12 @@ export default function AppOverview() {
               </Link>
             )
           })}
+          {/* 內容品質＝第 5 分數（轉址前檢查：經典版有、新版不能少）；工具本體沿用現有頁 */}
+          <Link className="as-card as-sc" to={`/content-audit/${websiteId}`}>
+            <div className="top"><span className="nm">內容品質</span><span className="arrow">→</span></div>
+            <span className="n num" style={{ color: '#ec4899' }}>{contentScore == null ? '–' : contentScore}</span>
+            <div className="bar"><i style={{ width: `${contentScore ?? 0}%`, background: '#ec4899' }} /></div>
+          </Link>
         </div>
       </div>
 

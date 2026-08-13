@@ -152,6 +152,8 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-support .sh b{font-size:14px;font-weight:700;color:var(--ink-2);}
 .appshell .as-support .sh span{font-size:13px;color:var(--ink-3);}
 .appshell .as-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+/* 五卡版（含內容品質第 5 分數） */
+.appshell .as-scores-5{grid-template-columns:repeat(5,1fr);}
 .appshell .as-sc{padding:14px 15px;border-radius:var(--r);cursor:pointer;transition:.14s;text-decoration:none;color:inherit;display:block;}
 .appshell .as-sc:hover{transform:translateY(-2px);box-shadow:var(--sh);}
 .appshell .as-sc .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
@@ -604,6 +606,7 @@ html.dark-theme .appshell textarea::placeholder{
   .appshell .as-truth{grid-template-columns:1fr;text-align:center;}
   .appshell .as-gauge{margin:0 auto;}
   .appshell .as-scores{grid-template-columns:repeat(2,1fr);}
+  .appshell .as-scores-5{grid-template-columns:repeat(2,1fr);}
   .appshell .as-seg{margin-left:0;}
   .appshell .as-sites-head .as-sites-add{margin-left:0;}
   .appshell .as-health-board .v2-issue-board{grid-template-columns:1fr!important;}

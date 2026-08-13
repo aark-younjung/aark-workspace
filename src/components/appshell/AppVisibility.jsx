@@ -285,8 +285,8 @@ export default function AppVisibility() {
       <div className="as-phead"><h2>AI 曝光監測</h2><span className="sub">真的拿你的品牌去問 3 大 AI</span></div>
       <div className="as-empty">
         <div className="e-t">設定 aivis 後才能開始監測</div>
-        <div className="e-d">這個網站尚未透過 aivis_brands.website_id 連結品牌。設定後才會顯示 ChatGPT／Claude／Gemini 的真實結果。</div>
-        <Link className="as-cta" to="/ai-visibility">設定 aivis →</Link>
+        <div className="e-d">這個網站尚未連結品牌。設定後才會顯示 ChatGPT／Claude／Gemini 的真實結果。{!isPro && !isTrial && <>　<b>你的帳號可先開 7 天免費試用（不用綁卡）。</b></>}</div>
+        <Link className="as-cta" to="/ai-visibility" state={{ prefillName: state.website.name || '', prefillDomain: hostLabel(state.website.url) }}>設定 aivis →</Link>
       </div>
     </>
   )

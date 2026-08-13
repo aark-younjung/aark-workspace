@@ -6,6 +6,12 @@
 
 ---
 
+### 2026-08-13z（轉址前檢查 ×2：試用 CTA 進新版 + 內容品質第 5 卡 — 已部署）
+
+盤點硬切缺口後補兩個關鍵（第三類：任務/工具箱/趨勢圖由品牌等級＋行動卡取代、轉址時退役）：
+1. **試用一鍵開通進新版**：AppOverview 無品牌空狀態在 `canStartTrial` 時顯示「免費試用 7 天 → 看 AI 推不推薦我」按鈕（同 AivisHero 邏輯：startTrial 成功直達 /ai-visibility＋預填名稱/網域）——4% 斷點修復不再只活在經典版。AppVisibility 空狀態加試用提示＋設定連結帶預填 state。
+2. **內容品質第 5 卡**：總覽技術體質 4→5 卡（content_audits 最新分、粉紅 #ec4899、連 /content-audit/:id）；grid 4→5 欄（手機 2 欄）。
+
 ### 2026-08-13y（硬切前置 #3：aivis 題庫管理搬進新版「監測題目」分頁 — 已部署）
 
 新 [aivisScanService.js](src/services/aivisScanService.js)（四層分流 buildScanTargets＋逐條 fetch 的 runAivisScan；常數與經典版對齊、額度攔截交後端執法＋錯誤誠實透傳）＋ [PromptManager.jsx](src/components/appshell/PromptManager.jsx)（人話分層呈現：客戶找服務時的問題/長尾輪替/AI 認不認得你/知識題——Codex IA「內部術語不當導覽」兌現）。功能全搬：啟停（core cap 10 保護＋回滾）/行內編輯（標 generated_by=user）/新增自訂題（core 佔上限、info 進池）/▶ 執行掃描（進度 N/M、完成 3 秒後重載）。自動重生題庫連回經典版（generate-prompts 需 token、暫不搬）。VIS_TABS 五分頁：監測總覽/監測題目/競品比較/引用來源/AI 怎麼說你。**硬切前置只剩：舊 URL 1:1 轉址。**
