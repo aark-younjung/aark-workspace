@@ -14,6 +14,8 @@
 2. **站台層複查** — 新 [src/lib/siteWideSchema.js](src/lib/siteWideSchema.js)（`detectSchemaAcrossSite`）+ [SiteWideSchemaProbe.jsx](src/components/SiteWideSchemaProbe.jsx)（深/亮兩色共用）。首頁報缺時，經 `fetchSitemapUrls` 去其他頁**實查**，找到就講「你的 /faq/ 有、首頁沒有是正常的」。接 AEOAudit（深）+ AppHealth（亮）。**誠實**：只講「檢查過的這幾頁」(`checked` 數)、抓不到 sitemap 回 `unknown` 不下結論、**絕不宣稱全站**。
 3. **Meta 描述分語言判定（挖到既有 bug）** — 根因：[aeoAnalyzer.js](src/services/aeoAnalyzer.js) `checkMetaDescLength` **寫死 `length>=120 && <=160`（英文規則）套到所有站** → 把 84 字中文站誤判「過短（<120）」，其實中文 84 字是「過長（>80）」。修：改用 [metaLength.js](src/lib/metaLength.js) `metaLengthVerdict` 分語言（中 40–80／英 70–155），與 SEO 那支同源。**顯示**：新增 `pageAudit.js` `metaDescFindingDetail(text)`＝「偵測語言＋實際字數＋範圍＋過長/過短」明確句；aeo_audits 只存 boolean → 字數靠 SEO audit 的 `meta_tags.descriptionContent` 算（AEOAudit 加查一次、AppHealth 已有）。⚠️ 此修**改到 AEO 分數計法**：中文站描述在 40–80 字者，重掃後這項會從「不過」變「過」、分數上修（原本被英文門檻冤枉）；舊 audit 要**重掃**才更新。（英文若要收緊成 120–160＝改門檻本身，用戶已澄清這次只要「明確標示中/英字數判定」、不改門檻。）
 
+4. **structured_answer「還是沒過」根因（用戶重掃回報）** — analyzer 算的是**對的**（DP 首頁選單有「常見問題」字樣、方法 2 應過；已抓 production `/api/fetch-url` 真回應驗證），但 **HomeDark / DashboardV2 / 舊 Dashboard 三條掃描路的 `aeo_audits` insert 全漏存 `meta_desc_length` + `structured_answer`**（舊 Dashboard 連 `faq_visual` 也漏）→ 存 NULL → 詳情頁當「沒過」。8/12 只修到 AEOAudit 自己的重新檢測那條路。修：三處 insert 補齊欄位。**從首頁/儀表板重掃也會正確了。**
+
 順手：AEOAudit faq_schema 訊息殘留「ChatGPT / Claude / **Perplexity**」→ 改 Gemini（7/17 對齊漏網第三處）。`npx vite build` 930 modules ✓。
 
 ---

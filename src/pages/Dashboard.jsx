@@ -408,8 +408,11 @@ export default function Dashboard() {
         supabase.from('aeo_audits').insert([{
           website_id: id, score: aeoResult.score,
           json_ld: aeoResult.json_ld, faq_schema: aeoResult.faq_schema,
+          faq_visual: aeoResult.faq_visual,   // 2026-08-13 bug 修：此路原本連 faq_visual 也漏
           canonical: aeoResult.canonical, breadcrumbs: aeoResult.breadcrumbs,
           open_graph: aeoResult.open_graph, question_headings: aeoResult.question_headings,
+          // 2026-08-13 bug 修：漏存這兩欄 → NULL 被詳情頁當「沒過」（analyzer 明明算過了）
+          meta_desc_length: aeoResult.meta_desc_length, structured_answer: aeoResult.structured_answer,
         }]),
         supabase.from('geo_audits').insert([{
           website_id: id, score: geoResult.score,

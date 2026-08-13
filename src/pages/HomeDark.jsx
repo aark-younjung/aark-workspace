@@ -607,6 +607,8 @@ export default function HomeDark() {
           faq_visual: aeoResult.faq_visual,    // 2026-05-25：頁面有視覺 FAQ 但缺 schema 的訊號
           canonical: aeoResult.canonical, breadcrumbs: aeoResult.breadcrumbs,
           open_graph: aeoResult.open_graph, question_headings: aeoResult.question_headings,
+          // 2026-08-13 bug 修：漏存這兩欄 → NULL 被詳情頁當「沒過」（analyzer 明明算過了）
+          meta_desc_length: aeoResult.meta_desc_length, structured_answer: aeoResult.structured_answer,
         }]),
         geoResult && supabase.from('geo_audits').insert([{
           website_id: websiteId, score: geoResult.score,
