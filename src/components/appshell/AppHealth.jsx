@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import IssueBoard from '../v2/IssueBoard'
 import { HEALTH_TABS, buildHealthChecks, healthAuditKeys, resolveHealthTab } from './healthData'
 import { isHomepage, HOMEPAGE_NOTES } from '../../lib/pageAudit'
+import { hostLabel } from '../../lib/url'
 import SiteWideSchemaProbe from '../SiteWideSchemaProbe'
 import CacheFreshnessNote from '../CacheFreshnessNote'
 
@@ -78,7 +79,7 @@ export default function AppHealth() {
   const onHomepage = isHomepage(state.website.url)
   const checks = buildHealthChecks(selectedTab, state.audits, onHomepage)
   const hasRelevantAudit = healthAuditKeys(selectedTab).some(key => state.audits[key])
-  const title = state.website.name || state.website.url
+  const title = state.website.name || hostLabel(state.website.url)
   // 站台層複查候選：首頁被標「正常化說明」的麵包屑/FAQ（即真的缺在首頁、可能做在別頁的那些）
   const siteWideProbeIds = onHomepage
     ? checks.filter(ch => HOMEPAGE_NOTES[ch.id] && ch.detail === HOMEPAGE_NOTES[ch.id]).map(ch => ch.id)

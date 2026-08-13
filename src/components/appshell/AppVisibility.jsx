@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { hostLabel } from '../../lib/url'
+import { aivisQuotaFor } from '../../lib/limits'
 import { buildVisibilityModel, ENGINE_KEYS, ENGINE_META } from './aivisData'
 
 const RANGE_OPTIONS = [
@@ -98,7 +100,7 @@ function BrandMentions({ brand }) {
 
 export default function AppVisibility() {
   const { websiteId } = useParams()
-  const { isPro, user } = useAuth()
+  const { isPro, isTrial, user } = useAuth()
   const [rangeDays, setRangeDays] = useState(7)
   const [state, setState] = useState({ loading: true, error: '', website: null, brand: null, prompts: [], responses: [], mentions: [], monthQueries: null })
 
@@ -165,7 +167,7 @@ export default function AppVisibility() {
     </div>
   )
 
-  const title = state.website.name || state.website.url
+  const title = state.website.name || hostLabel(state.website.url)
   if (!state.brand) return (
     <>
       <div className="as-ctx"><div className="as-switcher"><span className="lab">網站</span><span className="val">{title}</span></div></div>
@@ -203,9 +205,9 @@ export default function AppVisibility() {
         </div>
         <div className="as-card as-vis-kpi">
           <div className="label">本月掃描用量</div>
-          <div className={`value small num${state.monthQueries == null ? ' pending' : ''}`}>{state.monthQueries == null ? '接資料中' : <>{state.monthQueries} <small>/ 150 次</small></>}</div>
+          <div className={`value small num${state.monthQueries == null ? ' pending' : ''}`}>{state.monthQueries == null ? '接資料中' : <>{state.monthQueries} <small>/ {aivisQuotaFor({ isTrial })} 次</small></>}</div>
           <p>依目前帳號跨品牌的本月 aivis 查詢筆數</p>
-          <div className="as-vis-usage"><i style={{ width: `${Math.min(100, (state.monthQueries ?? 0) / 150 * 100)}%` }} /></div>
+          <div className="as-vis-usage"><i style={{ width: `${Math.min(100, (state.monthQueries ?? 0) / aivisQuotaFor({ isTrial }) * 100)}%` }} /></div>
         </div>
         <div className="as-card as-vis-kpi">
           <div className="label">同類領先者</div>

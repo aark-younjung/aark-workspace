@@ -6,6 +6,15 @@
 
 ---
 
+### 2026-08-13e（改版 🔴 上線前批次：polish×3 + 詞彙表卡 + 重點行動卡 — 已部署、仍藏 /app/*）
+
+依 [redesign-additions.md](_design/redesign-additions.md) 🔴 清單（僅剩「轉址+接導覽」＝上線動作、待用戶拍板）：
+1. **三 polish**：(a) 站名缺失改 `hostLabel()`（新 [lib/url.js](src/lib/url.js) helper，網域取代整串 URL；Overview/Health/Visibility/Gap 四頁）(b) **站卡 aivis 分數接真資料**——新 [aivisData.js](src/components/appshell/aivisData.js) `coreExposureRates()`（多品牌批次算 core 曝光率、沿用 buildVisibilityModel 單一真相），AppSites 卡顯示近 30 天曝光率／沒掃過仍誠實「接資料中」 (c) **額度分母分級**：[limits.js](src/lib/limits.js) 加 `aivisQuotaFor()`（Pro 150／試用 50，對齊 api/aivis/fetch.js 執法端；⚠️ CLAUDE.md 曾寫試用 100 是舊資訊），AppVisibility 用量卡不再寫死 150。
+2. **指標詞彙表卡**（Kuroma 學）：新 [MetricGlossary.jsx](src/components/appshell/MetricGlossary.jsx)（原生 `<details>`）——四個指標各「量什麼/在哪看/為什麼不一致」，解「技術分高≠AI 推薦你」信任問題。掛總覽。
+3. **重點行動卡**（Kuroma 學）：AppOverview `buildTopActions()` 沿用 buildHealthChecks（含頁型 N/A 規則）從四面向 fail 項挑 P1 優先 3 條→「序號＋面向＋P1 chip＋診斷＋直達修法」卡。
+4. **總覽 aivis 儀表接真曝光率**：主角卡從「接資料中」升級為真實近 30 天品類曝光率弧線（`coreExposureRates` 同源；沒掃過仍誠實空狀態）；技術體質卡直達 `/health/:tab` 深連結。
+CSS 全加中文註解＋reduced-motion＋mobile 響應。`npx vite build` 933 modules ✓。
+
 ### 2026-08-13d（改版：內容缺口 AppGap 完成 — 已部署、藏在 /app/* 未連結）
 
 新 [AppGap.jsx](src/components/appshell/AppGap.jsx)（`/app/:websiteId/gap`，取代 AppSection placeholder）：窄用定義＝aivis-info「AI 答知識題時引用了誰、你在不在名單」。**沿用 AppVisibility 同一套查詢 + `buildVisibilityModel.contentCitation`（不重寫聚合）**，90 天窗。版面：KPI 兩卡（內容引用率 N%／內容機會 N 題）→ 🕳️ 缺口清單（每題：題目＋「未被引用」tag＋AI 實際引用的網域 chips＋行動指引）→ ✅ 已被引用清單（降一階存在感）→ 範圍誠實聲明（只涵蓋已掃描的 N 題、不宣稱全領域）。四層誠實空狀態：無品牌→設定 aivis／品牌無網域→補網域／無資訊題資料→去掃描／載入錯誤。CSS `.as-gap-*` 加中文註解；缺口數用品牌橘（機會、非錯誤紅）；domain chips `translate="no"`。App.jsx 移除已無人用的 AppSection import。

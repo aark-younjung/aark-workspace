@@ -55,3 +55,12 @@ export function siteLimitForTier(tier) {
 export function tierLabel(tier) {
   return TIER_LABEL[tier] || TIER_LABEL[TIER.FREE]
 }
+
+// ─── aivis 每月額度（顯示用）───
+// 執法端唯一真相在 api/aivis/fetch.js（AIVIS_QUOTA_PER_MONTH=150 / AIVIS_QUOTA_PER_TRIAL=50）；
+// 這裡是前端顯示分母，改額度時兩邊要一起動。
+export const AIVIS_QUOTA_PRO = 150
+export const AIVIS_QUOTA_TRIAL = 50
+export function aivisQuotaFor({ isTrial = false } = {}) {
+  return isTrial ? AIVIS_QUOTA_TRIAL : AIVIS_QUOTA_PRO
+}

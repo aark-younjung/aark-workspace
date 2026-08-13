@@ -291,6 +291,45 @@
 .appshell .as-vis-rescan:focus-visible,.appshell .as-seg button:focus-visible,.appshell .as-vis-line-button:focus-visible,
 .appshell .as-vis-honest a:focus-visible,.appshell .as-vis-mention-item:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:3px;}
 
+/* ── 總覽：重點行動卡（頂部最優先 3 件事）── */
+.appshell .as-actions{margin-bottom:18px;}
+.appshell .as-actions .sh{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+.appshell .as-actions .sh b{font-size:14.5px;color:var(--ink);}
+.appshell .as-actions .sh span{font-size:12px;color:var(--ink-3);}
+.appshell .as-actions-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.appshell .as-action{display:flex;flex-direction:column;gap:6px;padding:14px 16px;text-decoration:none;
+  transition:transform .15s ease,box-shadow .15s ease;}
+.appshell .as-action:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,62,.08);}
+.appshell .as-action:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:3px;}
+.appshell .as-action .top{display:flex;align-items:center;gap:8px;}
+/* 序號圓標：告訴用戶「照這個順序修」 */
+.appshell .as-action .no{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+  border-radius:99px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;}
+.appshell .as-action .dim{font-size:11.5px;font-weight:800;}
+/* 優先度 chip：P1 橘（緊急）、P2/P3 中性——不只靠顏色，chip 內有文字 */
+.appshell .as-action .pri{margin-left:auto;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink-3);}
+.appshell .as-action .pri-p1{background:rgba(255,110,52,.12);color:#b45309;border-color:rgba(255,110,52,.35);}
+.appshell .as-action .nm{font-size:13.5px;font-weight:800;color:var(--ink);}
+/* 診斷句：最多三行截斷，完整內容在體檢分頁 */
+.appshell .as-action .dg{font-size:12px;color:var(--ink-2);line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.appshell .as-action .go{margin-top:auto;font-size:12px;font-weight:700;color:var(--accent-2);}
+
+/* ── 指標詞彙表（我們如何衡量）── */
+.appshell .as-glossary{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:16px;}
+.appshell .as-glossary summary{cursor:pointer;padding:12px 16px;font-size:13.5px;font-weight:800;color:var(--ink);list-style:none;}
+.appshell .as-glossary summary::-webkit-details-marker{display:none;}
+.appshell .as-glossary summary:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:12px;}
+.appshell .as-glossary[open] summary{border-bottom:1px solid var(--line);}
+.appshell .as-glossary-body{padding:14px 16px;}
+.appshell .as-glossary-body .intro{font-size:12.5px;color:var(--ink-2);margin:0 0 12px;line-height:1.6;}
+.appshell .as-glossary-body ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
+.appshell .as-glossary-body li b{font-size:13px;color:var(--ink);}
+/* 「在哪看」小標：幫用戶把指標對回選單位置 */
+.appshell .as-glossary-body .loc{font-size:11px;color:var(--ink-3);margin-left:8px;border:1px solid var(--line);padding:1px 7px;border-radius:99px;}
+.appshell .as-glossary-body li p{font-size:12.5px;color:var(--ink-2);margin:4px 0 0;line-height:1.6;}
+/* 「為什麼不一致」句：斜體降一階，是educational note */
+.appshell .as-glossary-body li .why{color:var(--ink-3);font-style:italic;}
+
 /* ── 內容缺口（AppGap）── */
 /* KPI 兩卡：內容引用率 + 內容機會（缺口數） */
 .appshell .as-gap-kpis{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
@@ -341,6 +380,7 @@
   .appshell .as-health-tool{align-items:flex-start;flex-direction:column;}
   .appshell .as-vis-kpis{grid-template-columns:1fr 1fr;}
   .appshell .as-vis-kpi-main{grid-column:1/-1;}
+  .appshell .as-actions-row{grid-template-columns:1fr;}
   .appshell .as-vis-honest{grid-template-columns:1fr;}
   .appshell .as-vis-phead .as-vis-rescan{margin-left:0;}
 }
@@ -354,8 +394,8 @@
   .appshell .as-vis-mention-item .title{grid-column:1/-1;grid-row:2;}
 }
 
-/* 動態偏好：網站卡 hover 位移在減少動態時關閉 */
+/* 動態偏好：卡片 hover 位移在減少動態時關閉 */
 @media (prefers-reduced-motion:reduce){
-  .appshell .as-sitecard,.appshell .as-addsite,.appshell .as-nav,.appshell .as-seg button{transition:none;}
-  .appshell .as-sitecard:hover{transform:none;}
+  .appshell .as-sitecard,.appshell .as-addsite,.appshell .as-nav,.appshell .as-seg button,.appshell .as-action{transition:none;}
+  .appshell .as-sitecard:hover,.appshell .as-action:hover{transform:none;}
 }

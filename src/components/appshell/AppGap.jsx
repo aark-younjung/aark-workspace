@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { buildVisibilityModel } from './aivisData'
+import { hostLabel } from '../../lib/url'
 
 /**
  * 內容缺口 —— 窄用定義（spec 五之 2）：只做 aivis-info 的「AI 回答知識題時引用了誰、你在不在名單」。
@@ -66,7 +67,7 @@ export default function AppGap() {
     </div>
   )
 
-  const title = state.website.name || state.website.url
+  const title = state.website.name || hostLabel(state.website.url)
   const head = (
     <>
       <div className="as-ctx"><div className="as-switcher"><span className="lab">網站</span><span className="val">{title}</span></div></div>

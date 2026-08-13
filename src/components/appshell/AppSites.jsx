@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { buildSiteCards, formatLastScan } from './siteData'
+import { coreExposureRates } from './aivisData'
 
 const AUDIT_TABLES = {
   seo: 'seo_audits',
@@ -65,6 +66,25 @@ export default function AppSites() {
             eeat: eeat.data || [],
           },
         })
+
+        // 站卡 aivis 分數：對「有連結品牌」的卡，抓近 30 天題庫+回應、算品類推薦曝光率
+        // （與 AppVisibility 同一支聚合，數字永遠一致；沒掃描資料的品牌回 null → 顯示「接資料中」）
+        const brandIds = cards.map(card => card.brandId).filter(Boolean)
+        if (brandIds.length) {
+          const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
+          const [promptResult, responseResult] = await Promise.all([
+            supabase.from('aivis_prompts').select('id, brand_id, tier, is_active').in('brand_id', brandIds),
+            supabase.from('aivis_responses')
+              .select('id, brand_id, prompt_id, brand_mentioned, created_at, engine_results')
+              .in('brand_id', brandIds).gte('created_at', since),
+          ])
+          if (!promptResult.error && !responseResult.error) {
+            const rates = coreExposureRates({ prompts: promptResult.data || [], responses: responseResult.data || [], rangeDays: 30 })
+            for (const card of cards) {
+              if (card.brandId) card.aivisRate = rates.get(card.brandId) ?? null
+            }
+          }
+        }
         if (!cancelled) setState({ loading: false, error: '', cards })
       } catch (error) {
         console.error('AppSites load error:', error)
@@ -124,10 +144,14 @@ export default function AppSites() {
               <div className="s-row">
                 <div className="s-metric">
                   <div className="m-l">AI 能見度</div>
-                  <div className={`m-v ${card.aivisState === 'linked' ? 'is-pending' : 'is-setup'}`}>
-                    {/* ponytail: 等 visibility 區塊抽出 AIVisibilityDashboard 的 core 聚合為共用函式後接值，避免複製公式。 */}
-                    {card.aivisState === 'linked' ? '接資料中' : '設定 aivis'}
-                  </div>
+                  {/* 已接 coreExposureRates 共用聚合（近 30 天品類推薦曝光率）；沒掃描資料仍誠實顯示「接資料中」 */}
+                  {card.aivisState !== 'linked' ? (
+                    <div className="m-v is-setup">設定 aivis</div>
+                  ) : card.aivisRate == null ? (
+                    <div className="m-v is-pending" title="品牌已連結，完成一次 aivis 掃描後顯示曝光率">接資料中</div>
+                  ) : (
+                    <div className="m-v num is-score" title="近 30 天品類推薦曝光率（core 題）">{card.aivisRate}%</div>
+                  )}
                 </div>
                 <div className="s-metric">
                   <div className="m-l">技術體質</div>

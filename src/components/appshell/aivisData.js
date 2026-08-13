@@ -110,6 +110,29 @@ function buildContentCitation({ brand, latestResponses, prompts, tierOf, mention
   return { rate: Math.round(citedCount / items.length * 100), citedCount, total: items.length, items }
 }
 
+/**
+ * 站卡/總覽用：一次算多個品牌的「品類推薦曝光率」（core 層、近 rangeDays 天）。
+ * 沿用 buildVisibilityModel 同一套聚合（單一真相，與 AppVisibility 數字永遠一致）。
+ * @returns Map(brandId → rate|null)  沒資料的品牌回 null（呈現「接資料中」，不捏造）
+ */
+export function coreExposureRates({ prompts = [], responses = [], rangeDays = 30 } = {}) {
+  const brandIds = new Set([
+    ...prompts.map(prompt => prompt.brand_id),
+    ...responses.map(response => response.brand_id),
+  ].filter(Boolean))
+  const rates = new Map()
+  for (const brandId of brandIds) {
+    const model = buildVisibilityModel({
+      brand: null, // 只取 exposure；contentCitation 需要 brand.domain、這裡用不到
+      prompts: prompts.filter(prompt => prompt.brand_id === brandId),
+      responses: responses.filter(response => response.brand_id === brandId),
+      rangeDays,
+    })
+    rates.set(brandId, model.exposure.rate)
+  }
+  return rates
+}
+
 export function buildVisibilityModel({
   brand,
   prompts = [],

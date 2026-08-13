@@ -65,3 +65,20 @@ export function normalizeUrl(input) {
     return s.toLowerCase()
   }
 }
+
+/**
+ * hostLabel — 把 URL 縮成好讀的網域標籤（站名缺失時的呈現後備）
+ *
+ * 為什麼：改版頁首/站卡在 website.name 為空時原本直接吐完整 URL
+ * （https://www.example.com/page?x=1），太長又醜。統一縮成 example.com。
+ * 解析失敗（歷史髒資料）就原樣回傳，不讓標題變空白。
+ */
+export function hostLabel(url) {
+  if (!url) return ''
+  try {
+    const u = /^https?:\/\//i.test(url) ? url : `https://${url}`
+    return new URL(u).hostname.toLowerCase().replace(/^www\./, '')
+  } catch {
+    return String(url)
+  }
+}
