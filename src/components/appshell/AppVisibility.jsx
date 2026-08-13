@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { hostLabel } from '../../lib/url'
 import { aivisQuotaFor } from '../../lib/limits'
 import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, ENGINE_KEYS, ENGINE_META } from './aivisData'
+import SiteSwitcher from './SiteSwitcher'
 
 const RANGE_OPTIONS = [
   { days: 7, label: '本週' },
@@ -235,7 +236,7 @@ export default function AppVisibility() {
   const title = state.website.name || hostLabel(state.website.url)
   if (!state.brand) return (
     <>
-      <div className="as-ctx"><div className="as-switcher"><span className="lab">網站</span><span className="val">{title}</span></div></div>
+      <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
       <div className="as-phead"><h2>AI 曝光監測</h2><span className="sub">真的拿你的品牌去問 3 大 AI</span></div>
       <div className="as-empty">
         <div className="e-t">設定 aivis 後才能開始監測</div>
@@ -247,7 +248,7 @@ export default function AppVisibility() {
 
   return (
     <>
-      <div className="as-ctx"><div className="as-switcher"><span className="lab">網站</span><span className="val">{title}</span></div></div>
+      <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
       <div className="as-phead as-vis-phead">
         <h2>AI 曝光監測</h2><span className="sub">真的拿 {state.brand.name} 去問 3 大 AI</span>
         <div className="as-seg" aria-label="監測期間">

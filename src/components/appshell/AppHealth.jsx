@@ -8,6 +8,7 @@ import { isHomepage, HOMEPAGE_NOTES } from '../../lib/pageAudit'
 import { hostLabel } from '../../lib/url'
 import SiteWideSchemaProbe from '../SiteWideSchemaProbe'
 import CacheFreshnessNote from '../CacheFreshnessNote'
+import SiteSwitcher from './SiteSwitcher'
 
 const AUDIT_TABLES = {
   seo: 'seo_audits',
@@ -87,9 +88,7 @@ export default function AppHealth() {
 
   return (
     <>
-      <div className="as-ctx">
-        <div className="as-switcher"><span className="lab">網站</span><span className="val">{title}</span></div>
-      </div>
+      <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
       <div className="as-phead"><h2>網站體檢</h2><span className="sub">讓 AI 找得到 {title} 的技術地基</span></div>
 
       <nav className="as-health-tabs" aria-label="網站體檢分類">

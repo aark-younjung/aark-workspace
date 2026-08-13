@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { buildVisibilityModel } from './aivisData'
 import { hostLabel } from '../../lib/url'
+import SiteSwitcher from './SiteSwitcher'
 
 /**
  * 內容缺口 —— 窄用定義（spec 五之 2）：只做 aivis-info 的「AI 回答知識題時引用了誰、你在不在名單」。
@@ -70,7 +71,7 @@ export default function AppGap() {
   const title = state.website.name || hostLabel(state.website.url)
   const head = (
     <>
-      <div className="as-ctx"><div className="as-switcher"><span className="lab">網站</span><span className="val">{title}</span></div></div>
+      <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
       <div className="as-phead"><h2>內容機會</h2><span className="sub">AI 回答你領域的知識題時，引用名單裡有沒有你</span></div>
     </>
   )

@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13k（🟠 第一批 #4：全域網站切換器 — 已部署）
+
+新 [SiteSwitcher.jsx](src/components/appshell/SiteSwitcher.jsx)：四個分頁（總覽/曝光監測/體檢/內容機會）頂部的靜態網站名改為原生 `<select>` 切換器——**換站直接跳、且停留在同一個區塊**（體檢頁切站→新站的體檢頁）。沿用 buildSiteCards host 分組（一站一選項）、session 快取（module-level、四頁共用不重抓）、只有一站時維持靜態顯示、目前站非代表 row 時補目前項防 select 顯示錯。ponytail：原生 select（無障礙免費），站數大再升級自訂下拉。
+
 ### 2026-08-13j（🟠 第一批 #3：Pro 鎖定改「模糊示例＋浮標」— 已部署，現行+新版共用）
 
 [IssueBoard.jsx](src/components/v2/IssueBoard.jsx) `IssueLockCTA` 從純橫幅升級（Kuroma 實測學來、Codex 五守則）：①真實建議摘要照樣露出（give first）②該 check 實際支援的平台 chips ③模糊「示例排版」區＋右上角「示例排版・非你網站的實際內容」標籤（防誤認）④浮標 CTA 講清楚升級後得到什麼（逐步驟＋可複製 code＋平台別）。IssueBoard 為現行四大 audit 頁與新版 AppHealth 共用 → 一次改全生效。

@@ -6,6 +6,7 @@ import { isHomepage } from '../../lib/pageAudit'
 import { coreExposureRates } from './aivisData'
 import { buildHealthChecks } from './healthData'
 import MetricGlossary from './MetricGlossary'
+import SiteSwitcher from './SiteSwitcher'
 
 // 四大技術面向（沿用現有 audit 表；顏色對齊設計稿）
 const DIMS = [
@@ -119,9 +120,7 @@ export default function AppOverview() {
 
   return (
     <>
-      <div className="as-ctx">
-        <div className="as-switcher"><span className="lab">網站</span><span className="val">{title}</span></div>
-      </div>
+      <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
       <div className="as-phead"><h2>總覽</h2><span className="sub">{title} 在 AI 眼中的整體狀態</span></div>
 
       {/* aivis 主角卡 — 誠實：有掃描資料顯示真曝光率；連結了但沒掃顯示接資料中；沒連結就設定 */}
