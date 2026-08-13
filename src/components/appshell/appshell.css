@@ -507,6 +507,16 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-gap-list .others.none{color:var(--ink-3);}
 /* 每題的行動指引：具體、不含保證字眼 */
 .appshell .as-gap-list .act{font-size:12px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);line-height:1.6;}
+/* 內容任務單摺疊卡：展開看模板＋一鍵複製（交付物、非文章生成） */
+.appshell .as-gap-brief{margin-top:8px;}
+.appshell .as-gap-brief summary{cursor:pointer;font-size:12px;font-weight:750;color:var(--accent-2);list-style:none;}
+.appshell .as-gap-brief summary::-webkit-details-marker{display:none;}
+.appshell .as-gap-brief summary:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:6px;}
+.appshell .as-gap-brief pre{margin:8px 0;font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--ink-2);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+  white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;}
+.appshell .as-gap-brief .as-cta{margin-top:0;padding:7px 14px;font-size:12.5px;}
+.appshell .as-gap-brief .note{margin-left:10px;font-size:11px;color:var(--ink-3);}
 /* 已被引用區整體降一階存在感（主角是缺口） */
 .appshell .as-gap-wins{opacity:.92;}
 /* 範圍誠實聲明：與網站體檢的 scope 條同款語氣 */

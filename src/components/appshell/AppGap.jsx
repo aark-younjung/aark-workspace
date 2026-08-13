@@ -6,6 +6,59 @@ import { hostLabel } from '../../lib/url'
 import SiteSwitcher from './SiteSwitcher'
 
 /**
+ * 內容任務單（2026-08-13 第二批 #4 · 三方定案「任務單而非成稿」）：
+ * 對每個未被引用的知識題，用「題目＋真實引用資料」組裝一份可交給寫手/客戶的任務單。
+ * 誠實邊界：模板組裝、非 AI 生成文章；搜尋意圖用「問句字面規則」判斷（透明可解釋，標注判法）。
+ */
+function taskIntent(text) {
+  if (/怎麼|如何|步驟|教學/.test(text)) return '教學（how-to）'
+  if (/推薦|哪家|哪一|比較|排名/.test(text)) return '比較選擇'
+  return '知識解答'
+}
+
+function taskBriefMarkdown(item, siteTitle) {
+  return [
+    `# 內容任務單：${item.text}`,
+    '',
+    `- 目標：讓 ${siteTitle} 成為 AI 回答這一題時的引用來源`,
+    `- 搜尋意圖（依問句字面判斷）：${taskIntent(item.text)}`,
+    `- 建議標題：「${item.text}」——問句直接當標題，對 AEO 最有效`,
+    '- 內容要求：',
+    '  - 首段 2–3 句直接給出答案（AI 摘錄的通常就是這段）',
+    '  - 用 H2/H3 拆小節，每節回答一個子問題',
+    '  - 加入實際案例、數據或在地資訊（AI 偏好有佐證的來源）',
+    '- 建議 Schema：FAQPage（把本題與答案標記進去）＋ Article',
+    item.others.length
+      ? `- AI 目前引用誰：${item.others.join('、')}——先讀他們寫了什麼，寫得更完整`
+      : '- AI 目前引用誰：這題回答沒附來源（先發制人的機會）',
+    '- 完成後：發佈 → 回 AI 雷達重新掃描，驗證有沒有進引用名單',
+  ].join('\n')
+}
+
+// 任務單摺疊卡：展開看內容＋一鍵複製（給寫手/客戶的交付物）
+function TaskBrief({ item, siteTitle }) {
+  const [copied, setCopied] = useState(false)
+  const markdown = taskBriefMarkdown(item, siteTitle)
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(markdown)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* 剪貼簿被擋就算了，內容還在畫面上可手動選取 */ }
+  }
+  return (
+    <details className="as-gap-brief">
+      <summary>📋 內容任務單（可直接交給寫手）</summary>
+      <pre>{markdown}</pre>
+      <button type="button" className="as-cta" onClick={copy} aria-live="polite">
+        {copied ? '✅ 已複製' : '複製任務單'}
+      </button>
+      <span className="note">模板依題目與真實引用資料組裝，非 AI 生成文章。</span>
+    </details>
+  )
+}
+
+/**
  * 內容缺口 —— 窄用定義（spec 五之 2）：只做 aivis-info 的「AI 回答知識題時引用了誰、你在不在名單」。
  * 缺口 = AI 回答你領域的知識題時引用了別人、沒引用你 → 每一題就是一個具體的內容機會。
  * 資料沿用 AppVisibility 同一套查詢 + buildVisibilityModel 的 contentCitation（不重寫聚合）。
@@ -148,6 +201,7 @@ export default function AppGap() {
                     : <span className="others none">這次回答沒有附引用來源</span>}
                 </div>
                 <div className="act">👉 寫一篇能直接回答這題的內容（首段給答案、補 FAQ schema），下次掃描看有沒有進引用名單</div>
+                <TaskBrief item={item} siteTitle={title} />
               </li>
             ))}
           </ul>
