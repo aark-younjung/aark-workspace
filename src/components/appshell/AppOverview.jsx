@@ -132,7 +132,8 @@ export default function AppOverview() {
     } catch (error) {
       console.error('rescan failed:', error)
       setScanning(false)
-      alert('掃描失敗，請稍後再試')
+      // 透傳真實原因（fetch-url 的錯誤含 hint，例：逾時＝對方主機沒回應、非功能壞掉）
+      alert(`掃描失敗：${error?.message || '請稍後再試'}`)
     }
   }
 
