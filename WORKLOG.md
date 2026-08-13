@@ -18,7 +18,9 @@
 
 5. **E-E-A-T 三項校正（用戶質疑新站 75 分過高，逐項驗證後定案）** — [eeatAnalyzer.js](src/services/eeatAnalyzer.js)：(a) **外部權威連結排除社群網域**（自家 FB/IG/YT/LINE 已在「社群連結」計分，再算「權威引用」＝重複計分灌水；DP 20 外連全是自家社群→校正後 0 個、這項轉不過）(b) **聯絡方式認 line.me**（台灣店家主要聯絡管道是 LINE，只認「聯絡」字樣/tel/mailto 是假陰性；DP 轉過）(c) **作者資訊分頁型**（首頁認 Person／擁有者節點；內頁要真署名——rel/itemprop/author class/JSON-LD author 欄位，不再接受「頁面剛好有 Person 節點」，Rank Math 全站塞擁有者 Person 會假陽性）。SOCIAL_DOMAINS 抽共用常數。文案同步：EEATAudit 3 處 + healthData EEAT_META 2 處。DP 淨值仍 75（外連-1、聯絡+1）但每分站得住。⚠️ 全站 E-E-A-T 計分變動，舊 audit 重掃才套用。
 
-6. **快取時間差診斷（DP Meta 84→72 字「改了沒變」）** — 用戶改完 Meta 重掃仍 84 字。驗證：帶查詢參數繞過快取抓到**新 72 字**（範圍內），一般抓法仍是 LiteSpeed `00:52` 舊快取頁 → 改有存、快取未清。指引：後台 LiteSpeed 快取→清除全部→重掃。**產品改進候選（未做）**：偵測 `<!-- Page cached by LiteSpeed Cache ... on ... -->` 註記、報告顯示「此頁為 X 時前快取版，剛改過請先清快取再掃」。
+6. **快取時間差診斷（DP Meta 84→72 字「改了沒變」）** — 用戶改完 Meta 重掃仍 84 字。驗證：帶查詢參數繞過快取抓到**新 72 字**（範圍內），一般抓法仍是 LiteSpeed `00:52` 舊快取頁 → 改有存、快取未清。指引：後台 LiteSpeed 快取→清除全部→重掃。
+
+7. **快取新鮮度提示（6 的產品化，已做）** — 新 [src/lib/cacheDetect.js](src/lib/cacheDetect.js)（LiteSpeed / WP Super Cache / W3TC / WP Rocket / WP Fastest Cache 五種 HTML 註記指紋 + 生成時間解析）+ [CacheFreshnessNote.jsx](src/components/CacheFreshnessNote.jsx)（深/亮兩色、即時抓當下頁、同 URL session 內只抓一次）。快取齡 ≥60 分鐘才顯示「⏱ 這一頁由 X 供應快取版（N 小時前生成），剛改過請先清快取再掃」；清完快取重整自動消失。文案守誠實立場：快取不是錯誤（AI 爬蟲讀到的也是這份）。接 SEO/AEO/GEO/EEAT 四詳情頁（深）+ 改版 AppHealth（亮）；規則寫進 AGENTS.md §0.1 第 4 條。
 
 順手：AEOAudit faq_schema 訊息殘留「ChatGPT / Claude / **Perplexity**」→ 改 Gemini（7/17 對齊漏網第三處）。`npx vite build` 930 modules ✓。
 

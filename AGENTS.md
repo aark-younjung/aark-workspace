@@ -32,6 +32,12 @@
    - **顯示**：用 `pageAudit.js` 的 `metaDescFindingDetail(text)`＝「偵測語言 + 實際字數 + 適用範圍 + 過長/過短」明確句。aeo_audits 只存 boolean → 字數靠 SEO audit 的 `meta_tags.descriptionContent` 算（`AEOAudit` 加查一次、改版 `AppHealth` 已有）。
    - 若日後要把英文收緊成 120–160＝改 `metaLength.js` 門檻本身，別只改文案。
 
+4. **快取新鮮度提示** — 共用 `src/lib/cacheDetect.js`（`detectCacheInfo`：LiteSpeed / WP Super Cache / W3TC / WP Rocket / WP Fastest Cache 的 HTML 註記指紋）+ `src/components/CacheFreshnessNote.jsx`（深/亮兩色）。
+   - 背景：用戶改完內容重掃「沒變」，其實是快取外掛供舊頁（實案：Meta 84→72 字、LiteSpeed 供 13 小時前快取）。
+   - 頁面由快取供應且快取齡 ≥60 分鐘 → 顯示「剛改過請先清快取再掃」；<60 分鐘不打擾。**即時抓當下頁面**（非掃描存檔），清完快取重整提示自動消失。
+   - **誠實立場**：掃描讀快取版是「對的」（AI 爬蟲拿到的也是這份），文案不得把快取講成錯誤。
+   - 已接：SEO / AEO / GEO / EEAT 四個 audit 詳情頁（深色）+ 改版 `AppHealth`（亮色）。改版新做體檢頁都要沿用。
+
 ## 1. 改版 app-shell 實作規範（`/app/*`）
 
 - 新 UI 一律放 `src/components/appshell/`，樣式 scope 在 `.appshell` 底下（見 `appshell.css`），**亮色** token 對齊 `_design/redesign-app.html`（`#f4f5f7` / `#00003e` / `#ff6e34` / `#8298ff` / SEO `#2563eb` · AEO `#7c3aed` · GEO `#059669` · EEAT `#b45309`）。

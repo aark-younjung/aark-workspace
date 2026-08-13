@@ -7,6 +7,7 @@ import { T } from '../styles/v2-tokens'
 import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero, EEATSignature } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
+import CacheFreshnessNote from '../components/CacheFreshnessNote'
 
 const EEAT_ACCENT = T.eeat
 const EEAT_ACCENT2 = T.orange
@@ -185,6 +186,9 @@ export default function EEATAudit() {
             accent={T.eeat}
             accent2={T.orange}
           />
+
+          {/* 快取新鮮度提示：頁面由快取外掛供應且 ≥1 小時，提醒「剛改過請先清快取再掃」 */}
+          <CacheFreshnessNote pageUrl={website?.url} dark />
 
           {/* 分數總覽 Hero（左 5：右 7 兩欄，與 SEO 同款） */}
           <div className="v2-hero-grid" style={{ marginBottom: 32 }}>

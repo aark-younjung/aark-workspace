@@ -11,6 +11,7 @@ import {
 } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
+import CacheFreshnessNote from '../components/CacheFreshnessNote'
 
 const ACCENT = T.seo
 const ACCENT2 = '#06b6d4'
@@ -244,6 +245,9 @@ export default function SEOAudit() {
             accent={ACCENT}
             accent2={ACCENT2}
           />
+
+          {/* 快取新鮮度提示：頁面由快取外掛供應且 ≥1 小時，提醒「剛改過請先清快取再掃」 */}
+          <CacheFreshnessNote pageUrl={website?.url} dark />
 
           {/* 兩欄 Hero：左 ScoreHero（分數圈 + 趨勢） + 右 SerpAndVitals（SERP 預覽 + Core Web Vitals） */}
           <div className="v2-hero-grid" style={{ marginBottom: 32 }}>

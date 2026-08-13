@@ -6,6 +6,7 @@ import IssueBoard from '../v2/IssueBoard'
 import { HEALTH_TABS, buildHealthChecks, healthAuditKeys, resolveHealthTab } from './healthData'
 import { isHomepage, HOMEPAGE_NOTES } from '../../lib/pageAudit'
 import SiteWideSchemaProbe from '../SiteWideSchemaProbe'
+import CacheFreshnessNote from '../CacheFreshnessNote'
 
 const AUDIT_TABLES = {
   seo: 'seo_audits',
@@ -110,6 +111,9 @@ export default function AppHealth() {
         <span aria-hidden="true">📍</span>
         <span>本次檢測範圍：<b>這一頁</b>（{state.website.url}）+ 站台層檔案（robots.txt / sitemap / llms.txt）。FAQ、H1、Meta 是逐頁檢查；某項未通過不代表其他頁也沒有。</span>
       </div>
+
+      {/* 快取新鮮度提示：頁面由快取外掛供應且 ≥1 小時，提醒「剛改過請先清快取再掃」（亮色版） */}
+      <CacheFreshnessNote pageUrl={state.website.url} />
 
       {!hasRelevantAudit ? (
         <div className="as-empty">

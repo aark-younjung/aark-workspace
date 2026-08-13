@@ -8,6 +8,7 @@ import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero, Hero
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
 import SiteWideSchemaProbe from '../components/SiteWideSchemaProbe'
+import CacheFreshnessNote from '../components/CacheFreshnessNote'
 import { isHomepage, HOMEPAGE_NOTES, HOMEPAGE_NA_CHECKS, metaDescFindingDetail } from '../lib/pageAudit'
 
 const AEO_ACCENT = T.aeo
@@ -217,6 +218,9 @@ export default function AEOAudit() {
             accent={T.aeo}
             accent2={AEO_ACCENT2}
           />
+
+          {/* 快取新鮮度提示：頁面由快取外掛供應且 ≥1 小時，提醒「剛改過請先清快取再掃」 */}
+          <CacheFreshnessNote pageUrl={website?.url} dark />
 
           {/* 分數總覽 Hero（左 5：右 7 兩欄，與 SEO 同款） */}
           <div className="v2-hero-grid" style={{ marginBottom: 32 }}>
