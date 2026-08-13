@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 雷達改版 UI 預覽 v2（2026-08-13）</title>
+<style>
+  /* ═══ 設計 token：與已實作 appshell.css 完全同步（暖白底＋深藍 ink＋橘 accent） ═══ */
+  :root{
+    --bg:#f4f5f7; --surface:#ffffff; --surface-2:#eef0f4; --surface-3:#e6e9ef;
+    --ink:#00003e; --ink-2:#4a4a63; --ink-3:#9a9aad;
+    --line:rgba(0,0,62,.08); --line-2:rgba(0,0,62,.14);
+    --accent:#ff6e34; --accent-2:#e85114; --accent-soft:rgba(255,110,52,.1);
+    --pop:#8298ff;
+    --seo:#2563eb; --aeo:#7c3aed; --geo:#059669; --eeat:#b45309;
+    --sh-sm:0 1px 2px rgba(0,0,62,.05);
+    --sh:0 1px 2px rgba(0,0,62,.04), 0 14px 32px rgba(0,0,62,.07);
+    --font:"PingFang TC","Microsoft JhengHei","Noto Sans TC",system-ui,-apple-system,sans-serif;
+    --mono:"SFMono-Regular","Cascadia Code","Consolas",ui-monospace,monospace;
+    --r:12px; --r-lg:18px; --r-xl:24px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;}
+  .num{font-variant-numeric:tabular-nums;}
+  h2,h3,h4{margin:0;letter-spacing:-.01em;}
+  a{color:inherit;}
+
+  /* ═══ 頂部提示條：版本＋示意聲明＋變更圖例 ═══ */
+  .hint{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-3);
+    padding:8px 20px;background:rgba(244,245,247,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);font-family:var(--mono);flex-wrap:wrap;}
+  .hint b{color:var(--ink-2);font-family:var(--font);}
+  .hint .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  /* 變更標記 pill：🆕 綠＝這波新增、✏️ 橘＝這波變更、🔮 紫虛線＝規劃中未做 */
+  .bnew,.bchg,.bfut{font-family:var(--font);font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap;vertical-align:middle;}
+  .bnew{background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.3);}
+  .bchg{background:rgba(255,110,52,.1);color:#b45309;border:1px solid rgba(255,110,52,.35);}
+  .bfut{background:rgba(130,152,255,.1);color:#5866c4;border:1px dashed rgba(130,152,255,.5);}
+
+  /* ═══ 通用按鈕 ═══ */
+  .btn{font-family:var(--font);font-weight:700;border:none;cursor:pointer;border-radius:11px;transition:.16s;white-space:nowrap;text-decoration:none;display:inline-block;}
+  .btn-cta{background:var(--accent);color:#fff;box-shadow:0 6px 15px rgba(255,110,52,.26);}
+  .btn-cta:hover{background:var(--accent-2);}
+  .btn-line{background:var(--surface);color:var(--ink);border:1px solid var(--line-2);}
+  .btn-sm{padding:8px 15px;font-size:13px;} .btn-xs{padding:6px 12px;font-size:12px;}
+
+  /* ═══ app 外殼：左選單 236px＋右內容（與實作同構） ═══ */
+  .shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh;}
+  .side{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:33px;height:calc(100vh - 33px);}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;}
+  .brand .nm{font-weight:800;font-size:16px;}
+  .mark .sweep{transform-origin:center;animation:sweep 4s linear infinite;}
+  @keyframes sweep{to{transform:rotate(360deg);}}
+  .nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;font-size:14.5px;
+    color:var(--ink-2);font-weight:600;cursor:pointer;transition:.14s;margin-bottom:2px;text-align:left;width:100%;background:none;border:none;font-family:var(--font);}
+  .nav svg{flex:none;color:var(--ink-3);}
+  .nav:hover{background:var(--surface-2);}
+  .nav.on{background:var(--accent-soft);color:var(--accent-2);font-weight:750;}
+  .nav.on svg{color:var(--accent);}
+  .nav .tag{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.04em;background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;}
+  /* 競品格＝未來最後一項：虛線幽靈項，現在不佔正式格（2026-08-13 定案） */
+  .nav.ghost{opacity:.5;cursor:default;border:1px dashed var(--line-2);}
+  .nav.ghost:hover{background:none;}
+  .side .sp{flex:1;min-height:16px;}
+  /* ✏️ 帳號移左下：個人區整塊可點直達 /account、hover 出齒輪（主導覽不再有「帳號」格） */
+  .acct{display:flex;align-items:center;gap:10px;padding:11px 8px;border-top:1px solid var(--line);border-radius:10px;
+    cursor:pointer;background:none;border-left:none;border-right:none;border-bottom:none;width:100%;font-family:var(--font);text-align:left;}
+  .acct:hover{background:var(--surface-2);}
+  .acct .av{width:32px;height:32px;border-radius:9px;flex:none;background:linear-gradient(140deg,var(--pop),#5866c4);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;}
+  .acct .an{font-size:13px;font-weight:700;line-height:1.3;color:var(--ink);}
+  .acct .as{font-size:11px;color:var(--ink-3);}
+  .acct .go{margin-left:auto;color:var(--ink-3);opacity:.5;font-size:14px;}
+  .acct:hover .go{opacity:1;}
+
+  /* ═══ 右側主內容＋畫面切換 ═══ */
+  .main{padding:24px clamp(20px,3.5vw,40px);max-width:1060px;}
+  .view{display:none;} .view.on{display:block;animation:fade .28s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  /* 情境列（網站切換器） */
+  .ctx{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .switcher{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line-2);border-radius:11px;padding:7px 13px;box-shadow:var(--sh-sm);}
+  .switcher .lab{font-size:10.5px;color:var(--ink-3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;}
+  .switcher .val{font-size:14px;font-weight:750;}
+  .phead{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  .phead h2{font-size:22px;font-weight:850;}
+  .phead .sub{font-size:13px;color:var(--ink-3);}
+  .seg{margin-left:auto;display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px;}
+  .seg button{font-family:var(--font);font-size:12.5px;font-weight:650;padding:6px 13px;border-radius:8px;border:none;background:transparent;color:var(--ink-2);cursor:pointer;}
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm);font-weight:750;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);}
+
+  /* ═══ 總覽：aivis 主角卡（✏️ 儀表已接真曝光率弧線） ═══ */
+  .truth{padding:26px;box-shadow:var(--sh);border-radius:var(--r-xl);display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;position:relative;overflow:hidden;}
+  .truth::before{content:"";position:absolute;top:-40%;right:-8%;width:320px;height:320px;background:radial-gradient(circle,rgba(255,110,52,.07),transparent 62%);pointer-events:none;}
+  .gauge{position:relative;width:142px;height:142px;flex:none;}
+  .gauge .cx{position:absolute;inset:0;display:grid;place-items:center;text-align:center;}
+  .gauge .big{font-size:38px;font-weight:900;line-height:1;}
+  .gauge .big small{font-size:18px;}
+  .gauge .cap{font-size:11px;color:var(--ink-3);margin-top:3px;}
+  .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin-bottom:8px;}
+  .truth h3{font-size:22px;font-weight:850;margin-bottom:9px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .truth p{margin:0 0 4px;font-size:14px;color:var(--ink-2);line-height:1.6;max-width:52ch;}
+  .truth p b{color:var(--ink);}
+
+  /* ═══ 🆕 重點行動卡（現在最該修的 3 件事） ═══ */
+  .actions{margin:18px 0;}
+  .actions .sh2{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .actions .sh2 b{font-size:14.5px;}
+  .actions .sh2 span{font-size:12px;color:var(--ink-3);}
+  .actions-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .action{display:flex;flex-direction:column;gap:6px;padding:14px 16px;cursor:pointer;transition:.15s;}
+  .action:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,62,.08);}
+  .action .top{display:flex;align-items:center;gap:8px;}
+  .action .no{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:99px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;}
+  .action .dim{font-size:11.5px;font-weight:800;}
+  .action .pri{margin-left:auto;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;background:rgba(255,110,52,.12);color:#b45309;border:1px solid rgba(255,110,52,.35);}
+  .action .nm2{font-size:13.5px;font-weight:800;}
+  .action .dg{font-size:12px;color:var(--ink-2);line-height:1.55;}
+  .action .go2{margin-top:auto;font-size:12px;font-weight:700;color:var(--accent-2);}
+
+  /* 技術體質 4 卡（✏️ 各卡深連結到對應體檢分頁） */
+  .support{margin-top:16px;}
+  .support .sh2{display:flex;align-items:baseline;gap:8px;margin-bottom:11px;}
+  .support .sh2 b{font-size:13px;font-weight:700;color:var(--ink-2);}
+  .support .sh2 span{font-size:12px;color:var(--ink-3);}
+  .scores{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .sc{padding:14px 15px;border-radius:var(--r);cursor:pointer;transition:.14s;}
+  .sc:hover{transform:translateY(-2px);box-shadow:var(--sh);}
+  .sc .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .sc .nm{font-size:12px;font-weight:700;color:var(--ink-2);}
+  .sc .n{font-size:24px;font-weight:850;line-height:1;}
+  .sc .arrow{font-size:11px;color:var(--ink-3);}
+  .sc .bar{height:4px;border-radius:2px;background:var(--surface-3);margin-top:10px;overflow:hidden;}
+  .sc .bar i{display:block;height:100%;border-radius:2px;}
+
+  /* ═══ 🆕 指標詞彙表（原生 details 摺疊） ═══ */
+  .glossary{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-top:16px;}
+  .glossary summary{cursor:pointer;padding:12px 16px;font-size:13.5px;font-weight:800;list-style:none;}
+  .glossary summary::-webkit-details-marker{display:none;}
+  .glossary[open] summary{border-bottom:1px solid var(--line);}
+  .glossary .gb{padding:14px 16px;}
+  .glossary .gb .intro{font-size:12.5px;color:var(--ink-2);margin:0 0 12px;line-height:1.6;}
+  .glossary ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
+  .glossary li b{font-size:13px;}
+  .glossary .loc{font-size:11px;color:var(--ink-3);margin-left:8px;border:1px solid var(--line);padding:1px 7px;border-radius:99px;}
+  .glossary li p{font-size:12.5px;color:var(--ink-2);margin:4px 0 0;line-height:1.6;}
+  .glossary li .why{color:var(--ink-3);font-style:italic;}
+
+  .stub{margin-top:16px;font-size:12.5px;color:var(--ink-3);border:1px dashed var(--line-2);border-radius:12px;padding:12px 16px;line-height:1.6;}
+
+  /* ═══ AI 曝光監測 KPI ═══ */
+  .kpis{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:14px;margin-bottom:16px;}
+  .kpi{padding:18px;}
+  .kpi .label{font-size:12.5px;color:var(--ink-3);font-weight:700;margin-bottom:6px;}
+  .kpi .value{font-size:34px;font-weight:850;line-height:1.1;}
+  .kpi .value.small{font-size:24px;}
+  .kpi .value.pending{font-size:18px;color:var(--ink-3);}
+  .kpi p{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin:6px 0 0;}
+  .kpi .delta{font-family:var(--mono);font-size:12px;font-weight:750;color:var(--geo);margin-left:8px;}
+  .spark{width:100%;height:48px;margin-top:10px;}
+  .spark .area{fill:rgba(255,110,52,.12);stroke:none;}
+  .spark .line{fill:none;stroke:var(--accent);stroke-width:1.6;}
+  .spark circle{fill:var(--accent);}
+  .engrates{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--ink-2);}
+  .engrates b{color:var(--ink);}
+  .usage{height:6px;border-radius:3px;background:var(--surface-3);margin-top:10px;overflow:hidden;}
+  .usage i{display:block;height:100%;background:var(--accent);border-radius:3px;}
+
+  /* 引用矩陣 */
+  .matrix{padding:18px;margin-bottom:16px;}
+  .mx-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+  .mx-head h3{font-size:14.5px;}
+  .mx-head .time{font-size:11.5px;color:var(--ink-3);font-family:var(--mono);}
+  table.mx{width:100%;border-collapse:collapse;font-size:13px;}
+  table.mx th{font-size:11px;color:var(--ink-3);text-align:left;font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);}
+  table.mx td{padding:10px;border-bottom:1px solid var(--line);}
+  table.mx td.q{max-width:380px;}
+  .hit,.miss{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:99px;}
+  .hit{background:rgba(5,150,105,.1);color:#059669;}
+  .miss{background:var(--surface-2);color:var(--ink-3);}
+
+  /* 誠實分軸小卡（品牌認知率／內容引用率 另計） */
+  .axes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+  .axis{padding:16px 18px;}
+  .axis .label{font-size:12.5px;color:var(--ink-3);font-weight:700;}
+  .axis .value{font-size:24px;font-weight:850;margin:4px 0;}
+  .axis p{font-size:12px;color:var(--ink-2);margin:0;line-height:1.6;}
+
+  /* ═══ 網站體檢 ═══ */
+  .htabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .htab{font-family:var(--font);font-size:13px;font-weight:700;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer;display:flex;gap:7px;align-items:center;}
+  .htab.on{background:var(--accent-soft);color:var(--accent-2);border-color:rgba(255,110,52,.3);}
+  .htab .b{font-family:var(--mono);font-size:11px;background:var(--surface-2);border-radius:6px;padding:1px 6px;}
+  .scope{font-size:12.5px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:12px;line-height:1.6;}
+  /* 🆕 快取新鮮度提示（琥珀＝提醒非錯誤） */
+  .cache{background:#fffaf0;border:1px solid #f0d9ae;border-radius:12px;padding:12px 18px;margin-bottom:12px;font-size:13px;line-height:1.7;color:#8a6d3b;}
+  .cache b{color:#b45309;}
+  /* 檢測看板（IssueBoard 簡化示意）：兩欄＝立即修復／已通過 */
+  .board{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+  .bcol{padding:14px 16px;}
+  .bcol h4{font-size:12.5px;color:var(--ink-3);margin-bottom:10px;}
+  .chk{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+  .chk .t{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:750;}
+  .chk .t .pchip{margin-left:auto;font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink-3);}
+  .chk .t .pchip.p1{background:rgba(255,110,52,.12);color:#b45309;border-color:rgba(255,110,52,.35);}
+  .chk .d{font-size:12px;color:var(--ink-2);margin-top:5px;line-height:1.6;}
+  .chk.na{background:var(--surface-2);}
+  /* 🆕 站台層複查面板 */
+  .probe{padding:14px 18px;margin-bottom:12px;}
+  .probe h4{font-size:13.5px;margin-bottom:8px;}
+  .probe li{font-size:13px;color:var(--ink-2);line-height:1.7;list-style:none;}
+  .probe ul{margin:0;padding:0;}
+  .probe .ok{color:#059669;font-weight:750;}
+  .probe a{color:var(--seo);}
+  .tool{display:flex;align-items:center;gap:14px;padding:14px 18px;flex-wrap:wrap;}
+  .tool b{font-size:13px;}
+  .tool span{font-size:12px;color:var(--ink-3);}
+  .tool .link{margin-left:auto;font-size:13px;font-weight:750;color:var(--accent-2);cursor:pointer;}
+
+  /* ═══ 內容機會 ═══ */
+  .gkpis{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+  .gkpi{padding:18px;}
+  .gkpi .label{font-size:12.5px;color:var(--ink-3);font-weight:700;margin-bottom:6px;}
+  .gkpi .value{font-size:34px;font-weight:800;margin-bottom:6px;}
+  .gkpi .value.isgap{color:var(--accent);}
+  .gkpi p{font-size:12.5px;color:var(--ink-2);margin:0;line-height:1.6;}
+  .glist{padding:16px 18px;margin-bottom:16px;}
+  .glist h3{font-size:14.5px;margin-bottom:10px;}
+  .glist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+  .glist li{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);}
+  .glist .q{font-size:13.5px;font-weight:700;line-height:1.55;margin-bottom:6px;}
+  .glist .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);}
+  .glist .tagm{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(255,110,52,.12);color:#b45309;border:1px solid rgba(255,110,52,.35);}
+  .glist .tagh{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.3);}
+  .glist code{font-family:var(--mono);font-size:11px;background:var(--surface-2);border:1px solid var(--line);padding:2px 7px;border-radius:6px;color:var(--ink-2);}
+  .glist .act{font-size:12px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);line-height:1.6;}
+  .gscope{font-size:12px;color:var(--ink-3);line-height:1.7;padding:10px 14px;border:1px dashed var(--line);border-radius:10px;margin-bottom:16px;}
+  /* 🆕 內容工具入口卡 */
+  .gtools{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+  .gtool{display:flex;flex-direction:column;gap:6px;padding:14px 16px;cursor:pointer;transition:.15s;}
+  .gtool:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,62,.08);}
+  .gtool b{font-size:13.5px;}
+  .gtool span{font-size:12px;color:var(--ink-2);line-height:1.55;}
+  .gtool .go2{margin-top:auto;font-weight:700;color:var(--accent-2);font-size:12px;}
+
+  /* ═══ 我的網站 ═══ */
+  .sites-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  .sites-head h2{font-size:22px;font-weight:850;}
+  .sites-head .sub{font-size:13px;color:var(--ink-3);}
+  .sites{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .sitecard{padding:18px;cursor:pointer;transition:.15s;}
+  .sitecard:hover{transform:translateY(-2px);box-shadow:var(--sh);}
+  .sitecard .snm{font-size:15px;font-weight:800;}
+  .sitecard .surl{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);margin:3px 0 12px;}
+  .srow{display:flex;gap:18px;}
+  .smetric .ml{font-size:10.5px;color:var(--ink-3);font-weight:700;}
+  .smetric .mv{font-size:19px;font-weight:850;}
+  .smetric .mv.pend{font-size:13px;color:var(--ink-3);font-weight:700;}
+  .smetric .mv.setup{font-size:13px;color:var(--accent-2);font-weight:750;}
+  .sfoot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-top:12px;border-top:1px solid var(--line);padding-top:10px;}
+  .addsite{border:2px dashed var(--line-2);border-radius:var(--r-lg);display:grid;place-items:center;text-align:center;padding:24px;cursor:pointer;color:var(--ink-3);}
+  .addsite .plus{font-size:22px;color:var(--accent);}
+
+  /* 帳號說明畫面（沿用現有頁） */
+  .acct-note{padding:22px;max-width:560px;}
+  .acct-note h3{margin-bottom:8px;}
+  .acct-note p{font-size:13.5px;color:var(--ink-2);line-height:1.7;margin:0 0 6px;}
+
+  @media (max-width:900px){
+    .shell{grid-template-columns:1fr;}
+    .side{position:static;height:auto;flex-direction:row;overflow-x:auto;padding:10px;}
+    .brand,.sp{display:none;}
+    .actions-row,.scores,.sites,.kpis,.axes,.gkpis,.gtools,.board{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 頂部提示條：這是設計稿、數字皆示意；圖例標記哪些是這波新增/變更 -->
+<div class="hint">
+  <span class="dot"></span><b>AI 雷達改版 UI 預覽 v2</b>2026-08-13 · 對齊已實作程式 · 數字皆為示意
+  <span style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <span class="bnew">🆕 這波新增</span><span class="bchg">✏️ 這波變更</span><span class="bfut">🔮 規劃中</span>
+  </span>
+</div>
+
+<div class="shell">
+  <!-- ═══ 左選單（✏️ 內容機會改名；✏️ 帳號移左下；🔮 競品未來加在最後） ═══ -->
+  <aside class="side">
+    <div class="brand">
+      <svg class="mark" width="30" height="30" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15.5" fill="none" stroke="rgba(0,0,62,.14)"/><circle cx="17" cy="17" r="10" fill="none" stroke="rgba(0,0,62,.14)"/><g class="sweep"><path d="M17 17 L17 1.5 A15.5 15.5 0 0 1 30 9 Z" fill="#ff6e34" opacity=".9"/></g><circle cx="17" cy="17" r="2.4" fill="#00003e"/></svg>
+      <div class="nm">AI 雷達</div>
+    </div>
+
+    <button class="nav on" onclick="go('overview',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>總覽</button>
+    <button class="nav" onclick="go('visibility',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M8.5 12a3.5 3.5 0 0 1 3.5-3.5M15.5 12a3.5 3.5 0 0 0-3.5-3.5M5 12a7 7 0 0 1 7-7M19 12a7 7 0 0 0-7-7"/></svg>AI 曝光監測<span class="tag">主力</span></button>
+    <button class="nav" onclick="go('health',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>網站體檢</button>
+    <button class="nav" onclick="go('gap',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>內容機會 <span class="bchg">✏️</span></button>
+    <button class="nav" onclick="go('sites',this)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>我的網站</button>
+    <div class="nav ghost"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>競品 <span class="bfut">🔮 未來最後一項</span></div>
+
+    <div class="sp"></div>
+    <button class="acct" onclick="go('account',this)" aria-label="帳號與方案設定">
+      <span class="av">M</span>
+      <div><div class="an">示例使用者</div><div class="as">Pro</div></div>
+      <span class="go">⚙</span>
+    </button>
+  </aside>
+
+  <main class="main">
+
+    <!-- ═════════════ 畫面 1：總覽 ═════════════ -->
+    <section class="view on" id="v-overview">
+      <div class="ctx"><div class="switcher"><span class="lab">網站</span><span class="val">demo-brand.tw</span></div></div>
+      <div class="phead"><h2>總覽</h2><span class="sub">demo-brand.tw 在 AI 眼中的整體狀態</span></div>
+
+      <!-- aivis 主角卡：✏️ 儀表已接「真實品類推薦曝光率」弧線（原版是📡接資料中 placeholder） -->
+      <div class="card truth">
+        <div class="gauge">
+          <svg width="142" height="142" viewBox="0 0 142 142">
+            <circle cx="71" cy="71" r="60" fill="none" stroke="var(--surface-2)" stroke-width="12"/>
+            <g style="transform-box:fill-box;transform-origin:center;transform:rotate(-90deg)">
+              <circle cx="71" cy="71" r="60" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="128 377"/>
+            </g>
+          </svg>
+          <div class="cx"><div><div class="big num">34<small>%</small></div><div class="cap">品類推薦曝光率</div></div></div>
+        </div>
+        <div>
+          <div class="lbl">真相指標 · AI 實際推不推薦你 <span class="bchg">✏️ 接真資料</span></div>
+          <h3>已連結品牌：示例品牌</h3>
+          <p>近 30 天品類題掃描中，AI 回答提到你的比例。趨勢與逐題明細在「AI 曝光監測」。</p>
+          <a class="btn btn-cta btn-sm" onclick="go('visibility',document.querySelectorAll('.nav')[1])">看 AI 曝光監測 →</a>
+        </div>
+      </div>
+
+      <!-- 🆕 重點行動卡：全部檢測中最優先 3 條（P1 在前）、直達修法 -->
+      <div class="actions">
+        <div class="sh2"><b>現在最該修的 3 件事</b><span>依優先度自動挑選 · 點卡片直達修法</span><span class="bnew">🆕</span></div>
+        <div class="actions-row">
+          <div class="card action" onclick="go('health',document.querySelectorAll('.nav')[2])">
+            <div class="top"><span class="no num">1</span><span class="dim" style="color:var(--aeo)">AEO</span><span class="pri">P1</span></div>
+            <div class="nm2">FAQ Schema</div>
+            <div class="dg">偵測到頁面有 FAQ 區塊但缺 FAQPage schema——人看得到、AI 抓不到。</div>
+            <div class="go2">去修這一項 →</div>
+          </div>
+          <div class="card action" onclick="go('health',document.querySelectorAll('.nav')[2])">
+            <div class="top"><span class="no num">2</span><span class="dim" style="color:var(--seo)">SEO</span><span class="pri">P1</span></div>
+            <div class="nm2">Meta 描述</div>
+            <div class="dg">偵測為中文，這頁 84 字（中文建議 40–80 字）→ 過長，建議縮到 80 字以內。</div>
+            <div class="go2">去修這一項 →</div>
+          </div>
+          <div class="card action" onclick="go('health',document.querySelectorAll('.nav')[2])">
+            <div class="top"><span class="no num">3</span><span class="dim" style="color:var(--eeat)">E-E-A-T</span><span class="pri">P1</span></div>
+            <div class="nm2">隱私權政策</div>
+            <div class="dg">網站沒有隱私權政策頁——合規與信任的基本要求。</div>
+            <div class="go2">去修這一項 →</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 技術體質：✏️ 各卡深連結到對應體檢分頁；🔮 第一批將補「內容品質」第 5 卡 -->
+      <div class="support">
+        <div class="sh2"><b>技術體質</b><span>讓 AI 找得到你的地基 · 輔助指標 · 點卡片看詳情</span><span class="bfut">🔮 將加內容品質第 5 卡</span></div>
+        <div class="scores">
+          <div class="sc card" onclick="go('health',document.querySelectorAll('.nav')[2])"><div class="top"><span class="nm">SEO</span><span class="arrow">→</span></div><span class="n num" style="color:var(--seo)">95</span><div class="bar"><i style="width:95%;background:var(--seo)"></i></div></div>
+          <div class="sc card" onclick="go('health',document.querySelectorAll('.nav')[2])"><div class="top"><span class="nm">AEO</span><span class="arrow">→</span></div><span class="n num" style="color:var(--aeo)">63</span><div class="bar"><i style="width:63%;background:var(--aeo)"></i></div></div>
+          <div class="sc card" onclick="go('health',document.querySelectorAll('.nav')[2])"><div class="top"><span class="nm">GEO</span><span class="arrow">→</span></div><span class="n num" style="color:var(--geo)">88</span><div class="bar"><i style="width:88%;background:var(--geo)"></i></div></div>
+          <div class="sc card" onclick="go('health',document.querySelectorAll('.nav')[2])"><div class="top"><span class="nm">E-E-A-T</span><span class="arrow">→</span></div><span class="n num" style="color:var(--eeat)">50</span><div class="bar"><i style="width:50%;background:var(--eeat)"></i></div></div>
+        </div>
+      </div>
+
+      <!-- 🆕 指標詞彙表（我們如何衡量）：解「技術分高 ≠ AI 推薦你」的信任地基 -->
+      <details class="glossary">
+        <summary>📖 我們如何衡量——為什麼這些分數不會一樣？ <span class="bnew">🆕</span></summary>
+        <div class="gb">
+          <p class="intro">每個分數量的是<b>不同的問題</b>，彼此不一致是正常的（技術分高、曝光率低＝AI 讀得懂你、但還沒推薦你）。</p>
+          <ul>
+            <li><b>技術體質（SEO / AEO / GEO / E-E-A-T）</b><span class="loc">在「網站體檢」</span><p>你的網站「讓 AI 讀得懂、找得到」的技術地基。</p><p class="why">這是入場券、不是結果——所以「AI 實際推不推薦」另外量。</p></li>
+            <li><b>品類推薦曝光率</b><span class="loc">在「AI 曝光監測」</span><p>拿「不含品牌名」的品類問題實測三引擎，固定題組、趨勢可比。</p><p class="why">客戶問 AI 時不會連你的名字一起問——這才是真相。</p></li>
+            <li><b>品牌認知率</b><span class="loc">在「AI 曝光監測」</span><p>含品牌名的問題，看 AI 認不認得你。</p><p class="why">刻意分開算，混在一起會灌水。</p></li>
+            <li><b>內容引用率</b><span class="loc">在「內容機會」</span><p>AI 答知識題時引用來源有沒有你的網站。</p><p class="why">內容行銷成效最直接的鏡子，另計不灌分。</p></li>
+          </ul>
+        </div>
+      </details>
+
+      <div class="stub">📈 <b>改前 / 改後進展</b>：需要至少兩次掃描才能比較。接上趨勢資料後，這裡會顯示「你改了什麼 → AI 能見度怎麼變」。（建置中）</div>
+    </section>
+
+    <!-- ═════════════ 畫面 2：AI 曝光監測 ═════════════ -->
+    <section class="view" id="v-visibility">
+      <div class="ctx"><div class="switcher"><span class="lab">網站</span><span class="val">demo-brand.tw</span></div></div>
+      <div class="phead">
+        <h2>AI 曝光監測</h2><span class="sub">真的拿 示例品牌 去問 3 大 AI</span>
+        <div class="seg"><button class="on">本週</button><button>近 30 天</button><button>近 90 天</button></div>
+        <a class="btn btn-line btn-sm">管理／重新掃描</a>
+      </div>
+
+      <div class="kpis">
+        <div class="card kpi">
+          <div class="label">品類推薦曝光率</div>
+          <div class="value num">34%<span class="delta">↑ 3</span></div>
+          <p>42 個核心題引擎回答中，14 個提到你的品牌</p>
+          <svg class="spark" viewBox="0 0 100 48" preserveAspectRatio="none">
+            <path class="area" d="M 0 40 L 20 36 L 40 38 L 60 30 L 80 28 L 100 25 L 100 47 L 0 47 Z"/>
+            <path class="line" d="M 0 40 L 20 36 L 40 38 L 60 30 L 80 28 L 100 25"/>
+            <circle cx="100" cy="25" r="1.6"/>
+          </svg>
+          <div class="engrates"><span>ChatGPT <b class="num">42%</b></span><span>Claude <b class="num">33%</b></span><span>Gemini <b class="num">27%</b></span></div>
+        </div>
+        <div class="card kpi">
+          <div class="label">本月掃描用量 <span class="bchg">✏️ 分母依方案</span></div>
+          <div class="value small num">62 <small style="font-size:13px;color:var(--ink-3)">/ 150 次</small></div>
+          <p>Pro 150／試用 50，依帳號方案顯示</p>
+          <div class="usage"><i style="width:41%"></i></div>
+        </div>
+        <div class="card kpi">
+          <div class="label">同類領先者</div>
+          <div class="value pending">接資料中</div>
+          <p>尚無 aivis 競品資料來源，不從回答文字猜。<br><span class="bfut">🔮 第一批：競品提及萃取後接真資料</span></p>
+        </div>
+      </div>
+
+      <div class="card matrix">
+        <div class="mx-head"><h3>引用矩陣 · 誰在哪一題被 AI 提到</h3><span class="time">最近掃描：8/13 14:02</span></div>
+        <table class="mx">
+          <tr><th>核心品類題</th><th>ChatGPT</th><th>Claude</th><th>Gemini</th></tr>
+          <tr><td class="q">台南汽車美容推薦哪一家？</td><td><span class="hit">✓ 有提到</span></td><td><span class="miss">— 沒提到</span></td><td><span class="hit">✓ 有提到</span></td></tr>
+          <tr><td class="q">新車鍍膜要找誰做比較好？</td><td><span class="miss">— 沒提到</span></td><td><span class="miss">— 沒提到</span></td><td><span class="hit">✓ 有提到</span></td></tr>
+          <tr><td class="q">內裝深層清潔推薦的店家？</td><td><span class="hit">✓ 有提到</span></td><td><span class="miss">— 沒提到</span></td><td><span class="miss">— 沒提到</span></td></tr>
+        </table>
+      </div>
+
+      <!-- 誠實分軸：另計、不灌入主分數 -->
+      <div class="axes">
+        <div class="card axis"><div class="label">品牌認知率（另計）</div><div class="value num">100%</div><p>含品牌名的問題 AI 全認得你——刻意不灌入曝光率，避免品牌詞灌水。</p></div>
+        <div class="card axis"><div class="label">內容引用率（另計）</div><div class="value num">40%</div><p>知識題引用來源含你網域的比例，明細在「內容機會」。</p></div>
+      </div>
+
+      <div class="card tool"><b>品牌外部提及</b><span>BETA · 查全網第三方來源有沒有談到你 · 不會自動消耗 API</span><span class="link">查詢品牌提及 →</span></div>
+      <div class="stub">🔮 規劃中：本頁將依功能分頁化（監測題目／引用來源／AI 觀感／歷史比較）——分頁跟著功能長、不先蓋空殼。</div>
+    </section>
+
+    <!-- ═════════════ 畫面 3：網站體檢 ═════════════ -->
+    <section class="view" id="v-health">
+      <div class="ctx"><div class="switcher"><span class="lab">網站</span><span class="val">demo-brand.tw</span></div></div>
+      <div class="phead"><h2>網站體檢</h2><span class="sub">讓 AI 找得到 demo-brand.tw 的技術地基</span></div>
+
+      <div class="htabs">
+        <button class="htab">SEO <span class="b num">95</span></button>
+        <button class="htab on">AEO <span class="b num">63</span></button>
+        <button class="htab">GEO <span class="b num">88</span></button>
+        <button class="htab">E-E-A-T <span class="b num">50</span></button>
+        <button class="htab">爬蟲可達性</button>
+        <button class="htab">Schema</button>
+      </div>
+
+      <div class="scope">📍 本次檢測範圍：<b>這一頁</b>（https://demo-brand.tw）＋站台層檔案（robots.txt / sitemap / llms.txt）。FAQ、H1、Meta 是逐頁檢查；某項未通過不代表其他頁也沒有。</div>
+
+      <!-- 🆕 快取新鮮度提示：快取齡 ≥1 小時才顯示；清完快取重整自動消失 -->
+      <div class="cache"><b>⏱ 這一頁目前由 LiteSpeed 快取 供應快取版</b>（約 13 小時前生成）。如果你剛改過網站內容，掃描測到的可能還是舊版——請先到 WordPress 後台<b>清除快取</b>（頂部管理列的快取圖示 → 清除全部），再重新掃描。<span style="opacity:.8">　快取本身不是問題：AI 爬蟲平常讀到的也是這份快取。</span> <span class="bnew">🆕</span></div>
+
+      <div class="board">
+        <div class="card bcol">
+          <h4>🔥 立即修復</h4>
+          <div class="chk"><div class="t">❓ FAQ Schema <span class="pchip p1">P1</span></div><div class="d">⚠️ 偵測到你的頁面有 FAQ 區塊但缺 FAQPage schema——對「人類訪客」可見、但 ChatGPT / Claude / Gemini 抓不到。</div></div>
+          <div class="chk"><div class="t">📝 Meta 描述長度 <span class="pchip">P2</span></div><div class="d">偵測為中文，這頁 84 字（中文建議 40–80 字）→ 過長，建議縮到 80 字以內。<span class="bchg">✏️ 分語言明確標示</span></div></div>
+        </div>
+        <div class="card bcol">
+          <h4>✅ 已通過</h4>
+          <div class="chk na"><div class="t">🍞 麵包屑導航 <span class="pchip">N/A</span></div><div class="d">這一頁是首頁，通常沒有麵包屑（你已在最上層）——麵包屑出現在內頁。首頁沒有是正常的，不用擔心。<span class="bchg">✏️ 頁型判斷不扣分</span></div></div>
+          <div class="chk na"><div class="t">📋 JSON-LD 結構化資料</div><div class="d">頁面含 Organization／WebSite 基本 schema。</div></div>
+          <div class="chk na"><div class="t">📖 結構化答案段落</div><div class="d">頁面有清楚的問答格式內容。</div></div>
+        </div>
+      </div>
+
+      <!-- 🆕 站台層複查：首頁報缺時自動去其他頁實查，不冤枉「做在別頁」的用戶 -->
+      <div class="card probe">
+        <h4>🔎 站台層複查（你網站的其他頁面）<span class="bnew">🆕</span></h4>
+        <ul>
+          <li><span class="ok">✅ FAQ Schema：</span>已在 <a>/faq/</a> 這一頁找到了。首頁沒有是正常的，你沒有白做。</li>
+          <li><span class="ok">✅ 麵包屑：</span>已在 <a>/faq/</a> 這一頁找到了。</li>
+        </ul>
+      </div>
+
+      <div class="card tool"><b>需要重新解析這一頁的 Schema？</b><span>專項工具會即時連線網站；本頁只顯示已儲存的最近一次結果。</span><span class="link">開啟專項檢測 →</span></div>
+    </section>
+
+    <!-- ═════════════ 畫面 4：內容機會（✏️ 改名＋收編文章工具） ═════════════ -->
+    <section class="view" id="v-gap">
+      <div class="ctx"><div class="switcher"><span class="lab">網站</span><span class="val">demo-brand.tw</span></div></div>
+      <div class="phead"><h2>內容機會 <span class="bchg">✏️ 原「內容缺口」</span></h2><span class="sub">AI 回答你領域的知識題時，引用名單裡有沒有你</span></div>
+
+      <div class="gkpis">
+        <div class="card gkpi"><div class="label">內容引用率</div><div class="value num">40%</div><p>5 題知識題中，<b class="num">2</b> 題的 AI 引用名單裡有你的網站</p></div>
+        <div class="card gkpi"><div class="label">機會題數 <span class="bchg">✏️ 原「內容機會」撞頁名改</span></div><div class="value num isgap">3 題</div><p>AI 引用了別人、沒引用你——每一題都是一篇內容的機會</p></div>
+      </div>
+
+      <div class="card glist">
+        <h3>🕳️ 缺口 · AI 答了這些題，引用名單裡沒有你</h3>
+        <ul>
+          <li>
+            <div class="q">新車鍍膜之後多久不能洗車？</div>
+            <div class="meta"><span class="tagm">未被引用</span><span>AI 引用了：<code>demo-a.com</code> <code>demo-b.tw</code></span></div>
+            <div class="act">👉 寫一篇能直接回答這題的內容（首段給答案、補 FAQ schema），下次掃描看有沒有進引用名單</div>
+          </li>
+          <li>
+            <div class="q">汽車內裝異味怎麼徹底去除？</div>
+            <div class="meta"><span class="tagm">未被引用</span><span style="color:var(--ink-3)">這次回答沒有附引用來源</span></div>
+            <div class="act">👉 寫一篇能直接回答這題的內容（首段給答案、補 FAQ schema），下次掃描看有沒有進引用名單</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card glist" style="opacity:.92">
+        <h3>✅ 已被引用 · 這些題 AI 有引用你的網站</h3>
+        <ul>
+          <li><div class="q">漆面拋光會不會傷車漆？</div><div class="meta"><span class="tagh">已被引用</span><span>同題也被引用：<code>demo-c.tw</code></span></div></li>
+        </ul>
+      </div>
+
+      <div class="gscope">📍 以上僅涵蓋 aivis 已掃描的 5 題資訊題（近 90 天最新一次掃描）。AI 的引用會隨時間變動；不代表你的內容在所有知識題的表現。</div>
+
+      <!-- 🆕 內容工具入口：文章工具收編進「內容機會」（工具本體沿用現有頁） -->
+      <div class="gtools">
+        <div class="card gtool"><b>📝 單篇文章體檢 <span class="bnew">🆕 收編</span></b><span>15 項內容檢測（結構／字數／AEO 格式／可讀性），逐篇看要補什麼。</span><span class="go2">開啟 →</span></div>
+        <div class="card gtool"><b>📚 批次文章掃描 <span class="bnew">🆕 收編</span></b><span>從 sitemap 自動找出文章、批次體檢，一次看全站內容的健康度。</span><span class="go2">開啟 →</span></div>
+      </div>
+      <div class="stub">🔮 規劃中：內容任務單——每個缺口題產出「建議標題／必答問題／建議 Schema」的可交付任務（不做整篇文章生成）。</div>
+    </section>
+
+    <!-- ═════════════ 畫面 5：我的網站 ═════════════ -->
+    <section class="view" id="v-sites">
+      <div class="sites-head">
+        <h2>我的網站</h2>
+        <span class="sub">已追蹤 <b class="num">3</b> / <b class="num">15</b> 站（Pro）</span>
+        <a class="btn btn-cta btn-sm" style="margin-left:auto">＋ 新增網站</a>
+      </div>
+      <div class="sites">
+        <div class="card sitecard">
+          <div class="snm">示例品牌</div>
+          <div class="surl">demo-brand.tw</div>
+          <div class="srow">
+            <div class="smetric"><div class="ml">AI 能見度</div><div class="mv num" style="color:var(--accent-2)">34% <span class="bchg">✏️ 接真資料</span></div></div>
+            <div class="smetric"><div class="ml">技術體質</div><div class="mv num">74</div></div>
+          </div>
+          <div class="sfoot"><span>最後掃描：2 小時前</span><span>→</span></div>
+        </div>
+        <div class="card sitecard">
+          <div class="snm">第二個站</div>
+          <div class="surl">second-site.com.tw</div>
+          <div class="srow">
+            <div class="smetric"><div class="ml">AI 能見度</div><div class="mv pend">接資料中</div></div>
+            <div class="smetric"><div class="ml">技術體質</div><div class="mv num">68</div></div>
+          </div>
+          <div class="sfoot"><span>最後掃描：3 天前</span><span>→</span></div>
+        </div>
+        <div class="card sitecard">
+          <div class="snm">third-demo.tw <span class="bchg" title="站名缺失時以網域呈現">✏️ hostname 後備</span></div>
+          <div class="surl">third-demo.tw</div>
+          <div class="srow">
+            <div class="smetric"><div class="ml">AI 能見度</div><div class="mv setup">設定 aivis</div></div>
+            <div class="smetric"><div class="ml">技術體質</div><div class="mv pend">接資料中</div></div>
+          </div>
+          <div class="sfoot"><span>最後掃描：尚未掃描</span><span>→</span></div>
+        </div>
+        <div class="addsite"><div><div class="plus">＋</div>新增追蹤網站<br><span style="font-size:11.5px">還可再加 <b class="num">12</b> 站</span></div></div>
+      </div>
+    </section>
+
+    <!-- ═════════════ 畫面 6：帳號（沿用現有頁、不在改版範圍） ═════════════ -->
+    <section class="view" id="v-account">
+      <div class="phead"><h2>帳號</h2><span class="sub">沿用現有 /account 頁 <span class="bchg">✏️ 入口移到左下個人區</span></span></div>
+      <div class="card acct-note">
+        <h3>⚙ 帳號與方案</h3>
+        <p>主導覽已拿掉「帳號」格——點左下角的個人區（頭像＋名字＋方案）即直達現有帳號頁。</p>
+        <p>帳號頁本體（方案、金流、Email 設定）沿用現行深色版頁面，不在這波改版範圍；殼內重做排在後期（通知設定、Danger Zone 一起）。</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  /* 畫面切換：與原設計稿同款 go(id, navEl) */
+  function go(id, el){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('on'))
+    document.getElementById('v-' + id).classList.add('on')
+    document.querySelectorAll('.nav').forEach(n => n.classList.remove('on'))
+    if (el && el.classList.contains('nav')) el.classList.add('on')
+    window.scrollTo({ top: 0 })
+  }
+</script>
+</body>
+</html>
