@@ -291,6 +291,41 @@
 .appshell .as-vis-rescan:focus-visible,.appshell .as-seg button:focus-visible,.appshell .as-vis-line-button:focus-visible,
 .appshell .as-vis-honest a:focus-visible,.appshell .as-vis-mention-item:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:3px;}
 
+/* ── 內容缺口（AppGap）── */
+/* KPI 兩卡：內容引用率 + 內容機會（缺口數） */
+.appshell .as-gap-kpis{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.appshell .as-gap-kpi .label{font-size:12.5px;color:var(--ink-3);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+/* 指標說明的小 i：滑鼠停留看完整定義（title） */
+.appshell .as-gap-kpi .info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:99px;
+  border:1px solid var(--line);color:var(--ink-3);font-size:10px;font-style:normal;cursor:help;}
+.appshell .as-gap-kpi .value{font-size:34px;font-weight:800;color:var(--ink);line-height:1.1;margin-bottom:6px;}
+/* 缺口數 > 0 用橘色強調（品牌 accent、非錯誤紅——缺口是機會不是故障） */
+.appshell .as-gap-kpi .value.is-gap{color:var(--accent);}
+.appshell .as-gap-kpi p{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin:0;}
+/* 題目清單：缺口區與已被引用區共用版型 */
+.appshell .as-gap-list{margin-bottom:16px;}
+.appshell .as-gap-list h3{font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:10px;}
+.appshell .as-gap-list ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+.appshell .as-gap-list li{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);}
+.appshell .as-gap-list .q{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.55;margin-bottom:6px;}
+.appshell .as-gap-list .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);}
+/* 引用狀態 tag：不只靠顏色表意、配文字（未被引用/已被引用） */
+.appshell .as-gap-list .tag{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap;}
+.appshell .as-gap-list .tag.miss{background:rgba(255,110,52,.12);color:#b45309;border:1px solid rgba(255,110,52,.35);}
+.appshell .as-gap-list .tag.hit{background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.3);}
+/* 「AI 引用了誰」的網域 chips：等寬字、可換行 */
+.appshell .as-gap-list .others{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.appshell .as-gap-list .others code{font-family:var(--mono);font-size:11px;background:var(--surface-2);border:1px solid var(--line);
+  padding:2px 7px;border-radius:6px;color:var(--ink-2);}
+.appshell .as-gap-list .others.none{color:var(--ink-3);}
+/* 每題的行動指引：具體、不含保證字眼 */
+.appshell .as-gap-list .act{font-size:12px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);line-height:1.6;}
+/* 已被引用區整體降一階存在感（主角是缺口） */
+.appshell .as-gap-wins{opacity:.92;}
+/* 範圍誠實聲明：與網站體檢的 scope 條同款語氣 */
+.appshell .as-gap-scope{font-size:12px;color:var(--ink-3);line-height:1.7;padding:10px 14px;border:1px dashed var(--line);
+  border-radius:10px;margin-bottom:24px;}
+
 @media (max-width:900px){
   .appshell{grid-template-columns:1fr;}
   .appshell .as-side{position:static;height:auto;flex-direction:row;overflow-x:auto;border-right:none;
@@ -312,6 +347,7 @@
 
 @media (max-width:620px){
   .appshell .as-vis-kpis{grid-template-columns:1fr;}
+  .appshell .as-gap-kpis{grid-template-columns:1fr;}
   .appshell .as-vis-kpi-main{grid-column:auto;}
   .appshell .as-vis-compare-row{grid-template-columns:100px 1fr 72px;gap:8px;}
   .appshell .as-vis-mention-item{grid-template-columns:1fr auto;}

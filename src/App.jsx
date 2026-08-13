@@ -45,9 +45,9 @@ import HelpRankMath from './pages/HelpRankMath'
 // 改版 app-shell（redesign/app-shell 分支；/app/* 與現有路由並存，不取代）
 import AppShell from './components/appshell/AppShell'
 import AppOverview from './components/appshell/AppOverview'
-import AppSection from './components/appshell/AppSection'
 import AppSites from './components/appshell/AppSites'
 import AppHealth from './components/appshell/AppHealth'
+import AppGap from './components/appshell/AppGap'
 import AppVisibility from './components/appshell/AppVisibility'
 
 const DARK_CIRCLES = [65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157]
@@ -157,7 +157,7 @@ function AppInner() {
           <Route path="visibility" element={<AppVisibility />} />
           <Route path="health" element={<AppHealth />} />
           <Route path="health/:healthTab" element={<AppHealth />} />
-          <Route path="gap" element={<AppSection title="內容缺口" note="AI 引用缺口（aivis-info）。" />} />
+          <Route path="gap" element={<AppGap />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

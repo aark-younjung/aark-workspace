@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13d（改版：內容缺口 AppGap 完成 — 已部署、藏在 /app/* 未連結）
+
+新 [AppGap.jsx](src/components/appshell/AppGap.jsx)（`/app/:websiteId/gap`，取代 AppSection placeholder）：窄用定義＝aivis-info「AI 答知識題時引用了誰、你在不在名單」。**沿用 AppVisibility 同一套查詢 + `buildVisibilityModel.contentCitation`（不重寫聚合）**，90 天窗。版面：KPI 兩卡（內容引用率 N%／內容機會 N 題）→ 🕳️ 缺口清單（每題：題目＋「未被引用」tag＋AI 實際引用的網域 chips＋行動指引）→ ✅ 已被引用清單（降一階存在感）→ 範圍誠實聲明（只涵蓋已掃描的 N 題、不宣稱全領域）。四層誠實空狀態：無品牌→設定 aivis／品牌無網域→補網域／無資訊題資料→去掃描／載入錯誤。CSS `.as-gap-*` 加中文註解；缺口數用品牌橘（機會、非錯誤紅）；domain chips `translate="no"`。App.jsx 移除已無人用的 AppSection import。
+
 ### 2026-08-13c（留存二修：試用交接直達 + 真實「比上次」delta — 已部署）
 
 停廣告健檢的兩個產品修正（[DashboardV2.jsx](src/pages/DashboardV2.jsx) + [AIVisibility.jsx](src/pages/AIVisibility.jsx)）：
