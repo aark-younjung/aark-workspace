@@ -13,6 +13,26 @@
 - 掃描實際是**單頁 + 站台層檔案**（robots / sitemap / llms.txt），**不可暗示全站爬蟲**。
 - aivis「頭條曝光率」只用 core（品類）題；品牌詞題、資訊型題**另計、不灌入主分數**。
 
+## 0.1 檢測呈現規則（⚠️ 延續性硬需求：改版、大改版都要沿用，不可弄丟）
+
+> 背景：掃描是「單頁 + 站台層檔案」。多次客訴同源——用戶在**內頁/FAQ 頁**做了麵包屑/FAQ，我們卻在**首頁**掃描、用全站口氣說「你沒有」，冤枉人。以下三條是這問題的長期解，邏輯放共用 lib，現行產品與改版共用同一支。
+
+1. **頁型判斷（page-type）** — 共用 `src/lib/pageAudit.js`（`isHomepage` / `HOMEPAGE_NOTES` / `HOMEPAGE_NA_CHECKS`）。
+   - **麵包屑 / FAQ schema 在首頁「缺」是正常的**（首頁在最上層、沒有麵包屑；FAQ 通常在 FAQ 頁）→ 首頁不得用紅字「缺失」口氣冤枉人，要標正常化說明。
+   - 現況：**只改說明文字**（`buildAeoChecks` / `AEOAudit` 的 detail 覆蓋），**未動 passed / 分數**（分數用掃描存好的 `audit.score`，翻 passed 會與分數脫鉤）。
+   - **待做（analyzer 層，未完成）**：讓首頁**不因缺麵包屑/FAQ 被扣分**（`aeoAnalyzer` 依 URL 是否首頁調整計分/分母）→ 才能讓 board 全綠且分數一致。做這步時記得回頭把上面兩處 detail-only 的暫解升級成真 pass。
+   - 例外：首頁若真的有 FAQ 區塊（`faq_visual`）→ 是「該補 schema」的真問題，不套正常化說明。
+
+2. **站台層複查（site-wide）** — 共用 `src/lib/siteWideSchema.js`（`detectSchemaAcrossSite`）+ `src/components/SiteWideSchemaProbe.jsx`（深/亮兩色）。
+   - 首頁報「缺麵包屑/FAQ」時，經 `fetchSitemapUrls` 去站台其他頁**實際驗證**，找到就明講「你的 /faq/ 有，這一頁沒有是正常的」。
+   - 已接：`AEOAudit`（深色）+ 改版 `AppHealth`（亮色）。改版新做任何體檢頁都要沿用同一支。
+   - **誠實**：只講「我們檢查的這幾頁」（回 `checked` 數），**絕不宣稱「全站」**都有／都沒有（只抓有限頁數；抓不到 sitemap 回 `unknown`、不下結論）。
+
+3. **Meta 描述長度分語言 + 明確標示** — 門檻依語言自動判斷（`src/lib/metaLength.js`：**中文 40–80 字、英文 70–155 字元**）。
+   - **判定源頭**：`aeoAnalyzer.js` 的 `checkMetaDescLength` 用 `metaLengthVerdict`（分語言），**不可**再寫死 `120–160`（舊 bug：英文規則套中文站，把 84 字中文站誤判「過短」）。SEO 那支 `meta_desc` 早就用 `metaLengthVerdict`，兩邊同源。
+   - **顯示**：用 `pageAudit.js` 的 `metaDescFindingDetail(text)`＝「偵測語言 + 實際字數 + 適用範圍 + 過長/過短」明確句。aeo_audits 只存 boolean → 字數靠 SEO audit 的 `meta_tags.descriptionContent` 算（`AEOAudit` 加查一次、改版 `AppHealth` 已有）。
+   - 若日後要把英文收緊成 120–160＝改 `metaLength.js` 門檻本身，別只改文案。
+
 ## 1. 改版 app-shell 實作規範（`/app/*`）
 
 - 新 UI 一律放 `src/components/appshell/`，樣式 scope 在 `.appshell` 底下（見 `appshell.css`），**亮色** token 對齊 `_design/redesign-app.html`（`#f4f5f7` / `#00003e` / `#ff6e34` / `#8298ff` / SEO `#2563eb` · AEO `#7c3aed` · GEO `#059669` · EEAT `#b45309`）。

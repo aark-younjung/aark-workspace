@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import IssueBoard from '../v2/IssueBoard'
 import { HEALTH_TABS, buildHealthChecks, healthAuditKeys, resolveHealthTab } from './healthData'
+import { isHomepage, HOMEPAGE_NOTES } from '../../lib/pageAudit'
+import SiteWideSchemaProbe from '../SiteWideSchemaProbe'
 
 const AUDIT_TABLES = {
   seo: 'seo_audits',
@@ -72,9 +74,14 @@ export default function AppHealth() {
     </div>
   )
 
-  const checks = buildHealthChecks(selectedTab, state.audits)
+  const onHomepage = isHomepage(state.website.url)
+  const checks = buildHealthChecks(selectedTab, state.audits, onHomepage)
   const hasRelevantAudit = healthAuditKeys(selectedTab).some(key => state.audits[key])
   const title = state.website.name || state.website.url
+  // 站台層複查候選：首頁被標「正常化說明」的麵包屑/FAQ（即真的缺在首頁、可能做在別頁的那些）
+  const siteWideProbeIds = onHomepage
+    ? checks.filter(ch => HOMEPAGE_NOTES[ch.id] && ch.detail === HOMEPAGE_NOTES[ch.id]).map(ch => ch.id)
+    : []
 
   return (
     <>
@@ -115,6 +122,11 @@ export default function AppHealth() {
           <div className="as-health-board">
             <IssueBoard checks={checks} isPro={isPro} accent={ACCENTS[selectedTab]} />
           </div>
+
+          {/* 站台層複查：首頁報「缺麵包屑/FAQ」時，自動去其他頁找一遍，避免冤枉「做在別頁」的用戶 */}
+          {siteWideProbeIds.length > 0 && (
+            <SiteWideSchemaProbe pageUrl={state.website.url} schemaIds={siteWideProbeIds} />
+          )}
 
           {(selectedTab === 'crawl' || selectedTab === 'schema') && (
             <div className="as-health-tool">

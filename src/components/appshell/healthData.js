@@ -1,4 +1,5 @@
 import { metaLengthVerdict } from '../../lib/metaLength.js'
+import { HOMEPAGE_NOTES, metaDescFindingDetail } from '../../lib/pageAudit.js'
 
 // ponytail: 四個舊 audit 頁尚未匯出 check metadata；此 adapter 僅鏡射既有欄位 id／優先級，
 // 不執行或改寫 analyzer。日後若舊頁抽成共用 check registry，這裡應直接改為 import。
@@ -30,7 +31,7 @@ const AEO_META = [
   { id: 'breadcrumbs', name: '麵包屑導航', icon: '🍞', priority: 'P3', description: '頁面是否含 BreadcrumbList schema。', recommendation: '用 BreadcrumbList 標記網站層級。' },
   { id: 'open_graph', name: 'Open Graph', icon: '🔗', priority: 'P2', description: '是否有完整的 Open Graph 預覽標籤。', recommendation: '補齊 og:title、og:description、og:image、og:url。' },
   { id: 'question_headings', name: 'H2/H3 問句式標題', icon: '💬', priority: 'P2', description: 'H2／H3 是否包含清楚的問句格式。', recommendation: '把適合的段落標題改成使用者會直接詢問的問題。' },
-  { id: 'meta_desc_length', name: 'Meta 描述長度', icon: '📝', priority: 'P2', description: 'Meta 描述是否符合現有 AEO 檢測長度規則。', recommendation: '精簡 Meta 描述並直接交代頁面核心內容。' },
+  { id: 'meta_desc_length', name: 'Meta 描述長度', icon: '📝', priority: 'P2', description: 'Meta 描述長度是否適合（門檻依語言自動判斷：中文 40–80 字、英文 70–155 字元）。', recommendation: '控制 Meta 描述長度——中文 40–80 字、英文 70–155 字元；實際字數與過長/過短見「SEO」分頁的「Meta 描述」檢查。' },
   { id: 'structured_answer', name: '結構化答案段落', icon: '📖', priority: 'P3', description: '頁面是否有 FAQ、問答段落或 details／summary。', recommendation: '加入可直接回答問題的短段落或 FAQ。' },
 ]
 
@@ -93,12 +94,8 @@ function buildSeoChecks(audit) {
     },
     meta_desc() {
       if (partial) return NOT_CHECKED
-      const content = audit?.meta_tags?.descriptionContent
-      if (!content) return { passed: false, detail: '未設置 Meta 描述' }
-      const verdict = metaLengthVerdict(content, 'desc')
-      if (verdict.verdict === 'short') return { passed: false, detail: `描述過短（${verdict.chars} 字），建議至少 ${verdict.min} 字` }
-      if (verdict.verdict === 'long') return { passed: false, detail: `描述過長（${verdict.chars} 字），建議縮短至 ${verdict.max} 字以內` }
-      return { passed: true, detail: `${verdict.chars} 字，長度符合建議範圍` }
+      // 明確分語言 + 字數 + 判定（中 40–80 字／英 70–155 字元），與 AEO 分頁同一支
+      return metaDescFindingDetail(audit?.meta_tags?.descriptionContent)
     },
     h1_structure() {
       if (partial) return NOT_CHECKED
@@ -153,18 +150,39 @@ function buildSeoChecks(audit) {
   return SEO_META.map(check => ({ ...check, ...values[check.id]() }))
 }
 
-function buildAeoChecks(audit) {
+function buildAeoChecks(audit, isHomepage = false, seoDescText = null) {
   const checks = booleanChecks(AEO_META, audit)
+  // meta_desc_length：用實際描述文字算出「分語言 + 字數 + 判定」明確說明；有文字才覆蓋（連 passed，讓顯示自洽）
+  const metaCheck = checks.find(check => check.id === 'meta_desc_length')
+  if (metaCheck && seoDescText != null) {
+    const d = metaDescFindingDetail(seoDescText)
+    metaCheck.passed = d.passed
+    metaCheck.detail = d.detail
+  }
   const faq = checks.find(check => check.id === 'faq_schema')
   if (faq && !faq.passed && audit?.faq_visual) {
     faq.detail = '偵測到頁面有 FAQ 區塊，但缺 FAQPage schema；人看得到，機器不一定能正確理解。'
   }
+  // 頁型判斷：首頁本來就不該有麵包屑/FAQ schema（那是內頁／FAQ 頁的事）。
+  // 現階段只改「說明文字」正常化，不動 passed / 分數 —— 因為分數用的是掃描存好的 audit.score，
+  // 若這裡把 passed 翻成 true 會與分數脫鉤（board 全綠、分數卻被扣）。
+  // 讓首頁不因缺這兩項被扣分，屬 analyzer 層改動（見 AGENTS.md 頁型判斷第 2 步），另做。
+  // 例外：首頁若真的有 FAQ 區塊（faq_visual），那是「該補 schema」的真問題，不套正常化說明。
+  if (isHomepage) {
+    for (const check of checks) {
+      if (!HOMEPAGE_NOTES[check.id] || check.passed) continue
+      if (check.id === 'faq_schema' && audit?.faq_visual) continue
+      check.detail = HOMEPAGE_NOTES[check.id]
+    }
+  }
   return checks
 }
 
-export function buildHealthChecks(tab, audits = {}) {
+export function buildHealthChecks(tab, audits = {}, isHomepage = false) {
+  // AEO 的 meta 描述字數要靠 SEO audit 存的實際描述文字來算（aeo_audits 只存 boolean）
+  const seoDescText = audits.seo?.meta_tags?.descriptionContent ?? null
   if (tab === 'seo') return buildSeoChecks(audits.seo)
-  if (tab === 'aeo') return buildAeoChecks(audits.aeo)
+  if (tab === 'aeo') return buildAeoChecks(audits.aeo, isHomepage, seoDescText)
   if (tab === 'geo') return booleanChecks(GEO_META, audits.geo)
   if (tab === 'eeat') return booleanChecks(EEAT_META, audits.eeat)
   if (tab === 'crawl') {
@@ -174,7 +192,7 @@ export function buildHealthChecks(tab, audits = {}) {
     return ['bot_accessibility', 'ssl_chain', 'robots_ai', 'sitemap', 'llms_txt'].map(id => byId.get(id)).filter(Boolean)
   }
   if (tab === 'schema') {
-    const aeo = buildAeoChecks(audits.aeo)
+    const aeo = buildAeoChecks(audits.aeo, isHomepage, seoDescText)
     const geo = booleanChecks(GEO_META, audits.geo)
     const eeat = booleanChecks(EEAT_META, audits.eeat)
     const byId = new Map([...aeo, ...geo, ...eeat].map(check => [check.id, check]))

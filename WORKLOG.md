@@ -6,6 +6,35 @@
 
 ---
 
+### 2026-08-13（檢測呈現「不冤枉單頁」三修 — 現行產品 + 改版共用，未部署待 review）
+
+根因：掃描是「單頁 + 站台層檔案」，但用戶常在**內頁/FAQ 頁**做了麵包屑/FAQ、我們卻在**首頁**掃、用全站口氣說「你沒有」，已多次冤枉客戶（緯方 FAQ、DP 車體美研麵包屑）。做成長期解、邏輯放共用 lib、**現行 + 改版同一支**，並寫進 [AGENTS.md §0.1](AGENTS.md) + [spec 五](_design/redesign-spec.md) 當延續性硬需求（大改版也要沿用）。
+
+1. **頁型判斷** — 新 [src/lib/pageAudit.js](src/lib/pageAudit.js)（`isHomepage` / `HOMEPAGE_NOTES`）。首頁缺麵包屑/FAQ 是正常的（首頁在最上層、FAQ 在 FAQ 頁）→ 改標正常化說明、不再紅字冤枉。接 [AEOAudit.jsx](src/pages/AEOAudit.jsx) + 改版 [healthData.js](src/components/appshell/healthData.js)/[AppHealth.jsx](src/components/appshell/AppHealth.jsx)。**現只改說明文字、未動 passed/分數**（分數用存好的 `audit.score`，翻 passed 會脫鉤）；讓首頁免扣分屬 analyzer 層、待做。例外：首頁真有 FAQ 區塊（`faq_visual`）＝該補 schema 真問題，不套說明。
+2. **站台層複查** — 新 [src/lib/siteWideSchema.js](src/lib/siteWideSchema.js)（`detectSchemaAcrossSite`）+ [SiteWideSchemaProbe.jsx](src/components/SiteWideSchemaProbe.jsx)（深/亮兩色共用）。首頁報缺時，經 `fetchSitemapUrls` 去其他頁**實查**，找到就講「你的 /faq/ 有、首頁沒有是正常的」。接 AEOAudit（深）+ AppHealth（亮）。**誠實**：只講「檢查過的這幾頁」(`checked` 數)、抓不到 sitemap 回 `unknown` 不下結論、**絕不宣稱全站**。
+3. **Meta 描述分語言判定（挖到既有 bug）** — 根因：[aeoAnalyzer.js](src/services/aeoAnalyzer.js) `checkMetaDescLength` **寫死 `length>=120 && <=160`（英文規則）套到所有站** → 把 84 字中文站誤判「過短（<120）」，其實中文 84 字是「過長（>80）」。修：改用 [metaLength.js](src/lib/metaLength.js) `metaLengthVerdict` 分語言（中 40–80／英 70–155），與 SEO 那支同源。**顯示**：新增 `pageAudit.js` `metaDescFindingDetail(text)`＝「偵測語言＋實際字數＋範圍＋過長/過短」明確句；aeo_audits 只存 boolean → 字數靠 SEO audit 的 `meta_tags.descriptionContent` 算（AEOAudit 加查一次、AppHealth 已有）。⚠️ 此修**改到 AEO 分數計法**：中文站描述在 40–80 字者，重掃後這項會從「不過」變「過」、分數上修（原本被英文門檻冤枉）；舊 audit 要**重掃**才更新。（英文若要收緊成 120–160＝改門檻本身，用戶已澄清這次只要「明確標示中/英字數判定」、不改門檻。）
+
+順手：AEOAudit faq_schema 訊息殘留「ChatGPT / Claude / **Perplexity**」→ 改 Gemini（7/17 對齊漏網第三處）。`npx vite build` 930 modules ✓。
+
+---
+
+### 2026-08-12（改版 Batch 2 續 + 一批線上 bug/準確度修正 — 全部已部署 main）
+
+改版仍在 `redesign/app-shell` 分支迭代，但期間累積的**線上 bug 修正**已數次 merge 進 main 部署（改版本身藏在 `/app/*` 未連結路由、對用戶不可見，所以 merge 只讓修正上線、不曝光半成品改版）。
+
+**改版 Batch 2（藏著、未上線可見）**：app-shell 外殼（左選單）+ `/app/:websiteId/*` 路由 + 總覽接真資料（含「改前/改後」折進總覽、aivis delta 為主角）。Codex 依 AGENTS.md 產出 AppVisibility / AppHealth / AppSites + data 模組（**尚欠一次誠實線 review**：3 引擎/不捏造/host 分組）。
+
+**線上修正（已部署）**：
+1. **AEO 分數不一致 bug**：總覽讀存好的 `aeo_audits.score`、詳情頁卻當場用 8 項打勾重算 → 對不上（75 vs 50）。根因 [AEOAudit.jsx](src/pages/AEOAudit.jsx) `handleReanalyze` 漏存 `meta_desc_length`/`structured_answer` 兩欄 → 重算少算。修：詳情頁改用存好的 `.score`（單一真相）+ handleReanalyze 補存兩欄。
+2. **Perplexity → 3 引擎對齊（第二波）**：[AIVisibility.jsx](src/pages/AIVisibility.jsx) 兩處 + [MetricSignatures.jsx](src/components/v2/MetricSignatures.jsx)（AEOSignature/GEOSignature：Perplexity→Claude、Google AI→Gemini、示意例子→ChatGPT）。爬蟲/教育類 PerplexityBot 字樣照留。
+3. **/admin/seed 包 AdminGuard**（原本裸奔可寫 20 站假資料）。
+4. **llms.txt 三修**（[api/public.js](api/public.js)）：(a) 擁有者可見性 bug — GEO 頁預覽/複製/下載對 opt-out 站全掛（連擁有者自己都看不到）；改成帶 `X-AARK-Internal` header 的內部請求略過 opt-out。(b) 生成品質：標題用即時 `og:site_name`（不再用網域）、描述用即時 meta（不再掉罐頭「官方網站」）、sitemap 驗證存在才放（不塞 404）、opt-out 站不放 AI 報告死連結。
+5. **Organization Schema 產生器改 per-website**（[OrgSchemaGenerator.jsx](src/components/v2/OrgSchemaGenerator.jsx)）：原存 `profiles.org_schema_data`（一帳號一份 → 代理商換客戶就沿用上一份、跨站汙染）→ 改存 `websites.org_schema_data`（每站一份）；接 websiteId、依網站載入/儲存、新站用 URL 預填。需跑 SQL：`alter table websites add column org_schema_data jsonb` + `own_websites_update` RLS。
+
+**客戶站直接處理（緯方地政 / darkred-squid，用 Novamira MCP）**：寫 `/llms.txt` 進 WP root（手寫高品質版、驗 HTTP 200）；FAQ 折疊（sandbox wp_footer 印 CSS/JS + `!important`）。**操作備忘**：Hostinger 站 WP-CLI `proc_open` disabled → 清 LiteSpeed 快取改用 execute-php `do_action('litespeed_purge_all')`；持久 PHP 寫 `wp-content/novamira-sandbox/`（mu-loader 自動載入）。
+
+---
+
 ### 2026-07-28（改版實作 Batch 1：資料地基 — aivis_brands.website_id + websites「一頁一筆」發現）
 
 **Batch 1 完成**（純 DB、零 app code，SQL 於 Supabase SQL Editor 手動跑）：

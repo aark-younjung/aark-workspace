@@ -4,6 +4,7 @@
  */
 
 import { fetchPageContent, parseHTML } from './seoAnalyzer'
+import { metaLengthVerdict } from '../lib/metaLength' // 分語言（中/英）Meta 長度門檻，與 SEO / 顯示層同一支
 
 /**
  * 1. JSON-LD 結構化資料檢測 (schema.org，特別是 FAQ/HowTo)
@@ -208,12 +209,16 @@ function checkMetaDescLength(doc) {
   if (!metaDesc) return { passed: false, length: 0, hasDescription: false }
 
   const content = metaDesc.getAttribute('content') || ''
-  const length = content.length
-  const passed = length >= 120 && length <= 160
-
+  // 分語言判定：中文全形字寬約英文兩倍、Google 早截斷 → 中 40–80 字、英 70–155 字元（見 lib/metaLength.js）。
+  // 舊版寫死 120–160（英文規則）套到所有站 → 把 84 字的中文站誤判「過短」，是既有 bug，改用分語言門檻修正。
+  const v = metaLengthVerdict(content, 'desc')
   return {
-    passed,
-    length,
+    passed: v.verdict === 'ok',
+    length: v.chars,
+    isCJK: v.isCJK,
+    min: v.min,
+    max: v.max,
+    verdict: v.verdict, // 'ok' | 'short' | 'long' | 'empty'
     hasDescription: true,
     content: content.substring(0, 50) + (content.length > 50 ? '...' : '')
   }

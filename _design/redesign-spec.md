@@ -104,6 +104,8 @@ Free vs Pro 的功能閘門（修復碼、趨勢圖、PDF、aivis 次數、追�
 
 **誠實修正（改版前必做，與 IA 脫鉤）**：首頁免費掃只算 SEO/AEO/GEO/EEAT＝**技術體質**，**不是**實際 AI 曝光；文案改「AI 搜尋準備度／體質」，「AI 推不推薦你」留給 aivis（付費真相）。
 
+**檢測呈現延續性（2026-08-13 加，⚠️ 大改版也要沿用）**：見 [AGENTS.md §0.1](../AGENTS.md)。三條共用 lib 已建、現行產品與改版都接：①頁型判斷（首頁不冤枉缺麵包屑/FAQ，`lib/pageAudit.js`；analyzer 層免扣分待做）②站台層複查（去其他頁實查、`lib/siteWideSchema.js` + `SiteWideSchemaProbe`，只講「檢查過的這幾頁」不宣稱全站）③Meta 長度分中英文（中 40–80／英 70–155，`lib/metaLength.js`）。改版任何體檢頁都沿用這三支，不可退回舊的「單頁口氣冤枉全站」。
+
 ### 定案後的左選單（6 格）與 URL 契約
 
 - **公開（shell 外）**：`/`、`/pricing`、`/faq`、`/showcase`、`/website-summary/:id`、`/crawl-check`、`/schema-check`、`/lp/:variant`、法律頁

@@ -7,6 +7,8 @@ import { T } from '../styles/v2-tokens'
 import { GlassCard, IssueBoard, IssueBoardSkeleton, AuditTopBar, ScoreHero, HeroSkeleton, AEOSignature, OrgSchemaGenerator } from '../components/v2'
 import SiteHeader from '../components/v2/SiteHeader'
 import Footer from '../components/Footer'
+import SiteWideSchemaProbe from '../components/SiteWideSchemaProbe'
+import { isHomepage, HOMEPAGE_NOTES, metaDescFindingDetail } from '../lib/pageAudit'
 
 const AEO_ACCENT = T.aeo
 const AEO_ACCENT2 = '#6366f1'
@@ -63,10 +65,10 @@ const AEO_CHECKS = [
   {
     id: 'meta_desc_length',
     name: 'Meta 描述長度',
-    description: '檢測 Meta 描述是否在 120-160 字元範圍內，精簡描述更容易出現在 Google 精選摘要',
+    description: '檢測 Meta 描述長度是否適合（門檻依語言自動判斷：中文 40–80 字、英文 70–155 字元），過長會被搜尋引擎截斷、過短則資訊不足',
     icon: '📝',
     priority: 'P2',
-    recommendation: '將 Meta 描述控制在 120-160 字元，簡潔說明頁面核心內容',
+    recommendation: '控制 Meta 描述長度——中文站 40–80 字、英文站 70–155 字元；在該頁的 SEO 設定欄位調整，簡潔說明頁面核心內容',
   },
   {
     id: 'structured_answer',
@@ -83,6 +85,7 @@ export default function AEOAudit() {
   const { isPro } = useAuth()
   const [website, setWebsite] = useState(null)
   const [aeoAudit, setAeoAudit] = useState(null)
+  const [seoDescText, setSeoDescText] = useState(null) // 從最近一次 SEO audit 取實際描述文字，用來算 Meta 描述字數
   const [recentAudits, setRecentAudits] = useState([])
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
@@ -99,6 +102,12 @@ export default function AEOAudit() {
         .from('aeo_audits').select('*').eq('website_id', id)
         .order('created_at', { ascending: false }).limit(1).single()
       setAeoAudit(aeoData)
+
+      // 取最近一次 SEO audit 的實際 Meta 描述文字（aeo_audits 只存 boolean，字數要靠這個算）
+      const { data: seoData } = await supabase
+        .from('seo_audits').select('meta_tags').eq('website_id', id)
+        .order('created_at', { ascending: false }).limit(1).single()
+      setSeoDescText(seoData?.meta_tags?.descriptionContent ?? null)
 
       // 近 7 筆分數，給 ScoreHero 7 日趨勢迷你圖用
       const { data: recentData } = await supabase
@@ -154,14 +163,32 @@ export default function AEOAudit() {
   // 把 AEO_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
   // 特殊處理 faq_schema：若 faq_visual=true 但 faq_schema=false → 用更精準的 detail 訊息引導用戶補 schema
   // 這樣用戶看到「有 FAQ 但 AI 看不到」而非籠統的「缺 FAQ schema」
+  // 頁型判斷：首頁本來就沒有麵包屑/FAQ schema（那是內頁／FAQ 頁的事）→ 對這一頁的「缺失」補上正常化說明，
+  // 避免「我做了卻還跑出來」的誤會。現階段只改說明文字、不動 passed/分數（分數用掃描存好的 aeo_audits.score，
+  // 首頁不因缺這兩項被扣分屬 analyzer 層另做，見 AGENTS.md）。
+  const onHomepage = isHomepage(website?.url)
   const checks = AEO_CHECKS.map(c => {
     const passed = getCheckStatus(c.id) === 'pass'
     let detail = c.description
+    if (c.id === 'meta_desc_length' && seoDescText != null) {
+      // 明確分語言 + 字數 + 判定（中 40–80 字／英 70–155 字元）；連 passed 一起覆蓋讓顯示自洽
+      const d = metaDescFindingDetail(seoDescText)
+      return { ...c, passed: d.passed, detail: d.detail }
+    }
     if (c.id === 'faq_schema' && !passed && aeoAudit?.faq_visual) {
-      detail = '⚠️ 偵測到你的頁面有 FAQ 區塊（標題或多個 Q/A 內容）但缺 FAQPage schema — 對「人類訪客」可見、但 ChatGPT / Claude / Perplexity 等 AI 引擎抓不到。請把 Q&A 包成 JSON-LD 結構化資料，AI 才能直接引用。'
+      // 首頁若真的有 FAQ 區塊，是「該補 schema」的真問題（三引擎：ChatGPT / Claude / Gemini）
+      detail = '⚠️ 偵測到你的頁面有 FAQ 區塊（標題或多個 Q/A 內容）但缺 FAQPage schema — 對「人類訪客」可見、但 ChatGPT / Claude / Gemini 等 AI 引擎抓不到。請把 Q&A 包成 JSON-LD 結構化資料，AI 才能直接引用。'
+    } else if (onHomepage && HOMEPAGE_NOTES[c.id] && !passed) {
+      detail = HOMEPAGE_NOTES[c.id]
     }
     return { ...c, passed, detail }
   })
+
+  // 站台層複查：首頁缺麵包屑/FAQ 時，去其他頁實際找一遍（faq_visual 是「該補 schema」真問題、不複查）
+  const siteWideProbeIds = onHomepage
+    ? ['faq_schema', 'breadcrumbs'].filter(id =>
+        getCheckStatus(id) === 'fail' && !(id === 'faq_schema' && aeoAudit?.faq_visual))
+    : []
 
   if (loading) {
     return (
@@ -223,6 +250,11 @@ export default function AEOAudit() {
           <div style={{ marginBottom: 32 }}>
             {!aeoAudit ? <IssueBoardSkeleton /> : <IssueBoard checks={checks} isPro={isPro} accent={AEO_ACCENT} accentGlow={`${AEO_ACCENT}28`} />}
           </div>
+
+          {/* 站台層複查：首頁報「缺麵包屑/FAQ」時，自動去其他頁找一遍，避免冤枉「我做在別頁」的用戶 */}
+          {aeoAudit && siteWideProbeIds.length > 0 && (
+            <SiteWideSchemaProbe pageUrl={website?.url} schemaIds={siteWideProbeIds} dark />
+          )}
 
           {/* 個人化 Organization Schema 產生器 — Pro 限定（免費版顯示 upsell card）
               位置選擇：IssueBoard 後、/schema-check 微入口前 — 用戶看完「缺什麼 schema」立刻看到「我可以幫你生」
