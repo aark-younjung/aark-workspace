@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13m（🟠 第一批 #6：品牌等級（里程碑制・雷達隱喻）— 已部署，第一批完結）
+
+用戶定案：里程碑事件制＋雷達隱喻。新 [brandLevel.js](src/components/appshell/brandLevel.js) 六級嚴格逐級：Lv0 雷達外→Lv1 已上雷達（首掃）→Lv2 開始監測（連結品牌+首次 aivis 掃描）→Lv3 被 AI 看見（近 90 天品類題被提及）→Lv4 進入推薦名單（90 天曝光率 ≥30%）→Lv5 同類領先（≥50% 或領先觀察名單）。**每級都是可驗證真實事件、無虛構分數**（誠實線）。UI：AppOverview 頁首下等級條（目前級＋六格階梯 hover 看條件＋下一級具體條件含目前進度%）。取代「使用者積分」思維（等級掛品牌、慶祝品牌變強）；經典版 GamifyRail 不動、硬切時退役。**🟠 第一批 6 項全部完成**（競品比較/來源影響力/AI 講錯你/Pro 模糊鎖定/品牌切換器/徽章系統/品牌等級）。
+
 ### 2026-08-13l（🟠 第一批 #5：統一狀態徽章系統 — 已部署）
 
 新 [Badge.jsx](src/components/appshell/Badge.jsx) ＋ `.as-badge-*` 八種語彙（new 綠/beta 藍紫/pro 橘/agency 靛/nodata 灰/waiting 灰虛線/error 紅/sample 灰底）——同狀態同字同色（Codex 規格）。AppVisibility 既有 5 處 as-vis-beta span 換裝；語彙寫進 AGENTS.md §1 防手刻。

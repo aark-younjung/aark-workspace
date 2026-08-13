@@ -108,6 +108,20 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-badge-error{background:rgba(180,35,31,.08);color:#b4231f;border:1px solid rgba(180,35,31,.3);}      /* 引擎異常 */
 .appshell .as-badge-sample{background:var(--surface-3);color:var(--ink-2);border:1px solid var(--line-2);}        /* 示例資料 */
 
+/* ── 品牌 AI 能見度等級條（里程碑制・雷達隱喻）── */
+.appshell .as-level{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin-bottom:16px;box-shadow:var(--sh-sm);}
+.appshell .as-level .cur{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);}
+.appshell .as-level .cur .ic{font-size:18px;}
+/* 六格階梯：已達成亮橘、未達成灰；滑鼠停留看各級條件（title） */
+.appshell .as-level .ladder{display:flex;gap:4px;}
+.appshell .as-level .ladder i{width:22px;height:6px;border-radius:3px;background:var(--surface-3);}
+.appshell .as-level .ladder i.on{background:var(--accent);}
+/* 下一級提示：具體條件＋目前進度，是等級條的「行動出口」 */
+.appshell .as-level .nx{font-size:12.5px;color:var(--ink-2);line-height:1.6;}
+.appshell .as-level .nx b{color:var(--accent-2);}
+.appshell .as-level .nx.top{color:#059669;font-weight:700;}
+
 /* aivis 主角卡 */
 .appshell .as-truth{padding:26px;box-shadow:var(--sh);border-radius:var(--r-xl);display:grid;grid-template-columns:auto 1fr;
   gap:28px;align-items:center;position:relative;overflow:hidden;}

@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { hostLabel } from '../../lib/url'
 import { isHomepage } from '../../lib/pageAudit'
-import { coreExposureRates } from './aivisData'
+import { coreExposureRates, buildCompetitorComparison } from './aivisData'
+import { computeBrandLevel, BRAND_LEVELS } from './brandLevel'
 import { buildHealthChecks } from './healthData'
 import MetricGlossary from './MetricGlossary'
 import SiteSwitcher from './SiteSwitcher'
@@ -51,6 +52,7 @@ export default function AppOverview() {
   const [audits, setAudits] = useState({})   // 各面向最新完整 audit row（給分數 + 行動卡）
   const [brand, setBrand] = useState(null)   // 連結的 aivis 品牌（靠 website_id）或 null
   const [aivisRate, setAivisRate] = useState(null) // 近 30 天品類推薦曝光率（無資料 = null）
+  const [aivisRaw, setAivisRaw] = useState(null)   // 90 天題庫+回應（品牌等級判定用）
 
   useEffect(() => {
     if (!websiteId) return
@@ -65,7 +67,7 @@ export default function AppOverview() {
 
         const [seo, aeo, geo, eeat, br] = await Promise.all([
           ...DIMS.map(d => supabase.from(d.table).select('*').eq('website_id', websiteId).order('created_at', { ascending: false }).limit(1)),
-          supabase.from('aivis_brands').select('id, name').eq('website_id', websiteId).limit(1),
+          supabase.from('aivis_brands').select('*').eq('website_id', websiteId).limit(1),
         ])
         if (cancelled) return
         setAudits({
@@ -79,7 +81,7 @@ export default function AppOverview() {
 
         // 有連結品牌 → 抓近 30 天題庫+回應算真曝光率（共用聚合，與 AI 曝光監測數字一致）
         if (linkedBrand) {
-          const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
+          const since = new Date(Date.now() - 90 * 86_400_000).toISOString()  // 等級判定看 90 天；30 天儀表由聚合函式自己切窗
           const [promptResult, responseResult] = await Promise.all([
             supabase.from('aivis_prompts').select('id, brand_id, tier, is_active').eq('brand_id', linkedBrand.id),
             supabase.from('aivis_responses')
@@ -87,8 +89,11 @@ export default function AppOverview() {
               .eq('brand_id', linkedBrand.id).gte('created_at', since),
           ])
           if (!cancelled && !promptResult.error && !responseResult.error) {
-            const rates = coreExposureRates({ prompts: promptResult.data || [], responses: responseResult.data || [], rangeDays: 30 })
+            const prompts = promptResult.data || []
+            const responses = responseResult.data || []
+            const rates = coreExposureRates({ prompts, responses, rangeDays: 30 })
             setAivisRate(rates.get(linkedBrand.id) ?? null)
+            setAivisRaw({ prompts, responses })   // 品牌等級用（90 天窗）
           }
         } else {
           setAivisRate(null)
@@ -115,6 +120,28 @@ export default function AppOverview() {
   const onHome = isHomepage(website.url)
   const topActions = buildTopActions(audits, onHome, websiteId)
 
+  // 品牌 AI 能見度等級（里程碑事件制）：全部從真實資料判定，逐級解鎖
+  const rate90 = (() => {
+    if (!brand || !aivisRaw) return null
+    const rates = coreExposureRates({ prompts: aivisRaw.prompts, responses: aivisRaw.responses, rangeDays: 90 })
+    return rates.get(brand.id) ?? null
+  })()
+  const leadsWatchlist = (() => {
+    if (!brand?.competitors?.length || !aivisRaw) return false
+    const comparison = buildCompetitorComparison({
+      competitors: brand.competitors, prompts: aivisRaw.prompts, responses: aivisRaw.responses,
+      mentions: [], rangeDays: 90,
+    })
+    return Boolean(comparison && comparison.basis > 0 && comparison.rows.every(row => row.rate <= comparison.own.rate))
+  })()
+  const level = computeBrandLevel({
+    hasAudit: DIMS.some(d => audits[d.key]),
+    hasBrand: Boolean(brand),
+    hasAivisScan: Boolean(aivisRaw?.responses?.length),
+    rate90,
+    leadsWatchlist,
+  })
+
   // 儀表弧線：r=60、周長 ≈ 377；有真實曝光率才畫（不捏造）
   const CIRC = 2 * Math.PI * 60
 
@@ -122,6 +149,24 @@ export default function AppOverview() {
     <>
       <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
       <div className="as-phead"><h2>總覽</h2><span className="sub">{title} 在 AI 眼中的整體狀態</span></div>
+
+      {/* 品牌 AI 能見度等級（里程碑事件制・雷達隱喻）：每一級都是可驗證的真實事件、逐級解鎖 */}
+      <div className="as-level" role="group" aria-label={`品牌 AI 能見度等級：Lv.${level.current.lv} ${level.current.name}`}>
+        <div className="cur"><span className="ic" aria-hidden="true">{level.current.icon}</span><b>Lv.{level.current.lv}　{level.current.name}</b></div>
+        <div className="ladder" aria-hidden="true">
+          {BRAND_LEVELS.map(item => (
+            <i key={item.lv} className={item.lv <= level.current.lv ? 'on' : ''} title={`Lv.${item.lv} ${item.name}：${item.condition}`} />
+          ))}
+        </div>
+        {level.next ? (
+          <div className="nx">
+            下一級 <b>Lv.{level.next.lv} {level.next.name}</b>：{level.next.condition}
+            {(level.next.lv === 4 || level.next.lv === 5) && rate90 != null && <span className="num">（目前 {rate90}%）</span>}
+          </div>
+        ) : (
+          <div className="nx top">已達最高等級——維持住，AI 的世界每週都在變 🏆</div>
+        )}
+      </div>
 
       {/* aivis 主角卡 — 誠實：有掃描資料顯示真曝光率；連結了但沒掃顯示接資料中；沒連結就設定 */}
       {brand ? (
