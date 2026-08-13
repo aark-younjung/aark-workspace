@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { hostLabel } from '../../lib/url'
 import { aivisQuotaFor } from '../../lib/limits'
-import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, buildBrandVoice, ENGINE_KEYS, ENGINE_META } from './aivisData'
+import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, buildBrandVoice, SOURCE_CATEGORY_LABEL, ENGINE_KEYS, ENGINE_META } from './aivisData'
 import SiteSwitcher from './SiteSwitcher'
 import Badge from './Badge'
 
@@ -518,13 +518,22 @@ export default function AppVisibility() {
           <div className="as-vis-inline-state">本期回答沒有附引用來源（部分引擎或較舊掃描不回傳來源）。</div>
         ) : (
           <>
+            {/* 分類摘要：全部來源網域的組成（清單式判定、透明可解釋；沒中清單的算一般網站） */}
+            <div className="as-vis-src-summary">
+              共 <b className="num">{influence.totalHosts}</b> 個來源網域：
+              {Object.entries(influence.categoryCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([category, count]) => (
+                  <span key={category} className={`sc${category === 'own' ? ' own' : ''}`}>{SOURCE_CATEGORY_LABEL[category]} <b className="num">{count}</b></span>
+                ))}
+            </div>
             <ol className="as-vis-src-list">
               {influence.items.map((item, index) => (
                 <li key={item.host}>
                   <span className="rank num">{index + 1}</span>
                   <span className="host" translate="no">{item.host}</span>
-                  {item.isOwn && <span className="stag own">你的網站</span>}
-                  {item.isSocial && <span className="stag">社群</span>}
+                  {item.category === 'own' && <span className="stag own">你的網站</span>}
+                  {item.category !== 'own' && item.category !== 'general' && <span className="stag">{SOURCE_CATEGORY_LABEL[item.category]}</span>}
                   <span className="cnt num">被引用於 {item.promptCount} 題 · {item.answers} 個回答</span>
                 </li>
               ))}

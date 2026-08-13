@@ -177,8 +177,37 @@ export function buildCompetitorComparison({ competitors = [], prompts = [], resp
   return { basis, own: { rate: ownRate, mentioned: ownMentioned }, rows }
 }
 
-// 社群平台網域：來源影響力清單用來標記（社群連結≠內容型權威來源）
+// ── 來源分類清單（2026-08-13 第二批 #5）──
+// 原則：清單式判定、透明可解釋；刻意不做「低品質/內容農場」標籤（對特定網站下負面標籤有毀謗風險，
+// 且無法機械驗證——Kuroma 有這功能、我們不跟）。清單不完整很正常，沒中的就標「一般網站」。
 const SOCIAL_SOURCE_HOSTS = ['facebook.com', 'instagram.com', 'youtube.com', 'line.me', 'tiktok.com', 'threads.net', 'linkedin.com', 'x.com', 'twitter.com', 'pinterest.com']
+// 台灣常見新聞媒體（+ 主要入口網）
+const NEWS_SOURCE_HOSTS = ['udn.com', 'chinatimes.com', 'ltn.com.tw', 'ettoday.net', 'tvbs.com.tw', 'setn.com', 'storm.mg', 'cna.com.tw', 'businessweekly.com.tw', 'cw.com.tw', 'technews.tw', 'inside.com.tw', 'bnext.com.tw', 'yahoo.com', 'nownews.com', 'newtalk.tw']
+// 論壇／UGC／部落格平台
+const FORUM_SOURCE_HOSTS = ['ptt.cc', 'dcard.tw', 'mobile01.com', 'pixnet.net', 'medium.com', 'vocus.cc', 'blogspot.com', 'reddit.com', 'wordpress.com']
+// 百科／知識庫
+const WIKI_SOURCE_HOSTS = ['wikipedia.org', 'wikimedia.org', 'baike.baidu.com']
+
+const SOURCE_CATEGORY_LABEL = {
+  own: '你的網站', social: '社群', news: '新聞媒體', forum: '論壇・UGC', wiki: '百科', gov_edu: '政府・學術', general: '一般網站',
+}
+
+function matchHostList(host, list) {
+  return list.some(domain => host === domain || host.endsWith(`.${domain}`))
+}
+
+// 來源網域分類：own 優先，再走清單；政府/學術看 TLD（.gov/.edu 系）
+function classifySourceHost(host, ownHost) {
+  if (ownHost && hostMatches(host, ownHost)) return 'own'
+  if (matchHostList(host, SOCIAL_SOURCE_HOSTS)) return 'social'
+  if (matchHostList(host, NEWS_SOURCE_HOSTS)) return 'news'
+  if (matchHostList(host, FORUM_SOURCE_HOSTS)) return 'forum'
+  if (matchHostList(host, WIKI_SOURCE_HOSTS)) return 'wiki'
+  if (/\.(gov|edu)(\.[a-z]{2})?$/.test(host)) return 'gov_edu'
+  return 'general'
+}
+
+export { SOURCE_CATEGORY_LABEL }
 
 /**
  * 誰在影響 AI 的答案（來源影響力）：彙整既有回答附帶的「真實引用來源」網域，
@@ -208,6 +237,14 @@ export function buildSourceInfluence({ brand, responses = [], rangeDays = 90, to
     }
   }
 
+  // 分類統計看「全部來源網域」（不只 top N），摘要才誠實
+  const categoryCounts = {}
+  for (const entry of byHost.values()) {
+    const category = classifySourceHost(entry.host, ownHost)
+    entry.category = category
+    categoryCounts[category] = (categoryCounts[category] || 0) + 1
+  }
+
   const items = [...byHost.values()]
     .sort((a, b) => b.answers - a.answers || a.host.localeCompare(b.host))
     .slice(0, topN)
@@ -215,10 +252,11 @@ export function buildSourceInfluence({ brand, responses = [], rangeDays = 90, to
       host: entry.host,
       answers: entry.answers,
       promptCount: entry.prompts.size,
-      isOwn: Boolean(ownHost) && hostMatches(entry.host, ownHost),
-      isSocial: SOCIAL_SOURCE_HOSTS.some(domain => entry.host === domain || entry.host.endsWith(`.${domain}`)),
+      category: entry.category,
+      isOwn: entry.category === 'own',
+      isSocial: entry.category === 'social',
     }))
-  return { answersWithSources, items }
+  return { answersWithSources, items, totalHosts: byHost.size, categoryCounts }
 }
 
 /**
