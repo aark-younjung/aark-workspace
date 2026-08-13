@@ -315,6 +315,9 @@ html.dark-theme .appshell textarea::placeholder{
   font-size:14px;line-height:1;padding:2px 6px;border-radius:99px;}
 .appshell .as-vis-comp-editor .chip button:hover{background:rgba(255,110,52,.18);}
 .appshell .as-vis-comp-editor .chip button:focus-visible{outline:2px solid rgba(130,152,255,.55);}
+/* KPI 卡上的觀察名單一排：沿用引擎分率排版、可換行（名字長也擠得下） */
+.appshell .as-vis-watchlist{flex-wrap:wrap;row-gap:4px;margin-top:8px;}
+.appshell .as-vis-watchlist>span{white-space:nowrap;}
 /* KPI 卡裡的「設定 →」小錨點連結 */
 .appshell .as-vis-anchor{color:var(--accent-2);font-weight:750;text-decoration:none;}
 .appshell .as-vis-anchor:hover{text-decoration:underline;}

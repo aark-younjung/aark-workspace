@@ -265,18 +265,30 @@ export default function AppVisibility() {
                 <div className="value small num">{leader.rate}%</div>
                 <p>
                   <b translate="no">{leader.name}</b>{leader.you ? '（你）目前領先觀察名單 🎉' : ` 領先你 ${leader.rate - comparison.own.rate} 個百分點`}
-                  ，明細見下方競品同題比較。
                 </p>
+                {/* 觀察名單全員直接列在第一屏：你＋每個競品的提及率（同引擎分率排的樣式） */}
+                <div className="as-vis-engine-rates as-vis-watchlist">
+                  <span><span translate="no">{state.brand.name}</span>（你） <b className="num">{comparison.own.rate}%</b></span>
+                  {comparison.rows.map(row => (
+                    <span key={row.name}><span translate="no">{row.name}</span> <b className="num">{row.rate}%</b></span>
+                  ))}
+                </div>
               </>
             )
           })() : (
             <>
               <div className="value small pending">{state.brand.competitors?.length ? '接資料中' : '未設定'}</div>
+              {/* 已設定但還沒資料：名單本身也先亮出來，讓用戶確認設了誰 */}
+              {state.brand.competitors?.length > 0 && (
+                <div className="as-vis-engine-rates as-vis-watchlist">
+                  {state.brand.competitors.map(name => <span key={name} translate="no">{name}</span>)}
+                </div>
+              )}
               <p>
                 {state.brand.competitors?.length
                   ? '觀察名單已設定；等本期掃描有可比對的回答原文後顯示。'
                   : '設定競品觀察名單（最多 3 個），用同一批 AI 回答比較提及率——不猜、不捏造。'}
-                {' '}<a href="#vis-competitors" className="as-vis-anchor">設定 →</a>
+                {' '}<a href="#vis-competitors" className="as-vis-anchor">{state.brand.competitors?.length ? '編輯 →' : '設定 →'}</a>
               </p>
             </>
           )}
