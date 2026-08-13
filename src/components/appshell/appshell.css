@@ -366,6 +366,39 @@ html.dark-theme .appshell textarea::placeholder{
 /* KPI 卡裡的「設定 →」小錨點連結 */
 .appshell .as-vis-anchor{color:var(--accent-2);font-weight:750;text-decoration:none;}
 .appshell .as-vis-anchor:hover{text-decoration:underline;}
+/* ── 監測題目管理（PromptManager）── */
+.appshell .as-pm{padding:22px;margin-bottom:16px;}
+.appshell .as-pm .sub{font-size:13px;color:var(--ink-3);margin-left:8px;}
+/* 操作通知列：成功綠／警告琥珀（含額度不足訊息，誠實透傳後端原因） */
+.appshell .as-pm-notice{font-size:13.5px;line-height:1.6;padding:10px 14px;border-radius:10px;margin-bottom:12px;}
+.appshell .as-pm-notice.ok{background:rgba(5,150,105,.07);border:1px solid rgba(5,150,105,.25);color:#047857;}
+.appshell .as-pm-notice.warn{background:#fffaf0;border:1px solid #f0d9ae;color:#8a6d3b;}
+/* 各層區塊：人話標題＋規則副標＋新增鈕 */
+.appshell .as-pm-tier{margin-bottom:18px;}
+.appshell .as-pm-tier .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.appshell .as-pm-tier .th b{font-size:14.5px;}
+.appshell .as-pm-tier .th span{font-size:12.5px;color:var(--ink-3);flex:1;min-width:200px;}
+.appshell .as-pm-tier ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.appshell .as-pm-tier li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;
+  padding:9px 12px;flex-wrap:wrap;}
+/* 停用題整列降透明——一眼分清啟用/停用（另有文字開關雙保險） */
+.appshell .as-pm-tier li.off{opacity:.55;}
+.appshell .as-pm-tier .q{font-size:14px;color:var(--ink);line-height:1.6;flex:1;min-width:220px;}
+.appshell .as-pm-tier .ug{font-size:10px;font-weight:800;color:var(--pop);border:1px solid rgba(130,152,255,.4);
+  padding:1px 7px;border-radius:99px;}
+.appshell .as-pm-tier .ops{display:flex;gap:6px;margin-left:auto;}
+.appshell .as-pm-tier .op{font-family:var(--font);font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:8px;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);cursor:pointer;}
+.appshell .as-pm-tier .op:hover{border-color:var(--ink-3);}
+.appshell .as-pm-tier .op.sw.on{background:rgba(5,150,105,.08);color:#059669;border-color:rgba(5,150,105,.3);}
+.appshell .as-pm-tier .op:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
+/* 行內編輯：輸入框＋儲存/取消 */
+.appshell .as-pm-tier .edit{display:flex;gap:8px;flex:1;flex-wrap:wrap;}
+.appshell .as-pm-tier .edit input{flex:1;min-width:240px;font-family:var(--font);font-size:14px;padding:8px 12px;
+  border:1px solid var(--line-2);border-radius:9px;}
+.appshell .as-pm-tier .edit .as-cta{margin-top:0;padding:8px 14px;font-size:13px;}
+.appshell .as-pm .foot a{color:var(--accent-2);}
+
 /* ── 品牌資料完整度（進度條＋缺項清單）── */
 .appshell .as-vis-completeness{padding:16px 20px;margin-bottom:16px;}
 .appshell .as-vis-completeness .head{display:flex;align-items:center;gap:12px;margin-bottom:8px;}

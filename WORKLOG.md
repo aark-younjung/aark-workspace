@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13y（硬切前置 #3：aivis 題庫管理搬進新版「監測題目」分頁 — 已部署）
+
+新 [aivisScanService.js](src/services/aivisScanService.js)（四層分流 buildScanTargets＋逐條 fetch 的 runAivisScan；常數與經典版對齊、額度攔截交後端執法＋錯誤誠實透傳）＋ [PromptManager.jsx](src/components/appshell/PromptManager.jsx)（人話分層呈現：客戶找服務時的問題/長尾輪替/AI 認不認得你/知識題——Codex IA「內部術語不當導覽」兌現）。功能全搬：啟停（core cap 10 保護＋回滾）/行內編輯（標 generated_by=user）/新增自訂題（core 佔上限、info 進池）/▶ 執行掃描（進度 N/M、完成 3 秒後重載）。自動重生題庫連回經典版（generate-prompts 需 token、暫不搬）。VIS_TABS 五分頁：監測總覽/監測題目/競品比較/引用來源/AI 怎麼說你。**硬切前置只剩：舊 URL 1:1 轉址。**
+
 ### 2026-08-13x（硬切前置 #2：PDF 匯出搬進新版 — 已部署）
 
 新版 AppOverview 頁首動作群加「📄 客戶報告」「📋 6 週清單」——**直接沿用經典版同兩個 modal 元件**（ClientReportModal / LLMOChecklistModal，零重寫），資料吃本頁已載入的四大 audit。硬切前置剩：aivis 題庫管理搬遷 → 舊 URL 1:1 轉址。

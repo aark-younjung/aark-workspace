@@ -7,11 +7,13 @@ import { aivisQuotaFor } from '../../lib/limits'
 import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, buildBrandVoice, SOURCE_CATEGORY_LABEL, ENGINE_KEYS, ENGINE_META } from './aivisData'
 import SiteSwitcher from './SiteSwitcher'
 import Badge from './Badge'
+import PromptManager from './PromptManager'
 
 // 分頁（2026-08-13 用戶提案：區塊多到該分頁了，比照網站體檢＝真 URL 深連結）
 // 原則：每個分頁都是「已存在的內容」，不蓋空殼；期間切換與管理按鈕留在頁首跨分頁通用
 const VIS_TABS = [
   { key: 'overview', label: '監測總覽' },  // 2026-08-13 改名：與左選單「總覽」撞名、用戶真的走錯過
+  { key: 'prompts', label: '監測題目' },   // 硬切前置 #3：題庫管理搬進新版
   { key: 'competitors', label: '競品比較' },
   { key: 'sources', label: '引用來源' },
   { key: 'voice', label: 'AI 怎麼說你' },
@@ -423,6 +425,15 @@ export default function AppVisibility() {
       })()}
 
       </>)}
+
+      {selectedTab === 'prompts' && (
+        <PromptManager
+          brand={state.brand}
+          prompts={state.prompts}
+          userId={user?.id}
+          onPromptsChange={fn => setState(current => ({ ...current, prompts: fn(current.prompts) }))}
+        />
+      )}
 
       {selectedTab === 'competitors' && (<>
       {/* 競品同題比較（2026-08-13 第一批）：觀察名單 × 既有回答原文比對——零額外掃描、同一標準 */}
