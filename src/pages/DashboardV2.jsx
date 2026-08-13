@@ -442,6 +442,20 @@ export default function DashboardV2() {
           rescanning={scanning}
         />
 
+        {/* ─── 新版介面 Beta 入口（2026-08-13 soft launch）：並行不轉址、隨時可切回 ─── */}
+        <Link
+          to={`/app/${id}/overview`}
+          className="mb-4 p-3 rounded-xl flex items-center justify-between gap-3 flex-wrap no-underline transition-opacity hover:opacity-90"
+          style={{ background: 'linear-gradient(90deg, rgba(255,110,52,.12), rgba(130,152,255,.1))', border: '1px solid rgba(255,110,52,.3)' }}
+        >
+          <div className="text-sm text-white">
+            ✨ <span className="font-bold">新版介面搶先看</span>
+            <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/25 border border-orange-400/50 text-orange-200 align-middle">BETA</span>
+            <span className="ml-2 text-white/55">亮色儀表板・資料同步・看完可隨時切回這裡</span>
+          </div>
+          <span className="text-sm font-bold text-orange-300 whitespace-nowrap">開啟新版 →</span>
+        </Link>
+
         {/* Gap 1（2026-06-05）— 還沒掃過任何網站 = 顯示 onboarding 空狀態、不渲染下方所有資料卡
             觸發條件：4 大 audit + content 全部 null（新用戶剛建 website 還沒跑分析） */}
         {!seoAudit && !aeoAudit && !geoAudit && !eeatAudit && !contentLatest ? (

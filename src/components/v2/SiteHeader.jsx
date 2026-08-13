@@ -36,6 +36,12 @@ export default function SiteHeader() {
             {isAgency && (
               <Link to="/clients" className="text-white hover:text-orange-300 transition-colors text-sm font-semibold">🤝 我的客戶</Link>
             )}
+            {/* 新版介面 Beta 入口（2026-08-13 soft launch）：並行不轉址、登入者可自由切換 */}
+            {user && (
+              <Link to="/app/websites" className="text-white hover:text-orange-300 transition-colors text-sm font-semibold">
+                ✨ 新版介面 <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/25 border border-orange-400/50 text-orange-200 align-middle">BETA</span>
+              </Link>
+            )}
             <Link to="/showcase" className="text-white hover:text-orange-300 transition-colors text-sm">排行榜</Link>
             <Link to="/compare" className="text-white hover:text-orange-300 transition-colors text-sm">競品比較</Link>
             <Link to="/pricing" className="text-white hover:text-orange-300 transition-colors text-sm">定價</Link>
@@ -73,6 +79,10 @@ export default function SiteHeader() {
 
         {/* 手機版 nav — 橫向滾動 */}
         <div className="md:hidden flex items-center gap-1 pb-2 overflow-x-auto scrollbar-hide">
+          {/* 新版介面 Beta 入口（登入者限定，與桌機 nav 同步） */}
+          {user && (
+            <Link to="/app/websites" className="flex-shrink-0 px-3 py-1 text-sm text-orange-300 font-semibold hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap">✨ 新版 BETA</Link>
+          )}
           {[
             ['/showcase', '排行榜'], ['/compare', '競品比較'],
             ['/pricing', '定價'], ['/content-audit', '文章分析'], ['/faq', 'FAQ'],

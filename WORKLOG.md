@@ -6,6 +6,14 @@
 
 ---
 
+### 2026-08-13g（🚀 改版 Beta 並行上線 — 已部署、對用戶可見）
+
+**上線方式（用戶拍板）：Beta 並行入口、不轉址**——因重新掃描/PDF 匯出/aivis 管理仍在舊頁，硬切轉址＝功能退步；等三者搬進新版後再做 1:1 轉址硬切。三個接點：
+1. [SiteHeader](src/components/v2/SiteHeader.jsx)：桌機＋手機 nav 加「✨ 新版介面 BETA」→ `/app/websites`（登入者限定）
+2. [DashboardV2](src/pages/DashboardV2.jsx)：TopBar 下加 Beta banner「新版介面搶先看・資料同步・隨時可切回」→ `/app/:id/overview`
+3. [AppShell](src/components/appshell/AppShell.jsx)：側欄底部加「← 回經典版」（有網站脈絡回該站儀表板）
+**硬切前置清單（下一階段）**：重新掃描抽共用 scan service 接進新版總覽、PDF 匯出入口、aivis 管理/掃描搬遷 → 然後 `/dashboard/:id` 等舊 URL 1:1 轉址。
+
 ### 2026-08-13f（改版 IA 修正案：內容機會改名收編 + 帳號移左下 — 已部署、仍藏 /app/*）
 
 Kuroma 三方對照後用戶拍板兩案：
