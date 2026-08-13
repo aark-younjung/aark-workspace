@@ -307,6 +307,14 @@ html.dark-theme .appshell textarea::placeholder{
   border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--ink);}
 .appshell .as-vis-comp-editor input:focus-visible{outline:3px solid rgba(130,152,255,.45);outline-offset:1px;}
 .appshell .as-vis-comp-editor .err{margin-top:8px;font-size:12px;color:#b4231f;}
+/* 已加入的競品 chips：可單獨刪除（× 鈕 hit target 夠大） */
+.appshell .as-vis-comp-editor .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.appshell .as-vis-comp-editor .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+  background:var(--accent-soft);color:var(--accent-2);border:1px solid rgba(255,110,52,.3);padding:4px 6px 4px 12px;border-radius:99px;}
+.appshell .as-vis-comp-editor .chip button{border:none;background:none;cursor:pointer;color:var(--accent-2);
+  font-size:14px;line-height:1;padding:2px 6px;border-radius:99px;}
+.appshell .as-vis-comp-editor .chip button:hover{background:rgba(255,110,52,.18);}
+.appshell .as-vis-comp-editor .chip button:focus-visible{outline:2px solid rgba(130,152,255,.55);}
 /* KPI 卡裡的「設定 →」小錨點連結 */
 .appshell .as-vis-anchor{color:var(--accent-2);font-weight:750;text-decoration:none;}
 .appshell .as-vis-anchor:hover{text-decoration:underline;}

@@ -174,12 +174,24 @@ export default function AppVisibility() {
     rangeDays,
   }), [state.brand, state.responses, rangeDays])
 
-  // 競品觀察名單編輯器（單一逗號分隔輸入、最多 3 個）
-  const [compEditor, setCompEditor] = useState({ open: false, value: '', busy: false, error: '' })
-  async function saveCompetitors(event) {
-    event.preventDefault()
-    const names = [...new Set(compEditor.value.split(/[,，、]/).map(item => item.trim()).filter(Boolean))].slice(0, 3)
-    setCompEditor(current => ({ ...current, busy: true, error: '' }))
+  // 競品觀察名單編輯器（chips 式：逐筆加入、可單獨刪除，最多 3 個）
+  // 2026-08-13 修：原本單一逗號分隔輸入，按 Enter 會直接送出表單、只存到一筆 → 改逐筆 chip
+  const [compEditor, setCompEditor] = useState({ open: false, names: [], draft: '', busy: false, error: '' })
+
+  // 把輸入框的字加進名單（也容忍用戶貼上逗號分隔的一串）
+  function addDraft() {
+    setCompEditor(current => {
+      const incoming = current.draft.split(/[,，、]/).map(item => item.trim()).filter(Boolean)
+      const names = [...new Set([...current.names, ...incoming])].slice(0, 3)
+      return { ...current, names, draft: '' }
+    })
+  }
+
+  async function saveCompetitors() {
+    // 輸入框還有沒按「加入」的字 → 自動收進去再存（用戶常打完直接按儲存）
+    const pending = compEditor.draft.split(/[,，、]/).map(item => item.trim()).filter(Boolean)
+    const names = [...new Set([...compEditor.names, ...pending])].slice(0, 3)
+    setCompEditor(current => ({ ...current, names, draft: '', busy: true, error: '' }))
     const { error } = await supabase.from('aivis_brands').update({ competitors: names }).eq('id', state.brand.id)
     if (error) {
       // 欄位還沒建（需跑 SQL）或 RLS 未開放更新 → 誠實顯示原因，不默默失敗
@@ -188,7 +200,7 @@ export default function AppVisibility() {
       return
     }
     setState(current => ({ ...current, brand: { ...current.brand, competitors: names } }))
-    setCompEditor({ open: false, value: '', busy: false, error: '' })
+    setCompEditor({ open: false, names: [], draft: '', busy: false, error: '' })
   }
 
   if (state.loading) return <div className="as-loading" aria-live="polite">載入中…</div>
@@ -297,26 +309,40 @@ export default function AppVisibility() {
       <section className="as-card as-vis-compare" id="vis-competitors">
         <div className="as-vis-section-head">
           <div><h3>競品同題比較</h3><span className="as-vis-beta">BETA</span></div>
-          <button type="button" className="as-vis-line-button" onClick={() => setCompEditor(current => ({ ...current, open: !current.open, value: (state.brand.competitors || []).join(', ') }))}>
+          <button type="button" className="as-vis-line-button" onClick={() => setCompEditor(current => ({ ...current, open: !current.open, names: state.brand.competitors || [], draft: '', error: '' }))}>
             {state.brand.competitors?.length ? '編輯觀察名單' : '＋ 設定觀察名單'}
           </button>
         </div>
 
         {compEditor.open && (
-          <form className="as-vis-comp-editor" onSubmit={saveCompetitors}>
-            <label htmlFor="comp-input">競品名稱（最多 3 個，用逗號分隔；用 AI 回答會寫出的正式名稱效果最好）</label>
+          <div className="as-vis-comp-editor">
+            <label htmlFor="comp-input">競品名稱（最多 3 個，一次輸入一個按「加入」；用 AI 回答會寫出的正式名稱效果最好）</label>
+            {/* 已加入的名單：chips 可單獨刪除 */}
+            {compEditor.names.length > 0 && (
+              <div className="chips">
+                {compEditor.names.map(name => (
+                  <span className="chip" key={name} translate="no">
+                    {name}
+                    <button type="button" aria-label={`移除 ${name}`} onClick={() => setCompEditor(current => ({ ...current, names: current.names.filter(item => item !== name) }))}>×</button>
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="row">
               <input
                 id="comp-input"
                 type="text"
-                value={compEditor.value}
-                onChange={event => setCompEditor(current => ({ ...current, value: event.target.value }))}
-                placeholder="例：品牌甲, 品牌乙…"
+                value={compEditor.draft}
+                onChange={event => setCompEditor(current => ({ ...current, draft: event.target.value }))}
+                onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addDraft() } }}
+                placeholder={compEditor.names.length >= 3 ? '已達 3 個上限（可先移除再加）' : '例：品牌甲…'}
+                disabled={compEditor.names.length >= 3 && !compEditor.draft}
               />
-              <button className="as-cta" type="submit" disabled={compEditor.busy}>{compEditor.busy ? '儲存中…' : '儲存名單'}</button>
+              <button className="as-vis-line-button" type="button" onClick={addDraft} disabled={!compEditor.draft.trim() || compEditor.names.length >= 3}>＋ 加入</button>
+              <button className="as-cta" type="button" onClick={saveCompetitors} disabled={compEditor.busy}>{compEditor.busy ? '儲存中…' : `儲存名單（${compEditor.names.length + (compEditor.draft.trim() ? 1 : 0)}）`}</button>
             </div>
             {compEditor.error && <div className="err" role="alert">{compEditor.error}</div>}
-          </form>
+          </div>
         )}
 
         {!state.brand.competitors?.length ? (
