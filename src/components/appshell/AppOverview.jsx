@@ -7,6 +7,7 @@ import { isHomepage } from '../../lib/pageAudit'
 import { coreExposureRates, buildCompetitorComparison } from './aivisData'
 import { computeBrandLevel, BRAND_LEVELS } from './brandLevel'
 import { runFullScan } from '../../services/scanService'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import ClientReportModal from '../v2/ClientReportModal'
 import LLMOChecklistModal from '../v2/LLMOChecklistModal'
 import { buildHealthChecks } from './healthData'
@@ -59,6 +60,7 @@ export default function AppOverview() {
   const [loading, setLoading] = useState(true)
   const [website, setWebsite] = useState(null)
   const [audits, setAudits] = useState({})   // 各面向最新完整 audit row（給分數 + 行動卡）
+  const [histories, setHistories] = useState({ seo: [], aeo: [], geo: [], eeat: [] }) // 近 10 筆（升冪）：趨勢圖用
   const [brand, setBrand] = useState(null)   // 連結的 aivis 品牌（靠 website_id）或 null
   const [aivisRate, setAivisRate] = useState(null) // 近 30 天品類推薦曝光率（無資料 = null）
   const [aivisRaw, setAivisRaw] = useState(null)   // 90 天題庫+回應（品牌等級判定用）
@@ -79,7 +81,7 @@ export default function AppOverview() {
         setWebsite(w || null)
 
         const [seo, aeo, geo, eeat, br] = await Promise.all([
-          ...DIMS.map(d => supabase.from(d.table).select('*').eq('website_id', websiteId).order('created_at', { ascending: false }).limit(1)),
+          ...DIMS.map(d => supabase.from(d.table).select('*').eq('website_id', websiteId).order('created_at', { ascending: false }).limit(10)),
           supabase.from('aivis_brands').select('*').eq('website_id', websiteId).limit(1),
         ])
         if (cancelled) return
@@ -88,6 +90,13 @@ export default function AppOverview() {
           aeo:  aeo.data?.[0]  || null,
           geo:  geo.data?.[0]  || null,
           eeat: eeat.data?.[0] || null,
+        })
+        // 趨勢圖資料：近 10 筆轉升冪（最舊在前），對齊方式與經典版 TrendChart 相同
+        setHistories({
+          seo:  [...(seo.data  || [])].reverse(),
+          aeo:  [...(aeo.data  || [])].reverse(),
+          geo:  [...(geo.data  || [])].reverse(),
+          eeat: [...(eeat.data || [])].reverse(),
         })
         const linkedBrand = br.data?.[0] || null
         setBrand(linkedBrand)
@@ -196,6 +205,16 @@ export default function AppOverview() {
     hasAivisScan: Boolean(aivisRaw?.responses?.length),
     rate90,
     leadsWatchlist,
+  })
+
+  // 趨勢圖資料（搬自經典版 TrendChart 的對齊法：以 SEO 序列為基準、其餘面向按「距最新的偏移」對齊）
+  const trendData = histories.seo.map((row, index) => {
+    const offset = histories.seo.length - 1 - index
+    const pick = list => list[list.length - 1 - offset]?.score ?? null
+    return {
+      name: new Date(row.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }),
+      SEO: row.score, AEO: pick(histories.aeo), GEO: pick(histories.geo), 'E-E-A-T': pick(histories.eeat),
+    }
   })
 
   // 儀表弧線：r=60、周長 ≈ 377；有真實曝光率才畫（不捏造）
@@ -332,7 +351,33 @@ export default function AppOverview() {
       <MetricGlossary />
 
       {/* 改前/改後 — 誠實 placeholder，不假造趨勢 */}
-      <div className="as-stub">📈 <b>改前 / 改後進展</b>：需要至少兩次掃描才能比較。接上趨勢資料後，這裡會顯示「你改了什麼 → AI 能見度怎麼變」。（建置中）</div>
+      {/* 改前/改後：≥2 次掃描畫真實四面向走勢（搬自經典版趨勢圖、亮色化）；不足維持誠實 stub */}
+      {trendData.length > 1 ? (
+        <div className="as-card as-trend">
+          <div className="th"><b>📈 改前 / 改後進展</b><span>近 {trendData.length} 次掃描的四面向走勢——你改了什麼、分數怎麼動</span></div>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={trendData} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
+              <CartesianGrid stroke="rgba(0,0,62,.06)" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#9a9aad' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#9a9aad' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: '#fff', border: '1px solid rgba(0,0,62,.14)', borderRadius: 10, fontSize: 13 }} />
+              <Line type="monotone" dataKey="SEO" stroke="#2563eb" strokeWidth={2} dot={false} connectNulls />
+              <Line type="monotone" dataKey="AEO" stroke="#7c3aed" strokeWidth={2} dot={false} connectNulls />
+              <Line type="monotone" dataKey="GEO" stroke="#059669" strokeWidth={2} dot={false} connectNulls />
+              <Line type="monotone" dataKey="E-E-A-T" stroke="#b45309" strokeWidth={2} dot={false} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
+          {/* 圖例：色點＋文字（不只靠顏色表意） */}
+          <div className="lg">
+            <span><i style={{ background: '#2563eb' }} />SEO</span>
+            <span><i style={{ background: '#7c3aed' }} />AEO</span>
+            <span><i style={{ background: '#059669' }} />GEO</span>
+            <span><i style={{ background: '#b45309' }} />E-E-A-T</span>
+          </div>
+        </div>
+      ) : (
+        <div className="as-stub">📈 <b>改前 / 改後進展</b>：需要至少兩次掃描才能比較——按「🔄 重新掃描」累積第二筆，走勢就會出現。</div>
+      )}
 
       {/* PDF modals：沿用經典版元件（白標客戶提案 + 6 週執行清單），資料吃本頁已載入的 audits */}
       <ClientReportModal

@@ -96,6 +96,15 @@ html.dark-theme .appshell textarea::placeholder{
 
 .appshell .as-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);}
 
+/* ── 改前/改後趨勢圖（搬自經典版、亮色化）── */
+.appshell .as-trend{margin-top:16px;padding:18px 20px;}
+.appshell .as-trend .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.appshell .as-trend .th b{font-size:14.5px;}
+.appshell .as-trend .th span{font-size:13px;color:var(--ink-3);}
+/* 圖例：色點＋文字雙表意 */
+.appshell .as-trend .lg{display:flex;gap:16px;justify-content:center;margin-top:6px;font-size:12.5px;color:var(--ink-2);}
+.appshell .as-trend .lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:baseline;}
+
 /* 總覽頁首動作群：PDF ×2＋重新掃描，靠右一排（手機自動換行） */
 .appshell .as-head-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .appshell .as-rescan{margin-top:0;}

@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-14b（收尾：四面向趨勢圖搬進新版總覽 — 已部署）
+
+用戶對帳點出「趨勢圖是被轉址實質砍掉的真功能」→ 補搬：AppOverview 每面向查詢 limit 1→10、`trendData` 用經典版 TrendChart 同一套對齊法（SEO 序列為基準、按距最新偏移對齊），「改前/改後」stub 升級為真實四線走勢圖（Recharts 亮色化、色點＋文字圖例、≥2 筆才畫、不足維持誠實 stub＋引導重掃）。
+
 ### 2026-08-14a（🚀🚀 硬切轉址上線 — 新版正式成為預設介面）
 
 **舊 URL 1:1 轉址**（[App.jsx](src/App.jsx) `LegacyRedirect`）：`/dashboard/:id`→`/app/:id/overview`、四大 audit→`/app/:id/health/:tab`（spec URL 契約「不可全導總覽」兌現）。**逃生口（觀察期後移除）**：`/dashboard-v2/:id` 續渲染經典版（側欄「回經典版」改指這裡）、四大 audit 舊頁掛 `-legacy` 路徑。**轉址前最後搬遷**：Org Schema 產生器掛進 AppHealth AEO 分頁、`LlmsTxtSection`（自 GEOAudit 導出）掛進 GEO 分頁——「AI 講錯你」的修正連結鏈（→/aeo-audit→轉址→health/aeo→產生器就在那）自然閉合。工具頁（/content-audit、/bulk-scan、/schema-check、/crawl-check、/ai-visibility*）保留原位。深色卡在亮殼的視覺暫留、硬切穩定後亮色化。
