@@ -325,6 +325,21 @@ html.dark-theme .appshell textarea::placeholder{
 /* KPI 卡裡的「設定 →」小錨點連結 */
 .appshell .as-vis-anchor{color:var(--accent-2);font-weight:750;text-decoration:none;}
 .appshell .as-vis-anchor:hover{text-decoration:underline;}
+/* ── AI 講錯你（事實監測）── */
+.appshell .as-vis-facts{padding:22px;margin-bottom:16px;}
+.appshell .as-vis-facts-table{width:100%;border-collapse:collapse;font-size:13px;}
+.appshell .as-vis-facts-table th{font-size:11px;color:var(--ink-3);text-align:left;font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);}
+.appshell .as-vis-facts-table td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;}
+.appshell .as-vis-facts-table .f-label{font-weight:750;white-space:nowrap;}
+.appshell .as-vis-facts-table .f-official{font-family:var(--mono);font-size:12px;color:var(--ink-2);max-width:220px;word-break:break-all;}
+/* 判定 chip：✅一致綠／⚠️疑似有誤橘（附 AI 原文與修正連結）／➖未提及灰——文字＋顏色雙表意 */
+.appshell .as-vis-facts-table .f-chip{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;font-weight:700;line-height:1.6;}
+.appshell .as-vis-facts-table .f-chip.ok{color:#059669;}
+.appshell .as-vis-facts-table .f-chip.bad{color:#b45309;}
+.appshell .as-vis-facts-table .f-chip.na{color:var(--ink-3);font-weight:600;}
+.appshell .as-vis-facts-table .f-chip code{font-family:var(--mono);font-size:11px;background:rgba(255,110,52,.1);
+  border:1px solid rgba(255,110,52,.3);padding:1px 6px;border-radius:6px;color:#b45309;}
+
 /* 來源影響力清單：排名＋網域＋標籤＋次數 */
 .appshell .as-vis-influence{padding:22px;margin-bottom:16px;}
 .appshell .as-vis-src-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}

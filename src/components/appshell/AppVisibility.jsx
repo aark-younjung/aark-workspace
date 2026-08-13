@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { hostLabel } from '../../lib/url'
 import { aivisQuotaFor } from '../../lib/limits'
-import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, ENGINE_KEYS, ENGINE_META } from './aivisData'
+import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, ENGINE_KEYS, ENGINE_META } from './aivisData'
 
 const RANGE_OPTIONS = [
   { days: 7, label: '本週' },
@@ -109,7 +109,7 @@ export default function AppVisibility() {
     async function load() {
       setState(current => ({ ...current, loading: true, error: '' }))
       try {
-        const websiteResult = await supabase.from('websites').select('id, name, url').eq('id', websiteId).single()
+        const websiteResult = await supabase.from('websites').select('id, name, url, org_schema_data').eq('id', websiteId).single()
         if (websiteResult.error) throw websiteResult.error
         const brandResult = await supabase.from('aivis_brands').select('*').eq('website_id', websiteId).maybeSingle()
         if (brandResult.error) throw brandResult.error
@@ -184,6 +184,15 @@ export default function AppVisibility() {
     responses: state.responses,
     rangeDays,
   }), [state.brand, state.responses, rangeDays])
+
+  // AI 講錯你（事實監測）：官方事實（org_schema_data）× 品牌題回答原文的機械比對
+  const factCheck = useMemo(() => buildFactCheck({
+    orgData: state.website?.org_schema_data,
+    brand: state.brand,
+    prompts: state.prompts,
+    responses: state.responses,
+    rangeDays,
+  }), [state.website?.org_schema_data, state.brand, state.prompts, state.responses, rangeDays])
 
   // 競品觀察名單編輯器（chips 式：逐筆加入、可單獨刪除，最多 3 個）
   // 2026-08-13 修：原本單一逗號分隔輸入，按 Enter 會直接送出表單、只存到一筆 → 改逐筆 chip
@@ -423,6 +432,46 @@ export default function AppVisibility() {
             <p className="foot">
               來自近 {rangeDays} 天 <b className="num">{influence.answersWithSources}</b> 個附引用來源的引擎回答（全題型）。
               這些網站正在替 AI「背書答案」——上榜卻不是你，就是內容機會的方向。
+            </p>
+          </>
+        )}
+      </section>
+
+      {/* AI 講錯你了嗎（事實監測）：官方事實 × 品牌題回答的機械比對——只驗可驗證的欄位、不硬判 */}
+      <section className="as-card as-vis-facts">
+        <div className="as-vis-section-head"><div><h3>AI 講錯你了嗎</h3><span className="as-vis-beta">BETA</span></div></div>
+        {factCheck.noFacts ? (
+          <div className="as-vis-inline-state">
+            還沒有「官方事實」可以比對——先到 <Link to={`/aeo-audit/${websiteId}`} className="as-vis-anchor">Organization Schema 產生器</Link> 填好電話、地址、Email、官網（那份資料就是你的官方事實庫），這裡就會自動檢查 AI 有沒有講錯。
+          </div>
+        ) : factCheck.basis === 0 ? (
+          <div className="as-vis-inline-state">近 {rangeDays} 天沒有「品牌題」回答可檢查（AI 描述你品牌的那類題）。執行一次掃描後，這裡會比對 AI 講的基本資料對不對。</div>
+        ) : (
+          <>
+            <div className="as-vis-table-wrap"><table className="as-vis-facts-table">
+              <thead><tr><th>欄位</th><th>你的官方資料</th><th>AI 回答檢查（{factCheck.basis} 個品牌題回答）</th></tr></thead>
+              <tbody>
+                {factCheck.facts.map(fact => (
+                  <tr key={fact.key}>
+                    <td className="f-label">{fact.label}</td>
+                    <td className="f-official" translate="no">{fact.official}</td>
+                    <td>
+                      {fact.status === 'match' && <span className="f-chip ok">✅ 一致 · {fact.matchCount} 個回答正確出現</span>}
+                      {fact.status === 'conflict' && (
+                        <span className="f-chip bad">
+                          ⚠️ 疑似有誤 · AI 寫成 {fact.samples.map(sample => <code key={sample} translate="no">{sample}</code>)}
+                          <Link to={`/aeo-audit/${websiteId}`} className="as-vis-anchor">→ 用 Schema 修正</Link>
+                        </span>
+                      )}
+                      {fact.status === 'absent' && <span className="f-chip na">➖ 未提及（不算錯，AI 這批回答沒講到）</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+            <p className="foot">
+              方法：只機械比對可驗證欄位（電話號碼正規化精確比對；地址／Email／網址為「有無正確出現」）。
+              「未提及」不是錯誤；「疑似有誤」請先確認後用 Organization Schema 修正、下次掃描回來驗證。
             </p>
           </>
         )}

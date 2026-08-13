@@ -221,6 +221,87 @@ export function buildSourceInfluence({ brand, responses = [], rangeDays = 90, to
   return { answersWithSources, items }
 }
 
+/**
+ * AI 講錯你（事實監測台灣版 · 2026-08-13 第一批 #2）：
+ * 拿「官方事實」（websites.org_schema_data：電話/地址/Email/網址）對照「品牌題的 AI 回答原文」，
+ * 找 AI 有沒有把你的基本資料講錯。誠實邊界：
+ * - 只比對「可機械驗證」的欄位；不用 LLM 猜語意（猜錯比不猜更傷信任）
+ * - 「未提及」≠ 講錯——AI 沒講就標資料不足，不硬判
+ * - 只有電話做「疑似有誤」判定（號碼可正規化精確比對）；地址/Email/網址只做「一致/未提及」
+ */
+const PHONE_CANDIDATE_RE = /\+?\d[\d\s()/-]{6,}\d/g
+
+// 電話正規化：去非數字、+886/886 開頭轉 0 開頭（台灣慣用格式），比對才不會被格式差異騙
+function normalizePhone(value) {
+  let digits = String(value || '').replace(/\D/g, '')
+  if (digits.startsWith('886')) digits = `0${digits.slice(3)}`
+  return digits
+}
+
+export function buildFactCheck({ orgData, brand, prompts = [], responses = [], rangeDays = 90, now = new Date() }) {
+  const official = {
+    telephone: String(orgData?.telephone || '').trim(),
+    address: String(orgData?.address || '').trim(),
+    email: String(orgData?.email || '').trim(),
+    url: String(orgData?.url || brand?.domain || '').trim(),
+  }
+  if (!official.telephone && !official.address && !official.email && !official.url) return { noFacts: true }
+
+  // 檢查對象＝品牌題（AI 描述你品牌的回答）；沒有品牌題就退回全部題（樣本少但誠實回報 basis）
+  const tierByPromptId = Object.fromEntries(prompts.map(prompt => [prompt.id, prompt.tier || 'core']))
+  const cutoff = new Date(now.getTime() - Math.max(1, rangeDays) * DAY_MS)
+  const texts = []
+  for (const response of responses) {
+    const time = new Date(response.created_at)
+    if (Number.isNaN(time.getTime()) || time < cutoff || time > now) continue
+    if (tierByPromptId[response.prompt_id] !== 'brand') continue
+    for (const result of Object.values(normalizeEngineResults(response, {}))) {
+      if (typeof result?.raw === 'string' && result.raw) texts.push(result.raw)
+    }
+  }
+  if (!texts.length) return { noFacts: false, basis: 0, facts: [] }
+
+  const facts = []
+
+  // 電話：可精確比對 → 一致／疑似有誤（列出 AI 寫的號碼）／未提及
+  if (official.telephone) {
+    const officialDigits = normalizePhone(official.telephone)
+    let matchCount = 0
+    const wrongSamples = new Set()
+    for (const text of texts) {
+      const candidates = (text.match(PHONE_CANDIDATE_RE) || [])
+        .map(candidate => ({ shown: candidate.trim(), digits: normalizePhone(candidate) }))
+        .filter(candidate => candidate.digits.length >= 8 && candidate.digits.length <= 12)
+      if (!candidates.length) continue
+      if (candidates.some(candidate => candidate.digits === officialDigits)) matchCount += 1
+      else candidates.slice(0, 1).forEach(candidate => wrongSamples.add(candidate.shown))
+    }
+    facts.push({
+      key: 'telephone', label: '電話', official: official.telephone,
+      status: matchCount > 0 ? 'match' : wrongSamples.size > 0 ? 'conflict' : 'absent',
+      matchCount, samples: [...wrongSamples].slice(0, 2),
+    })
+  }
+
+  // 地址／Email／網址：只做「一致（有正確出現）／未提及」——自由文字的「講錯」判定太脆弱、不硬判
+  const containment = [
+    ['address', '地址', official.address, official.address.replace(/\s+/g, '')],
+    ['email', 'Email', official.email, official.email.toLowerCase()],
+    ['url', '官網網址', official.url, normalizedHost(official.url)],
+  ]
+  for (const [key, label, shown, needle] of containment) {
+    if (!shown || !needle) continue
+    let matchCount = 0
+    for (const text of texts) {
+      const haystack = key === 'address' ? text.replace(/\s+/g, '') : text.toLowerCase()
+      if (haystack.includes(needle)) matchCount += 1
+    }
+    facts.push({ key, label, official: shown, status: matchCount > 0 ? 'match' : 'absent', matchCount, samples: [] })
+  }
+
+  return { noFacts: false, basis: texts.length, facts }
+}
+
 export function buildVisibilityModel({
   brand,
   prompts = [],

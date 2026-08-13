@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13i（🟠 第一批 #2：AI 講錯你（事實監測台灣版）— 已部署）
+
+三方全票第二張牌（[aivisData.js](src/components/appshell/aivisData.js) `buildFactCheck` + AppVisibility 新區塊「AI 講錯你了嗎」）：**官方事實**（websites.org_schema_data 的電話/地址/Email/網址——Org Schema 產生器填的資料直接複用）×**品牌題 AI 回答原文**機械比對。判定三態：✅ 一致（N 個回答正確出現）／⚠️ 疑似有誤（**只有電話**做此判定——號碼正規化精確比對含 +886→0，列出 AI 寫的錯號碼＋「用 Schema 修正」CTA）／➖ 未提及（明示不算錯）。誠實邊界：不用 LLM 猜語意、地址/Email/網址只做「有無正確出現」不硬判講錯。空狀態雙層：無官方事實→導去填 Org Schema（既有工具复用＝事實庫）；無品牌題回答→導去掃描。同日連發 UX 修：chips 式競品編輯器（修 Enter 只存一筆）、亮色殼 input 被 dark-theme !important 蓋白字、自動選有資料時間窗（7→30→90）、比較列加（提到數/樣本數）防 0% 誤讀、同類領先者卡列觀察名單全員、HomeDark 補 Beta 入口×3、灰選單可點。
+
 ### 2026-08-13h（🟠 第一批 #1：競品同題比較 + 來源影響力 — 已部署，需用戶跑 SQL 啟用名單）
 
 Kuroma 三方全票的頭牌功能，零額外 API 成本（吃既有回答）：
