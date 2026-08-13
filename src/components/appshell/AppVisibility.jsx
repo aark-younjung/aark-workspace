@@ -11,7 +11,7 @@ import Badge from './Badge'
 // 分頁（2026-08-13 用戶提案：區塊多到該分頁了，比照網站體檢＝真 URL 深連結）
 // 原則：每個分頁都是「已存在的內容」，不蓋空殼；期間切換與管理按鈕留在頁首跨分頁通用
 const VIS_TABS = [
-  { key: 'overview', label: '總覽' },
+  { key: 'overview', label: '監測總覽' },  // 2026-08-13 改名：與左選單「總覽」撞名、用戶真的走錯過
   { key: 'competitors', label: '競品比較' },
   { key: 'sources', label: '引用來源' },
   { key: 'voice', label: 'AI 怎麼說你' },
