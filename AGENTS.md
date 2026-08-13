@@ -18,10 +18,9 @@
 > 背景：掃描是「單頁 + 站台層檔案」。多次客訴同源——用戶在**內頁/FAQ 頁**做了麵包屑/FAQ，我們卻在**首頁**掃描、用全站口氣說「你沒有」，冤枉人。以下三條是這問題的長期解，邏輯放共用 lib，現行產品與改版共用同一支。
 
 1. **頁型判斷（page-type）** — 共用 `src/lib/pageAudit.js`（`isHomepage` / `HOMEPAGE_NOTES` / `HOMEPAGE_NA_CHECKS`）。
-   - **麵包屑 / FAQ schema 在首頁「缺」是正常的**（首頁在最上層、沒有麵包屑；FAQ 通常在 FAQ 頁）→ 首頁不得用紅字「缺失」口氣冤枉人，要標正常化說明。
-   - 現況：**只改說明文字**（`buildAeoChecks` / `AEOAudit` 的 detail 覆蓋），**未動 passed / 分數**（分數用掃描存好的 `audit.score`，翻 passed 會與分數脫鉤）。
-   - **待做（analyzer 層，未完成）**：讓首頁**不因缺麵包屑/FAQ 被扣分**（`aeoAnalyzer` 依 URL 是否首頁調整計分/分母）→ 才能讓 board 全綠且分數一致。做這步時記得回頭把上面兩處 detail-only 的暫解升級成真 pass。
-   - 例外：首頁若真的有 FAQ 區塊（`faq_visual`）→ 是「該補 schema」的真問題，不套正常化說明。
+   - **麵包屑 / FAQ schema 在首頁「缺」是正常的**（首頁在最上層、沒有麵包屑；FAQ 通常在 FAQ 頁）→ 首頁這兩項＝**N/A：不紅字、不扣分**，標「通過＋正常化說明」。
+   - **已做到計分層（2026-08-13）**：`aeoAnalyzer` 的 `scoredPassed` 首頁對這兩項免扣分（DB 的 raw boolean 照實存＝誠實；只有 score 用調整後）；顯示層（`AEOAudit` / `buildAeoChecks`）同步翻 `passed=true`。**舊 audit 要重掃才套新計分。**
+   - 例外：首頁若真的有 FAQ 區塊（`faq_visual`）→ 是「該補 schema」的真問題，照舊扣分、不套正常化說明。
 
 2. **站台層複查（site-wide）** — 共用 `src/lib/siteWideSchema.js`（`detectSchemaAcrossSite`）+ `src/components/SiteWideSchemaProbe.jsx`（深/亮兩色）。
    - 首頁報「缺麵包屑/FAQ」時，經 `fetchSitemapUrls` 去站台其他頁**實際驗證**，找到就明講「你的 /faq/ 有，這一頁沒有是正常的」。

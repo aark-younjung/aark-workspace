@@ -5,6 +5,7 @@
 
 import { fetchPageContent, parseHTML } from './seoAnalyzer'
 import { metaLengthVerdict } from '../lib/metaLength' // 分語言（中/英）Meta 長度門檻，與 SEO / 顯示層同一支
+import { isHomepage } from '../lib/pageAudit'         // 頁型判斷：首頁不因缺麵包屑/FAQ 被扣分
 
 /**
  * 1. JSON-LD 結構化資料檢測 (schema.org，特別是 FAQ/HowTo)
@@ -296,7 +297,20 @@ export async function analyzeAEO(url) {
   const structuredAnswer = doc ? checkStructuredAnswer(doc) : { passed: false }
 
   const checks = [jsonLd, faqSchema, canonical, breadcrumbs, openGraph, questionHeadings, metaDescLength, structuredAnswer]
-  const passedCount = checks.filter(c => c.passed).length
+  // 頁型判斷：首頁本來就不該有麵包屑/FAQ schema（首頁在最上層、FAQ 在 FAQ 頁）→ 計分時視為 N/A（不扣分）。
+  // 例外：首頁真的有 FAQ 區塊（faq_visual）＝該補 schema 的真問題，照舊算。原始 boolean 照實存（誠實），只有分數用調整後。
+  const onHome = isHomepage(cleanUrl)
+  const scoredPassed = [
+    jsonLd.passed,
+    faqSchema.passed || (onHome && !faqSchema.hasVisualFaq),   // 首頁 FAQ（無視覺 FAQ 時）不扣分
+    canonical.passed,
+    breadcrumbs.passed || onHome,                              // 首頁麵包屑不扣分
+    openGraph.passed,
+    questionHeadings.passed,
+    metaDescLength.passed,
+    structuredAnswer.passed,
+  ]
+  const passedCount = scoredPassed.filter(Boolean).length
   const score = Math.round((passedCount / 8) * 100)
 
   const result = {

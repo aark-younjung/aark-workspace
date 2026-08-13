@@ -163,15 +163,15 @@ function buildAeoChecks(audit, isHomepage = false, seoDescText = null) {
   if (faq && !faq.passed && audit?.faq_visual) {
     faq.detail = '偵測到頁面有 FAQ 區塊，但缺 FAQPage schema；人看得到，機器不一定能正確理解。'
   }
-  // 頁型判斷：首頁本來就不該有麵包屑/FAQ schema（那是內頁／FAQ 頁的事）。
-  // 現階段只改「說明文字」正常化，不動 passed / 分數 —— 因為分數用的是掃描存好的 audit.score，
-  // 若這裡把 passed 翻成 true 會與分數脫鉤（board 全綠、分數卻被扣）。
-  // 讓首頁不因缺這兩項被扣分，屬 analyzer 層改動（見 AGENTS.md 頁型判斷第 2 步），另做。
+  // 頁型判斷：首頁本來就不該有麵包屑/FAQ schema（那是內頁／FAQ 頁的事）→ 標為「通過（N/A）」+ 正常化說明。
+  // analyzer 首頁已對這兩項免扣分（aeoAnalyzer scoredPassed），所以這裡把 passed 翻 true 與分數一致（重掃後）。
   // 例外：首頁若真的有 FAQ 區塊（faq_visual），那是「該補 schema」的真問題，不套正常化說明。
   if (isHomepage) {
     for (const check of checks) {
       if (!HOMEPAGE_NOTES[check.id] || check.passed) continue
       if (check.id === 'faq_schema' && audit?.faq_visual) continue
+      check.passed = true
+      check.warning = true // 中性「通過但有備註」樣式
       check.detail = HOMEPAGE_NOTES[check.id]
     }
   }
