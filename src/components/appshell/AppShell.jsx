@@ -18,11 +18,11 @@ export default function AppShell() {
   const { websiteId } = useParams()
   const { userName, tierName, isTrial, trialDaysRemaining } = useAuth()
 
-  // 網站範圍的選單項：有 websiteId 才是連結，否則 disabled（例如未選網站時）
+  // 網站範圍的選單項：有 websiteId 才是連結；未選網站時降透明並附提示（點了帶去選網站，不留死 UI）
   const wsItem = (path, icon, label, tag) =>
     websiteId
       ? <NavLink to={`/app/${websiteId}/${path}`} className={navCls}>{icon}{label}{tag && <span className="tag">{tag}</span>}</NavLink>
-      : <span className="as-nav" style={{ opacity: .4, cursor: 'default' }}>{icon}{label}{tag && <span className="tag">{tag}</span>}</span>
+      : <NavLink to="/app/websites" className="as-nav" style={{ opacity: .45 }} title={`先從「我的網站」選一個網站，就能看它的${label}`}>{icon}{label}{tag && <span className="tag">{tag}</span>}</NavLink>
 
   return (
     <div className="appshell">

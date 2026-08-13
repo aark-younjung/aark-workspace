@@ -113,7 +113,7 @@ export default function AppSites() {
     <>
       <div className="as-phead as-sites-head">
         <h2>我的網站</h2>
-        <span className="sub">已追蹤 <span className="num">{used}</span> / <span className="num">{siteLimit}</span> 站（{tierName}）</span>
+        <span className="sub">已追蹤 <span className="num">{used}</span> / <span className="num">{siteLimit}</span> 站（{tierName}）· 點任一張卡進入該站的總覽與監測</span>
         <Link className="as-cta as-sites-add" to={remaining > 0 ? '/' : '/pricing'}>
           {remaining > 0 ? '＋ 新增網站' : '查看方案'}
         </Link>
@@ -140,7 +140,8 @@ export default function AppSites() {
               aria-label={`開啟 ${card.name} 總覽`}
             >
               <div className="s-nm">{card.name}</div>
-              <div className="s-url" title={card.host}>{card.host}</div>
+              {/* 站名就是網域時不重複顯示第二行（例：portaly.cc / portaly.cc 疊字很吵） */}
+              {card.name !== card.host && <div className="s-url" title={card.host}>{card.host}</div>}
               <div className="s-row">
                 <div className="s-metric">
                   <div className="m-l">AI 能見度</div>
