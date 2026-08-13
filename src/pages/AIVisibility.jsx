@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 // 2026-06-07：行業分類 taxonomy（複選 chip）
@@ -21,6 +21,18 @@ export default function AIVisibility() {
   // 2026-06-07：form.industry 文字輸入 → form.industries 單選 chip（Phase A、之後 Phase B 想開放複選不用 DB migration）
   // DB 還是 industries TEXT[]、實際只存 [singleton]；industry 單一字串欄位向後相容
   const [form, setForm] = useState({ name: '', domain: '', industries: [], description: '' })
+
+  // 2026-08-13：從 Dashboard「開試用」交接進來時預填品牌名/網域並直接展開表單——
+  // 數據實錘：僅有的 2 個外部試用者都卡在「開完試用還要再找入口、再填表單」的交接處（brands 全 0）
+  const location = useLocation()
+  useEffect(() => {
+    const p = location.state
+    if (p?.prefillName || p?.prefillDomain) {
+      setForm(f => ({ ...f, name: p.prefillName || f.name, domain: p.prefillDomain || f.domain }))
+      setShowForm(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // radio behavior：點同一個取消、點不同 chip 切換
   function selectFormIndustry(slug) {

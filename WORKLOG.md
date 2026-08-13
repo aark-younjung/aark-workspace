@@ -6,6 +6,16 @@
 
 ---
 
+### 2026-08-13c（留存二修：試用交接直達 + 真實「比上次」delta — 已部署）
+
+停廣告健檢的兩個產品修正（[DashboardV2.jsx](src/pages/DashboardV2.jsx) + [AIVisibility.jsx](src/pages/AIVisibility.jsx)）：
+1. **試用→設定品牌交接直達**：數據實錘僅有的 2 個外部試用者都卡在「開完試用→要再點一次→再填表單」（brands 全 0）。修：AivisHero 試用開通成功後 `navigate('/ai-visibility', {state:{prefillName, prefillDomain}})`（帶網站名/網域）；AIVisibility 收到 state 就預填表單並自動展開。7/21 的一鍵開試用按鈕證實有效（僅有 2 個試用都是它帶來的），這次補完後半段。
+2. **「比上次掃描」真 delta**：⚠️ 順手拔掉 AuditSection 一行**寫死的假數據「↑ 比上週 +5 分」**（公平交易法紅線）。改真算：prevScores 取各 history 倒數第二筆；總分 delta 只拿「上次也有分數」的面向同基準比較，首掃顯示「首次掃描基準」；五個 tab 各加 ▲+N/▼-N 小 delta（升綠降紅、tabular-nums、title 顯示上次分數）。動機：流失用戶「掃 2–5 次就走」＝回訪沒有回報感。
+
+### 2026-08-13b（停廣告後健檢 + 喚回實驗啟動 — 營運非 code）
+
+廣告 7/28 停後數據：53 用戶、外部真實 Pro 僅 1（金鉑）、匿名快掃 7 天只剩 4 次。SQL 實錘**兩層轉換斷點**：註冊→開試用僅 2/51（4%）、僅有的 2 個外部試用者 aivis brands/scans 全 0（鉤子零體驗）。行動：(1) 用 vite-node+jsdom 以 repo 內 production 分析器重掃 28 個沉睡用戶網站（零 DB 寫入、零邏輯漂移），得「當時 vs 現在」delta；(2) 產出 29 封個人化喚回信 → `C:\tmp\winback-emails.md`（分四版型：normal 24／擋爬蟲 3／大跌 1／持平 1；誠實聲明引擎校正影響分數；寄完刪檔）。後續產品待辦：**首掃結果頁加「開試用→設定 aivis」引導**（修 4% 斷點）、Dashboard「上次 vs 這次」delta。
+
 ### 2026-08-13（檢測呈現「不冤枉單頁」三修 — 現行產品 + 改版共用，未部署待 review）
 
 根因：掃描是「單頁 + 站台層檔案」，但用戶常在**內頁/FAQ 頁**做了麵包屑/FAQ、我們卻在**首頁**掃、用全站口氣說「你沒有」，已多次冤枉客戶（緯方 FAQ、DP 車體美研麵包屑）。做成長期解、邏輯放共用 lib、**現行 + 改版同一支**，並寫進 [AGENTS.md §0.1](AGENTS.md) + [spec 五](_design/redesign-spec.md) 當延續性硬需求（大改版也要沿用）。

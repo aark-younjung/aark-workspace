@@ -358,6 +358,15 @@ export default function DashboardV2() {
     eeat: eeatAudit?.score || 0,
     content: contentScore || 0,
   }
+  // 上次掃描分數（history 升冪、最後一筆＝最新 → 倒數第二筆＝上次）— 給「比上次掃描」真 delta 用。
+  // 2026-08-13：流失用戶模式是「掃 2–5 次就走」，每次都是孤立分數、看不到自己有沒有進步 → 回訪沒有回報感。
+  const prevScores = {
+    seo: seoHistory.length > 1 ? seoHistory[seoHistory.length - 2]?.score ?? null : null,
+    aeo: aeoHistory.length > 1 ? aeoHistory[aeoHistory.length - 2]?.score ?? null : null,
+    geo: geoHistory.length > 1 ? geoHistory[geoHistory.length - 2]?.score ?? null : null,
+    eeat: eeatHistory.length > 1 ? eeatHistory[eeatHistory.length - 2]?.score ?? null : null,
+    content: contentHistory.length > 1 ? contentHistory[contentHistory.length - 2]?.score ?? null : null,
+  }
   // 加權平均（5 面向等權）
   const overallScore = Math.round((scores.seo + scores.aeo + scores.geo + scores.eeat + scores.content) / 5)
 
@@ -442,7 +451,7 @@ export default function DashboardV2() {
             {/* ─── ✨ aivis Hero + Gamify Rail（grid 8:4） ─── */}
             <section className="grid lg:grid-cols-12 gap-4 mb-6">
               <div className="lg:col-span-8">
-                <AivisHero isPro={isPro} websiteName={website.name} overallScore={overallScore} trendData={trendData} />
+                <AivisHero isPro={isPro} websiteName={website.name} websiteUrl={website.url} overallScore={overallScore} trendData={trendData} />
               </div>
               <div className="lg:col-span-4">
                 <GamifyRail gamify={gamify} onRescan={handleFirstScan} rescanning={scanning} />
@@ -455,6 +464,7 @@ export default function DashboardV2() {
             {/* ─── 站點體檢（5 Tab wrapper）— 移到第一屏：這是用戶掃完最想看的「答案」，排在 hero 正下方、馬上看得到 ─── */}
             <AuditSection
               scores={scores}
+              prevScores={prevScores}
               activeFace={activeFace}
               setActiveFace={setActiveFace}
               website={website}
@@ -914,8 +924,9 @@ function TopBar({ website, navigate, onExportPdf, onChecklist, onRescan, rescann
 //   2. no_brands — 用戶沒設定追蹤品牌、顯示設定 CTA
 //   3. has_brands — 用戶有設品牌、列出來、給「看完整監測」入口
 // aivis 真實提及率資料需要等到 aivis monitoring run 才有、目前先讓用戶能正確進入設定流程
-function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
+function AivisHero({ isPro, websiteName, websiteUrl, overallScore, trendData = [] }) {
   const { user, hasTrialedBefore, startTrial, isTrial } = useAuth()
+  const navigate = useNavigate()
   // 「還沒試用過的免費用戶」＝ 最該被邀請試用的人。
   // 2026-07-21：12 個活躍用戶掃了 2–7 次卻沒有一個啟動試用 —— 查出來原因是這裡只寫「升 Pro 解鎖」
   // 並把人導去定價頁，等於在他最有興趣的當下跟他要錢，完全沒提「你本來就有 7 天免費試用」。
@@ -1038,6 +1049,15 @@ function AivisHero({ isPro, websiteName, overallScore, trendData = [] }) {
                         already_trialed: '這個帳號已經用過免費試用了。',
                         not_authenticated: '請先登入再啟用試用。',
                       }[r?.error] || '啟用失敗，請稍後再試，或聯絡我們協助開通。')
+                    } else {
+                      // 2026-08-13：開通成功直接帶去設定品牌（預填名稱/網域）——數據實錘：僅有的 2 個
+                      // 外部試用者都在「開完試用→要再點一次、再填表單」的交接處流失（aivis brands 全 0）
+                      navigate('/ai-visibility', {
+                        state: {
+                          prefillName: websiteName || '',
+                          prefillDomain: (websiteUrl || '').replace(/^https?:\/\//, '').replace(/\/.*$/, ''),
+                        },
+                      })
                     }
                   }}
                   className="block w-full text-center px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-base font-bold rounded-xl hover:opacity-90 shadow-lg shadow-orange-500/30 disabled:opacity-60"
@@ -1433,7 +1453,7 @@ function QuestSection({ quests }) {
 
 // 站點體檢 5 Tab wrapper — 對齊 prototype-2b 第 1493 行 audit-unified 設計
 // 含：站點體檢總分（大數字）+ 五角雷達 mini + 5 Tab nav + Tab body
-function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, aeoAudit, geoAudit, eeatAudit, contentLatest, contentHistory, isPro }) {
+function AuditSection({ scores, prevScores = {}, activeFace, setActiveFace, website, seoAudit, aeoAudit, geoAudit, eeatAudit, contentLatest, contentHistory, isPro }) {
   const tabs = [
     { key: 'seo',     label: 'SEO',     score: scores.seo },
     { key: 'aeo',     label: 'AEO',     score: scores.aeo },
@@ -1443,6 +1463,13 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
   ]
   // 站點體檢總分 = 5 個 face 平均
   const overallScore = Math.round((scores.seo + scores.aeo + scores.geo + scores.eeat + scores.content) / 5)
+  // 「比上次掃描」真 delta：只拿「上次也有分數」的面向對齊比較（同基準才誠實）；沒歷史就不顯示。
+  // （取代原本寫死的假「+5 分」— 不可捏造數據）
+  const basis = tabs.filter(t => prevScores[t.key] != null)
+  const overallDelta = basis.length
+    ? Math.round(basis.reduce((s, t) => s + t.score, 0) / basis.length)
+      - Math.round(basis.reduce((s, t) => s + prevScores[t.key], 0) / basis.length)
+    : null
   return (
     <section className="mb-6 relative overflow-hidden rounded-2xl p-5 sm:p-6" style={{
       background: 'rgba(255,255,255,0.04)',
@@ -1484,7 +1511,16 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
             <div className="min-w-0">
               <h3 className="text-lg font-bold text-white">站點體檢總分</h3>
               <div className="text-sm text-white/55 mb-1">5 大面向綜合 · 站點層級</div>
-              <div className="text-sm text-emerald-300 font-bold">↑ 比上週 +5 分</div>
+              {/* 真實「比上次掃描」delta（同基準面向對齊比較）；首掃沒得比就引導重掃累積 */}
+              {overallDelta == null ? (
+                <div className="text-sm text-white/40">首次掃描基準 — 之後「重新檢測」會顯示變化</div>
+              ) : overallDelta === 0 ? (
+                <div className="text-sm text-white/50 font-bold">＝ 與上次掃描持平</div>
+              ) : (
+                <div className={`text-sm font-bold ${overallDelta > 0 ? 'text-emerald-300' : 'text-red-300'}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {overallDelta > 0 ? `↑ 比上次掃描 +${overallDelta} 分` : `↓ 比上次掃描 ${overallDelta} 分`}
+                </div>
+              )}
             </div>
           </div>
           {/* 右：五角雷達 mini SVG（手機置中）*/}
@@ -1511,6 +1547,16 @@ function AuditSection({ scores, activeFace, setActiveFace, website, seoAudit, ae
               <span className="text-sm font-mono font-bold" style={{
                 color: activeFace === tab.key ? FACE_COLORS[tab.key] : 'rgba(255,255,255,0.4)',
               }}>{tab.score || 0}</span>
+              {/* 各面向「比上次」小 delta：有歷史且有變化才顯示（升綠降紅、tabular-nums） */}
+              {prevScores[tab.key] != null && tab.score - prevScores[tab.key] !== 0 && (
+                <span
+                  className={`text-xs font-bold ${tab.score > prevScores[tab.key] ? 'text-emerald-300' : 'text-red-300'}`}
+                  style={{ fontVariantNumeric: 'tabular-nums' }}
+                  title={`上次掃描：${prevScores[tab.key]} 分`}
+                >
+                  {tab.score > prevScores[tab.key] ? `▲+${tab.score - prevScores[tab.key]}` : `▼${tab.score - prevScores[tab.key]}`}
+                </span>
+              )}
             </button>
           ))}
         </div>
