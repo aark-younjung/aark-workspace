@@ -418,9 +418,24 @@ html.dark-theme .appshell textarea::placeholder{
   border-radius:99px;background:var(--surface-2);font-size:11px;font-weight:800;color:var(--ink-2);}
 .appshell .as-vis-src-list .host{font-family:var(--mono);font-size:13.5px;font-weight:700;color:var(--ink);}
 .appshell .as-vis-src-list .stag{font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink-3);}
-.appshell .as-vis-src-list .stag.own{background:rgba(5,150,105,.1);color:#059669;border-color:rgba(5,150,105,.3);}
-/* 一般網站標籤：最淡樣式——還是掛出來（不掛會被誤以為分類沒運作），但不搶特殊分類的視覺 */
-.appshell .as-vis-src-list .stag.gen{opacity:.55;}
+/* ── 來源分類七色（清單標籤與摘要圓點共用；顏色＋文字雙重編碼）──
+   你的網站=綠（自家）/ 新聞=藍 / 論壇 UGC=紫 / 百科=青 / 政府學術=琥珀（權威）/ 社群=藍紫 / 一般=灰淡 */
+.appshell .as-vis-src-list .stag.c-own{background:rgba(5,150,105,.1);color:#059669;border-color:rgba(5,150,105,.3);}
+.appshell .as-vis-src-list .stag.c-news{background:rgba(37,99,235,.08);color:#2563eb;border-color:rgba(37,99,235,.3);}
+.appshell .as-vis-src-list .stag.c-forum{background:rgba(124,58,237,.08);color:#7c3aed;border-color:rgba(124,58,237,.3);}
+.appshell .as-vis-src-list .stag.c-wiki{background:rgba(14,116,144,.08);color:#0e7490;border-color:rgba(14,116,144,.3);}
+.appshell .as-vis-src-list .stag.c-gov_edu{background:rgba(180,83,9,.08);color:#b45309;border-color:rgba(180,83,9,.3);}
+.appshell .as-vis-src-list .stag.c-social{background:rgba(88,102,196,.08);color:#5866c4;border-color:rgba(88,102,196,.3);}
+.appshell .as-vis-src-list .stag.c-general{opacity:.55;}
+/* 摘要列圓點：與標籤同色系 */
+.appshell .as-vis-src-summary .dot{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:5px;vertical-align:baseline;}
+.appshell .as-vis-src-summary .dot.c-own{background:#059669;}
+.appshell .as-vis-src-summary .dot.c-news{background:#2563eb;}
+.appshell .as-vis-src-summary .dot.c-forum{background:#7c3aed;}
+.appshell .as-vis-src-summary .dot.c-wiki{background:#0e7490;}
+.appshell .as-vis-src-summary .dot.c-gov_edu{background:#b45309;}
+.appshell .as-vis-src-summary .dot.c-social{background:#5866c4;}
+.appshell .as-vis-src-summary .dot.c-general{background:var(--ink-3);opacity:.5;}
 .appshell .as-vis-src-list .cnt{margin-left:auto;font-size:12.5px;color:var(--ink-3);}
 .appshell .as-vis-compare-row .lock{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.78);
   color:var(--ink-2);font-size:12.5px;font-weight:750;}

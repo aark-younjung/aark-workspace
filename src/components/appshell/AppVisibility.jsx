@@ -524,7 +524,7 @@ export default function AppVisibility() {
               {Object.entries(influence.categoryCounts)
                 .sort((a, b) => b[1] - a[1])
                 .map(([category, count]) => (
-                  <span key={category} className={`sc${category === 'own' ? ' own' : ''}`}>{SOURCE_CATEGORY_LABEL[category]} <b className="num">{count}</b></span>
+                  <span key={category} className="sc"><i className={`dot c-${category}`} aria-hidden="true" />{SOURCE_CATEGORY_LABEL[category]} <b className="num">{count}</b></span>
                 ))}
             </div>
             <ol className="as-vis-src-list">
@@ -532,9 +532,7 @@ export default function AppVisibility() {
                 <li key={item.host}>
                   <span className="rank num">{index + 1}</span>
                   <span className="host" translate="no">{item.host}</span>
-                  {item.category === 'own'
-                    ? <span className="stag own">你的網站</span>
-                    : <span className={`stag${item.category === 'general' ? ' gen' : ''}`}>{SOURCE_CATEGORY_LABEL[item.category]}</span>}
+                  <span className={`stag c-${item.category}`}>{SOURCE_CATEGORY_LABEL[item.category]}</span>
                   <span className="cnt num">被引用於 {item.promptCount} 題 · {item.answers} 個回答</span>
                 </li>
               ))}
