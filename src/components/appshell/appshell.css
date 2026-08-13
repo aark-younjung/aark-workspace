@@ -268,7 +268,7 @@
 
 /* AI 曝光監測：競品比較。只有自己的真實列可畫比例，其餘不捏造 */
 .appshell .as-vis-compare{padding:22px;margin-bottom:16px;}
-.appshell .as-vis-compare-row{display:grid;grid-template-columns:minmax(130px,180px) 1fr 80px;align-items:center;gap:12px;
+.appshell .as-vis-compare-row{display:grid;grid-template-columns:minmax(130px,180px) 1fr 64px auto;align-items:center;gap:12px;
   min-height:42px;border-top:1px solid var(--line);font-size:12.5px;position:relative;}
 .appshell .as-vis-compare-row.you{border-top:none;}
 .appshell .as-vis-compare-row>span{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -277,6 +277,35 @@
 .appshell .as-vis-compare-row>b{text-align:right;font-size:12px;color:var(--ink-3);font-weight:650;}
 .appshell .as-vis-compare-row.you>b{color:var(--accent-2);}
 .appshell .as-vis-compare-row.locked>*:not(.lock){filter:blur(3px);opacity:.45;user-select:none;}
+/* 競品列的 bar 用中性藍紫（自家用品牌橘）——同圖表不同主角，靠色＋文字雙重區分 */
+.appshell .as-vis-compare-row .bar i.rival{background:var(--pop);}
+/* 領先/落後 delta chip：文字＋顏色雙表意（領先=競品比你高=警示橘；落後你=灰綠） */
+.appshell .as-vis-delta{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap;}
+.appshell .as-vis-delta.ahead{background:rgba(255,110,52,.12);color:#b45309;border:1px solid rgba(255,110,52,.35);}
+.appshell .as-vis-delta.behind{background:rgba(5,150,105,.08);color:#059669;border:1px solid rgba(5,150,105,.25);}
+.appshell .as-vis-delta.even{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line);}
+/* 觀察名單編輯器：單行輸入＋儲存；錯誤紅字直說原因（含缺欄位提示） */
+.appshell .as-vis-comp-editor{margin:4px 0 14px;padding:12px 14px;border:1px dashed var(--line-2);border-radius:10px;}
+.appshell .as-vis-comp-editor label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:8px;}
+.appshell .as-vis-comp-editor .row{display:flex;gap:10px;flex-wrap:wrap;}
+.appshell .as-vis-comp-editor input{flex:1;min-width:220px;font-family:var(--font);font-size:13.5px;padding:9px 12px;
+  border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--ink);}
+.appshell .as-vis-comp-editor input:focus-visible{outline:3px solid rgba(130,152,255,.45);outline-offset:1px;}
+.appshell .as-vis-comp-editor .err{margin-top:8px;font-size:12px;color:#b4231f;}
+/* KPI 卡裡的「設定 →」小錨點連結 */
+.appshell .as-vis-anchor{color:var(--accent-2);font-weight:750;text-decoration:none;}
+.appshell .as-vis-anchor:hover{text-decoration:underline;}
+/* 來源影響力清單：排名＋網域＋標籤＋次數 */
+.appshell .as-vis-influence{padding:22px;margin-bottom:16px;}
+.appshell .as-vis-src-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
+.appshell .as-vis-src-list li{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid var(--line);flex-wrap:wrap;}
+.appshell .as-vis-src-list li:first-child{border-top:none;}
+.appshell .as-vis-src-list .rank{width:22px;height:22px;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:99px;background:var(--surface-2);font-size:11px;font-weight:800;color:var(--ink-2);}
+.appshell .as-vis-src-list .host{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink);}
+.appshell .as-vis-src-list .stag{font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink-3);}
+.appshell .as-vis-src-list .stag.own{background:rgba(5,150,105,.1);color:#059669;border-color:rgba(5,150,105,.3);}
+.appshell .as-vis-src-list .cnt{margin-left:auto;font-size:11.5px;color:var(--ink-3);}
 .appshell .as-vis-compare-row .lock{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.78);
   color:var(--ink-2);font-size:11.5px;font-weight:750;}
 .appshell .as-vis-compare .foot{font-size:11px;color:var(--ink-3);margin:10px 0 0;line-height:1.55;}
@@ -412,7 +441,7 @@
   .appshell .as-gap-kpis{grid-template-columns:1fr;}
   .appshell .as-gap-tools{grid-template-columns:1fr;}
   .appshell .as-vis-kpi-main{grid-column:auto;}
-  .appshell .as-vis-compare-row{grid-template-columns:100px 1fr 72px;gap:8px;}
+  .appshell .as-vis-compare-row{grid-template-columns:100px 1fr 56px auto;gap:8px;}
   .appshell .as-vis-mention-item{grid-template-columns:1fr auto;}
   .appshell .as-vis-mention-item .title{grid-column:1/-1;grid-row:2;}
 }

@@ -6,6 +6,13 @@
 
 ---
 
+### 2026-08-13h（🟠 第一批 #1：競品同題比較 + 來源影響力 — 已部署，需用戶跑 SQL 啟用名單）
+
+Kuroma 三方全票的頭牌功能，零額外 API 成本（吃既有回答）：
+1. **競品同題比較（BETA）**（[aivisData.js](src/components/appshell/aivisData.js) `buildCompetitorComparison` + [AppVisibility](src/components/appshell/AppVisibility.jsx)）：用戶自設觀察名單（`aivis_brands.competitors text[]`、最多 3 個）→ 在**既有** core 題回答原文中比對競品名稱——同題同標準（名稱沒寫出=未提及）。誠實邊界：只算「有存原文」的引擎回答（舊資料部分沒存 raw → 排除、以 basis 樣本數回報）；標明「提及率非市佔率」；不做 NER 自動猜品牌。UI：同類領先者 KPI 卡接真資料（含「你領先 🎉/落後 N pp」）＋原 placeholder 區塊整段升級為比較列（bar＋領先/落後 delta chip）＋名單編輯器（存欄位失敗時直說要跑 SQL）。
+2. **誰在影響 AI 的答案（BETA）**（`buildSourceInfluence`）：彙整回答附帶的真實 sources 網域 → top 8 影響力排行（被引用於 N 題/M 回答、標「你的網站/社群」）。零猜測；「上榜不是你＝內容機會方向」。
+**需用戶跑 SQL**：`alter table aivis_brands add column if not exists competitors text[] default '{}';` ＋ own_brands_update policy（存名單用）。
+
 ### 2026-08-13g（🚀 改版 Beta 並行上線 — 已部署、對用戶可見）
 
 **上線方式（用戶拍板）：Beta 並行入口、不轉址**——因重新掃描/PDF 匯出/aivis 管理仍在舊頁，硬切轉址＝功能退步；等三者搬進新版後再做 1:1 轉址硬切。三個接點：

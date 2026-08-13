@@ -133,6 +133,94 @@ export function coreExposureRates({ prompts = [], responses = [], rangeDays = 30
   return rates
 }
 
+/**
+ * 競品同題比較（2026-08-13 第一批 · 零額外掃描）：
+ * 在「既有」的 AI 回答原文裡比對用戶自設的競品名稱（最多 3 個）——同一批題、同一個標準
+ * （名稱沒被寫出來就算沒提到，跟自家品牌同規則）。誠實邊界：
+ * - 只算「有存回答原文」的引擎回答（舊資料部分沒存 raw → 排除並以 basis 回報樣本數）
+ * - 這是「提及率」不是市佔率；不做全自動品牌萃取（NER 亂猜違反誠實線）
+ */
+export function buildCompetitorComparison({ competitors = [], prompts = [], responses = [], mentions = [], rangeDays = 30, now = new Date() }) {
+  const names = [...new Set(competitors.map(item => String(item || '').trim()).filter(Boolean))].slice(0, 3)
+  if (!names.length) return null
+  const tierByPromptId = Object.fromEntries(prompts.map(prompt => [prompt.id, prompt.tier || 'core']))
+  const mentionByResponseId = Object.fromEntries(mentions.map(mention => [mention.response_id, mention]))
+  const cutoff = new Date(now.getTime() - Math.max(1, rangeDays) * DAY_MS)
+
+  let basis = 0        // 有原文可比對的引擎回答數（分母）
+  let ownMentioned = 0
+  const counts = Object.fromEntries(names.map(name => [name, 0]))
+  for (const response of responses) {
+    const time = new Date(response.created_at)
+    if (Number.isNaN(time.getTime()) || time < cutoff || time > now) continue
+    if ((tierByPromptId[response.prompt_id] || 'core') !== 'core') continue   // 只比核心品類題（同曝光率基準）
+    for (const result of Object.values(normalizeEngineResults(response, mentionByResponseId))) {
+      const text = typeof result?.raw === 'string' ? result.raw : ''
+      if (!text) continue
+      basis += 1
+      if (result.mentioned) ownMentioned += 1
+      const lower = text.toLowerCase()
+      for (const name of names) {
+        if (lower.includes(name.toLowerCase())) counts[name] += 1
+      }
+    }
+  }
+
+  if (!basis) return { basis: 0, own: null, rows: names.map(name => ({ name, mentioned: 0, rate: null, delta: null })) }
+  const ownRate = Math.round(ownMentioned / basis * 100)
+  const rows = names
+    .map(name => {
+      const rate = Math.round(counts[name] / basis * 100)
+      return { name, mentioned: counts[name], rate, delta: rate - ownRate }
+    })
+    .sort((a, b) => b.rate - a.rate)
+  return { basis, own: { rate: ownRate, mentioned: ownMentioned }, rows }
+}
+
+// 社群平台網域：來源影響力清單用來標記（社群連結≠內容型權威來源）
+const SOCIAL_SOURCE_HOSTS = ['facebook.com', 'instagram.com', 'youtube.com', 'line.me', 'tiktok.com', 'threads.net', 'linkedin.com', 'x.com', 'twitter.com', 'pinterest.com']
+
+/**
+ * 誰在影響 AI 的答案（來源影響力）：彙整既有回答附帶的「真實引用來源」網域，
+ * 排出最常被 AI 當作答案根據的網站。全部來自結構化 sources、零猜測。
+ * 同一個引擎回答內同網域只計一次（避免單回答洗版）。
+ */
+export function buildSourceInfluence({ brand, responses = [], rangeDays = 90, topN = 8, now = new Date() }) {
+  const ownHost = normalizedHost(brand?.domain)
+  const cutoff = new Date(now.getTime() - Math.max(1, rangeDays) * DAY_MS)
+  const byHost = new Map()
+  let answersWithSources = 0
+
+  for (const response of responses) {
+    const time = new Date(response.created_at)
+    if (Number.isNaN(time.getTime()) || time < cutoff || time > now) continue
+    for (const result of Object.values(normalizeEngineResults(response, {}))) {
+      const sources = Array.isArray(result?.sources) ? result.sources : []
+      if (!sources.length) continue
+      answersWithSources += 1
+      const hostsInAnswer = new Set(sources.map(source => normalizedHost(source?.uri)).filter(Boolean))
+      for (const host of hostsInAnswer) {
+        const entry = byHost.get(host) || { host, answers: 0, prompts: new Set() }
+        entry.answers += 1
+        entry.prompts.add(response.prompt_id)
+        byHost.set(host, entry)
+      }
+    }
+  }
+
+  const items = [...byHost.values()]
+    .sort((a, b) => b.answers - a.answers || a.host.localeCompare(b.host))
+    .slice(0, topN)
+    .map(entry => ({
+      host: entry.host,
+      answers: entry.answers,
+      promptCount: entry.prompts.size,
+      isOwn: Boolean(ownHost) && hostMatches(entry.host, ownHost),
+      isSocial: SOCIAL_SOURCE_HOSTS.some(domain => entry.host === domain || entry.host.endsWith(`.${domain}`)),
+    }))
+  return { answersWithSources, items }
+}
+
 export function buildVisibilityModel({
   brand,
   prompts = [],

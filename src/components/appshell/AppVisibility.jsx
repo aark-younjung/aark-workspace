@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { hostLabel } from '../../lib/url'
 import { aivisQuotaFor } from '../../lib/limits'
-import { buildVisibilityModel, ENGINE_KEYS, ENGINE_META } from './aivisData'
+import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, ENGINE_KEYS, ENGINE_META } from './aivisData'
 
 const RANGE_OPTIONS = [
   { days: 7, label: '本週' },
@@ -158,6 +158,39 @@ export default function AppVisibility() {
     rangeDays,
   }), [state.brand, state.prompts, state.responses, state.mentions, rangeDays])
 
+  // 競品同題比較（觀察名單存在 aivis_brands.competitors；零額外掃描、既有回答原文比對）
+  const comparison = useMemo(() => buildCompetitorComparison({
+    competitors: state.brand?.competitors || [],
+    prompts: state.prompts,
+    responses: state.responses,
+    mentions: state.mentions,
+    rangeDays,
+  }), [state.brand?.competitors, state.prompts, state.responses, state.mentions, rangeDays])
+
+  // 來源影響力（誰在影響 AI 的答案）：既有回答附帶的真實引用來源彙整
+  const influence = useMemo(() => buildSourceInfluence({
+    brand: state.brand,
+    responses: state.responses,
+    rangeDays,
+  }), [state.brand, state.responses, rangeDays])
+
+  // 競品觀察名單編輯器（單一逗號分隔輸入、最多 3 個）
+  const [compEditor, setCompEditor] = useState({ open: false, value: '', busy: false, error: '' })
+  async function saveCompetitors(event) {
+    event.preventDefault()
+    const names = [...new Set(compEditor.value.split(/[,，、]/).map(item => item.trim()).filter(Boolean))].slice(0, 3)
+    setCompEditor(current => ({ ...current, busy: true, error: '' }))
+    const { error } = await supabase.from('aivis_brands').update({ competitors: names }).eq('id', state.brand.id)
+    if (error) {
+      // 欄位還沒建（需跑 SQL）或 RLS 未開放更新 → 誠實顯示原因，不默默失敗
+      const hint = /column|competitors/i.test(error.message) ? '（資料表尚未新增 competitors 欄位，請先在 Supabase 跑一次 SQL）' : ''
+      setCompEditor(current => ({ ...current, busy: false, error: `${error.message}${hint}` }))
+      return
+    }
+    setState(current => ({ ...current, brand: { ...current.brand, competitors: names } }))
+    setCompEditor({ open: false, value: '', busy: false, error: '' })
+  }
+
   if (state.loading) return <div className="as-loading" aria-live="polite">載入中…</div>
   if (state.error || !state.website) return (
     <div className="as-empty" role="alert">
@@ -210,9 +243,31 @@ export default function AppVisibility() {
           <div className="as-vis-usage"><i style={{ width: `${Math.min(100, (state.monthQueries ?? 0) / aivisQuotaFor({ isTrial }) * 100)}%` }} /></div>
         </div>
         <div className="as-card as-vis-kpi">
-          <div className="label">同類領先者</div>
-          <div className="value small pending">接資料中</div>
-          <p>尚無 aivis 競品資料來源，不從回答文字猜品牌或分數。</p>
+          <div className="label">同類領先者 {comparison && comparison.basis > 0 && <span className="as-vis-beta">BETA</span>}</div>
+          {comparison && comparison.basis > 0 ? (() => {
+            // 領先者＝自己＋觀察名單中提及率最高者（同一批回答、同一標準）
+            const contenders = [{ name: state.brand.name, rate: comparison.own.rate, you: true }, ...comparison.rows]
+            const leader = contenders.slice().sort((a, b) => b.rate - a.rate)[0]
+            return (
+              <>
+                <div className="value small num">{leader.rate}%</div>
+                <p>
+                  <b translate="no">{leader.name}</b>{leader.you ? '（你）目前領先觀察名單 🎉' : ` 領先你 ${leader.rate - comparison.own.rate} 個百分點`}
+                  ，明細見下方競品同題比較。
+                </p>
+              </>
+            )
+          })() : (
+            <>
+              <div className="value small pending">{state.brand.competitors?.length ? '接資料中' : '未設定'}</div>
+              <p>
+                {state.brand.competitors?.length
+                  ? '觀察名單已設定；等本期掃描有可比對的回答原文後顯示。'
+                  : '設定競品觀察名單（最多 3 個），用同一批 AI 回答比較提及率——不猜、不捏造。'}
+                {' '}<a href="#vis-competitors" className="as-vis-anchor">設定 →</a>
+              </p>
+            </>
+          )}
         </div>
       </section>
 
@@ -238,12 +293,85 @@ export default function AppVisibility() {
         <div className="as-card"><div className="title">內容引用率 <span>另計</span></div><div className={`value num citation${model.contentCitation ? '' : ' pending'}`}>{metricValue(model.contentCitation?.rate)}</div><p>回答知識型問題時，引用來源裡出現你網域的比率。<Link to={`/app/${websiteId}/gap`}>→ 看內容缺口</Link></p></div>
       </section>
 
-      {/* 競品目前沒有 aivis 專用資料表：不從回答文字猜分數 */}
-      <section className="as-card as-vis-compare">
-        <div className="as-vis-section-head"><div><h3>競品比較 · 品類曝光率</h3><span>同一批核心題被 AI 提到的比率</span></div></div>
-        <div className="as-vis-compare-row you"><span>{state.brand.name}（你）</span><div className="bar"><i style={{ width: `${model.exposure.rate ?? 0}%` }} /></div><b className="num">{metricValue(model.exposure.rate)}</b></div>
-        {[0, 1].map(index => <div className={`as-vis-compare-row${!isPro || index > 0 ? ' locked' : ''}`} key={index}><span>競品資料</span><div className="bar" /><b>接資料中</b>{(!isPro || index > 0) && <div className="lock">🔒 {isPro ? '尚未連結競品資料' : 'Free 鎖住 · 升級解鎖更多競品'}</div>}</div>)}
-        <p className="foot">競品尚無 aivis 專用資料來源，因此不從 AI 回答文字推測品牌或捏造分數。</p>
+      {/* 競品同題比較（2026-08-13 第一批）：觀察名單 × 既有回答原文比對——零額外掃描、同一標準 */}
+      <section className="as-card as-vis-compare" id="vis-competitors">
+        <div className="as-vis-section-head">
+          <div><h3>競品同題比較</h3><span className="as-vis-beta">BETA</span></div>
+          <button type="button" className="as-vis-line-button" onClick={() => setCompEditor(current => ({ ...current, open: !current.open, value: (state.brand.competitors || []).join(', ') }))}>
+            {state.brand.competitors?.length ? '編輯觀察名單' : '＋ 設定觀察名單'}
+          </button>
+        </div>
+
+        {compEditor.open && (
+          <form className="as-vis-comp-editor" onSubmit={saveCompetitors}>
+            <label htmlFor="comp-input">競品名稱（最多 3 個，用逗號分隔；用 AI 回答會寫出的正式名稱效果最好）</label>
+            <div className="row">
+              <input
+                id="comp-input"
+                type="text"
+                value={compEditor.value}
+                onChange={event => setCompEditor(current => ({ ...current, value: event.target.value }))}
+                placeholder="例：品牌甲, 品牌乙…"
+              />
+              <button className="as-cta" type="submit" disabled={compEditor.busy}>{compEditor.busy ? '儲存中…' : '儲存名單'}</button>
+            </div>
+            {compEditor.error && <div className="err" role="alert">{compEditor.error}</div>}
+          </form>
+        )}
+
+        {!state.brand.competitors?.length ? (
+          <div className="as-vis-inline-state">設定觀察名單後，我們會在<b>同一批真實 AI 回答</b>裡比對競品名稱——同題、同標準、不多花掃描額度。</div>
+        ) : !comparison || comparison.basis === 0 ? (
+          <div className="as-vis-inline-state">本期（{rangeDays} 天內）沒有可比對的回答原文——執行一次掃描後，這裡會顯示同題比較。</div>
+        ) : (
+          <>
+            <div className="as-vis-compare-row you">
+              <span translate="no">{state.brand.name}（你）</span>
+              <div className="bar"><i style={{ width: `${comparison.own.rate}%` }} /></div>
+              <b className="num">{comparison.own.rate}%</b>
+            </div>
+            {comparison.rows.map(row => (
+              <div className="as-vis-compare-row" key={row.name}>
+                <span translate="no">{row.name}</span>
+                <div className="bar"><i className="rival" style={{ width: `${row.rate}%` }} /></div>
+                <b className="num">{row.rate}%</b>
+                <span className={`as-vis-delta ${row.delta > 0 ? 'ahead' : row.delta < 0 ? 'behind' : 'even'}`}>
+                  {row.delta > 0 ? `領先你 +${row.delta}` : row.delta < 0 ? `落後你 ${row.delta}` : '與你持平'}
+                </span>
+              </div>
+            ))}
+            <p className="foot">
+              方法：近 {rangeDays} 天核心品類題、共 <b className="num">{comparison.basis}</b> 個「有原文」的引擎回答中做名稱比對；
+              名稱沒被寫出即算未提及（與你的品牌同一標準）。這是提及率、不是市佔率。
+            </p>
+          </>
+        )}
+      </section>
+
+      {/* 誰在影響 AI 的答案（來源影響力）：既有回答附帶的真實引用來源彙整——零猜測 */}
+      <section className="as-card as-vis-influence">
+        <div className="as-vis-section-head"><div><h3>誰在影響 AI 的答案</h3><span className="as-vis-beta">BETA</span></div></div>
+        {influence.items.length === 0 ? (
+          <div className="as-vis-inline-state">本期回答沒有附引用來源（部分引擎或較舊掃描不回傳來源）。</div>
+        ) : (
+          <>
+            <ol className="as-vis-src-list">
+              {influence.items.map((item, index) => (
+                <li key={item.host}>
+                  <span className="rank num">{index + 1}</span>
+                  <span className="host" translate="no">{item.host}</span>
+                  {item.isOwn && <span className="stag own">你的網站</span>}
+                  {item.isSocial && <span className="stag">社群</span>}
+                  <span className="cnt num">被引用於 {item.promptCount} 題 · {item.answers} 個回答</span>
+                </li>
+              ))}
+            </ol>
+            <p className="foot">
+              來自近 {rangeDays} 天 <b className="num">{influence.answersWithSources}</b> 個附引用來源的引擎回答（全題型）。
+              這些網站正在替 AI「背書答案」——上榜卻不是你，就是內容機會的方向。
+            </p>
+          </>
+        )}
       </section>
 
       <BrandMentions brand={state.brand} />
