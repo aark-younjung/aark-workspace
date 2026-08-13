@@ -315,6 +315,10 @@ html.dark-theme .appshell textarea::placeholder{
   font-size:14px;line-height:1;padding:2px 6px;border-radius:99px;}
 .appshell .as-vis-comp-editor .chip button:hover{background:rgba(255,110,52,.18);}
 .appshell .as-vis-comp-editor .chip button:focus-visible{outline:2px solid rgba(130,152,255,.55);}
+/* 「已完成比對」聲明條：綠框＝完成訊號，跟灰色的「還沒資料」inline-state 區隔 */
+.appshell .as-vis-inline-state.done{background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.25);color:var(--ink-2);}
+/* 比較列的 (提到數/樣本數) 小字：把 0% 的意義講死（0/34＝34 個回答裡 0 次） */
+.appshell .as-vis-compare-row .cnt{font-size:10px;color:var(--ink-3);font-weight:600;margin-left:2px;}
 /* KPI 卡上的觀察名單一排：沿用引擎分率排版、可換行（名字長也擠得下） */
 .appshell .as-vis-watchlist{flex-wrap:wrap;row-gap:4px;margin-top:8px;}
 .appshell .as-vis-watchlist>span{white-space:nowrap;}

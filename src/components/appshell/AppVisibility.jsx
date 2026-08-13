@@ -374,24 +374,29 @@ export default function AppVisibility() {
           <div className="as-vis-inline-state">本期（{rangeDays} 天內）沒有可比對的回答原文——執行一次掃描後，這裡會顯示同題比較。</div>
         ) : (
           <>
-            <div className="as-vis-compare-row you">
+            {/* 明確的「已完成」聲明：0% 容易被誤讀成「還沒分析」——直接講清楚 0% 是結果不是等待 */}
+            <div className="as-vis-inline-state done">
+              ✅ 已完成比對：近 {rangeDays} 天共 <b className="num">{comparison.basis}</b> 個引擎回答（存名單當下即時算完、不用等）。
+              <b>0% ＝ 在這些回答裡一次都沒被寫出來</b>；若確認名稱寫法無誤，0% 就代表 AI 目前沒推薦它。
+            </div>
+            <div className="as-vis-compare-row you" title={`${state.brand.name}：${comparison.own.mentioned} / ${comparison.basis} 個回答提到`}>
               <span translate="no">{state.brand.name}（你）</span>
               <div className="bar"><i style={{ width: `${comparison.own.rate}%` }} /></div>
-              <b className="num">{comparison.own.rate}%</b>
+              <b className="num">{comparison.own.rate}%<small className="cnt">（{comparison.own.mentioned}/{comparison.basis}）</small></b>
             </div>
             {comparison.rows.map(row => (
-              <div className="as-vis-compare-row" key={row.name}>
+              <div className="as-vis-compare-row" key={row.name} title={`${row.name}：${row.mentioned} / ${comparison.basis} 個回答提到`}>
                 <span translate="no">{row.name}</span>
                 <div className="bar"><i className="rival" style={{ width: `${row.rate}%` }} /></div>
-                <b className="num">{row.rate}%</b>
+                <b className="num">{row.rate}%<small className="cnt">（{row.mentioned}/{comparison.basis}）</small></b>
                 <span className={`as-vis-delta ${row.delta > 0 ? 'ahead' : row.delta < 0 ? 'behind' : 'even'}`}>
                   {row.delta > 0 ? `領先你 +${row.delta}` : row.delta < 0 ? `落後你 ${row.delta}` : '與你持平'}
                 </span>
               </div>
             ))}
             <p className="foot">
-              方法：近 {rangeDays} 天核心品類題、共 <b className="num">{comparison.basis}</b> 個「有原文」的引擎回答中做名稱比對；
-              名稱沒被寫出即算未提及（與你的品牌同一標準）。這是提及率、不是市佔率。
+              方法：名稱比對用「AI 回答原文包含該名稱」判定，名稱沒被寫出即算未提及（與你的品牌同一標準）。
+              競品名稱請用 AI 會寫出的常用寫法（例：常用中文店名，避免公司全稱）。這是提及率、不是市佔率。
             </p>
           </>
         )}
