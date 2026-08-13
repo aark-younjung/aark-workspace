@@ -6,6 +6,8 @@ import { isHomepage } from '../../lib/pageAudit'
 import { coreExposureRates, buildCompetitorComparison } from './aivisData'
 import { computeBrandLevel, BRAND_LEVELS } from './brandLevel'
 import { runFullScan } from '../../services/scanService'
+import ClientReportModal from '../v2/ClientReportModal'
+import LLMOChecklistModal from '../v2/LLMOChecklistModal'
 import { buildHealthChecks } from './healthData'
 import MetricGlossary from './MetricGlossary'
 import SiteSwitcher from './SiteSwitcher'
@@ -55,6 +57,8 @@ export default function AppOverview() {
   const [aivisRate, setAivisRate] = useState(null) // 近 30 天品類推薦曝光率（無資料 = null）
   const [aivisRaw, setAivisRaw] = useState(null)   // 90 天題庫+回應（品牌等級判定用）
   const [scanning, setScanning] = useState(false)  // 重新掃描中（共用 scanService）
+  const [pdfOpen, setPdfOpen] = useState(false)        // 客戶提案 PDF modal（沿用 v2 元件）
+  const [checklistOpen, setChecklistOpen] = useState(false) // 6 週清單 PDF modal（沿用 v2 元件）
 
   useEffect(() => {
     if (!websiteId) return
@@ -166,9 +170,14 @@ export default function AppOverview() {
     <>
       <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
       <div className="as-phead"><h2>總覽</h2><span className="sub">{title} 在 AI 眼中的整體狀態</span>
-        <button type="button" className="as-cta as-rescan" onClick={handleRescan} disabled={scanning} aria-live="polite">
-          {scanning ? '掃描中…（約 30–60 秒）' : '🔄 重新掃描'}
-        </button>
+        <div className="as-head-actions">
+          {/* PDF 匯出（硬切前置 #2）：沿用經典版同兩個 modal 元件、資料同源 */}
+          <button type="button" className="as-vis-line-button" onClick={() => setPdfOpen(true)}>📄 客戶報告</button>
+          <button type="button" className="as-vis-line-button" onClick={() => setChecklistOpen(true)}>📋 6 週清單</button>
+          <button type="button" className="as-cta as-rescan" onClick={handleRescan} disabled={scanning} aria-live="polite">
+            {scanning ? '掃描中…（約 30–60 秒）' : '🔄 重新掃描'}
+          </button>
+        </div>
       </div>
 
       {/* 品牌 AI 能見度等級（里程碑事件制・雷達隱喻）：每一級都是可驗證的真實事件、逐級解鎖 */}
@@ -271,6 +280,24 @@ export default function AppOverview() {
 
       {/* 改前/改後 — 誠實 placeholder，不假造趨勢 */}
       <div className="as-stub">📈 <b>改前 / 改後進展</b>：需要至少兩次掃描才能比較。接上趨勢資料後，這裡會顯示「你改了什麼 → AI 能見度怎麼變」。（建置中）</div>
+
+      {/* PDF modals：沿用經典版元件（白標客戶提案 + 6 週執行清單），資料吃本頁已載入的 audits */}
+      <ClientReportModal
+        open={pdfOpen}
+        onClose={() => setPdfOpen(false)}
+        data={{ website, seoAudit: audits.seo, aeoAudit: audits.aeo, geoAudit: audits.geo, eeatAudit: audits.eeat }}
+      />
+      <LLMOChecklistModal
+        open={checklistOpen}
+        onClose={() => setChecklistOpen(false)}
+        data={{ website }}
+        baselineScores={{
+          seo: audits.seo?.score || 0,
+          aeo: audits.aeo?.score || 0,
+          geo: audits.geo?.score || 0,
+          eeat: audits.eeat?.score || 0,
+        }}
+      />
     </>
   )
 }

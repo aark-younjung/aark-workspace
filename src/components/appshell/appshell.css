@@ -96,8 +96,9 @@ html.dark-theme .appshell textarea::placeholder{
 
 .appshell .as-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);}
 
-/* 總覽「重新掃描」鈕：靠右、掃描中降透明（按鈕保留原文字＋進度提示） */
-.appshell .as-rescan{margin-left:auto;margin-top:0;}
+/* 總覽頁首動作群：PDF ×2＋重新掃描，靠右一排（手機自動換行） */
+.appshell .as-head-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.appshell .as-rescan{margin-top:0;}
 .appshell .as-rescan:disabled{opacity:.6;cursor:wait;}
 
 /* ── 統一狀態徽章（八種語彙，全殼共用；同狀態同色同字） ── */

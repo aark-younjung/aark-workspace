@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13x（硬切前置 #2：PDF 匯出搬進新版 — 已部署）
+
+新版 AppOverview 頁首動作群加「📄 客戶報告」「📋 6 週清單」——**直接沿用經典版同兩個 modal 元件**（ClientReportModal / LLMOChecklistModal，零重寫），資料吃本頁已載入的四大 audit。硬切前置剩：aivis 題庫管理搬遷 → 舊 URL 1:1 轉址。
+
 ### 2026-08-13w（🚨 AEO 寫入靜默失敗數日的真相 — 需跑 SQL 補兩欄）
 
 用戶重掃後 AEO 仍 13 分。逐層驗證（本地 vite-node 跑真分析器＝回 25 分正常、anon select 探欄位）→ **`aeo_audits` 表根本沒有 `meta_desc_length`/`structured_answer` 欄位**。8/12 把兩欄加進 insert payload 時沒發現表上缺欄 → **此後所有 AEO insert 整筆失敗**且被 allSettled/未檢查 error 靜默吞掉（GEO/SEO/EEAT 正常、AEO 永遠停舊值）。回頭看：當初「50 vs 75」的最根因就是這兩欄從未存在。修：①用戶跑 SQL `alter table aeo_audits add column if not exists meta_desc_length boolean; ... structured_answer boolean;` ②[scanService.js](src/services/scanService.js) 加寫入結果體檢（逐筆檢查 `.error` 記 console；supabase insert 不 throw、allSettled 全 fulfilled＝失敗隱形）。教訓：**改 insert payload 前先驗表 schema**；靜默吞錯是 bug 的溫床。
