@@ -155,6 +155,7 @@ function AppInner() {
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<AppOverview />} />
           <Route path="visibility" element={<AppVisibility />} />
+          <Route path="visibility/:visTab" element={<AppVisibility />} />
           <Route path="health" element={<AppHealth />} />
           <Route path="health/:healthTab" element={<AppHealth />} />
           <Route path="gap" element={<AppGap />} />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { hostLabel } from '../../lib/url'
@@ -7,6 +7,15 @@ import { aivisQuotaFor } from '../../lib/limits'
 import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, buildBrandVoice, ENGINE_KEYS, ENGINE_META } from './aivisData'
 import SiteSwitcher from './SiteSwitcher'
 import Badge from './Badge'
+
+// 分頁（2026-08-13 用戶提案：區塊多到該分頁了，比照網站體檢＝真 URL 深連結）
+// 原則：每個分頁都是「已存在的內容」，不蓋空殼；期間切換與管理按鈕留在頁首跨分頁通用
+const VIS_TABS = [
+  { key: 'overview', label: '總覽' },
+  { key: 'competitors', label: '競品比較' },
+  { key: 'sources', label: '引用來源' },
+  { key: 'voice', label: 'AI 怎麼說你' },
+]
 
 const RANGE_OPTIONS = [
   { days: 7, label: '本週' },
@@ -101,7 +110,7 @@ function BrandMentions({ brand }) {
 }
 
 export default function AppVisibility() {
-  const { websiteId } = useParams()
+  const { websiteId, visTab } = useParams()
   const { isPro, isTrial, user } = useAuth()
   const [rangeDays, setRangeDays] = useState(7)
   const [state, setState] = useState({ loading: true, error: '', website: null, brand: null, prompts: [], responses: [], mentions: [], monthQueries: null })
@@ -233,6 +242,12 @@ export default function AppVisibility() {
     setCompEditor({ open: false, names: [], draft: '', busy: false, error: '' })
   }
 
+  // 分頁解析：無效或缺分頁 → 導到 /visibility/overview（比照 AppHealth 的 URL 契約）
+  const selectedTab = VIS_TABS.some(tab => tab.key === visTab) ? visTab : 'overview'
+  if (visTab !== selectedTab) {
+    return <Navigate to={`/app/${websiteId}/visibility/${selectedTab}`} replace />
+  }
+
   if (state.loading) return <div className="as-loading" aria-live="polite">載入中…</div>
   if (state.error || !state.website) return (
     <div className="as-empty" role="alert">
@@ -266,6 +281,19 @@ export default function AppVisibility() {
         <Link className="as-cta as-vis-rescan" to={`/ai-visibility/${state.brand.id}`}>管理／重新掃描</Link>
       </div>
 
+      {/* 分頁導覽：沿用網站體檢同款樣式與深連結模式 */}
+      <nav className="as-health-tabs" aria-label="AI 曝光監測分類">
+        {VIS_TABS.map(tab => (
+          <Link
+            key={tab.key}
+            className={`as-health-tab${selectedTab === tab.key ? ' on' : ''}`}
+            to={`/app/${websiteId}/visibility/${tab.key}`}
+            aria-current={selectedTab === tab.key ? 'page' : undefined}
+          >{tab.label}</Link>
+        ))}
+      </nav>
+
+      {selectedTab === 'overview' && (<>
       {/* 旗艦 KPI：核心品類題與兩個誠實分開的軸 */}
       <section className="as-vis-kpis" aria-label="AI 曝光指標">
         <div className="as-card as-vis-kpi as-vis-kpi-main">
@@ -318,7 +346,7 @@ export default function AppVisibility() {
                 {state.brand.competitors?.length
                   ? '觀察名單已設定；等本期掃描有可比對的回答原文後顯示。'
                   : '設定競品觀察名單（最多 3 個），用同一批 AI 回答比較提及率——不猜、不捏造。'}
-                {' '}<a href="#vis-competitors" className="as-vis-anchor">{state.brand.competitors?.length ? '編輯 →' : '設定 →'}</a>
+                {' '}<Link to={`/app/${websiteId}/visibility/competitors`} className="as-vis-anchor">{state.brand.competitors?.length ? '編輯 →' : '設定 →'}</Link>
               </p>
             </>
           )}
@@ -347,6 +375,9 @@ export default function AppVisibility() {
         <div className="as-card"><div className="title">內容引用率 <span>另計</span></div><div className={`value num citation${model.contentCitation ? '' : ' pending'}`}>{metricValue(model.contentCitation?.rate)}</div><p>回答知識型問題時，引用來源裡出現你網域的比率。<Link to={`/app/${websiteId}/gap`}>→ 看內容缺口</Link></p></div>
       </section>
 
+      </>)}
+
+      {selectedTab === 'competitors' && (<>
       {/* 競品同題比較（2026-08-13 第一批）：觀察名單 × 既有回答原文比對——零額外掃描、同一標準 */}
       <section className="as-card as-vis-compare" id="vis-competitors">
         <div className="as-vis-section-head">
@@ -421,6 +452,9 @@ export default function AppVisibility() {
         )}
       </section>
 
+      </>)}
+
+      {selectedTab === 'sources' && (<>
       {/* 誰在影響 AI 的答案（來源影響力）：既有回答附帶的真實引用來源彙整——零猜測 */}
       <section className="as-card as-vis-influence">
         <div className="as-vis-section-head"><div><h3>誰在影響 AI 的答案</h3><Badge kind="beta" /></div></div>
@@ -447,6 +481,9 @@ export default function AppVisibility() {
         )}
       </section>
 
+      </>)}
+
+      {selectedTab === 'voice' && (<>
       {/* AI 怎麼描述你（觀感 Lite v1）：逐引擎原話摘引＋可展開完整回答——只呈現 AI 真的說了什麼 */}
       <section className="as-card as-vis-voice">
         <div className="as-vis-section-head"><div><h3>AI 怎麼描述你</h3><Badge kind="beta" /></div></div>
@@ -511,7 +548,9 @@ export default function AppVisibility() {
         )}
       </section>
 
-      <BrandMentions brand={state.brand} />
+      </>)}
+
+      {selectedTab === 'sources' && <BrandMentions brand={state.brand} />}
     </>
   )
 }
