@@ -188,6 +188,10 @@ const FORUM_SOURCE_HOSTS = ['ptt.cc', 'dcard.tw', 'mobile01.com', 'pixnet.net', 
 // 百科／知識庫
 const WIKI_SOURCE_HOSTS = ['wikipedia.org', 'wikimedia.org', 'baike.baidu.com']
 
+// 技術產物網域：不是真實來源網站、是引擎的轉址/接地包裝（例：Gemini grounding redirect）——
+// 出現在影響力名單會誤導（2026-08-13 實案：vertexaisearch 排到第 6 名），直接排除
+const SOURCE_ARTIFACT_HOSTS = ['vertexaisearch.cloud.google.com']
+
 const SOURCE_CATEGORY_LABEL = {
   own: '你的網站', social: '社群', news: '新聞媒體', forum: '論壇・UGC', wiki: '百科', gov_edu: '政府・學術', general: '一般網站',
 }
@@ -227,7 +231,10 @@ export function buildSourceInfluence({ brand, responses = [], rangeDays = 90, to
       const sources = Array.isArray(result?.sources) ? result.sources : []
       if (!sources.length) continue
       answersWithSources += 1
-      const hostsInAnswer = new Set(sources.map(source => normalizedHost(source?.uri)).filter(Boolean))
+      const hostsInAnswer = new Set(
+        sources.map(source => normalizedHost(source?.uri))
+          .filter(host => host && !matchHostList(host, SOURCE_ARTIFACT_HOSTS))
+      )
       for (const host of hostsInAnswer) {
         const entry = byHost.get(host) || { host, answers: 0, prompts: new Set() }
         entry.answers += 1

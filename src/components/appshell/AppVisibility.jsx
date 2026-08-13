@@ -532,8 +532,9 @@ export default function AppVisibility() {
                 <li key={item.host}>
                   <span className="rank num">{index + 1}</span>
                   <span className="host" translate="no">{item.host}</span>
-                  {item.category === 'own' && <span className="stag own">你的網站</span>}
-                  {item.category !== 'own' && item.category !== 'general' && <span className="stag">{SOURCE_CATEGORY_LABEL[item.category]}</span>}
+                  {item.category === 'own'
+                    ? <span className="stag own">你的網站</span>
+                    : <span className={`stag${item.category === 'general' ? ' gen' : ''}`}>{SOURCE_CATEGORY_LABEL[item.category]}</span>}
                   <span className="cnt num">被引用於 {item.promptCount} 題 · {item.answers} 個回答</span>
                 </li>
               ))}

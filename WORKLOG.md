@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13u（來源清單二修：排除 Gemini 轉址網域 + 全類掛標籤 — 已部署）
+
+用戶截圖抓到：①`vertexaisearch.cloud.google.com` 排影響力第 6——那是 Gemini 接地搜尋的轉址包裝網域、非真實來源 → 加 `SOURCE_ARTIFACT_HOSTS` 排除清單。②「一般網站不掛標籤減噪」反讓用戶以為分類沒運作 → 改全類都掛（general 最淡樣式 opacity .55）。附帶情報：DBG 的 AI 答案被 littlenewton/amazingtalker/yesonlineeng 等同業內容餵養＝競品觀察名單與內容對標的現成方向。
+
 ### 2026-08-13t（🟡 第二批 #5：引用來源分類 — 已部署）
 
 [aivisData.js](src/components/appshell/aivisData.js) `classifySourceHost`：七類（你的網站/社群/新聞媒體/論壇・UGC/百科/政府・學術/一般網站），全清單式判定＋.gov/.edu TLD——透明可解釋。**刻意不做「低品質/內容農場」標籤**（對特定網站下負面標籤有毀謗風險、無法機械驗證；Kuroma 有、我們不跟）。UI：引用來源分頁加分類摘要列（統計全部來源網域、不只 top N）＋清單列掛分類 tag（general 不掛減噪）。TW 清單：新聞 16 域/論壇 9 域/百科 3 域，之後可擴。
