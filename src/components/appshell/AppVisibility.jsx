@@ -6,6 +6,7 @@ import { hostLabel } from '../../lib/url'
 import { aivisQuotaFor } from '../../lib/limits'
 import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, ENGINE_KEYS, ENGINE_META } from './aivisData'
 import SiteSwitcher from './SiteSwitcher'
+import Badge from './Badge'
 
 const RANGE_OPTIONS = [
   { days: 7, label: '本週' },
@@ -75,7 +76,7 @@ function BrandMentions({ brand }) {
   return (
     <section className="as-card as-vis-mentions">
       <div className="as-vis-section-head">
-        <div><h3>品牌外部提及</h3><span className="as-vis-beta">BETA</span></div>
+        <div><h3>品牌外部提及</h3><Badge kind="beta" /></div>
         <button className="as-vis-line-button" type="button" onClick={search} disabled={state.loading}>
           {state.loading ? '查詢中…' : '查詢品牌提及'}
         </button>
@@ -276,7 +277,7 @@ export default function AppVisibility() {
           <div className="as-vis-usage"><i style={{ width: `${Math.min(100, (state.monthQueries ?? 0) / aivisQuotaFor({ isTrial }) * 100)}%` }} /></div>
         </div>
         <div className="as-card as-vis-kpi">
-          <div className="label">同類領先者 {comparison && comparison.basis > 0 && <span className="as-vis-beta">BETA</span>}</div>
+          <div className="label">同類領先者 {comparison && comparison.basis > 0 && <Badge kind="beta" />}</div>
           {comparison && comparison.basis > 0 ? (() => {
             // 領先者＝自己＋觀察名單中提及率最高者（同一批回答、同一標準）
             const contenders = [{ name: state.brand.name, rate: comparison.own.rate, you: true }, ...comparison.rows]
@@ -341,7 +342,7 @@ export default function AppVisibility() {
       {/* 競品同題比較（2026-08-13 第一批）：觀察名單 × 既有回答原文比對——零額外掃描、同一標準 */}
       <section className="as-card as-vis-compare" id="vis-competitors">
         <div className="as-vis-section-head">
-          <div><h3>競品同題比較</h3><span className="as-vis-beta">BETA</span></div>
+          <div><h3>競品同題比較</h3><Badge kind="beta" /></div>
           <button type="button" className="as-vis-line-button" onClick={() => setCompEditor(current => ({ ...current, open: !current.open, names: state.brand.competitors || [], draft: '', error: '' }))}>
             {state.brand.competitors?.length ? '編輯觀察名單' : '＋ 設定觀察名單'}
           </button>
@@ -414,7 +415,7 @@ export default function AppVisibility() {
 
       {/* 誰在影響 AI 的答案（來源影響力）：既有回答附帶的真實引用來源彙整——零猜測 */}
       <section className="as-card as-vis-influence">
-        <div className="as-vis-section-head"><div><h3>誰在影響 AI 的答案</h3><span className="as-vis-beta">BETA</span></div></div>
+        <div className="as-vis-section-head"><div><h3>誰在影響 AI 的答案</h3><Badge kind="beta" /></div></div>
         {influence.items.length === 0 ? (
           <div className="as-vis-inline-state">本期回答沒有附引用來源（部分引擎或較舊掃描不回傳來源）。</div>
         ) : (
@@ -440,7 +441,7 @@ export default function AppVisibility() {
 
       {/* AI 講錯你了嗎（事實監測）：官方事實 × 品牌題回答的機械比對——只驗可驗證的欄位、不硬判 */}
       <section className="as-card as-vis-facts">
-        <div className="as-vis-section-head"><div><h3>AI 講錯你了嗎</h3><span className="as-vis-beta">BETA</span></div></div>
+        <div className="as-vis-section-head"><div><h3>AI 講錯你了嗎</h3><Badge kind="beta" /></div></div>
         {factCheck.noFacts ? (
           <div className="as-vis-inline-state">
             還沒有「官方事實」可以比對——先到 <Link to={`/aeo-audit/${websiteId}`} className="as-vis-anchor">Organization Schema 產生器</Link> 填好電話、地址、Email、官網（那份資料就是你的官方事實庫），這裡就會自動檢查 AI 有沒有講錯。

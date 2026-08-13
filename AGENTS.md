@@ -45,7 +45,8 @@
 - **沿用現有邏輯、不重寫 analyzer**：資料抓取沿用 `DashboardV2`（website + 四大 audit）、`AIVisibilityDashboard`（aivis 聚合 `normEngineResults` 等）、audit 頁 + `src/services/*` + `src/lib/*`。已完成的 `AppOverview.jsx` 是參考範例。
 - **一站一品牌（1:1）**：aivis 靠 `aivis_brands.website_id` 解析；無連結品牌顯示「設定 aivis」空狀態。
 - **`websites` 是「一頁一筆」**：「我的網站」等清單要**依正規化 host 分組去重**（同網域收成一張卡），站數算 **distinct host**。
-- 「**內容缺口**」窄用＝只做 aivis-info 的「AI 回答知識題時引用了誰、你在不在名單」。
+- 「**內容缺口→內容機會**」（2026-08-13 改名）＝aivis-info 的「AI 回答知識題時引用了誰、你在不在名單」＋收編單篇/批次文章工具入口。
+- **狀態徽章統一用 `appshell/Badge.jsx`**（八種語彙：new/beta/pro/agency/nodata/waiting/error/sample）——同狀態在 sidebar、tab、卡片、表格內永遠同文字同色，不要再手刻 span。
 
 ## 2. Web Interface Guidelines（設計稿沒畫到的品質細節，務必補上）
 

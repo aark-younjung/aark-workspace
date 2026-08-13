@@ -96,6 +96,18 @@ html.dark-theme .appshell textarea::placeholder{
 
 .appshell .as-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);}
 
+/* ── 統一狀態徽章（八種語彙，全殼共用；同狀態同色同字） ── */
+.appshell .as-badge{display:inline-flex;align-items:center;font-family:var(--mono);font-size:9.5px;font-weight:800;
+  letter-spacing:.05em;padding:2px 7px;border-radius:6px;vertical-align:middle;white-space:nowrap;}
+.appshell .as-badge-new{background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.3);}       /* 新功能 */
+.appshell .as-badge-beta{background:rgba(130,152,255,.12);color:#5866c4;border:1px solid rgba(130,152,255,.4);}  /* 測試中 */
+.appshell .as-badge-pro{background:rgba(255,110,52,.12);color:var(--accent-2);border:1px solid rgba(255,110,52,.35);} /* 需 Pro */
+.appshell .as-badge-agency{background:rgba(88,102,196,.1);color:#4a55a8;border:1px solid rgba(88,102,196,.35);}  /* Agency 限定 */
+.appshell .as-badge-nodata{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line);}          /* 資料不足 */
+.appshell .as-badge-waiting{background:transparent;color:var(--ink-3);border:1px dashed var(--line-2);}           /* 等待掃描 */
+.appshell .as-badge-error{background:rgba(180,35,31,.08);color:#b4231f;border:1px solid rgba(180,35,31,.3);}      /* 引擎異常 */
+.appshell .as-badge-sample{background:var(--surface-3);color:var(--ink-2);border:1px solid var(--line-2);}        /* 示例資料 */
+
 /* aivis 主角卡 */
 .appshell .as-truth{padding:26px;box-shadow:var(--sh);border-radius:var(--r-xl);display:grid;grid-template-columns:auto 1fr;
   gap:28px;align-items:center;position:relative;overflow:hidden;}

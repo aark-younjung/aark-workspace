@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13l（🟠 第一批 #5：統一狀態徽章系統 — 已部署）
+
+新 [Badge.jsx](src/components/appshell/Badge.jsx) ＋ `.as-badge-*` 八種語彙（new 綠/beta 藍紫/pro 橘/agency 靛/nodata 灰/waiting 灰虛線/error 紅/sample 灰底）——同狀態同字同色（Codex 規格）。AppVisibility 既有 5 處 as-vis-beta span 換裝；語彙寫進 AGENTS.md §1 防手刻。
+
 ### 2026-08-13k（🟠 第一批 #4：全域網站切換器 — 已部署）
 
 新 [SiteSwitcher.jsx](src/components/appshell/SiteSwitcher.jsx)：四個分頁（總覽/曝光監測/體檢/內容機會）頂部的靜態網站名改為原生 `<select>` 切換器——**換站直接跳、且停留在同一個區塊**（體檢頁切站→新站的體檢頁）。沿用 buildSiteCards host 分組（一站一選項）、session 快取（module-level、四頁共用不重抓）、只有一站時維持靜態顯示、目前站非代表 row 時補目前項防 select 顯示錯。ponytail：原生 select（無障礙免費），站數大再升級自訂下拉。
