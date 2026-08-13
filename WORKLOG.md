@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13w（🚨 AEO 寫入靜默失敗數日的真相 — 需跑 SQL 補兩欄）
+
+用戶重掃後 AEO 仍 13 分。逐層驗證（本地 vite-node 跑真分析器＝回 25 分正常、anon select 探欄位）→ **`aeo_audits` 表根本沒有 `meta_desc_length`/`structured_answer` 欄位**。8/12 把兩欄加進 insert payload 時沒發現表上缺欄 → **此後所有 AEO insert 整筆失敗**且被 allSettled/未檢查 error 靜默吞掉（GEO/SEO/EEAT 正常、AEO 永遠停舊值）。回頭看：當初「50 vs 75」的最根因就是這兩欄從未存在。修：①用戶跑 SQL `alter table aeo_audits add column if not exists meta_desc_length boolean; ... structured_answer boolean;` ②[scanService.js](src/services/scanService.js) 加寫入結果體檢（逐筆檢查 `.error` 記 console；supabase insert 不 throw、allSettled 全 fulfilled＝失敗隱形）。教訓：**改 insert payload 前先驗表 schema**；靜默吞錯是 bug 的溫床。
+
 ### 2026-08-13v（硬切前置 #1：共用掃描 service + 新版總覽「重新掃描」— 已部署）
 
 新 [src/services/scanService.js](src/services/scanService.js) `runFullScan`：抓頁一次→四分析器並行→四表寫入（**欄位完整清單＝單一真相**，含 faq_visual/meta_desc_length/structured_answer；新增欄位只改這裡）。動機：寫入邏輯原有三份複本、已實際踩過漏欄位 bug。接線：①新版 AppOverview 頁首加「🔄 重新掃描」（掃描中顯示預估秒數、完成整頁重抓）——**新版從此可獨立完成「掃→看→修→再掃」閉環**，AppHealth 空狀態的「先從總覽執行掃描」也成立了 ②DashboardV2 `handleFirstScan` 改呼叫同一支（複本 3→2；剩 HomeDark/舊 Dashboard 待硬切時收）。修一個 python 插 import 到多行 import 中間的 build 錯。

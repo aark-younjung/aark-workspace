@@ -28,7 +28,9 @@ export async function runFullScan({ websiteId, url }) {
     analyzeEEAT(url, doc).catch(() => null),
   ])
 
-  await Promise.allSettled([
+  // ⚠️ supabase insert 不會 throw（錯誤在回傳值的 .error）——allSettled 全 fulfilled、失敗完全隱形。
+  // 2026-08-13 實案：aeo_audits 缺兩欄 → AEO 寫入靜默失敗數日、分數永遠停在舊值。這裡逐筆檢查並記 log。
+  const results = await Promise.allSettled([
     seo && supabase.from('seo_audits').insert([{
       website_id: websiteId, score: seo.score,
       meta_tags: seo.meta_tags, h1_structure: seo.h1_structure,
@@ -59,6 +61,13 @@ export async function runFullScan({ websiteId, url }) {
       social_links: !!eeat.social_links, outbound_links: !!eeat.outbound_links,
     }]),
   ])
+
+  // 寫入結果體檢：任何一面向 insert 失敗都記 console（未來接 error_logs 表時改寫入 DB）
+  const tables = ['seo_audits', 'aeo_audits', 'geo_audits', 'eeat_audits']
+  results.forEach((result, index) => {
+    const insertError = result.status === 'fulfilled' ? result.value?.error : result.reason
+    if (insertError) console.error(`[scanService] ${tables[index]} 寫入失敗：`, insertError.message || insertError)
+  })
 
   return { seo, aeo, geo, eeat }
 }
