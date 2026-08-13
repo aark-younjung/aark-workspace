@@ -920,6 +920,12 @@ export default function HomeDark() {
             </Link>
 
             <nav className="hidden md:flex items-center gap-5">
+              {/* 新版介面 Beta 入口（2026-08-13 soft launch）— HomeDark 用內嵌 header、要跟 SiteHeader 各加一份 */}
+              {user && (
+                <Link to="/app/websites" className="text-white hover:text-orange-300 transition-colors text-sm font-semibold">
+                  ✨ 新版介面 <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/25 border border-orange-400/50 text-orange-200 align-middle">BETA</span>
+                </Link>
+              )}
               <Link to="/showcase" className="text-white hover:text-orange-300 transition-colors text-sm">排行榜</Link>
               <Link to="/compare" className="text-white hover:text-orange-300 transition-colors text-sm">競品比較</Link>
               <Link to="/pricing" className="text-white hover:text-orange-300 transition-colors text-sm">定價</Link>
@@ -956,6 +962,10 @@ export default function HomeDark() {
 
           {/* 手機版導覽 */}
           <div className="md:hidden flex items-center gap-1 pb-2 overflow-x-auto scrollbar-hide">
+            {/* 新版介面 Beta 入口（登入者限定，與桌機 nav 同步） */}
+            {user && (
+              <Link to="/app/websites" className="flex-shrink-0 px-3 py-1 text-sm text-orange-300 font-semibold hover:bg-white/10 rounded-lg transition-colors whitespace-nowrap">✨ 新版 BETA</Link>
+            )}
             {[
               ['/showcase', '排行榜'], ['/compare', '競品比較'],
               ['/pricing', '定價'], ['/content-audit', '文章分析'], ['/faq', 'FAQ'],
@@ -1202,13 +1212,19 @@ export default function HomeDark() {
         {/* 我的網站 */}
         {user && myWebsites.length > 0 && (
           <div className="mt-10">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-lg">📂</span>
                 <h2 className="text-base font-bold text-white">我的網站</h2>
                 <span className="text-sm text-white/60 font-normal">{myWebsites.length} / {WEBSITE_LIMIT} 個</span>
               </div>
-              {!isPro && <Link to="/pricing" className="text-sm text-orange-400 hover:text-orange-300 transition-colors">升級解鎖更多 →</Link>}
+              <div className="flex items-center gap-4">
+                {/* 新版介面 Beta 入口（2026-08-13）：放在用戶最常看的「我的網站」區塊旁、最容易被發現 */}
+                <Link to="/app/websites" className="text-sm text-orange-300 hover:text-orange-200 font-semibold transition-colors">
+                  ✨ 用新版介面看 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/25 border border-orange-400/50 text-orange-200 align-middle">BETA</span>
+                </Link>
+                {!isPro && <Link to="/pricing" className="text-sm text-orange-400 hover:text-orange-300 transition-colors">升級解鎖更多 →</Link>}
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {myWebsites.map(site => {
