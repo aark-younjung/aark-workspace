@@ -15,7 +15,7 @@ const EEAT_CHECKS = [
   {
     id: 'author_info',
     name: '作者資訊',
-    description: '頁面是否有可識別的作者姓名或署名，Google 與 AI 透過作者資訊判斷內容的「經驗（Experience）」與「專業度（Expertise）」',
+    description: '頁面是否有可識別的作者姓名或署名，Google 與 AI 透過作者資訊判斷內容的「經驗（Experience）」與「專業度（Expertise）」。首頁看的是擁有者訊號（schema 的 Person 節點）；文章內頁要有真的署名（byline / author 標記）才算',
     icon: '✍️',
     priority: 'P1',
     recommendation: '在文章或頁面中加入作者姓名，可使用 <span itemprop="author"> 或 JSON-LD 的 "author" 欄位標記作者資訊',
@@ -31,10 +31,10 @@ const EEAT_CHECKS = [
   {
     id: 'contact_page',
     name: '聯絡方式',
-    description: '是否有聯絡頁面或可見的聯絡方式（email、電話），讓訪客和搜尋引擎確認網站是真實存在的機構',
+    description: '是否有聯絡頁面或可見的聯絡方式（email、電話、LINE 官方帳號），讓訪客和搜尋引擎確認網站是真實存在的機構',
     icon: '📞',
     priority: 'P1',
-    recommendation: '建立 /contact 頁面，提供 email 或電話，或在頁尾加入 <a href="mailto:..."> 聯絡資訊',
+    recommendation: '建立 /contact 頁面，提供 email、電話或 LINE 官方帳號連結，或在頁尾加入 <a href="mailto:..."> 聯絡資訊',
   },
   {
     id: 'privacy_policy',
@@ -71,7 +71,7 @@ const EEAT_CHECKS = [
   {
     id: 'outbound_links',
     name: '外部權威連結',
-    description: '是否有連結到外部可信來源（至少 2 個），引用外部資料可強化內容的「專業度」與「可信度」',
+    description: '是否有連結到外部可信來源（至少 2 個），引用外部資料可強化內容的「專業度」與「可信度」。自家社群連結（FB / IG / YouTube / LINE）不計——那已在「社群媒體連結」計分',
     icon: '🔗',
     priority: 'P3',
     recommendation: '在內容中引用並連結到官方資料、研究報告或知名媒體，使用 target="_blank" 開新分頁',

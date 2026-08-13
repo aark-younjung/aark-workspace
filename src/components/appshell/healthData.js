@@ -50,12 +50,12 @@ const GEO_META = [
 const EEAT_META = [
   { id: 'author_info', name: '作者資訊', icon: '✍️', priority: 'P1', description: '頁面是否有可識別作者或署名。', recommendation: '加入作者姓名與可驗證的專業資訊。' },
   { id: 'about_page', name: '關於我們頁面', icon: '🏢', priority: 'P1', description: '網站是否有清楚的品牌或組織介紹。', recommendation: '建立關於頁並說明公司背景與核心服務。' },
-  { id: 'contact_page', name: '聯絡方式', icon: '📞', priority: 'P1', description: '網站是否提供可見的電話、Email 或聯絡頁。', recommendation: '建立聯絡頁，提供可驗證的聯絡資訊。' },
+  { id: 'contact_page', name: '聯絡方式', icon: '📞', priority: 'P1', description: '網站是否提供可見的電話、Email、LINE 官方帳號或聯絡頁。', recommendation: '建立聯絡頁，提供可驗證的聯絡資訊（電話、Email 或 LINE 官方帳號）。' },
   { id: 'privacy_policy', name: '隱私權政策', icon: '🔏', priority: 'P2', description: '網站是否有隱私權政策頁面。', recommendation: '建立隱私權政策並從頁尾連結。' },
   { id: 'organization_schema', name: 'Organization Schema', icon: '🏷️', priority: 'P2', description: '是否有 Organization 或 LocalBusiness 結構化資料。', recommendation: '加入包含 name、url、logo、contactPoint 的 Organization schema。' },
   { id: 'date_published', name: '內容發布日期', icon: '📅', priority: 'P2', description: '是否標示發布或更新日期。', recommendation: '加入 datePublished、dateModified 或 time 元素。' },
   { id: 'social_links', name: '社群媒體連結', icon: '📱', priority: 'P3', description: '是否連結品牌的官方社群帳號。', recommendation: '從網站連到官方社群並保持品牌名稱一致。' },
-  { id: 'outbound_links', name: '外部權威連結', icon: '🔗', priority: 'P3', description: '內容是否引用外部可信來源。', recommendation: '引用官方資料、研究或可信媒體並附連結。' },
+  { id: 'outbound_links', name: '外部權威連結', icon: '🔗', priority: 'P3', description: '內容是否引用外部可信來源（自家社群連結不計，已在「社群媒體連結」計分）。', recommendation: '引用官方資料、研究或可信媒體並附連結。' },
 ]
 
 const NOT_CHECKED = { passed: true, detail: '此次未檢測（爬蟲被擋導致無法分析頁面內容）' }
