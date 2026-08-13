@@ -17,6 +17,19 @@ const VIS_TABS = [
   { key: 'voice', label: 'AI 怎麼說你' },
 ]
 
+// 品牌資料完整度（Kuroma 學來的一石二鳥：引導填資料＝提升題庫/判定準度＋收齊品牌檔案）
+// 只算 schema 真的有的欄位、不畫大餅；每項都講清楚「為什麼要填」
+function brandCompleteness(brand) {
+  const items = [
+    { key: 'domain', label: '品牌網域', ok: Boolean(brand?.domain), why: '判定「AI 引用的是不是你」要用' },
+    { key: 'industries', label: '產業別', ok: (brand?.industries || []).length > 0, why: '題庫自動生成的準度' },
+    { key: 'description', label: '品牌描述', ok: Boolean((brand?.description || '').trim()), why: '題庫自動生成的準度' },
+    { key: 'competitors', label: '競品觀察名單', ok: (brand?.competitors || []).length > 0, why: '同題比較用' },
+  ]
+  const done = items.filter(item => item.ok).length
+  return { pct: Math.round(done / items.length * 100), items, missing: items.filter(item => !item.ok) }
+}
+
 const RANGE_OPTIONS = [
   { days: 7, label: '本週' },
   { days: 30, label: '近 30 天' },
@@ -374,6 +387,34 @@ export default function AppVisibility() {
         <div className="as-card"><div className="title">品牌詞認得率 <span>另計</span></div><div className={`value num${model.brandRecognition ? '' : ' pending'}`}>{metricValue(model.brandRecognition?.rate)}</div><p>直接問「{state.brand.name} 是誰」時，AI 答得出來的比率。量 AI 認不認得你，刻意不併入曝光率。</p></div>
         <div className="as-card"><div className="title">內容引用率 <span>另計</span></div><div className={`value num citation${model.contentCitation ? '' : ' pending'}`}>{metricValue(model.contentCitation?.rate)}</div><p>回答知識型問題時，引用來源裡出現你網域的比率。<Link to={`/app/${websiteId}/gap`}>→ 看內容缺口</Link></p></div>
       </section>
+
+      {/* 品牌資料完整度：進度條＋缺什麼＋為什麼要填（資料越全、題庫與判定越準） */}
+      {(() => {
+        const completeness = brandCompleteness(state.brand)
+        return (
+          <section className="as-card as-vis-completeness">
+            <div className="head">
+              <b>品牌資料完整度</b>
+              <span className="pct num">{completeness.pct}%</span>
+              <div className="bar"><i style={{ width: `${completeness.pct}%` }} /></div>
+            </div>
+            {completeness.missing.length > 0 ? (
+              <div className="miss">
+                {completeness.missing.map(item => (
+                  <span key={item.key} className="mi">
+                    缺「{item.label}」<em>（{item.why}）</em>
+                    {item.key === 'competitors'
+                      ? <Link to={`/app/${websiteId}/visibility/competitors`} className="as-vis-anchor">去設定 →</Link>
+                      : <Link to={`/ai-visibility/${state.brand.id}`} className="as-vis-anchor">去補 →</Link>}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="full">✅ 資料齊全——題庫生成與引用判定都在最佳準度。</div>
+            )}
+          </section>
+        )
+      })()}
 
       </>)}
 
