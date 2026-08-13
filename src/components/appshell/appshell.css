@@ -96,6 +96,10 @@ html.dark-theme .appshell textarea::placeholder{
 
 .appshell .as-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);}
 
+/* 總覽「重新掃描」鈕：靠右、掃描中降透明（按鈕保留原文字＋進度提示） */
+.appshell .as-rescan{margin-left:auto;margin-top:0;}
+.appshell .as-rescan:disabled{opacity:.6;cursor:wait;}
+
 /* ── 統一狀態徽章（八種語彙，全殼共用；同狀態同色同字） ── */
 .appshell .as-badge{display:inline-flex;align-items:center;font-family:var(--mono);font-size:9.5px;font-weight:800;
   letter-spacing:.05em;padding:2px 7px;border-radius:6px;vertical-align:middle;white-space:nowrap;}

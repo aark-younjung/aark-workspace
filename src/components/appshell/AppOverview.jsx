@@ -5,6 +5,7 @@ import { hostLabel } from '../../lib/url'
 import { isHomepage } from '../../lib/pageAudit'
 import { coreExposureRates, buildCompetitorComparison } from './aivisData'
 import { computeBrandLevel, BRAND_LEVELS } from './brandLevel'
+import { runFullScan } from '../../services/scanService'
 import { buildHealthChecks } from './healthData'
 import MetricGlossary from './MetricGlossary'
 import SiteSwitcher from './SiteSwitcher'
@@ -53,6 +54,7 @@ export default function AppOverview() {
   const [brand, setBrand] = useState(null)   // 連結的 aivis 品牌（靠 website_id）或 null
   const [aivisRate, setAivisRate] = useState(null) // 近 30 天品類推薦曝光率（無資料 = null）
   const [aivisRaw, setAivisRaw] = useState(null)   // 90 天題庫+回應（品牌等級判定用）
+  const [scanning, setScanning] = useState(false)  // 重新掃描中（共用 scanService）
 
   useEffect(() => {
     if (!websiteId) return
@@ -120,6 +122,20 @@ export default function AppOverview() {
   const onHome = isHomepage(website.url)
   const topActions = buildTopActions(audits, onHome, websiteId)
 
+  // 重新掃描（硬切前置：搬進新版；走共用 scanService、與經典版同一支寫入邏輯）
+  async function handleRescan() {
+    if (!website?.url || scanning) return
+    setScanning(true)
+    try {
+      await runFullScan({ websiteId, url: website.url })
+      window.location.reload()   // 簡單做法：整頁重抓，所有卡片吃 DB 最新（與經典版一致）
+    } catch (error) {
+      console.error('rescan failed:', error)
+      setScanning(false)
+      alert('掃描失敗，請稍後再試')
+    }
+  }
+
   // 品牌 AI 能見度等級（里程碑事件制）：全部從真實資料判定，逐級解鎖
   const rate90 = (() => {
     if (!brand || !aivisRaw) return null
@@ -148,7 +164,11 @@ export default function AppOverview() {
   return (
     <>
       <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
-      <div className="as-phead"><h2>總覽</h2><span className="sub">{title} 在 AI 眼中的整體狀態</span></div>
+      <div className="as-phead"><h2>總覽</h2><span className="sub">{title} 在 AI 眼中的整體狀態</span>
+        <button type="button" className="as-cta as-rescan" onClick={handleRescan} disabled={scanning} aria-live="polite">
+          {scanning ? '掃描中…（約 30–60 秒）' : '🔄 重新掃描'}
+        </button>
+      </div>
 
       {/* 品牌 AI 能見度等級（里程碑事件制・雷達隱喻）：每一級都是可驗證的真實事件、逐級解鎖 */}
       <div className="as-level" role="group" aria-label={`品牌 AI 能見度等級：Lv.${level.current.lv} ${level.current.name}`}>

@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-13v（硬切前置 #1：共用掃描 service + 新版總覽「重新掃描」— 已部署）
+
+新 [src/services/scanService.js](src/services/scanService.js) `runFullScan`：抓頁一次→四分析器並行→四表寫入（**欄位完整清單＝單一真相**，含 faq_visual/meta_desc_length/structured_answer；新增欄位只改這裡）。動機：寫入邏輯原有三份複本、已實際踩過漏欄位 bug。接線：①新版 AppOverview 頁首加「🔄 重新掃描」（掃描中顯示預估秒數、完成整頁重抓）——**新版從此可獨立完成「掃→看→修→再掃」閉環**，AppHealth 空狀態的「先從總覽執行掃描」也成立了 ②DashboardV2 `handleFirstScan` 改呼叫同一支（複本 3→2；剩 HomeDark/舊 Dashboard 待硬切時收）。修一個 python 插 import 到多行 import 中間的 build 錯。
+
 ### 2026-08-13u（來源清單二修：排除 Gemini 轉址網域 + 全類掛標籤 — 已部署）
 
 用戶截圖抓到：①`vertexaisearch.cloud.google.com` 排影響力第 6——那是 Gemini 接地搜尋的轉址包裝網域、非真實來源 → 加 `SOURCE_ARTIFACT_HOSTS` 排除清單。②「一般網站不掛標籤減噪」反讓用戶以為分類沒運作 → 改全類都掛（general 最淡樣式 opacity .55）。附帶情報：DBG 的 AI 答案被 littlenewton/amazingtalker/yesonlineeng 等同業內容餵養＝競品觀察名單與內容對標的現成方向。

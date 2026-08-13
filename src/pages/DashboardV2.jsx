@@ -48,6 +48,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts'
+import { runFullScan } from '../services/scanService'
 
 // ─── 5 大面向色 token ───────────────────────────────────
 const FACE_COLORS = {
@@ -301,47 +302,8 @@ export default function DashboardV2() {
     if (!website?.url || scanning) return
     setScanning(true)
     try {
-      const { html } = await fetchPageContent(website.url)
-      const doc = parseHTML(html)
-      const [seoResult, aeoResult, geoResult, eeatResult] = await Promise.all([
-        analyzeSEO(website.url, doc).catch(() => null),
-        analyzeAEO(website.url, doc).catch(() => null),
-        analyzeGEO(website.url, doc).catch(() => null),
-        analyzeEEAT(website.url, doc).catch(() => null),
-      ])
-      await Promise.allSettled([
-        seoResult && supabase.from('seo_audits').insert([{
-          website_id: id, score: seoResult.score,
-          meta_tags: seoResult.meta_tags, h1_structure: seoResult.h1_structure,
-          alt_tags: seoResult.alt_tags, mobile_compatible: seoResult.mobile_compatible,
-          page_speed: seoResult.page_speed,
-          ssl_chain: seoResult.ssl_chain, bot_accessibility: seoResult.bot_accessibility,
-        }]),
-        aeoResult && supabase.from('aeo_audits').insert([{
-          website_id: id, score: aeoResult.score,
-          json_ld: aeoResult.json_ld, faq_schema: aeoResult.faq_schema,
-          faq_visual: aeoResult.faq_visual,
-          canonical: aeoResult.canonical, breadcrumbs: aeoResult.breadcrumbs,
-          open_graph: aeoResult.open_graph, question_headings: aeoResult.question_headings,
-          // 2026-08-13 bug 修：漏存這兩欄 → NULL 被詳情頁當「沒過」（analyzer 明明算過了）
-          meta_desc_length: aeoResult.meta_desc_length, structured_answer: aeoResult.structured_answer,
-        }]),
-        geoResult && supabase.from('geo_audits').insert([{
-          website_id: id, score: geoResult.score,
-          llms_txt: !!geoResult.llms_txt, robots_ai: !!geoResult.robots_ai,
-          sitemap: !!geoResult.sitemap, open_graph: !!geoResult.open_graph,
-          twitter_card: !!geoResult.twitter_card, json_ld_citation: !!geoResult.json_ld_citation,
-          canonical: !!geoResult.canonical, https: !!geoResult.https,
-        }]),
-        eeatResult && supabase.from('eeat_audits').insert([{
-          website_id: id, score: eeatResult.score,
-          author_info: !!eeatResult.author_info, about_page: !!eeatResult.about_page,
-          contact_page: !!eeatResult.contact_page, privacy_policy: !!eeatResult.privacy_policy,
-          organization_schema: !!eeatResult.organization_schema, date_published: !!eeatResult.date_published,
-          social_links: !!eeatResult.social_links, outbound_links: !!eeatResult.outbound_links,
-        }]),
-      ])
-      // 簡單做法：reload 重抓資料、確保所有 state 都從 DB 拿最新（避免 race）
+      // 2026-08-13：改走共用 scanService（消滅三份複本之一；欄位單一真相在 scanService.js）
+      await runFullScan({ websiteId: id, url: website.url })
       window.location.reload()
     } catch (err) {
       console.error('First scan failed:', err)
