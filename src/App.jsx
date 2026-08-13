@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
@@ -86,6 +86,13 @@ function ScrollToTop() {
   return null
 }
 
+// 舊 URL 1:1 轉址（2026-08-14 硬切上線）：/dashboard 與四大 audit 導入新版對應分頁。
+// 逃生口：/dashboard-v2/:id 保留渲染經典版（新版側欄「回經典版」指向這裡），觀察期後移除。
+function LegacyRedirect({ pattern }) {
+  const { id } = useParams()
+  return <Navigate to={pattern.replace(':id', id)} replace />
+}
+
 function AppInner() {
   const { isDark } = useTheme()
   useEffect(() => {
@@ -105,17 +112,21 @@ function AppInner() {
         <Route path="/clients" element={<MyClients />} />
         {/* 主路由（2026-06-06 切換到 V2）— DashboardV2 = prototype-2b 實作完成版
             「← 切回舊版」按鈕會引導用戶到 /dashboard-legacy/:id（舊版保留 1-2 週做緩衝） */}
-        <Route path="/dashboard/:id" element={<DashboardV2 />} />
+        <Route path="/dashboard/:id" element={<LegacyRedirect pattern="/app/:id/overview" />} />
         {/* /dashboard-v2/:id 保留為 alias，避免歷史 email / 書籤連結 broken */}
         <Route path="/dashboard-v2/:id" element={<DashboardV2 />} />
+        <Route path="/aeo-audit-legacy/:id" element={<AEOAudit />} />
+        <Route path="/geo-audit-legacy/:id" element={<GEOAudit />} />
+        <Route path="/seo-audit-legacy/:id" element={<SEOAudit />} />
+        <Route path="/eeat-audit-legacy/:id" element={<EEATAudit />} />
         {/* 舊版 Dashboard 保留在 /dashboard-legacy/:id 做緩衝期 fallback，觀察 1-2 週穩定後刪除 */}
         <Route path="/dashboard-legacy/:id" element={<Dashboard />} />
         {/* 公開摘要頁（TOP 8 點擊進來）— 只顯示分數總覽，不公開具體缺陷 */}
         <Route path="/website-summary/:id" element={<WebsiteSummary />} />
-        <Route path="/seo-audit/:id" element={<SEOAudit />} />
-        <Route path="/aeo-audit/:id" element={<AEOAudit />} />
-        <Route path="/geo-audit/:id" element={<GEOAudit />} />
-        <Route path="/eeat-audit/:id" element={<EEATAudit />} />
+        <Route path="/seo-audit/:id" element={<LegacyRedirect pattern="/app/:id/health/seo" />} />
+        <Route path="/aeo-audit/:id" element={<LegacyRedirect pattern="/app/:id/health/aeo" />} />
+        <Route path="/geo-audit/:id" element={<LegacyRedirect pattern="/app/:id/health/geo" />} />
+        <Route path="/eeat-audit/:id" element={<LegacyRedirect pattern="/app/:id/health/eeat" />} />
         <Route path="/admin/seed" element={<AdminSeed />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/account" element={<Account />} />

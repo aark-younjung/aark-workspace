@@ -42,7 +42,7 @@ export default function AppShell() {
 
         <div className="as-sp" />
         {/* Beta 並行期：一鍵切回經典版（有網站脈絡回該站儀表板、否則回首頁）——降低嘗鮮門檻 */}
-        <NavLink to={websiteId ? `/dashboard/${websiteId}` : '/'} className="as-nav as-classic">← 回經典版</NavLink>
+        <NavLink to={websiteId ? `/dashboard-v2/${websiteId}` : '/'} className="as-nav as-classic">← 回經典版</NavLink>{/* 轉址後 /dashboard 已導新版，逃生口走 /dashboard-v2 */}
         {/* 帳號移到左下個人區（Codex IA 建議）：整塊可點、直達 /account，不佔主導覽格 */}
         <NavLink to="/account" className="as-acct" aria-label="帳號與方案設定">
           <span className="av">{(userName || 'U').slice(0, 1).toUpperCase()}</span>

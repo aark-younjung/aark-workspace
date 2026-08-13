@@ -284,7 +284,7 @@ export default function GEOAudit() {
  *      (a) 下載 .txt 檔，上傳到網站 root（最簡單）
  *      (b) 在 robots.txt 加 LLM-Sitemap 指向我們代管 URL（不用改網站）
  */
-function LlmsTxtSection({ websiteId, websiteUrl }) {
+export function LlmsTxtSection({ websiteId, websiteUrl }) {   // 2026-08-14 導出：AppHealth GEO 分頁沿用（轉址後工具不失所）
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)   // 'url' | 'content' | null

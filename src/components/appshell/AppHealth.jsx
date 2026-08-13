@@ -8,6 +8,8 @@ import { isHomepage, HOMEPAGE_NOTES } from '../../lib/pageAudit'
 import { hostLabel } from '../../lib/url'
 import SiteWideSchemaProbe from '../SiteWideSchemaProbe'
 import CacheFreshnessNote from '../CacheFreshnessNote'
+import OrgSchemaGenerator from '../v2/OrgSchemaGenerator'
+import { LlmsTxtSection } from '../../pages/GEOAudit'
 import SiteSwitcher from './SiteSwitcher'
 
 const AUDIT_TABLES = {
@@ -130,6 +132,15 @@ export default function AppHealth() {
           {/* 站台層複查：首頁報「缺麵包屑/FAQ」時，自動去其他頁找一遍，避免冤枉「做在別頁」的用戶 */}
           {siteWideProbeIds.length > 0 && (
             <SiteWideSchemaProbe pageUrl={state.website.url} schemaIds={siteWideProbeIds} />
+          )}
+
+          {/* 轉址前搬遷：Org Schema 產生器（原住 AEO 詳細頁）與 llms.txt 工具（原住 GEO 詳細頁）——
+              元件沿用、深色卡樣式暫留（硬切後再亮色化） */}
+          {selectedTab === 'aeo' && (
+            <div className="as-health-embed"><OrgSchemaGenerator websiteId={websiteId} websiteUrl={state.website.url} /></div>
+          )}
+          {selectedTab === 'geo' && (
+            <div className="as-health-embed"><LlmsTxtSection websiteId={websiteId} websiteUrl={state.website.url} /></div>
           )}
 
           {(selectedTab === 'crawl' || selectedTab === 'schema') && (

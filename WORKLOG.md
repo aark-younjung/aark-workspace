@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-14a（🚀🚀 硬切轉址上線 — 新版正式成為預設介面）
+
+**舊 URL 1:1 轉址**（[App.jsx](src/App.jsx) `LegacyRedirect`）：`/dashboard/:id`→`/app/:id/overview`、四大 audit→`/app/:id/health/:tab`（spec URL 契約「不可全導總覽」兌現）。**逃生口（觀察期後移除）**：`/dashboard-v2/:id` 續渲染經典版（側欄「回經典版」改指這裡）、四大 audit 舊頁掛 `-legacy` 路徑。**轉址前最後搬遷**：Org Schema 產生器掛進 AppHealth AEO 分頁、`LlmsTxtSection`（自 GEOAudit 導出）掛進 GEO 分頁——「AI 講錯你」的修正連結鏈（→/aeo-audit→轉址→health/aeo→產生器就在那）自然閉合。工具頁（/content-audit、/bulk-scan、/schema-check、/crawl-check、/ai-visibility*）保留原位。深色卡在亮殼的視覺暫留、硬切穩定後亮色化。
+
 ### 2026-08-13z（轉址前檢查 ×2：試用 CTA 進新版 + 內容品質第 5 卡 — 已部署）
 
 盤點硬切缺口後補兩個關鍵（第三類：任務/工具箱/趨勢圖由品牌等級＋行動卡取代、轉址時退役）：
