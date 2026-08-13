@@ -25,6 +25,21 @@
 .appshell *{box-sizing:border-box;}
 .appshell .num{font-variant-numeric:tabular-nums;}
 
+/* ⚠️ 全域暗色主題（html.dark-theme）的 input reset 用了 !important，會把亮色殼內的
+   輸入框變「白底白字」（打字看不見＝看似無法輸入）→ 這裡以更高特異度＋!important 蓋回亮色。
+   對殼內所有表單元素一次修，之後新表單不會再踩。 */
+html.dark-theme .appshell input,
+html.dark-theme .appshell textarea,
+html.dark-theme .appshell select{
+  background-color:var(--surface) !important;
+  border-color:var(--line-2) !important;
+  color:var(--ink) !important;
+}
+html.dark-theme .appshell input::placeholder,
+html.dark-theme .appshell textarea::placeholder{
+  color:var(--ink-3) !important;
+}
+
 /* 左側選單 */
 .appshell .as-side{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px;
   display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
