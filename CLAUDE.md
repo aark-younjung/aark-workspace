@@ -132,6 +132,9 @@ aark-workspace/
 
 ## 路由表
 
+> **⚠️ 2026-08-14 硬切轉址後，新版 `/app/*` 為預設介面**：`/dashboard/:id`→`/app/:id/overview`、四大 audit→`/app/:id/health/:tab`（1:1 轉址）。新版路由：`/app/websites`（選站）、`/app/:websiteId/{overview|visibility[/:visTab]|health[/:healthTab]|gap}`。逃生口（觀察期後移除）：`/dashboard-v2/:id` 經典版、`/*-audit-legacy/:id` 四大舊頁。工具頁（/content-audit、/bulk-scan、/schema-check、/crawl-check、/ai-visibility*）保留原位。下表為轉址前的歷史對照：
+
+
 | 路徑 | 頁面 | 說明 |
 |------|------|------|
 | `/` | HomeDark | 首頁（暗黑主視覺），輸入網址觸發分析 |
