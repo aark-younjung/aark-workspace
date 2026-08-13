@@ -141,6 +141,17 @@ export default function AppVisibility() {
           prompts: promptResult.data || [], responses: responseResult.data || [], mentions: mentionResult.data || [],
           monthQueries: monthResult.error ? null : monthResult.count,
         })
+
+        // 2026-08-13：預設「本週」但最近一次掃描更早 → 自動放寬到「有資料的最小窗」（7→30→90）。
+        // 不然整頁「接資料中」會被誤會成功能壞掉（實案：最後掃描 27 天前、本週窗全空）。
+        if (!cancelled) {
+          const nowMs = Date.now()
+          const hasWithin = days => (responseResult.data || []).some(row => {
+            const t = new Date(row.created_at).getTime()
+            return Number.isFinite(t) && nowMs - t <= days * 86_400_000
+          })
+          if (!hasWithin(7)) setRangeDays(hasWithin(30) ? 30 : 90)
+        }
       } catch (error) {
         console.error('AppVisibility load error:', error)
         if (!cancelled) setState({ loading: false, error: error.message || 'AI 曝光資料載入失敗', website: null, brand: null, prompts: [], responses: [], mentions: [], monthQueries: null })
