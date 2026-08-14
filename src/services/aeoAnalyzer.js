@@ -265,7 +265,7 @@ function checkStructuredAnswer(doc) {
 /**
  * 完整的 AEO 分析
  */
-export async function analyzeAEO(url) {
+export async function analyzeAEO(url, providedDoc = null) {
   console.log('Starting AEO analysis for:', url)
 
   let cleanUrl = url.trim()
@@ -273,16 +273,20 @@ export async function analyzeAEO(url) {
     cleanUrl = 'https://' + cleanUrl
   }
 
+  // 2026-08-14：呼叫端已抓好的頁面直接沿用（scanService/DashboardV2 都會傳）——
+  // 單次掃描少一次重抓；老主機的 fail2ban 類防禦對請求量敏感（DBG 實案：掃一天被自動封鎖）
   let html = ''
-  try {
-    // fetchPageContent 自 2026-05-22 改回傳 { html, sslFallback }，這裡只用 html
-    const result = await fetchPageContent(cleanUrl)
-    html = result.html
-  } catch (error) {
-    console.warn('Could not fetch page for AEO analysis:', error)
+  if (!providedDoc) {
+    try {
+      // fetchPageContent 自 2026-05-22 改回傳 { html, sslFallback }，這裡只用 html
+      const result = await fetchPageContent(cleanUrl)
+      html = result.html
+    } catch (error) {
+      console.warn('Could not fetch page for AEO analysis:', error)
+    }
   }
 
-  let doc = null
+  let doc = providedDoc
   if (html) {
     doc = parseHTML(html)
   }

@@ -163,11 +163,15 @@ function checkOutboundLinks(doc, pageUrl) {
 /**
  * 主分析函式
  */
-export async function analyzeEEAT(url) {
+export async function analyzeEEAT(url, providedDoc = null) {
   try {
-    // fetchPageContent 自 2026-05-22 改回傳 { html, sslFallback }，這裡只用 html
-    const { html } = await fetchPageContent(url)
-    const doc = parseHTML(html)
+    // 2026-08-14：沿用呼叫端已抓好的頁面（少一次重抓，防老主機自動封鎖；DBG 實案）
+    let doc = providedDoc
+    if (!doc) {
+      // fetchPageContent 自 2026-05-22 改回傳 { html, sslFallback }，這裡只用 html
+      const { html } = await fetchPageContent(url)
+      doc = parseHTML(html)
+    }
     const onHome = isHomepage(url)   // 頁型判斷：作者訊號的門檻依首頁/內頁不同
 
     const results = {
