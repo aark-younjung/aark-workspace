@@ -227,7 +227,7 @@ export default async function handler(req, res) {
         proxyFallback,
         antiBotBlocked: false,   // 逾時 ≠ 封鎖，別誤報「對 AI 隱形」
         timedOut: true,
-        hint: '4 輪嘗試都沒能連上目標網站（多半是回應太慢或暫時性網路問題）——這不代表你被封鎖或對 AI 隱形。請稍後重試；若持續失敗，再確認網址／DNS 是否正常。',
+        hint: '4 輪嘗試都沒能連上目標網站。可能原因：①回應太慢或暫時性網路問題（稍後重試即可）②你的主機防火牆擋「海外流量」——我們的檢測伺服器與 GPTBot／ClaudeBot 等 AI 爬蟲都從海外連線，若網站從台灣開得很快、這裡卻持續逾時，多半是這種情況，AI 爬蟲可能也讀不到你的網站，建議向主機商確認是否放行海外連線。',
       })
     }
 
