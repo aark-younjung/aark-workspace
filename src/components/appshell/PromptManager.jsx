@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { runAivisScan, PROMPT_CAP, SCAN_RUNS, ROTATING_SAMPLE_PER_SCAN } from '../../services/aivisScanService'
 import { logError } from '../../lib/errorLog'
+import Badge from './Badge'
 
 /**
  * 監測題目管理（2026-08-13 硬切前置 #3 · 題庫搬進新版）：
@@ -121,7 +122,8 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
         <button type="button" className={`op sw${autoScan ? ' on' : ''}`} onClick={toggleAutoScan} aria-pressed={autoScan}>
           {autoScan ? '🗓 每週自動掃描：開啟中' : '🗓 每週自動掃描：關閉'}
         </button>
-        <span>每週日自動排程、分批執行；每次約花一次手動掃描的額度，額度不足該週自動跳過（不會超扣）。</span>
+        <Badge kind="pro" />
+        <span>Pro／試用期間限定。每週日自動排程、分批執行；每次約花一次手動掃描的額度，額度不足該週自動跳過（不超扣）。試用或訂閱到期後自動停止，續訂即恢復。</span>
       </div>
 
       {notice && <div className={`as-pm-notice ${notice.kind}`} role="alert">{notice.msg}</div>}

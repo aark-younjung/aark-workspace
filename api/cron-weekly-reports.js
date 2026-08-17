@@ -513,7 +513,19 @@ async function processAutoScan({ supabase, SITE_URL }) {
   // ── 週日：enqueue ──
   if (new Date().getUTCDay() === 0) {
     const { data: brands } = await supabase.from('aivis_brands').select('id, user_id, auto_scan').eq('auto_scan', true)
+
+    // 資格執法（2026-08-14 用戶定案：付費限定）：只幫「Pro 或試用有效」的擁有者排程。
+    // 開關只是意願、這裡才是閘門——防「試用到期後 cron 永久免費監測」漏洞（fetch.js 目前無 token 驗證）。
+    const ownerIds = [...new Set((brands || []).map(brand => brand.user_id).filter(Boolean))]
+    const { data: owners } = ownerIds.length
+      ? await supabase.from('profiles').select('id, is_pro, trial_ends_at').in('id', ownerIds)
+      : { data: [] }
+    const eligible = new Set((owners || [])
+      .filter(profile => profile.is_pro || (profile.trial_ends_at && new Date(profile.trial_ends_at) > new Date()))
+      .map(profile => profile.id))
+
     for (const brand of brands || []) {
+      if (!eligible.has(brand.user_id)) continue   // 資格失效：靜默跳過（不掃、不扣、不報錯）
       // 防重複：這 6 天內已排過就跳過（cron 每天跑、只有週日走到這裡，保險再保險）
       const since = new Date(Date.now() - 6 * 86_400_000).toISOString()
       const { count } = await supabase.from('auto_scan_queue').select('id', { count: 'exact', head: true })
