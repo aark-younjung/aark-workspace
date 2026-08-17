@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-14f（自動掃 E2E 實測通過 + drain 改平行批次 — 已部署）
+
+種子測試（2 筆 core 題）→ 手動觸發 cron → `processed: 2` ✅（佇列→自打 aivis API→入庫→標記完成，全通）。實測暴露容量問題：每題 ~25 秒、序列＋40 秒預算＝一天只消化 2 題、12 題題庫要 6 天 → drain 改**併發 4 題/批**（每個 fetch.js 呼叫是獨立 invocation、平行安全）≈ 8+ 題/日。備忘：①anon 查 auto_scan_queue 永遠 0 筆（RLS 無 select policy，勿誤判空）②cron endpoint 未設 CRON_SECRET、任何人可觸發（P2：Vercel env 加隨機字串）。
+
 ### 2026-08-14e（自動掃付費限定 — 已部署）
 
 用戶定案：自動掃 Pro／試用期間限定。**執法在 cron enqueue**（驗 profiles.is_pro 或 trial_ends_at 未過期，資格失效靜默跳過）——UI 開關只是意願、cron 才是閘門；順手堵掉「試用到期後 cron 永久免費監測」漏洞（fetch.js 無 token 驗證的背景下這是真洞）。UI：開關掛 Pro 徽章＋「到期自動停止、續訂恢復」說明。

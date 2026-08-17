@@ -553,25 +553,27 @@ async function processAutoScan({ supabase, SITE_URL }) {
     }
   }
 
-  // ── 每天：drain（時間預算內逐筆自打 fetch.js；額度不足→同用戶剩餘全標 skipped） ──
+  // ── 每天：drain（平行批次自打 fetch.js；每題 ~25 秒、序列跑一天只消化 2 題 → 併發 4 題/批） ──
+  // 2026-08-14 實測：2 題序列花 51 秒；每個 fetch.js 呼叫是獨立 serverless invocation、平行安全
+  const AUTOSCAN_CONCURRENCY = 4
   const startedAt = Date.now()
   const quotaExhausted = new Set()
   const { data: pending } = await supabase.from('auto_scan_queue')
     .select('id, brand_id, user_id, prompt_id, runs')
     .eq('status', 'pending').order('created_at').limit(200)
-  for (const job of pending || []) {
-    if (Date.now() - startedAt > AUTOSCAN_BUDGET_MS) break
+
+  async function runJob(job) {
     if (quotaExhausted.has(job.user_id)) {
       await supabase.from('auto_scan_queue').update({ status: 'skipped', error: 'quota_exhausted' }).eq('id', job.id)
       out.skipped += 1
-      continue
+      return
     }
     try {
       const response = await fetch(`${SITE_URL}/api/aivis/fetch?prompt_id=${job.prompt_id}&runs=${job.runs}`, { method: 'POST' })
       const json = await response.json()
       if (!response.ok || !json.success) {
         const message = [json.error, json.detail].filter(Boolean).join(' — ') || `HTTP ${response.status}`
-        // 額度類錯誤：這個用戶本輪不再嘗試（省時間、也不撞硬上限）
+        // 額度類錯誤：這個用戶後續批次不再嘗試（省時間、也不撞硬上限）
         if (/quota|額度|hard_cap/i.test(message)) quotaExhausted.add(job.user_id)
         await supabase.from('auto_scan_queue').update({ status: 'error', error: message.slice(0, 300) }).eq('id', job.id)
         await logCronError(supabase, message, { brand_id: job.brand_id, user_id: job.user_id, prompt_id: job.prompt_id })
@@ -585,6 +587,12 @@ async function processAutoScan({ supabase, SITE_URL }) {
       await logCronError(supabase, error.message || error, { brand_id: job.brand_id, prompt_id: job.prompt_id })
       out.failed += 1
     }
+  }
+
+  const queue = [...(pending || [])]
+  while (queue.length && Date.now() - startedAt < AUTOSCAN_BUDGET_MS) {
+    const batch = queue.splice(0, AUTOSCAN_CONCURRENCY)
+    await Promise.allSettled(batch.map(runJob))
   }
   return out
 }
