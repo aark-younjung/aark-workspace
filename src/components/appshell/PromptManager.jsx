@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { runAivisScan, PROMPT_CAP, SCAN_RUNS, ROTATING_SAMPLE_PER_SCAN } from '../../services/aivisScanService'
+import { logError } from '../../lib/errorLog'
 
 /**
  * 監測題目管理（2026-08-13 硬切前置 #3 · 題庫搬進新版）：
@@ -20,12 +21,27 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
   const [notice, setNotice] = useState(null)     // { kind: 'ok'|'warn', msg }
   const [scan, setScan] = useState({ running: false, done: 0, total: 0 })
 
+  const [autoScan, setAutoScan] = useState(Boolean(brand?.auto_scan))
   const coreActiveCount = prompts.filter(prompt => (prompt.tier || 'core') === 'core' && prompt.is_active).length
   const atCap = coreActiveCount >= PROMPT_CAP
 
   function flash(kind, msg, ms = 3500) {
     setNotice({ kind, msg })
     setTimeout(() => setNotice(null), ms)
+  }
+
+  // 每週自動掃描開關（2026-08-14 分級自動掃 V1）：opt-in、消耗自己的月額度（每次 ≈ 一次手動掃描）
+  async function toggleAutoScan() {
+    const next = !autoScan
+    setAutoScan(next)
+    const { error } = await supabase.from('aivis_brands').update({ auto_scan: next }).eq('id', brand.id)
+    if (error) {
+      setAutoScan(!next)
+      const hint = /column|auto_scan/i.test(error.message) ? '（資料表尚未新增 auto_scan 欄位，請先跑 SQL）' : ''
+      flash('warn', `切換失敗：${error.message}${hint}`, 6000)
+    } else {
+      flash('ok', next ? '✅ 已開啟每週自動掃描——每週日排程、分批執行，週一起陸續看到新資料' : '已關閉自動掃描')
+    }
   }
 
   // 啟停：core 受啟用上限保護（固定樣本才有可比趨勢）；失敗回滾
@@ -85,6 +101,7 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
       flash('ok', `✅ 掃描完成：${result.runs} 個回答、${result.mentioned} 次提及（${result.rate}%）——3 秒後重新載入`)
       setTimeout(() => window.location.reload(), 3000)
     } catch (error) {
+      logError({ source: 'aivis_scan', message: error.message, userId, brandId: brand.id })
       setScan({ running: false, done: 0, total: 0 })
       flash('warn', `掃描中止：${error.message}`, 8000)
     }
@@ -97,6 +114,14 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
         <button type="button" className="as-cta" onClick={handleScan} disabled={scan.running} aria-live="polite">
           {scan.running ? `掃描中… ${scan.done}/${scan.total} 題` : '▶ 執行掃描'}
         </button>
+      </div>
+
+      {/* 每週自動掃描：opt-in（花的是用戶自己的額度、必須明示同意）；文字明示狀態不只靠顏色 */}
+      <div className="as-pm-auto">
+        <button type="button" className={`op sw${autoScan ? ' on' : ''}`} onClick={toggleAutoScan} aria-pressed={autoScan}>
+          {autoScan ? '🗓 每週自動掃描：開啟中' : '🗓 每週自動掃描：關閉'}
+        </button>
+        <span>每週日自動排程、分批執行；每次約花一次手動掃描的額度，額度不足該週自動跳過（不會超扣）。</span>
       </div>
 
       {notice && <div className={`as-pm-notice ${notice.kind}`} role="alert">{notice.msg}</div>}

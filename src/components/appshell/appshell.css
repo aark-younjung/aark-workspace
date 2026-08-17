@@ -380,6 +380,11 @@ html.dark-theme .appshell textarea::placeholder{
 /* ── 監測題目管理（PromptManager）── */
 .appshell .as-pm{padding:22px;margin-bottom:16px;}
 .appshell .as-pm .sub{font-size:13px;color:var(--ink-3);margin-left:8px;}
+/* 每週自動掃描列：開關沿用題目啟停鈕樣式（op sw）＋說明文字 */
+.appshell .as-pm-auto{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;
+  padding:10px 14px;border:1px dashed var(--line-2);border-radius:10px;}
+.appshell .as-pm-auto span{font-size:13px;color:var(--ink-3);line-height:1.6;flex:1;min-width:240px;}
+
 /* 操作通知列：成功綠／警告琥珀（含額度不足訊息，誠實透傳後端原因） */
 .appshell .as-pm-notice{font-size:13.5px;line-height:1.6;padding:10px 14px;border-radius:10px;margin-bottom:12px;}
 .appshell .as-pm-notice.ok{background:rgba(5,150,105,.07);border:1px solid rgba(5,150,105,.25);color:#047857;}
@@ -398,11 +403,11 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-pm-tier .ug{font-size:10px;font-weight:800;color:var(--pop);border:1px solid rgba(130,152,255,.4);
   padding:1px 7px;border-radius:99px;}
 .appshell .as-pm-tier .ops{display:flex;gap:6px;margin-left:auto;}
-.appshell .as-pm-tier .op{font-family:var(--font);font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:8px;
+.appshell .as-pm-tier .op,.appshell .as-pm-auto .op{font-family:var(--font);font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:8px;
   border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);cursor:pointer;}
-.appshell .as-pm-tier .op:hover{border-color:var(--ink-3);}
-.appshell .as-pm-tier .op.sw.on{background:rgba(5,150,105,.08);color:#059669;border-color:rgba(5,150,105,.3);}
-.appshell .as-pm-tier .op:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
+.appshell .as-pm-tier .op:hover,.appshell .as-pm-auto .op:hover{border-color:var(--ink-3);}
+.appshell .as-pm-tier .op.sw.on,.appshell .as-pm-auto .op.sw.on{background:rgba(5,150,105,.08);color:#059669;border-color:rgba(5,150,105,.3);}
+.appshell .as-pm-tier .op:focus-visible,.appshell .as-pm-auto .op:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
 /* 行內編輯：輸入框＋儲存/取消 */
 .appshell .as-pm-tier .edit{display:flex;gap:8px;flex:1;flex-wrap:wrap;}
 .appshell .as-pm-tier .edit input{flex:1;min-width:240px;font-family:var(--font);font-size:14px;padding:8px 12px;

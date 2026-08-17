@@ -7,6 +7,7 @@ import { isHomepage } from '../../lib/pageAudit'
 import { coreExposureRates, buildCompetitorComparison } from './aivisData'
 import { computeBrandLevel, BRAND_LEVELS } from './brandLevel'
 import { runFullScan } from '../../services/scanService'
+import { logError } from '../../lib/errorLog'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import ClientReportModal from '../v2/ClientReportModal'
 import LLMOChecklistModal from '../v2/LLMOChecklistModal'
@@ -179,6 +180,7 @@ export default function AppOverview() {
       window.location.reload()   // 簡單做法：整頁重抓，所有卡片吃 DB 最新（與經典版一致）
     } catch (error) {
       console.error('rescan failed:', error)
+      logError({ source: 'rescan', message: error?.message, userId: user?.id, websiteId, detail: { url: website?.url } })
       setScanning(false)
       // 透傳真實原因（fetch-url 的錯誤含 hint，例：逾時＝對方主機沒回應、非功能壞掉）
       alert(`掃描失敗：${error?.message || '請稍後再試'}`)

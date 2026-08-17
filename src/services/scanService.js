@@ -7,6 +7,7 @@
  * 欄位為完整清單（含 faq_visual / meta_desc_length / structured_answer），新增欄位只改這裡。
  */
 import { supabase } from '../lib/supabase'
+import { logError } from '../lib/errorLog'
 import { fetchPageContent, parseHTML, analyzeSEO } from './seoAnalyzer'
 import { analyzeAEO } from './aeoAnalyzer'
 import { analyzeGEO } from './geoAnalyzer'
@@ -66,7 +67,11 @@ export async function runFullScan({ websiteId, url }) {
   const tables = ['seo_audits', 'aeo_audits', 'geo_audits', 'eeat_audits']
   results.forEach((result, index) => {
     const insertError = result.status === 'fulfilled' ? result.value?.error : result.reason
-    if (insertError) console.error(`[scanService] ${tables[index]} 寫入失敗：`, insertError.message || insertError)
+    if (insertError) {
+      console.error(`[scanService] ${tables[index]} 寫入失敗：`, insertError.message || insertError)
+      // 進 error_logs：後台看得到，靜默失敗不再隱形（2026-08-13 AEO 藏一個月的教訓）
+      logError({ source: 'scan_insert', message: `${tables[index]}: ${insertError.message || insertError}`, websiteId, detail: { url } })
+    }
   })
 
   return { seo, aeo, geo, eeat }

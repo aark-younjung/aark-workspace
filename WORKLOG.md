@@ -6,6 +6,13 @@
 
 ---
 
+### 2026-08-14d（🚀 error_logs 錯誤可見性 + 分級自動掃 V1 — 已部署，需跑 SQL）
+
+兩案合流（自動掃在半夜跑、出錯沒人看見→正需要錯誤日誌）：
+1. **error_logs**（[lib/errorLog.js](src/lib/errorLog.js) fire-and-forget、絕不 throw）：接 scanService 寫入失敗/AppOverview 重掃失敗/PromptManager aivis 掃描中止/cron 自動掃錯誤四處；[AdminMonitoring](src/pages/admin/AdminMonitoring.jsx) 加「🚨 錯誤日誌」區（近 50 筆、表未建顯示建表提示、零筆顯示「安靜就是好消息」）。解 5/22 舊待辦＋8/13「AEO 靜默失敗一個月」的結構性教訓。
+2. **分級自動掃 V1**（用戶 8/14 解除延後令）：搭既有每日 cron（**不加第二個 cron**——Hobby 紅線）＝[cron-weekly-reports.js](api/cron-weekly-reports.js) `processAutoScan`：週日把 `auto_scan=true` 品牌按四層分流 enqueue 進 `auto_scan_queue` → 每日 40 秒預算逐筆自打 `/api/aivis/fetch` → 週一週報帶新資料。額度不足→同用戶剩餘標 skipped＋記 error_logs（不超扣）。UI：監測題目分頁「🗓 每週自動掃描」opt-in 開關（花用戶自己額度、必須明示同意）。vercel.json 加 cron maxDuration 60。ponytail：現規模 1–2 天消化完；量大升級路徑＝Vercel Pro / 外部 worker。
+**需跑 SQL**：error_logs 建表＋RLS、aivis_brands.auto_scan 欄、auto_scan_queue 建表（SQL 見對話）。
+
 ### 2026-08-14c（DBG 逾時真因修正 + 掃描請求量減半 — 已部署）
 
 用戶追問「之前掃都沒問題」→ 時間線推翻「主機一律擋海外」假設：昨天中午 Vercel 還抓得到（GEO 有寫入）、傍晚起才全逾時＝**我們一天的高強度掃描觸發老主機自動封鎖**（fail2ban 類，通常數小時～數天自動解除）。兩修：①[fetch-url](api/fetch-url.js) 逾時提示補三種原因（暫時性/掃太多被自動封鎖/長期擋海外）②**掃描請求量減半**：analyzeAEO/analyzeEEAT 加 `providedDoc` 參數沿用呼叫端已抓頁面（GEO 原本就支援、SEO 因測載入速度保留自抓）——scanService/DashboardV2 本來就有傳、立即生效。教訓：對脆弱台灣老主機，掃描本身就可能觸發封鎖，請求量是產品品質的一部分。

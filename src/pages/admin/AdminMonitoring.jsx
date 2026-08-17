@@ -22,6 +22,7 @@ export default function AdminMonitoring() {
   const [trend7, setTrend7] = useState([])
   const [trend30, setTrend30] = useState([])
   const [topUsers, setTopUsers] = useState([])
+  const [errors, setErrors] = useState(null)   // 錯誤日誌（error_logs 近 50 筆；表未建時 null→顯示建表提示）
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -88,6 +89,16 @@ export default function AdminMonitoring() {
       setTrend30(arr30)
       // 7 天趨勢：直接取最後 7 筆
       setTrend7(arr30.slice(-7))
+
+      // ── 錯誤日誌（2026-08-14）：error_logs 近 50 筆——靜默失敗的可見性（AEO 藏一個月的教訓）
+      try {
+        const { data: errRows, error: errErr } = await supabase
+          .from('error_logs')
+          .select('id, created_at, source, message, user_id, website_id, brand_id')
+          .order('created_at', { ascending: false })
+          .limit(50)
+        setErrors(errErr ? null : (errRows || []))
+      } catch { setErrors(null) }
 
       // ── 本月 Top 10 重度使用者（按掃描次數）
       const userAgg = new Map()
@@ -246,6 +257,31 @@ export default function AdminMonitoring() {
                 ))
               )}
             </div>
+          </div>
+
+          {/* ── 錯誤日誌（error_logs 近 50 筆）── */}
+          <div className="mt-6 bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-white font-semibold">🚨 錯誤日誌（近 50 筆）</h2>
+              <span className="text-slate-500 text-sm">掃描寫入失敗／重新掃描失敗／aivis 掃描中止／自動掃描錯誤</span>
+            </div>
+            {errors === null ? (
+              <div className="px-6 py-6 text-slate-500 text-sm">讀不到 error_logs——請先在 Supabase 跑建表 SQL（見 WORKLOG 2026-08-14）。</div>
+            ) : errors.length === 0 ? (
+              <div className="px-6 py-6 text-emerald-400 text-sm">✅ 目前沒有錯誤紀錄——安靜就是好消息。</div>
+            ) : (
+              <div className="divide-y divide-white/5 max-h-96 overflow-y-auto">
+                {errors.map(e => (
+                  <div key={e.id} className="px-6 py-3 flex items-start gap-3">
+                    <span className="text-sm px-2 py-0.5 rounded bg-red-500/15 text-red-300 font-mono flex-shrink-0">{e.source}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-slate-200 text-sm break-all">{e.message}</p>
+                      <p className="text-slate-500 text-sm">{new Date(e.created_at).toLocaleString('zh-TW')}{e.website_id ? ` · site ${String(e.website_id).slice(0, 8)}` : ''}{e.brand_id ? ` · brand ${String(e.brand_id).slice(0, 8)}` : ''}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </AdminLayout>

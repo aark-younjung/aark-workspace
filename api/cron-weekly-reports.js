@@ -489,6 +489,94 @@ async function processProExpiry({ supabase }) {
   return results
 }
 
+/**
+ * 分級自動掃描（2026-08-14 · 用戶解除延後令）
+ * 架構：搭既有每日 cron（Hobby 只能 1 個 cron 的紅線不動）——
+ *   週日：把 auto_scan=true 品牌的題目按四層分流拆包 → 寫入 auto_scan_queue
+ *   每天：時間預算內（40 秒）逐筆自打 /api/aivis/fetch 消化佇列 → 週一週報帶著新資料
+ * 誠實邊界：額度攔截由 fetch.js 執法（額度不足→該用戶剩餘題目標 skipped＋記 error_logs）。
+ * ponytail: 目前規模（個位數 Pro）1–2 天消化完；量大後升級路徑＝Vercel Pro（300s+多 cron）或外部 worker。
+ */
+const AUTOSCAN_BUDGET_MS = 40_000        // 每次 cron 消化佇列的時間預算（總上限 60s、留空間給週報）
+const AUTOSCAN_SCAN_RUNS = 3             // core/rotating 每題次數（與前端 aivisScanService 對齊）
+const AUTOSCAN_ROTATING_SAMPLE = 2
+
+async function logCronError(supabase, message, extra = {}) {
+  try {
+    await supabase.from('error_logs').insert({ source: 'cron_auto_scan', message: String(message).slice(0, 500), detail: extra, brand_id: extra.brand_id || null, user_id: extra.user_id || null })
+  } catch { /* 記錄失敗不擋主流程 */ }
+}
+
+async function processAutoScan({ supabase, SITE_URL }) {
+  const out = { enqueued: 0, processed: 0, failed: 0, skipped: 0 }
+
+  // ── 週日：enqueue ──
+  if (new Date().getUTCDay() === 0) {
+    const { data: brands } = await supabase.from('aivis_brands').select('id, user_id, auto_scan').eq('auto_scan', true)
+    for (const brand of brands || []) {
+      // 防重複：這 6 天內已排過就跳過（cron 每天跑、只有週日走到這裡，保險再保險）
+      const since = new Date(Date.now() - 6 * 86_400_000).toISOString()
+      const { count } = await supabase.from('auto_scan_queue').select('id', { count: 'exact', head: true })
+        .eq('brand_id', brand.id).gte('created_at', since)
+      if (count > 0) continue
+
+      const { data: prompts } = await supabase.from('aivis_prompts').select('id, tier, is_active').eq('brand_id', brand.id)
+      const tierOf = prompt => prompt.tier || 'core'
+      const core = (prompts || []).filter(prompt => tierOf(prompt) === 'core' && prompt.is_active)
+      const rotating = (prompts || []).filter(prompt => tierOf(prompt) === 'rotating')
+        .sort(() => Math.random() - 0.5).slice(0, AUTOSCAN_ROTATING_SAMPLE)
+      const brandTier = (prompts || []).filter(prompt => tierOf(prompt) === 'brand')
+      const info = (prompts || []).filter(prompt => tierOf(prompt) === 'info')
+      const jobs = [
+        ...core.map(prompt => ({ prompt_id: prompt.id, runs: AUTOSCAN_SCAN_RUNS })),
+        ...rotating.map(prompt => ({ prompt_id: prompt.id, runs: AUTOSCAN_SCAN_RUNS })),
+        ...brandTier.map(prompt => ({ prompt_id: prompt.id, runs: 1 })),
+        ...info.map(prompt => ({ prompt_id: prompt.id, runs: 1 })),
+      ].map(job => ({ ...job, brand_id: brand.id, user_id: brand.user_id, status: 'pending' }))
+      if (jobs.length) {
+        const { error } = await supabase.from('auto_scan_queue').insert(jobs)
+        if (error) await logCronError(supabase, `enqueue 失敗：${error.message}`, { brand_id: brand.id })
+        else out.enqueued += jobs.length
+      }
+    }
+  }
+
+  // ── 每天：drain（時間預算內逐筆自打 fetch.js；額度不足→同用戶剩餘全標 skipped） ──
+  const startedAt = Date.now()
+  const quotaExhausted = new Set()
+  const { data: pending } = await supabase.from('auto_scan_queue')
+    .select('id, brand_id, user_id, prompt_id, runs')
+    .eq('status', 'pending').order('created_at').limit(200)
+  for (const job of pending || []) {
+    if (Date.now() - startedAt > AUTOSCAN_BUDGET_MS) break
+    if (quotaExhausted.has(job.user_id)) {
+      await supabase.from('auto_scan_queue').update({ status: 'skipped', error: 'quota_exhausted' }).eq('id', job.id)
+      out.skipped += 1
+      continue
+    }
+    try {
+      const response = await fetch(`${SITE_URL}/api/aivis/fetch?prompt_id=${job.prompt_id}&runs=${job.runs}`, { method: 'POST' })
+      const json = await response.json()
+      if (!response.ok || !json.success) {
+        const message = [json.error, json.detail].filter(Boolean).join(' — ') || `HTTP ${response.status}`
+        // 額度類錯誤：這個用戶本輪不再嘗試（省時間、也不撞硬上限）
+        if (/quota|額度|hard_cap/i.test(message)) quotaExhausted.add(job.user_id)
+        await supabase.from('auto_scan_queue').update({ status: 'error', error: message.slice(0, 300) }).eq('id', job.id)
+        await logCronError(supabase, message, { brand_id: job.brand_id, user_id: job.user_id, prompt_id: job.prompt_id })
+        out.failed += 1
+      } else {
+        await supabase.from('auto_scan_queue').update({ status: 'done' }).eq('id', job.id)
+        out.processed += 1
+      }
+    } catch (error) {
+      await supabase.from('auto_scan_queue').update({ status: 'error', error: String(error.message || error).slice(0, 300) }).eq('id', job.id)
+      await logCronError(supabase, error.message || error, { brand_id: job.brand_id, prompt_id: job.prompt_id })
+      out.failed += 1
+    }
+  }
+  return out
+}
+
 export default async function handler(req, res) {
   // Verify cron secret to prevent unauthorized calls
   const secret = process.env.CRON_SECRET
@@ -507,6 +595,14 @@ export default async function handler(req, res) {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
+  // 每天跑：分級自動掃描（週日 enqueue、每日 drain；2026-08-14 解除延後令）
+  let autoScanResults = null
+  try {
+    autoScanResults = await processAutoScan({ supabase, SITE_URL })
+  } catch (error) {
+    console.error('processAutoScan failed:', error)
+  }
+
   // 每天跑：試用過期掃描 + Day 4/6/7 提醒 email
   const trialResults = await processTrials({ supabase, RESEND_API_KEY, SITE_URL })
 
@@ -522,6 +618,7 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     success: true,
+    auto_scan: autoScanResults,
     trial: trialResults,
     pro_expiry: proExpiryResults,
     weekly: weeklyResults, // null when not Monday
