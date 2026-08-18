@@ -1024,7 +1024,7 @@ export default function HomeDark() {
             </p>
 
             <p className="text-base text-white/80 mb-4 max-w-lg">
-              輸入網址，60 秒給你完整 AI 能見度報告 — 免費診斷 + 平台別修法步驟手把手帶你修
+              輸入網址，60 秒給你完整 AI 能見度報告——免費診斷 + 平台別修法步驟手把手帶你修
             </p>
 
             {/* 差異化賣點 chip — v2 改動（2026-06-05）：

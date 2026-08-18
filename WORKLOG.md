@@ -6,6 +6,13 @@
 
 ---
 
+### 2026-08-18a（taste-skill 審計首頁——P1 官方 logo + P2 破折號已修）
+
+design-taste-frontend 打主場審計 HomeDark 落地頁。用戶拍板修兩項：
+1. **P1**：PlatformLogoWall 的 WordPress/Shopify/Wix 手繪近似 logo → 換 Simple Icons **官方品牌 path**（信任區塊放山寨 logo 反而扣分）。維持單色/inline/零依賴，加 role="img" + aria-label。
+2. **P2**：hero 說明段的西式「 — 」→ 中文全形「——」。
+P3（hero 五色 chips 收斂單色系）用戶保留未拍板；CRITICAL 警報條與眉毛/pulse dot 判定為語意合理、保留。
+
 ### 2026-08-14h（用戶決定：CTA 恢復亮橘、撤銷 AA 對比修正）
 
 用戶驗收後拍板恢復原亮橘 `--accent #ff6e34`（品牌視覺優先）。回退範圍：主按鈕 .as-cta（含 hover 回 --accent-2）、行動卡序號、「主力」tag 三處，`--accent-strong` token 移除。**已知取捨**：白字對亮橘 2.79:1 未達 WCAG AA 4.5:1——未來若做無障礙合規（政府案/大企業客戶要求）需重新面對。transition 指名屬性與圓角歸一兩項保留不回退。
