@@ -6,6 +6,13 @@
 
 ---
 
+### 2026-08-14g（design-taste-frontend skill 審計新版殼 — 三修已部署）
+
+用新裝的 taste-skill 審計 app-shell（先誠實劃界：該 skill 管 landing/portfolio、dashboard 明列 out-of-scope → 只抽「通用品質規則」；中文「——」是正規破折號非 AI tell、emoji 是既定品牌語彙——文化判斷不硬套）。機械審計抓到三個真問題並修：
+1. **CTA 對比違規（WCAG AA）**：白字坐在亮橘 `--accent #ff6e34` 上只有 **2.79:1**（AA 要 4.5）→ 新增 `--accent-strong #c2410c`（5.18:1 ✅）給「白字表面」（.as-cta 主按鈕/行動卡序號/主力 tag），亮橘保留給裝飾填色（bar/等級階梯/儀表弧）。hover 改 #9a3408。
+2. **transition:.14s（=transition:all）×3** —— 違反自家 AGENTS 規則，改指名屬性（background-color/color/transform/box-shadow）。
+3. **圓角散值 12 種 → 收斂 7 種**：中段 6/7/9→8、10/11→12；微型（≤5px bar/點）與 pill 99 不動。形狀規則：micro ≤4 功能性、控制項 8、容器 12、卡 18、hero 24、pill 99。
+
 ### 2026-08-14f（自動掃 E2E 實測通過 + drain 改平行批次 — 已部署）
 
 種子測試（2 筆 core 題）→ 手動觸發 cron → `processed: 2` ✅（佇列→自打 aivis API→入庫→標記完成，全通）。實測暴露容量問題：每題 ~25 秒、序列＋40 秒預算＝一天只消化 2 題、12 題題庫要 6 天 → drain 改**併發 4 題/批**（每個 fetch.js 呼叫是獨立 invocation、平行安全）≈ 8+ 題/日。備忘：①anon 查 auto_scan_queue 永遠 0 筆（RLS 無 select policy，勿誤判空）②cron endpoint 未設 CRON_SECRET、任何人可觸發（P2：Vercel env 加隨機字串）。

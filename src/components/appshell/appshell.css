@@ -9,6 +9,7 @@
   --ink:#00003e; --ink-2:#4a4a63; --ink-3:#9a9aad;
   --line:rgba(0,0,62,.08); --line-2:rgba(0,0,62,.14);
   --accent:#ff6e34; --accent-2:#e85114; --accent-soft:rgba(255,110,52,.1);
+  --accent-strong:#c2410c;  /* 白字表面專用（對比 5.18:1 過 AA）；亮橘 --accent 留給裝飾填色（bar/階梯），別放白字 */
   --pop:#8298ff;
   --seo:#2563eb; --aeo:#7c3aed; --geo:#059669; --eeat:#b45309;
   --sh-sm:0 1px 2px rgba(0,0,62,.05);
@@ -47,27 +48,27 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-brand .nm{font-weight:800;font-size:16px;}
 .appshell .sweep{transform-origin:center;animation:as-sweep 4s linear infinite;}
 @keyframes as-sweep{to{transform:rotate(360deg);}}
-.appshell .as-nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;font-size:14.5px;
-  color:var(--ink-2);font-weight:600;cursor:pointer;transition:.14s;margin-bottom:2px;text-decoration:none;}
+.appshell .as-nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;font-size:14.5px;
+  color:var(--ink-2);font-weight:600;cursor:pointer;transition:background-color .14s,color .14s;margin-bottom:2px;text-decoration:none;}
 .appshell .as-nav svg{flex:none;color:var(--ink-3);}
 .appshell .as-nav:hover{background:var(--surface-2);}
 .appshell .as-nav.on{background:var(--accent-soft);color:var(--accent-2);font-weight:750;}
 .appshell .as-nav.on svg{color:var(--accent);}
 .appshell .as-nav .tag{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.04em;
-  background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;}
+  background:var(--accent-strong);color:#fff;padding:2px 6px;border-radius:5px;}
 .appshell .as-sp{flex:1;min-height:16px;}
 /* Beta 並行期「回經典版」：降一階存在感（小字、灰色），不與主導覽搶視覺 */
 .appshell .as-classic{font-size:13.5px;color:var(--ink-3);padding:8px 12px;}
 .appshell .as-classic:hover{color:var(--ink-2);}
 /* 左下個人區＝可點連結直達 /account（帳號不佔主導覽格，Codex IA 建議） */
 .appshell .as-acct{display:flex;align-items:center;gap:10px;padding:11px 8px;border-top:1px solid var(--line);
-  text-decoration:none;color:inherit;border-radius:10px;}
+  text-decoration:none;color:inherit;border-radius:12px;}
 .appshell .as-acct:hover{background:var(--surface-2);}
 .appshell .as-acct:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
 /* 齒輪提示：hover 才亮，暗示「這裡可進設定」 */
 .appshell .as-acct .go{margin-left:auto;color:var(--ink-3);opacity:.5;font-size:14px;}
 .appshell .as-acct:hover .go{opacity:1;}
-.appshell .as-acct .av{width:32px;height:32px;border-radius:9px;flex:none;
+.appshell .as-acct .av{width:32px;height:32px;border-radius:8px;flex:none;
   background:linear-gradient(140deg,var(--pop),#5866c4);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800;}
 .appshell .as-acct .an{font-size:14px;font-weight:700;line-height:1.3;}
 .appshell .as-acct .as{font-size:11px;color:var(--ink-3);}
@@ -78,20 +79,20 @@ html.dark-theme .appshell textarea::placeholder{
 /* 情境列（網站切換器） */
 .appshell .as-ctx{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
 .appshell .as-switcher{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line-2);
-  border-radius:11px;padding:7px 13px;box-shadow:var(--sh-sm);}
+  border-radius:12px;padding:7px 13px;box-shadow:var(--sh-sm);}
 .appshell .as-switcher .lab{font-size:10.5px;color:var(--ink-3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;}
 .appshell .as-switcher .val{font-size:14px;font-weight:750;}
 /* 切換器下拉：原生 select 披上切換器外觀（鍵盤與無障礙原生免費拿到）；選了直接跳同區塊 */
 .appshell .as-switcher-select select{font-family:var(--font);font-size:14px;font-weight:750;color:var(--ink);
   border:none;background:transparent;cursor:pointer;max-width:280px;}
-.appshell .as-switcher-select select:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:6px;}
+.appshell .as-switcher-select select:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:8px;}
 
 .appshell .as-phead{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
 .appshell .as-phead h2{font-size:22px;font-weight:850;margin:0;letter-spacing:-.01em;}
 .appshell .as-phead .sub{font-size:14px;color:var(--ink-3);}
-.appshell .as-seg{margin-left:auto;display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px;}
+.appshell .as-seg{margin-left:auto;display:flex;background:var(--surface-2);border-radius:12px;padding:3px;gap:2px;}
 .appshell .as-seg button{font-family:var(--font);font-size:13.5px;font-weight:650;padding:6px 13px;border-radius:8px;
-  border:none;background:transparent;color:var(--ink-2);cursor:pointer;transition:.14s;}
+  border:none;background:transparent;color:var(--ink-2);cursor:pointer;transition:background-color .14s,color .14s,box-shadow .14s;}
 .appshell .as-seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm);font-weight:750;}
 
 .appshell .as-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);}
@@ -112,7 +113,7 @@ html.dark-theme .appshell textarea::placeholder{
 
 /* ── 統一狀態徽章（八種語彙，全殼共用；同狀態同色同字） ── */
 .appshell .as-badge{display:inline-flex;align-items:center;font-family:var(--mono);font-size:9.5px;font-weight:800;
-  letter-spacing:.05em;padding:2px 7px;border-radius:6px;vertical-align:middle;white-space:nowrap;}
+  letter-spacing:.05em;padding:2px 7px;border-radius:8px;vertical-align:middle;white-space:nowrap;}
 .appshell .as-badge-new{background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.3);}       /* 新功能 */
 .appshell .as-badge-beta{background:rgba(130,152,255,.12);color:#5866c4;border:1px solid rgba(130,152,255,.4);}  /* 測試中 */
 .appshell .as-badge-pro{background:rgba(255,110,52,.12);color:var(--accent-2);border:1px solid rgba(255,110,52,.35);} /* 需 Pro */
@@ -148,12 +149,12 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-lbl{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin-bottom:8px;}
 .appshell .as-truth h3{font-size:22px;font-weight:850;margin:0 0 9px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .appshell .as-delta{font-family:var(--mono);font-size:13.5px;font-weight:750;color:var(--geo);background:rgba(5,150,105,.1);
-  border:1px solid rgba(5,150,105,.24);padding:3px 8px;border-radius:7px;display:inline-flex;align-items:center;gap:3px;}
+  border:1px solid rgba(5,150,105,.24);padding:3px 8px;border-radius:8px;display:inline-flex;align-items:center;gap:3px;}
 .appshell .as-truth p{margin:0 0 4px;font-size:14px;color:var(--ink-2);line-height:1.6;max-width:52ch;}
 .appshell .as-truth p b{color:var(--ink);}
 .appshell .as-cta{display:inline-block;margin-top:6px;font-family:var(--font);font-weight:750;border:none;cursor:pointer;
-  border-radius:11px;background:var(--accent);color:#fff;box-shadow:0 6px 15px rgba(255,110,52,.26);padding:9px 17px;font-size:14.5px;text-decoration:none;}
-.appshell .as-cta:hover{background:var(--accent-2);}
+  border-radius:12px;background:var(--accent-strong);color:#fff;box-shadow:0 6px 15px rgba(194,65,12,.26);padding:9px 17px;font-size:14.5px;text-decoration:none;}
+.appshell .as-cta:hover{background:#9a3408;}
 
 /* 技術輔助分數 */
 .appshell .as-support{margin-top:16px;}
@@ -163,7 +164,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 /* 五卡版（含內容品質第 5 分數） */
 .appshell .as-scores-5{grid-template-columns:repeat(5,1fr);}
-.appshell .as-sc{padding:14px 15px;border-radius:var(--r);cursor:pointer;transition:.14s;text-decoration:none;color:inherit;display:block;}
+.appshell .as-sc{padding:14px 15px;border-radius:var(--r);cursor:pointer;transition:transform .14s,box-shadow .14s;text-decoration:none;color:inherit;display:block;}
 .appshell .as-sc:hover{transform:translateY(-2px);box-shadow:var(--sh);}
 .appshell .as-sc .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .appshell .as-sc .nm{font-size:13px;font-weight:700;color:var(--ink-2);}
@@ -174,7 +175,7 @@ html.dark-theme .appshell textarea::placeholder{
 
 /* 下一步 */
 .appshell .as-next{margin-top:16px;padding:17px 20px;border-radius:var(--r-lg);display:flex;align-items:center;gap:15px;flex-wrap:wrap;}
-.appshell .as-next .no{width:36px;height:36px;flex:none;border-radius:11px;background:var(--accent);color:#fff;
+.appshell .as-next .no{width:36px;height:36px;flex:none;border-radius:12px;background:var(--accent);color:#fff;
   display:grid;place-items:center;font-weight:900;font-size:16px;box-shadow:0 5px 12px rgba(255,110,52,.3);}
 .appshell .as-next .tx{flex:1;min-width:220px;}
 .appshell .as-next .tx .h{font-size:14.5px;font-weight:750;margin-bottom:2px;}
@@ -234,7 +235,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-health-tab:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:5px;}
 
 /* 網站體檢：誠實揭露單頁與站台層檔案範圍 */
-.appshell .as-health-scope{font-size:13px;color:var(--ink-3);background:var(--surface-2);border-radius:9px;padding:9px 13px;
+.appshell .as-health-scope{font-size:13px;color:var(--ink-3);background:var(--surface-2);border-radius:8px;padding:9px 13px;
   margin-bottom:16px;line-height:1.6;display:flex;align-items:flex-start;gap:7px;overflow-wrap:anywhere;}
 .appshell .as-health-scope b{color:var(--ink-2);}
 
@@ -275,7 +276,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-vis-kpi .value small{font-size:14px;color:var(--ink-3);font-weight:650;letter-spacing:0;}
 .appshell .as-vis-kpi .value.pending{font-size:18px;color:var(--ink-3);letter-spacing:0;line-height:1.4;}
 .appshell .as-vis-kpi .delta{font-family:var(--mono);font-size:11px;color:var(--geo);font-weight:750;margin-left:6px;
-  background:rgba(5,150,105,.1);padding:3px 7px;border-radius:6px;vertical-align:6px;}
+  background:rgba(5,150,105,.1);padding:3px 7px;border-radius:8px;vertical-align:6px;}
 .appshell .as-vis-kpi .delta.down{color:#c2410c;background:rgba(194,65,12,.09);}
 .appshell .as-vis-kpi p{font-size:12.5px;color:var(--ink-3);line-height:1.5;margin:8px 0 0;}
 .appshell .as-vis-spark{display:block;width:100%;height:54px;margin-top:8px;overflow:visible;}
@@ -290,7 +291,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-vis-usage i{display:block;height:100%;border-radius:inherit;background:var(--accent);}
 
 /* AI 曝光監測：三引擎識別，固定只顯示 ChatGPT / Claude / Gemini */
-.appshell .as-vis-engine-mark{width:19px;height:19px;border-radius:6px;background:var(--engine-color);color:#fff;display:inline-grid;
+.appshell .as-vis-engine-mark{width:19px;height:19px;border-radius:8px;background:var(--engine-color);color:#fff;display:inline-grid;
   place-items:center;font-family:var(--mono);font-size:9px;font-weight:850;flex:none;}
 
 /* AI 曝光監測：最新批次核心題引用矩陣 */
@@ -307,11 +308,11 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-vis-matrix thead th{color:var(--ink-2);font-weight:700;border-top:none;}
 .appshell .as-vis-matrix .question{text-align:left;width:55%;line-height:1.45;}
 .appshell .as-vis-matrix th .engine{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
-.appshell .as-vis-cell{width:24px;height:24px;border-radius:7px;display:inline-grid;place-items:center;font-family:var(--mono);font-weight:850;}
+.appshell .as-vis-cell{width:24px;height:24px;border-radius:8px;display:inline-grid;place-items:center;font-family:var(--mono);font-weight:850;}
 .appshell .as-vis-cell.hit{background:var(--geo);color:#fff;}
 .appshell .as-vis-cell.miss{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line);}
 .appshell .as-vis-cell.none{background:transparent;color:var(--ink-3);border:1px dashed var(--line-2);}
-.appshell .as-vis-inline-state{padding:12px 14px;border-radius:9px;background:var(--surface-2);font-size:13px;color:var(--ink-3);
+.appshell .as-vis-inline-state{padding:12px 14px;border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--ink-3);
   line-height:1.55;margin-top:12px;}
 
 /* AI 曝光監測：品牌詞與內容引用兩軸刻意分開，避免灌入主曝光率 */
@@ -346,11 +347,11 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-vis-delta.behind{background:rgba(5,150,105,.08);color:#059669;border:1px solid rgba(5,150,105,.25);}
 .appshell .as-vis-delta.even{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line);}
 /* 觀察名單編輯器：單行輸入＋儲存；錯誤紅字直說原因（含缺欄位提示） */
-.appshell .as-vis-comp-editor{margin:4px 0 14px;padding:12px 14px;border:1px dashed var(--line-2);border-radius:10px;}
+.appshell .as-vis-comp-editor{margin:4px 0 14px;padding:12px 14px;border:1px dashed var(--line-2);border-radius:12px;}
 .appshell .as-vis-comp-editor label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:8px;}
 .appshell .as-vis-comp-editor .row{display:flex;gap:10px;flex-wrap:wrap;}
 .appshell .as-vis-comp-editor input{flex:1;min-width:220px;font-family:var(--font);font-size:14.5px;padding:9px 12px;
-  border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--ink);}
+  border:1px solid var(--line-2);border-radius:12px;background:var(--surface);color:var(--ink);}
 .appshell .as-vis-comp-editor input:focus-visible{outline:3px solid rgba(130,152,255,.45);outline-offset:1px;}
 .appshell .as-vis-comp-editor .err{margin-top:8px;font-size:13px;color:#b4231f;}
 /* 已加入的競品 chips：可單獨刪除（× 鈕 hit target 夠大） */
@@ -382,11 +383,11 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-pm .sub{font-size:13px;color:var(--ink-3);margin-left:8px;}
 /* 每週自動掃描列：開關沿用題目啟停鈕樣式（op sw）＋說明文字 */
 .appshell .as-pm-auto{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;
-  padding:10px 14px;border:1px dashed var(--line-2);border-radius:10px;}
+  padding:10px 14px;border:1px dashed var(--line-2);border-radius:12px;}
 .appshell .as-pm-auto span{font-size:13px;color:var(--ink-3);line-height:1.6;flex:1;min-width:240px;}
 
 /* 操作通知列：成功綠／警告琥珀（含額度不足訊息，誠實透傳後端原因） */
-.appshell .as-pm-notice{font-size:13.5px;line-height:1.6;padding:10px 14px;border-radius:10px;margin-bottom:12px;}
+.appshell .as-pm-notice{font-size:13.5px;line-height:1.6;padding:10px 14px;border-radius:12px;margin-bottom:12px;}
 .appshell .as-pm-notice.ok{background:rgba(5,150,105,.07);border:1px solid rgba(5,150,105,.25);color:#047857;}
 .appshell .as-pm-notice.warn{background:#fffaf0;border:1px solid #f0d9ae;color:#8a6d3b;}
 /* 各層區塊：人話標題＋規則副標＋新增鈕 */
@@ -395,7 +396,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-pm-tier .th b{font-size:14.5px;}
 .appshell .as-pm-tier .th span{font-size:12.5px;color:var(--ink-3);flex:1;min-width:200px;}
 .appshell .as-pm-tier ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
-.appshell .as-pm-tier li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;
+.appshell .as-pm-tier li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;
   padding:9px 12px;flex-wrap:wrap;}
 /* 停用題整列降透明——一眼分清啟用/停用（另有文字開關雙保險） */
 .appshell .as-pm-tier li.off{opacity:.55;}
@@ -411,7 +412,7 @@ html.dark-theme .appshell textarea::placeholder{
 /* 行內編輯：輸入框＋儲存/取消 */
 .appshell .as-pm-tier .edit{display:flex;gap:8px;flex:1;flex-wrap:wrap;}
 .appshell .as-pm-tier .edit input{flex:1;min-width:240px;font-family:var(--font);font-size:14px;padding:8px 12px;
-  border:1px solid var(--line-2);border-radius:9px;}
+  border:1px solid var(--line-2);border-radius:8px;}
 .appshell .as-pm-tier .edit .as-cta{margin-top:0;padding:8px 14px;font-size:13px;}
 .appshell .as-pm .foot a{color:var(--accent-2);}
 
@@ -438,7 +439,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-vis-voice-card blockquote{margin:0;font-size:14.5px;color:var(--ink);line-height:1.75;}
 .appshell .as-vis-voice-card details summary{cursor:pointer;font-size:13px;color:var(--accent-2);font-weight:700;list-style:none;}
 .appshell .as-vis-voice-card details summary::-webkit-details-marker{display:none;}
-.appshell .as-vis-voice-card details summary:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:6px;}
+.appshell .as-vis-voice-card details summary:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:8px;}
 /* 完整原文：等寬小字、可捲——查驗用而非閱讀主體 */
 .appshell .as-vis-voice-card .vfull{margin:8px 0 0;font-size:13px;color:var(--ink-2);line-height:1.7;
   max-height:260px;overflow-y:auto;white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:10px 12px;}
@@ -456,7 +457,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-vis-facts-table .f-chip.bad{color:#b45309;}
 .appshell .as-vis-facts-table .f-chip.na{color:var(--ink-3);font-weight:600;}
 .appshell .as-vis-facts-table .f-chip code{font-family:var(--mono);font-size:11px;background:rgba(255,110,52,.1);
-  border:1px solid rgba(255,110,52,.3);padding:1px 6px;border-radius:6px;color:#b45309;}
+  border:1px solid rgba(255,110,52,.3);padding:1px 6px;border-radius:8px;color:#b45309;}
 
 /* 來源分類摘要列：全部來源網域的組成統計（不只 top N，摘要才誠實） */
 .appshell .as-vis-src-summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);
@@ -500,14 +501,14 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-vis-beta{font-family:var(--mono);font-size:9px;font-weight:750;letter-spacing:.06em;background:rgba(130,152,255,.14);
   color:#5866c4;padding:2px 7px;border-radius:5px;}
 .appshell .as-vis-line-button{font-family:var(--font);font-size:13px;font-weight:700;color:var(--ink-2);background:var(--surface);
-  border:1px solid var(--line-2);border-radius:9px;padding:7px 11px;cursor:pointer;}
+  border:1px solid var(--line-2);border-radius:8px;padding:7px 11px;cursor:pointer;}
 .appshell .as-vis-line-button:hover{background:var(--surface-2);}
 .appshell .as-vis-line-button:disabled{cursor:wait;opacity:.55;}
 .appshell .as-vis-mentions>p{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin:8px 0 0;max-width:68ch;}
 .appshell .as-vis-mention-results>b{display:block;font-size:13.5px;margin:14px 0 4px;}
 .appshell .as-vis-mention-item{display:grid;grid-template-columns:140px 1fr auto;align-items:center;gap:10px;padding:9px 0;
   border-top:1px solid var(--line);text-decoration:none;color:var(--ink-2);font-size:13px;content-visibility:auto;contain-intrinsic-size:40px;}
-.appshell .as-vis-mention-item .src{font-family:var(--mono);font-size:10.5px;background:var(--surface-2);padding:3px 7px;border-radius:6px;
+.appshell .as-vis-mention-item .src{font-family:var(--mono);font-size:10.5px;background:var(--surface-2);padding:3px 7px;border-radius:8px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .appshell .as-vis-mention-item .title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .appshell .as-vis-mention-item .tag{font-size:10px;color:var(--ink-3);border:1px solid var(--line);padding:2px 7px;border-radius:99px;}
@@ -528,7 +529,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-action .top{display:flex;align-items:center;gap:8px;}
 /* 序號圓標：告訴用戶「照這個順序修」 */
 .appshell .as-action .no{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
-  border-radius:99px;background:var(--accent);color:#fff;font-size:13px;font-weight:800;}
+  border-radius:99px;background:var(--accent-strong);color:#fff;font-size:13px;font-weight:800;}
 .appshell .as-action .dim{font-size:12.5px;font-weight:800;}
 /* 優先度 chip：P1 橘（緊急）、P2/P3 中性——不只靠顏色，chip 內有文字 */
 .appshell .as-action .pri{margin-left:auto;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink-3);}
@@ -569,7 +570,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-gap-list{margin-bottom:16px;}
 .appshell .as-gap-list h3{font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:10px;}
 .appshell .as-gap-list ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
-.appshell .as-gap-list li{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);}
+.appshell .as-gap-list li{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface);}
 .appshell .as-gap-list .q{font-size:14.5px;font-weight:700;color:var(--ink);line-height:1.55;margin-bottom:6px;}
 .appshell .as-gap-list .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);}
 /* 引用狀態 tag：不只靠顏色表意、配文字（未被引用/已被引用） */
@@ -579,7 +580,7 @@ html.dark-theme .appshell textarea::placeholder{
 /* 「AI 引用了誰」的網域 chips：等寬字、可換行 */
 .appshell .as-gap-list .others{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;}
 .appshell .as-gap-list .others code{font-family:var(--mono);font-size:11px;background:var(--surface-2);border:1px solid var(--line);
-  padding:2px 7px;border-radius:6px;color:var(--ink-2);}
+  padding:2px 7px;border-radius:8px;color:var(--ink-2);}
 .appshell .as-gap-list .others.none{color:var(--ink-3);}
 /* 每題的行動指引：具體、不含保證字眼 */
 .appshell .as-gap-list .act{font-size:13px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);line-height:1.6;}
@@ -587,7 +588,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-gap-brief{margin-top:8px;}
 .appshell .as-gap-brief summary{cursor:pointer;font-size:13px;font-weight:750;color:var(--accent-2);list-style:none;}
 .appshell .as-gap-brief summary::-webkit-details-marker{display:none;}
-.appshell .as-gap-brief summary:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:6px;}
+.appshell .as-gap-brief summary:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:8px;}
 .appshell .as-gap-brief pre{margin:8px 0;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink-2);
   background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;
   white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;}
@@ -597,7 +598,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-gap-wins{opacity:.92;}
 /* 範圍誠實聲明：與網站體檢的 scope 條同款語氣 */
 .appshell .as-gap-scope{font-size:13px;color:var(--ink-3);line-height:1.7;padding:10px 14px;border:1px dashed var(--line);
-  border-radius:10px;margin-bottom:16px;}
+  border-radius:12px;margin-bottom:16px;}
 /* 內容工具入口：文章工具收編進「內容機會」（工具本體沿用現有頁、這裡只做入口卡） */
 .appshell .as-gap-tools{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
 .appshell .as-gap-tool{display:flex;flex-direction:column;gap:6px;padding:14px 16px;text-decoration:none;
