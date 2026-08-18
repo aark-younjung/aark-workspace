@@ -24,6 +24,30 @@ const IDLE_PHASES = { seo: null, aeo: null, geo: null, eeat: null }
 const prefersReduce = () =>
   typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
+/** 判級門檻沿用站上既有標準（DashboardV2 verdict 80/60/40），首頁不另立一套 */
+const BANDS = [
+  { min: 80, label: '優異', tone: 'good' },
+  { min: 60, label: '良好', tone: 'good' },
+  { min: 40, label: '尚可', tone: 'warn' },
+  { min: 0, label: '需改善', tone: 'bad' },
+]
+
+/**
+ * 四面向摘要：平均（null 跳過，同 MyClients 算法）＋判語＋最弱項＋沒測到的項數。
+ * 目的是給代理商「一句可以轉述給客戶的話」，不是多一個裝飾數字。
+ */
+function summarize(scores) {
+  const got = ASPECTS.map(a => ({ ...a, score: scores?.[a.key] })).filter(x => typeof x.score === 'number')
+  if (!got.length) return null
+  const avg = Math.round(got.reduce((t, x) => t + x.score, 0) / got.length)
+  return {
+    avg,
+    band: BANDS.find(b => avg >= b.min),
+    worst: got.reduce((a, b) => (b.score < a.score ? b : a)),
+    missing: ASPECTS.length - got.length,
+  }
+}
+
 /**
  * 新版首頁（亮色鴿哥版）— 2026-08-18 並行驗收路由 /home-v2
  *
@@ -54,6 +78,7 @@ export default function HomeLight() {
   const headRef = useRef(null)
 
   const doneCount = ASPECTS.filter(a => phases[a.key]).length
+  const summary = anonResult ? summarize(anonResult) : null
 
   // 單一面向回報：分析器 resolve（或失敗）就翻開它那張卡，不等其他三個
   const markPhase = (key, result) =>
@@ -147,7 +172,10 @@ export default function HomeLight() {
       }
       setAnonResult(anon)
       bumpAnonScanCount()
-      setStatus('✓ 掃描完成——四個面向的分數已列在下方')
+      const sum = summarize(anon)
+      setStatus(sum
+        ? `✓ 掃描完成——四項平均 ${sum.avg}/100（${sum.band.label}）`
+        : '✓ 掃描完成——但四個面向都沒抓到資料')
       trackPixelCustom('AnonScanComplete', { content_name: anon.name })
       // 後臺日誌（fire-and-forget；boolean 旗標留診斷線索，與 HomeDark 同格式）
       const flags = o => o ? Object.fromEntries(
@@ -212,8 +240,11 @@ export default function HomeLight() {
           <p className="hl-lede">別人問 AI「推薦哪一家」時，你在不在名單上？<b>方舟 AI 雷達幫你量出來</b>——輸入網址，30 秒先看你的 AI 能見度分數。</p>
           <form className="hl-scan" onSubmit={handleSubmit}>
             <svg className="globe" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" /></svg>
+            {/* 手機鍵盤：inputMode=url 給「.」快捷鍵，關掉首字大寫/自動改字/拼字檢查。
+                刻意維持 type="text"——type="url" 的原生驗證會擋掉「yourbrand.com」這種沒帶協定的輸入 */}
             <input
               type="text" value={url} onChange={e => setUrl(e.target.value)}
+              inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false}
               placeholder="輸入你的網址，例如 yourbrand.com" aria-label="網址" disabled={loading}
             />
             <button type="submit" className="hl-btn hl-cta" disabled={loading}>
@@ -261,15 +292,26 @@ export default function HomeLight() {
                 return (
                   <div className="sc" key={key}>
                     <div className={`fl${phase ? ' is-open' : ''}`}>
-                      {/* 正面＝骨架：這個面向還在跑 */}
+                      {/* 正面＝骨架：這個面向還在跑（骨架形狀＝翻開後的形狀，翻開時不跳版） */}
                       <div className="fc front" aria-hidden={!!phase}>
                         <div className="nm">{label}</div>
                         <div className="skel" />
+                        <div className="skel bar-skel" />
                       </div>
-                      {/* 背面＝翻開後的分數（分析器失敗顯示 —） */}
+                      {/* 背面＝翻開後的分數：分母講清楚滿分、bar 長度就是量尺（色編類別、長度編優劣） */}
                       <div className="fc back" aria-hidden={!phase}>
                         <div className="nm">{label}</div>
-                        <div className="n" style={{ color }}>{phase?.score ?? '—'}</div>
+                        {typeof phase?.score === 'number' ? (
+                          <>
+                            <div className="n" style={{ color }}>{phase.score}<span className="den">/100</span></div>
+                            <div className="bar"><i style={{ width: `${phase.score}%`, background: color }} /></div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="n na">—</div>
+                            <div className="nadesc">沒測到</div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -278,6 +320,16 @@ export default function HomeLight() {
             </div>
             {anonResult ? (
               <div className="hl-done">
+                {/* 判語：代理商要的是「一句可以轉述給客戶的話」，四個裸數字給不出來 */}
+                {summary && (
+                  <p className="hl-verdict">
+                    <b className={`vb is-${summary.band.tone}`}>{summary.band.label}</b>
+                    四項平均 <b className="avg">{summary.avg}/100</b>，最低的是 {summary.worst.label}（{summary.worst.score}/100）。
+                    {summary.missing > 0 && (
+                      <span className="miss">另有 {summary.missing} 項沒測到——是抓不到資料，不是 0 分。</span>
+                    )}
+                  </p>
+                )}
                 <p className="note">分數只是起點——哪幾項沒過、每一項怎麼修（含可直接貼上的修復碼），註冊後免費看完整診斷並保存紀錄。</p>
                 <div className="acts">
                   <Link to="/register" className="hl-btn hl-cta hl-sm">免費註冊看完整診斷</Link>

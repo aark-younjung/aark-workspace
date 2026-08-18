@@ -117,21 +117,39 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
 .homelight .hl-anon .hd b:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px;}
 .homelight .hl-anon .row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
 /* 翻牌結構：.sc＝透視容器（負責撐高度）／.fl＝會轉的內層／.fc＝正反兩面（絕對定位疊合） */
-.homelight .hl-anon .sc{perspective:900px;height:82px;}
+.homelight .hl-anon .sc{perspective:900px;height:96px;}
 .homelight .hl-anon .fl{position:relative;width:100%;height:100%;transform-style:preserve-3d;
   transition:transform .6s cubic-bezier(.2,.75,.25,1);}
 .homelight .hl-anon .fl.is-open{transform:rotateY(180deg);}
-.homelight .hl-anon .fc{position:absolute;inset:0;overflow:hidden;
+.homelight .hl-anon .fc{position:absolute;inset:0;overflow:hidden;display:flex;flex-direction:column;
   backface-visibility:hidden;-webkit-backface-visibility:hidden;
   background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
 .homelight .hl-anon .fc.back{transform:rotateY(180deg);}
 .homelight .hl-anon .fc .nm{font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:7px;}
 .homelight .hl-anon .fc .n{font-size:26px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;}
-/* 骨架條：等待中的分數佔位（灰底 + 掃光），翻開後被真實分數取代 */
+/* 分母：講清楚滿分是 100，不讓用戶自己猜量尺 */
+.homelight .hl-anon .fc .den{font-size:13px;font-weight:700;color:var(--ink-3);margin-left:2px;letter-spacing:-.01em;}
+/* 量尺條：長度編「高低」、顏色編「哪一個面向」——低分不會因為 GEO 是綠色就看起來很安心 */
+.homelight .hl-anon .fc .bar{margin-top:auto;height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden;}
+.homelight .hl-anon .fc .bar i{display:block;height:100%;border-radius:99px;}
+/* 沒測到＝抓不到資料，不是 0 分：用灰字明說，不留一個沒解釋的破折號 */
+.homelight .hl-anon .fc .n.na{color:var(--ink-3);}
+.homelight .hl-anon .fc .nadesc{margin-top:auto;font-size:11.5px;line-height:1;color:var(--ink-3);}
+/* 骨架條：等待中的分數佔位（灰底 + 掃光），形狀對齊翻開後的分數＋量尺條，翻開時不跳版 */
 .homelight .hl-anon .skel{height:26px;border-radius:7px;background:var(--surface-3);
   background-image:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.9) 50%,transparent 80%);
   background-size:220% 100%;background-repeat:no-repeat;animation:hl-shim 1.3s ease-in-out infinite;}
+.homelight .hl-anon .skel.bar-skel{height:5px;border-radius:99px;margin-top:auto;}
 @keyframes hl-shim{0%{background-position:130% 0;}100%{background-position:-60% 0;}}
+/* 判語列：一句可以轉述給客戶的話（判級門檻同 DashboardV2 的 80/60/40） */
+.homelight .hl-verdict{font-size:14px;line-height:1.7;color:var(--ink-2);margin:0 0 12px;}
+.homelight .hl-verdict .vb{display:inline-block;font-size:12.5px;font-weight:800;letter-spacing:.02em;
+  padding:3px 10px;border-radius:999px;margin-right:9px;vertical-align:1px;}
+.homelight .hl-verdict .vb.is-good{color:#047857;background:rgba(4,120,87,.1);}   /* 良好以上：綠（4.8:1 過 AA） */
+.homelight .hl-verdict .vb.is-warn{color:#b45309;background:rgba(180,83,9,.1);}   /* 尚可：琥珀（4.6:1） */
+.homelight .hl-verdict .vb.is-bad{color:#b91c1c;background:rgba(185,28,28,.1);}   /* 需改善：紅（5.9:1） */
+.homelight .hl-verdict .avg{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums;}
+.homelight .hl-verdict .miss{display:block;font-size:13px;color:var(--ink-3);margin-top:2px;}
 /* 完成後才出現的說明＋CTA：淡入上移，讓「掃完了」是看得見的事件而非無聲替換 */
 .homelight .hl-done{animation:hl-rise .44s cubic-bezier(.2,.75,.25,1);}
 @keyframes hl-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}

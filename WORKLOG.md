@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-08-18e（critique C：分數意義層 + 手機 inputMode）
+
+修 critique 的 C 項（P1「分數沒有意義層」＋ Casey persona 的手機鍵盤）。都在 [HomeLight.jsx](src/pages/HomeLight.jsx) / [homelight.css](src/styles/homelight.css)，`/app` 一律沒動。
+
+- **分母＋量尺**：每張卡從裸數字改成 `NN/100` ＋長度＝分數的 bar（沿用 `/app` 總覽 `as-sc` 的同一套語言）。
+- **判語**：完成後多一行「**尚可** 四項平均 58/100，最低的是 GEO（32/100）。」——**門檻直接沿用站上既有的 [DashboardV2.jsx:1651](src/pages/DashboardV2.jsx) 80/60/40（優異/良好/尚可/需改善）**，平均沿用 MyClients 的「null 跳過」算法，首頁不另立標準。判級徽章顏色編優劣（綠 #047857 / 琥珀 #b45309 / 紅 #b91c1c，皆過 AA）。這一行就是代理商可以直接轉述給客戶的那句話。
+- **「—」不再無解釋**：改成灰色「—」＋小字「沒測到」，判語列再補「另有 N 項沒測到——是抓不到資料，不是 0 分。」aria-live 完成訊息也帶平均與判級。
+- **手機鍵盤**：input 加 `inputMode="url" autoCapitalize="none" autoCorrect="off" spellCheck={false}`。**刻意維持 `type="text"`**——`type="url"` 的原生驗證會擋掉「yourbrand.com」這種沒帶協定的輸入，而 normalizeUrl 本來就負責補協定。
+- 骨架卡同步長出 bar 佔位（`.bar-skel`）、卡高 82→96px，翻開時不跳版。
+
+**刻意偏離 critique 的一點**：critique 建議「數字色依分數帶」，**沒有照做**。理由：`/app` 總覽用的是「類別色＋bar 長度」，首頁改成分數色階會讓兩邊色彩語彙分家（一致性），也牴觸 PRODUCT.md「語意色不隨主題變」；而且長度已經在編優劣、再用顏色編一次是重複編碼。改成**顏色編身分、長度編高低、判語徽章編優劣**。若之後想要色階，改 `.n` 的 style 即可。
+
+**驗證**：eslint 0 問題；`summarize()` 實跑五組邊界（含 0 分不被當成沒測到、單項 null、全 null 不顯示判語）結果正確；dev server transform 200。
+
+待修（critique 剩餘）：P2「註冊交接摔掉全部脈絡」（sessionStorage + ?url= 帶過去）、P2 `normalizeUrl` catch 回 truthy 垃圾（[src/lib/url.js:65](src/lib/url.js)）、以及 #2 的 AEO/GEO/E-E-A-T 縮寫對品牌主零解釋。
+
 ### 2026-08-18d（critique B：掃描等待改「骨架卡逐張翻開」+ 完成不再是隱形事件）
 
 修 critique 的 B 項（兩個 P1：「30-60 秒等待是死畫面」＋「掃描完成是隱形事件」）。核心決定：**結果卡不等掃完才出現**——按下按鈕當下就以骨架態出場，四張卡各自等自己的分析器。
