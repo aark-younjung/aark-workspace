@@ -74,8 +74,10 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
 .homelight .hl-scan input{flex:1;border:none;background:transparent;font-family:var(--font);font-size:15.5px;padding:10px 4px;outline:none;color:var(--ink);min-width:0;}
 .homelight .hl-scan input::placeholder{color:var(--ink-3);}
 .homelight .hl-scan .hl-btn{padding:11px 20px;font-size:14.5px;white-space:nowrap;}
-/* 掃描狀態列（進行中 / 錯誤） */
+/* 掃描狀態列（進行中 / 完成 / 錯誤）
+   常駐 aria-live 區塊：空字串時只是視覺隱藏，元素不卸載，SR 才聽得到「完成」 */
 .homelight .hl-status{margin-top:14px;font-size:13.5px;color:var(--ink-2);}
+.homelight .hl-status:empty{display:none;}
 .homelight .hl-status.err{color:#b91c1c;}
 
 /* ── 信任訊號列（免註冊 / 繁中 / 發票） ── */
@@ -104,18 +106,44 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
   background:var(--surface);border:1px solid var(--line);padding:6px 13px;border-radius:999px;box-shadow:var(--sh-sm);}
 .homelight .hl-tagline b{color:var(--ink-2);}
 
-/* ── 未登入快掃結果卡（value-first：先給分數，藥方引導註冊） ── */
+/* ── 掃描等待 → 快掃結果卡（同一張卡：骨架態出場、逐格翻開、完成後引導註冊） ── */
 .homelight .hl-anon{max-width:1180px;margin:0 auto;padding:0 26px 56px;}
 .homelight .hl-anon .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 26px;box-shadow:var(--sh);}
 .homelight .hl-anon .hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
 .homelight .hl-anon .hd b{font-size:18px;font-weight:800;}
 .homelight .hl-anon .hd span{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);}
+/* 完成時焦點程式化移到站名（給螢幕閱讀器）：滑鼠使用者不該看到焦點框、鍵盤使用者要看到 */
+.homelight .hl-anon .hd b:focus{outline:none;}
+.homelight .hl-anon .hd b:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px;}
 .homelight .hl-anon .row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
-.homelight .hl-anon .sc{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
-.homelight .hl-anon .sc .nm{font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:7px;}
-.homelight .hl-anon .sc .n{font-size:26px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;}
+/* 翻牌結構：.sc＝透視容器（負責撐高度）／.fl＝會轉的內層／.fc＝正反兩面（絕對定位疊合） */
+.homelight .hl-anon .sc{perspective:900px;height:82px;}
+.homelight .hl-anon .fl{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  transition:transform .6s cubic-bezier(.2,.75,.25,1);}
+.homelight .hl-anon .fl.is-open{transform:rotateY(180deg);}
+.homelight .hl-anon .fc{position:absolute;inset:0;overflow:hidden;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+.homelight .hl-anon .fc.back{transform:rotateY(180deg);}
+.homelight .hl-anon .fc .nm{font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:7px;}
+.homelight .hl-anon .fc .n{font-size:26px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;}
+/* 骨架條：等待中的分數佔位（灰底 + 掃光），翻開後被真實分數取代 */
+.homelight .hl-anon .skel{height:26px;border-radius:7px;background:var(--surface-3);
+  background-image:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.9) 50%,transparent 80%);
+  background-size:220% 100%;background-repeat:no-repeat;animation:hl-shim 1.3s ease-in-out infinite;}
+@keyframes hl-shim{0%{background-position:130% 0;}100%{background-position:-60% 0;}}
+/* 完成後才出現的說明＋CTA：淡入上移，讓「掃完了」是看得見的事件而非無聲替換 */
+.homelight .hl-done{animation:hl-rise .44s cubic-bezier(.2,.75,.25,1);}
+@keyframes hl-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 .homelight .hl-anon .note{font-size:13px;color:var(--ink-3);margin:0 0 16px;line-height:1.6;}
 .homelight .hl-anon .acts{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* ── 掃描進行中：雷達加速（畫面跟真實工作連動，不是純裝飾） ── */
+.homelight.is-scanning .hl-mark .sweep{animation-duration:1.4s;}
+.homelight.is-scanning .hl-radar .live{stroke-width:2.2;}
+.homelight.is-scanning .hl-radar .l1{animation-duration:1.6s;animation-delay:0s;}
+.homelight.is-scanning .hl-radar .l2{animation-duration:1.6s;animation-delay:.53s;}
+.homelight.is-scanning .hl-radar .l3{animation-duration:1.6s;animation-delay:1.06s;}
 
 /* ── 三大差異化 footer 條 ── */
 .homelight .hl-foot{max-width:1180px;margin:0 auto;padding:0 26px 64px;}
@@ -152,4 +180,8 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
 @media (prefers-reduced-motion:reduce){
   .homelight .hl-pigeon,.homelight .hl-radar .live,
   .homelight .hl-mark .sweep,.homelight .hl-kick .live{animation:none !important;}
+  /* 翻牌改瞬間切換、骨架不掃光、完成區不上移——資訊照給，動態全關 */
+  .homelight .hl-anon .fl{transition:none !important;}
+  .homelight .hl-anon .skel{animation:none !important;background-image:none !important;}
+  .homelight .hl-done{animation:none !important;}
 }

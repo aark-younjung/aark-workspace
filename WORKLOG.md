@@ -6,6 +6,19 @@
 
 ---
 
+### 2026-08-18d（critique B：掃描等待改「骨架卡逐張翻開」+ 完成不再是隱形事件）
+
+修 critique 的 B 項（兩個 P1：「30-60 秒等待是死畫面」＋「掃描完成是隱形事件」）。核心決定：**結果卡不等掃完才出現**——按下按鈕當下就以骨架態出場，四張卡各自等自己的分析器。
+
+- **逐張翻開**（[HomeLight.jsx](src/pages/HomeLight.jsx)）：`phases` state 四格；`flip(key, promise)` 讓每個分析器 resolve（或失敗）就翻自己那張，**Promise.all 照舊等四個到齊**才組最終結果——翻牌只是旁路，不動掃描流程。翻牌順序＝分析器真實完成順序（analyzeSEO 自抓測速通常最後），**刻意不排演假進度條**（誠實線）。卡頭同步顯示「掃描中 · N/4 個面向已完成」。
+- **登入路徑同享**（[scanService.js](src/services/scanService.js)）：`runFullScan` 加選用 `onProgress(key, result)`，內部 `.catch(()=>null)` 改成 `report()` 包裝。不傳 callback 時行為與過去完全相同（DashboardV2 等既有呼叫端零影響）；登入者那條 30–60 秒的等待也跟著活起來。
+- **完成事件可感知**：`hl-status` 改**常駐 live region**（原本清成空字串會整個卸載＝螢幕閱讀器在「完成」那刻完全靜默，改用 `:empty{display:none}` 只做視覺隱藏）；完成時 status 寫「✓ 掃描完成」、焦點移到卡片站名（`tabIndex={-1}` + `preventScroll`）、卡片 scrollIntoView；說明＋CTA 區 `.hl-done` 淡入上移。掃描一開始也先 scrollIntoView（`block:'nearest'`）——手機上結果卡必定在 hero 下方，不捲過去就白翻了。
+- **CSS**（[homelight.css](src/styles/homelight.css)）：`.sc`→透視容器／`.fl`→ rotateY(180deg) 內層／`.fc` 正反兩面 backface-hidden；骨架條 `.skel` 灰底掃光；`.homelight.is-scanning` 時雷達漣漪 4.4s→1.6s、wordmark 掃描弧 4s→1.4s（**畫面跟真實工作連動**，不是裝飾動畫）。reduced-motion 一併關掉翻牌 transition／掃光／淡入（資訊照給、動態全關）。
+
+**驗證**：eslint 兩檔 0 問題；vite dev server 實際 transform HomeLight.jsx / scanService.js / homelight.css 皆 200。⚠️ `vite build` 在本機 exit 127（rolldown 原生套件缺，**stash 掉本次改動的 baseline 也一樣掛**＝環境既有問題、非本次引入；Vercel 端建置不受影響）。
+
+待修（critique 剩餘、用戶未拍板）：C=分數意義層（/100 分母＋判語＋色依分數）＋手機 inputMode；另有 P2「註冊交接摔掉脈絡」與 `normalizeUrl` fallback 回 truthy 垃圾（src/lib/url.js:65）。
+
 ### 2026-08-18c（impeccable critique + 無障礙 token 修正 --ink-3）
 
 裝 impeccable skill（v4.1.1）並跑 `init` → 寫下 [PRODUCT.md](PRODUCT.md)（用戶拍板三件事：鴿哥＝正式吉祥物、品牌聲音＝誠實直白台灣人話、無障礙＝暫時取捨但之後要合規）。接著 `critique /home-v2`：設計審查跑獨立子代理、機械偵測器父層補跑（子代理撞 session 限制）。結果 **22/32（Persuade 頁 #7/#10 標 n/a）**，detect.mjs 對 HomeLight.jsx 與 homelight.css 皆 0 findings（已用 src/components/v2 對照組驗證非靜默跳過）。快照存 `.impeccable/critique/`。

@@ -15,18 +15,29 @@ import { analyzeEEAT } from './eeatAnalyzer'
 
 /**
  * 跑完整單頁掃描（四大面向）並寫入 audit 表。
+ * @param {(key:'seo'|'aeo'|'geo'|'eeat', result:object|null) => void} [onProgress]
+ *        單一面向跑完就回報（失敗回報 null）。給等待畫面「先跑完先翻牌」用；不傳則行為與過去完全相同。
  * @returns {{ seo, aeo, geo, eeat }} 各分析結果（失敗的面向為 null；寫入用 allSettled、單面向失敗不擋全部）
  */
-export async function runFullScan({ websiteId, url }) {
+export async function runFullScan({ websiteId, url, onProgress }) {
   // 頁面抓一次、四個分析器共用 doc（省 proxy 流量；個別分析器仍可自行補抓站台層檔案）
   const { html } = await fetchPageContent(url)
   const doc = parseHTML(html)
 
+  // 逐面向回報進度；仍等四個到齊才往下寫表（回報只是旁路，不改變流程）
+  // callback 是呼叫端的 UI code——它壞掉不能拖垮跑了 30–60 秒的掃描，故獨立 try
+  const tell = (key, r) => {
+    try { onProgress?.(key, r) } catch (e) { console.warn('[scanService] onProgress 失敗：', e) }
+  }
+  const report = (key, promise) => promise.then(
+    r => { tell(key, r); return r },
+    () => { tell(key, null); return null },
+  )
   const [seo, aeo, geo, eeat] = await Promise.all([
-    analyzeSEO(url, doc).catch(() => null),
-    analyzeAEO(url, doc).catch(() => null),
-    analyzeGEO(url, doc).catch(() => null),
-    analyzeEEAT(url, doc).catch(() => null),
+    report('seo', analyzeSEO(url, doc)),
+    report('aeo', analyzeAEO(url, doc)),
+    report('geo', analyzeGEO(url, doc)),
+    report('eeat', analyzeEEAT(url, doc)),
   ])
 
   // ⚠️ supabase insert 不會 throw（錯誤在回傳值的 .error）——allSettled 全 fulfilled、失敗完全隱形。

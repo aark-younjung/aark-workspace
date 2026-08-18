@@ -13,6 +13,17 @@ import { runFullScan } from '../services/scanService'
 import { logError } from '../lib/errorLog'
 import '../styles/homelight.css'
 
+/** 四面向卡：版面順序固定；翻開順序＝分析器真實完成順序（不排演、不假裝） */
+const ASPECTS = [
+  { key: 'seo', label: 'SEO', color: 'var(--seo)' },
+  { key: 'aeo', label: 'AEO', color: 'var(--aeo)' },
+  { key: 'geo', label: 'GEO', color: 'var(--geo)' },
+  { key: 'eeat', label: 'E-E-A-T', color: 'var(--eeat)' },
+]
+const IDLE_PHASES = { seo: null, aeo: null, geo: null, eeat: null }
+const prefersReduce = () =>
+  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
 /**
  * 新版首頁（亮色鴿哥版）— 2026-08-18 並行驗收路由 /home-v2
  *
@@ -23,6 +34,10 @@ import '../styles/homelight.css'
  * - 登入：找/建 websites row → runFullScan（唯一權威 service）→ 進 /app 新版總覽
  * 硬切前刻意不搬：我的網站列表、排行榜內嵌、FAQ（暗色版還在 / 撐著；
  * 硬切時再決定去留）。並行期掛 noindex，不跟正式首頁搶 SEO。
+ *
+ * 等待畫面（2026-08-18 critique B）：結果卡在按下按鈕當下就以「骨架態」出現，
+ * 四個分析器誰先 resolve 誰就先翻開自己那張——30-60 秒的死畫面變成逐項展演，
+ * 而且翻牌節奏＝系統真實進度，沒有假排演（誠實線）。
  */
 export default function HomeLight() {
   const { user } = useAuth()
@@ -32,7 +47,22 @@ export default function HomeLight() {
   const [status, setStatus] = useState('')
   const [errMsg, setErrMsg] = useState('')
   const [anonResult, setAnonResult] = useState(null)
+  const [scanTarget, setScanTarget] = useState(null)   // 掃描中就要有站名可顯示（卡先出現、分數後到）
+  const [phases, setPhases] = useState(IDLE_PHASES)    // null＝該面向還在跑（骨架）；物件＝已翻開
   const scanInFlightRef = useRef(false)
+  const resultRef = useRef(null)
+  const headRef = useRef(null)
+
+  const doneCount = ASPECTS.filter(a => phases[a.key]).length
+
+  // 單一面向回報：分析器 resolve（或失敗）就翻開它那張卡，不等其他三個
+  const markPhase = (key, result) =>
+    setPhases(prev => ({ ...prev, [key]: { score: result?.score ?? null } }))
+
+  function resetScan() {
+    setAnonResult(null); setScanTarget(null); setPhases(IDLE_PHASES)
+    setStatus(''); setErrMsg(''); setUrl('')
+  }
 
   // 並行驗收路由不進搜尋索引（硬切換上 / 時移除這段）
   useEffect(() => {
@@ -43,6 +73,19 @@ export default function HomeLight() {
     return () => meta.remove()
   }, [])
 
+  // 掃描一開始就把骨架卡帶進視窗——手機上它必定落在 hero 下方，看不到就白翻了
+  useEffect(() => {
+    if (!loading) return
+    resultRef.current?.scrollIntoView({ behavior: prefersReduce() ? 'auto' : 'smooth', block: 'nearest' })
+  }, [loading])
+
+  // 掃描完成：焦點移到卡片標題（螢幕閱讀器不再靜默）＋確保整張卡在視窗內
+  useEffect(() => {
+    if (!anonResult) return
+    headRef.current?.focus?.({ preventScroll: true })
+    resultRef.current?.scrollIntoView({ behavior: prefersReduce() ? 'auto' : 'smooth', block: 'nearest' })
+  }, [anonResult])
+
   async function handleSubmit(e) {
     e?.preventDefault?.()
     const rawUrl = (url ?? '').trim()
@@ -52,11 +95,13 @@ export default function HomeLight() {
     setLoading(true)
     setErrMsg('')
     setAnonResult(null)
+    setPhases(IDLE_PHASES)
     setStatus(user ? '正在建立網站記錄…' : '正在分析網站…')
 
     try {
       const cleanUrl = normalizeUrl(rawUrl)
       if (!cleanUrl) throw new Error('URL 格式錯誤，請確認網址（例：yourbrand.com）')
+      setScanTarget({ url: cleanUrl, name: new URL(cleanUrl).hostname })
 
       if (user) {
         // 登入：websites 以「URL + user_id」為鍵，找不到才建
@@ -73,7 +118,9 @@ export default function HomeLight() {
           websiteId = newSite.id
         }
         setStatus('正在分析網站…約需 30–60 秒')
-        await runFullScan({ websiteId, url: cleanUrl })
+        // onProgress：登入路徑走共用 service，同樣逐面向翻牌（兩條路徑的等待畫面一致）
+        await runFullScan({ websiteId, url: cleanUrl, onProgress: markPhase })
+        setStatus('✓ 掃描完成，正在開啟報告…')
         navigate(`/app/${websiteId}/overview`)
         return
       }
@@ -82,11 +129,16 @@ export default function HomeLight() {
       setStatus('正在分析網站…約需 30 秒')
       const { html } = await fetchPageContent(cleanUrl)
       const doc = parseHTML(html)
+      // 各自回報（成功或失敗都翻牌）；Promise.all 仍等四個到齊才組最終結果
+      const flip = (key, promise) => promise.then(
+        r => { markPhase(key, r); return r },
+        () => { markPhase(key, null); return null },
+      )
       const [seo, aeo, geo, eeat] = await Promise.all([
-        analyzeSEO(cleanUrl, doc).catch(() => null),
-        analyzeAEO(cleanUrl, doc).catch(() => null),
-        analyzeGEO(cleanUrl, doc).catch(() => null),
-        analyzeEEAT(cleanUrl, doc).catch(() => null),
+        flip('seo', analyzeSEO(cleanUrl, doc)),
+        flip('aeo', analyzeAEO(cleanUrl, doc)),
+        flip('geo', analyzeGEO(cleanUrl, doc)),
+        flip('eeat', analyzeEEAT(cleanUrl, doc)),
       ])
       const anon = {
         url: cleanUrl, name: new URL(cleanUrl).hostname,
@@ -95,7 +147,7 @@ export default function HomeLight() {
       }
       setAnonResult(anon)
       bumpAnonScanCount()
-      setStatus('')
+      setStatus('✓ 掃描完成——四個面向的分數已列在下方')
       trackPixelCustom('AnonScanComplete', { content_name: anon.name })
       // 後臺日誌（fire-and-forget；boolean 旗標留診斷線索，與 HomeDark 同格式）
       const flags = o => o ? Object.fromEntries(
@@ -111,6 +163,8 @@ export default function HomeLight() {
       })
     } catch (error) {
       setStatus('')
+      setScanTarget(null)
+      setPhases(IDLE_PHASES)
       const detail = error?.message || String(error)
       setErrMsg(`分析中斷：${detail}——如果多次失敗，可能是對方主機擋了自動請求，稍後再試或換一頁掃。`)
       logError({ source: 'homelight_scan', message: detail, userId: user?.id, detail: { url: rawUrl } })
@@ -125,7 +179,7 @@ export default function HomeLight() {
   )
 
   return (
-    <div className="homelight">
+    <div className={`homelight${loading ? ' is-scanning' : ''}`}>
       {/* 頂部導覽：雷達弧 wordmark + 登入/註冊（登入者直接進儀表板） */}
       <header className="hl-nav">
         <Link to="/" className="hl-wm">
@@ -166,7 +220,8 @@ export default function HomeLight() {
               {loading ? '分析中…' : '免費檢測 →'}
             </button>
           </form>
-          {status && <p className="hl-status" aria-live="polite">{status}</p>}
+          {/* 常駐 live region：不隨文字清空而卸載，否則「完成」那一刻螢幕閱讀器是靜默的 */}
+          <p className="hl-status" aria-live="polite">{status}</p>
           {errMsg && <p className="hl-status err" role="alert">{errMsg}</p>}
           <div className="hl-trust">
             <span>{check}免註冊先看分數</span>
@@ -188,32 +243,50 @@ export default function HomeLight() {
         </div>
       </section>
 
-      {/* 未登入快掃結果：先給分數（value-first），完整診斷/保存引導註冊 */}
-      {anonResult && (
+      {/* 掃描等待 → 結果：同一張卡，骨架態逐格翻開（等待即展演；未登入完成後引導註冊） */}
+      {(loading || anonResult) && (
         <section className="hl-anon">
-          <div className="card">
+          <div className="card" ref={resultRef}>
             <div className="hd">
-              <b>{anonResult.name}</b>
-              <span>已完成單頁快掃——這次只掃這一頁，不代表全站</span>
+              <b tabIndex={-1} ref={headRef}>{anonResult?.name || scanTarget?.name || '準備掃描'}</b>
+              <span>
+                {anonResult
+                  ? '已完成單頁快掃——這次只掃這一頁，不代表全站'
+                  : `掃描中 · ${doneCount}/4 個面向已完成`}
+              </span>
             </div>
             <div className="row">
-              {[
-                ['SEO', anonResult.seo, 'var(--seo)'],
-                ['AEO', anonResult.aeo, 'var(--aeo)'],
-                ['GEO', anonResult.geo, 'var(--geo)'],
-                ['E-E-A-T', anonResult.eeat, 'var(--eeat)'],
-              ].map(([nm, n, c]) => (
-                <div className="sc" key={nm}>
-                  <div className="nm">{nm}</div>
-                  <div className="n" style={{ color: c }}>{n ?? '—'}</div>
+              {ASPECTS.map(({ key, label, color }) => {
+                const phase = phases[key]
+                return (
+                  <div className="sc" key={key}>
+                    <div className={`fl${phase ? ' is-open' : ''}`}>
+                      {/* 正面＝骨架：這個面向還在跑 */}
+                      <div className="fc front" aria-hidden={!!phase}>
+                        <div className="nm">{label}</div>
+                        <div className="skel" />
+                      </div>
+                      {/* 背面＝翻開後的分數（分析器失敗顯示 —） */}
+                      <div className="fc back" aria-hidden={!phase}>
+                        <div className="nm">{label}</div>
+                        <div className="n" style={{ color }}>{phase?.score ?? '—'}</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {anonResult ? (
+              <div className="hl-done">
+                <p className="note">分數只是起點——哪幾項沒過、每一項怎麼修（含可直接貼上的修復碼），註冊後免費看完整診斷並保存紀錄。</p>
+                <div className="acts">
+                  <Link to="/register" className="hl-btn hl-cta hl-sm">免費註冊看完整診斷</Link>
+                  <button type="button" className="hl-btn hl-ghost hl-sm" onClick={resetScan}>再掃一個網址</button>
                 </div>
-              ))}
-            </div>
-            <p className="note">分數只是起點——哪幾項沒過、每一項怎麼修（含可直接貼上的修復碼），註冊後免費看完整診斷並保存紀錄。</p>
-            <div className="acts">
-              <Link to="/register" className="hl-btn hl-cta hl-sm">免費註冊看完整診斷</Link>
-              <button type="button" className="hl-btn hl-ghost hl-sm" onClick={() => { setAnonResult(null); setUrl('') }}>再掃一個網址</button>
-            </div>
+              </div>
+            ) : (
+              <p className="note">四個面向分開跑——誰先跑完就先翻開誰，不用等全部結束。</p>
+            )}
           </div>
         </section>
       )}
