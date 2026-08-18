@@ -6,7 +6,7 @@
 /* 根：亮色 token + 不透明底（蓋住全域 GlobalDarkBg 的暗色背景） */
 .appshell{
   --bg:#f4f5f7; --surface:#ffffff; --surface-2:#eef0f4; --surface-3:#e6e9ef;
-  --ink:#00003e; --ink-2:#4a4a63; --ink-3:#9a9aad;
+  --ink:#00003e; --ink-2:#4a4a63; --ink-3:#6e6e82;  /* ink-3 於 2026-08-18 由 #9a9aad 調深：舊值在暖白底僅 2.53:1、連大字 AA 3.0 都不到；新值 4.57:1 過 AA，色相不變 */
   --line:rgba(0,0,62,.08); --line-2:rgba(0,0,62,.14);
   --accent:#ff6e34; --accent-2:#e85114; --accent-soft:rgba(255,110,52,.1);
   --pop:#8298ff;

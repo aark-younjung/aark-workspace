@@ -360,8 +360,8 @@ export default function AppOverview() {
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={trendData} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
               <CartesianGrid stroke="rgba(0,0,62,.06)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#9a9aad' }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#9a9aad' }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6e6e82' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#6e6e82' }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: '#fff', border: '1px solid rgba(0,0,62,.14)', borderRadius: 10, fontSize: 13 }} />
               <Line type="monotone" dataKey="SEO" stroke="#2563eb" strokeWidth={2} dot={false} connectNulls />
               <Line type="monotone" dataKey="AEO" stroke="#7c3aed" strokeWidth={2} dot={false} connectNulls />

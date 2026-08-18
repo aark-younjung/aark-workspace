@@ -6,6 +6,14 @@
 
 ---
 
+### 2026-08-18c（impeccable critique + 無障礙 token 修正 --ink-3）
+
+裝 impeccable skill（v4.1.1）並跑 `init` → 寫下 [PRODUCT.md](PRODUCT.md)（用戶拍板三件事：鴿哥＝正式吉祥物、品牌聲音＝誠實直白台灣人話、無障礙＝暫時取捨但之後要合規）。接著 `critique /home-v2`：設計審查跑獨立子代理、機械偵測器父層補跑（子代理撞 session 限制）。結果 **22/32（Persuade 頁 #7/#10 標 n/a）**，detect.mjs 對 HomeLight.jsx 與 homelight.css 皆 0 findings（已用 src/components/v2 對照組驗證非靜默跳過）。快照存 `.impeccable/critique/`。
+
+**本次修（用戶選 A）**：`--ink-3` 弱文字 token `#9a9aad` → `#6e6e82`。舊值在暖白底僅 **2.53:1**（白卡 2.76:1），連大字級 AA 3.0 都不到；新值 4.57:1 / 4.98:1 過 AA，同藍調色相、觀感幾乎不變。影響範圍**跨整個新版設計系統**：appshell.css 66 處引用（`/app` 全介面弱文字）＋ homelight.css 8 處 ＋ AppOverview 圖表座標軸硬寫死 2 處。非文字用途兩處（op:hover 邊框、c-general 分類點）驗證過變深無害。
+
+待修（critique 列出、用戶未拍板）：B=掃描完成/等待畫面（見下則討論）、C=分數意義層＋手機 inputMode。
+
 ### 2026-08-18b（亮色鴿哥版首頁實作——並行驗收路由 /home-v2 上線）
 
 高保真設計稿（暖白·深藍·橘·鴿哥）的「① 首頁」半邊補完實作（儀表板半邊 8/14 已成為 /app）。打法同 app-shell：
