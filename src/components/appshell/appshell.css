@@ -9,7 +9,6 @@
   --ink:#00003e; --ink-2:#4a4a63; --ink-3:#9a9aad;
   --line:rgba(0,0,62,.08); --line-2:rgba(0,0,62,.14);
   --accent:#ff6e34; --accent-2:#e85114; --accent-soft:rgba(255,110,52,.1);
-  --accent-strong:#c2410c;  /* 白字表面專用（對比 5.18:1 過 AA）；亮橘 --accent 留給裝飾填色（bar/階梯），別放白字 */
   --pop:#8298ff;
   --seo:#2563eb; --aeo:#7c3aed; --geo:#059669; --eeat:#b45309;
   --sh-sm:0 1px 2px rgba(0,0,62,.05);
@@ -55,7 +54,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-nav.on{background:var(--accent-soft);color:var(--accent-2);font-weight:750;}
 .appshell .as-nav.on svg{color:var(--accent);}
 .appshell .as-nav .tag{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.04em;
-  background:var(--accent-strong);color:#fff;padding:2px 6px;border-radius:5px;}
+  background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;}
 .appshell .as-sp{flex:1;min-height:16px;}
 /* Beta 並行期「回經典版」：降一階存在感（小字、灰色），不與主導覽搶視覺 */
 .appshell .as-classic{font-size:13.5px;color:var(--ink-3);padding:8px 12px;}
@@ -153,8 +152,8 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-truth p{margin:0 0 4px;font-size:14px;color:var(--ink-2);line-height:1.6;max-width:52ch;}
 .appshell .as-truth p b{color:var(--ink);}
 .appshell .as-cta{display:inline-block;margin-top:6px;font-family:var(--font);font-weight:750;border:none;cursor:pointer;
-  border-radius:12px;background:var(--accent-strong);color:#fff;box-shadow:0 6px 15px rgba(194,65,12,.26);padding:9px 17px;font-size:14.5px;text-decoration:none;}
-.appshell .as-cta:hover{background:#9a3408;}
+  border-radius:12px;background:var(--accent);color:#fff;box-shadow:0 6px 15px rgba(255,110,52,.26);padding:9px 17px;font-size:14.5px;text-decoration:none;}
+.appshell .as-cta:hover{background:var(--accent-2);}
 
 /* 技術輔助分數 */
 .appshell .as-support{margin-top:16px;}
@@ -529,7 +528,7 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-action .top{display:flex;align-items:center;gap:8px;}
 /* 序號圓標：告訴用戶「照這個順序修」 */
 .appshell .as-action .no{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
-  border-radius:99px;background:var(--accent-strong);color:#fff;font-size:13px;font-weight:800;}
+  border-radius:99px;background:var(--accent);color:#fff;font-size:13px;font-weight:800;}
 .appshell .as-action .dim{font-size:12.5px;font-weight:800;}
 /* 優先度 chip：P1 橘（緊急）、P2/P3 中性——不只靠顏色，chip 內有文字 */
 .appshell .as-action .pri{margin-left:auto;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink-3);}

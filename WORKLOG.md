@@ -6,6 +6,10 @@
 
 ---
 
+### 2026-08-14h（用戶決定：CTA 恢復亮橘、撤銷 AA 對比修正）
+
+用戶驗收後拍板恢復原亮橘 `--accent #ff6e34`（品牌視覺優先）。回退範圍：主按鈕 .as-cta（含 hover 回 --accent-2）、行動卡序號、「主力」tag 三處，`--accent-strong` token 移除。**已知取捨**：白字對亮橘 2.79:1 未達 WCAG AA 4.5:1——未來若做無障礙合規（政府案/大企業客戶要求）需重新面對。transition 指名屬性與圓角歸一兩項保留不回退。
+
 ### 2026-08-14g（design-taste-frontend skill 審計新版殼 — 三修已部署）
 
 用新裝的 taste-skill 審計 app-shell（先誠實劃界：該 skill 管 landing/portfolio、dashboard 明列 out-of-scope → 只抽「通用品質規則」；中文「——」是正規破折號非 AI tell、emoji 是既定品牌語彙——文化判斷不硬套）。機械審計抓到三個真問題並修：
