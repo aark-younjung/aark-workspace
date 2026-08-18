@@ -1,0 +1,155 @@
+/* ══════════════════════════════════════════════════════════════
+   新版首頁（亮色鴿哥版）樣式 — 2026-08-18
+   來源：高保真設計稿 redesign-app.html「① 首頁」半邊（暖白·深藍·橘·鴿哥）。
+   全部 scope 在 .homelight 底下：不外洩、不吃全站 994 處深色假設的毒。
+   token 與 appshell.css 同一套（暖白 #f4f5f7 / 深藍墨 #00003e / 橘 #ff6e34）。
+   ══════════════════════════════════════════════════════════════ */
+
+/* 根：亮色 token + 不透明底（蓋住全域 GlobalDarkBg 的暗色背景） */
+.homelight{
+  --bg:#f4f5f7; --surface:#ffffff; --surface-2:#eef0f4; --surface-3:#e6e9ef;
+  --ink:#00003e; --ink-2:#4a4a63; --ink-3:#9a9aad;
+  --line:rgba(0,0,62,.08); --line-2:rgba(0,0,62,.14);
+  --accent:#ff6e34; --accent-2:#e85114; --accent-soft:rgba(255,110,52,.1);
+  --pop:#8298ff;
+  --seo:#2563eb; --aeo:#7c3aed; --geo:#059669; --eeat:#b45309;
+  --sh-sm:0 1px 2px rgba(0,0,62,.05);
+  --sh:0 1px 2px rgba(0,0,62,.04), 0 14px 32px rgba(0,0,62,.07);
+  --font:"PingFang TC","Microsoft JhengHei","Noto Sans TC",system-ui,-apple-system,sans-serif;
+  --mono:"SFMono-Regular","Cascadia Code","Consolas",ui-monospace,monospace;
+
+  position:relative; z-index:0;               /* 蓋過 -z-20 的全域暗底 */
+  min-height:100vh; background:var(--bg); color:var(--ink);
+  font-family:var(--font); -webkit-font-smoothing:antialiased;
+}
+.homelight *{box-sizing:border-box;}
+
+/* 全域暗色主題的 input reset 用了 !important（白底白字）→ 以更高特異度蓋回亮色 */
+html.dark-theme .homelight input,
+html.dark-theme .homelight textarea{
+  background-color:transparent !important;
+  border-color:transparent !important;
+  color:var(--ink) !important;
+}
+html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
+
+/* ── 按鈕家族 ── */
+.homelight .hl-btn{font-family:var(--font);font-weight:750;border:none;cursor:pointer;border-radius:11px;
+  transition:background-color .16s,transform .16s,box-shadow .16s;letter-spacing:.01em;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;}
+.homelight .hl-cta{background:var(--accent);color:#fff;box-shadow:0 8px 18px rgba(255,110,52,.28);}
+.homelight .hl-cta:hover{background:var(--accent-2);transform:translateY(-1px);box-shadow:0 12px 24px rgba(255,110,52,.34);}
+.homelight .hl-cta:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.homelight .hl-ghost{background:transparent;color:var(--ink-2);}
+.homelight .hl-ghost:hover{color:var(--ink);background:var(--surface-2);}
+.homelight .hl-sm{padding:9px 17px;font-size:13.5px;}
+
+/* ── 頂部導覽（wordmark 雷達弧 + 登入/註冊） ── */
+.homelight .hl-nav{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 26px;}
+.homelight .hl-nav .r{display:flex;align-items:center;gap:6px;}
+.homelight .hl-wm{display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit;}
+.homelight .hl-wm .name{font-weight:800;font-size:17px;letter-spacing:-.01em;}
+.homelight .hl-wm .sub{font-weight:500;font-size:11.5px;color:var(--ink-3);letter-spacing:.02em;}
+.homelight .hl-mark .sweep{transform-origin:center;animation:hl-sweep 4s linear infinite;}  /* 雷達掃描弧＝線性旋轉語意正確 */
+@keyframes hl-sweep{to{transform:rotate(360deg);}}
+
+/* ── Hero：左文案右鴿哥 ── */
+.homelight .hl-hero{max-width:1180px;margin:0 auto;padding:clamp(24px,5vw,60px) 26px clamp(48px,7vw,100px);
+  display:grid;grid-template-columns:1.06fr .94fr;align-items:center;gap:20px;}
+.homelight .hl-kick{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;font-weight:600;
+  letter-spacing:.06em;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);
+  padding:7px 15px 7px 12px;border-radius:999px;margin-bottom:26px;box-shadow:var(--sh-sm);}
+.homelight .hl-kick .live{width:7px;height:7px;border-radius:50%;background:var(--geo);box-shadow:0 0 0 3px rgba(5,150,105,.16);animation:hl-pulse 2s ease-in-out infinite;}
+@keyframes hl-pulse{50%{opacity:.5;}}
+.homelight h1{font-size:clamp(38px,6.4vw,66px);line-height:1.04;margin:0 0 20px;font-weight:850;letter-spacing:-.025em;text-wrap:balance;color:var(--ink);}
+.homelight h1 .hl{position:relative;white-space:nowrap;z-index:0;}
+.homelight h1 .hl::after{content:"";position:absolute;left:0;right:0;bottom:.06em;height:.16em;background:var(--accent);border-radius:2px;z-index:-1;opacity:.9;}
+.homelight .hl-lede{font-size:clamp(15.5px,1.9vw,18px);line-height:1.72;color:var(--ink-2);max-width:33ch;margin:0 0 30px;text-wrap:pretty;}
+.homelight .hl-lede b{color:var(--ink);font-weight:700;}
+
+/* ── 掃描輸入列（雙層：白卡殼 + 透明 input） ── */
+.homelight .hl-scan{display:flex;gap:8px;background:var(--surface);border:1px solid var(--line-2);padding:7px 7px 7px 8px;
+  border-radius:15px;max-width:452px;box-shadow:var(--sh);transition:border-color .16s,box-shadow .16s;}
+.homelight .hl-scan:focus-within{border-color:var(--accent);box-shadow:var(--sh),0 0 0 4px var(--accent-soft);}
+.homelight .hl-scan .globe{align-self:center;margin-left:6px;color:var(--ink-3);flex:none;}
+.homelight .hl-scan input{flex:1;border:none;background:transparent;font-family:var(--font);font-size:15.5px;padding:10px 4px;outline:none;color:var(--ink);min-width:0;}
+.homelight .hl-scan input::placeholder{color:var(--ink-3);}
+.homelight .hl-scan .hl-btn{padding:11px 20px;font-size:14.5px;white-space:nowrap;}
+/* 掃描狀態列（進行中 / 錯誤） */
+.homelight .hl-status{margin-top:14px;font-size:13.5px;color:var(--ink-2);}
+.homelight .hl-status.err{color:#b91c1c;}
+
+/* ── 信任訊號列（免註冊 / 繁中 / 發票） ── */
+.homelight .hl-trust{margin-top:18px;display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink-3);}
+.homelight .hl-trust span{display:inline-flex;align-items:center;gap:6px;}
+.homelight .hl-trust .tk{color:var(--geo);flex:none;}
+
+/* ── 鴿哥 hero 舞台（光暈 + 雷達漣漪 + 浮動信鴿） ── */
+.homelight .hl-stage{position:relative;align-self:stretch;min-height:400px;display:grid;place-items:center;}
+.homelight .hl-halo{position:absolute;width:min(94%,470px);aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 50% 46%, rgba(255,110,52,.1), transparent 55%),
+             radial-gradient(circle at 54% 60%, rgba(130,152,255,.14), transparent 60%);
+  filter:blur(2px);}
+.homelight .hl-radar{position:absolute;width:min(88%,420px);aspect-ratio:1;}
+.homelight .hl-radar circle{fill:none;stroke:rgba(0,0,62,.07);}
+.homelight .hl-radar .live{stroke:var(--accent);stroke-width:1.4;opacity:0;transform-origin:center;}
+.homelight .hl-radar .l1{animation:hl-ping 4.4s ease-out infinite;}
+.homelight .hl-radar .l2{animation:hl-ping 4.4s ease-out infinite 1.47s;}
+.homelight .hl-radar .l3{animation:hl-ping 4.4s ease-out infinite 2.93s;}
+@keyframes hl-ping{0%{opacity:.6;transform:scale(.32);}70%{opacity:0;}100%{opacity:0;transform:scale(1);}}
+.homelight .hl-pigeon{position:relative;z-index:2;width:clamp(240px,33vw,410px);height:auto;display:block;
+  filter:drop-shadow(0 22px 26px rgba(0,0,62,.16));animation:hl-bob 4.6s ease-in-out infinite;transform-origin:52% 82%;}
+@keyframes hl-bob{0%,100%{transform:translateY(0) rotate(-1.3deg);}50%{transform:translateY(-15px) rotate(1.3deg);}}
+.homelight .hl-tagline{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--ink-3);
+  background:var(--surface);border:1px solid var(--line);padding:6px 13px;border-radius:999px;box-shadow:var(--sh-sm);}
+.homelight .hl-tagline b{color:var(--ink-2);}
+
+/* ── 未登入快掃結果卡（value-first：先給分數，藥方引導註冊） ── */
+.homelight .hl-anon{max-width:1180px;margin:0 auto;padding:0 26px 56px;}
+.homelight .hl-anon .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 26px;box-shadow:var(--sh);}
+.homelight .hl-anon .hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.homelight .hl-anon .hd b{font-size:18px;font-weight:800;}
+.homelight .hl-anon .hd span{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);}
+.homelight .hl-anon .row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.homelight .hl-anon .sc{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+.homelight .hl-anon .sc .nm{font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:7px;}
+.homelight .hl-anon .sc .n{font-size:26px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums;}
+.homelight .hl-anon .note{font-size:13px;color:var(--ink-3);margin:0 0 16px;line-height:1.6;}
+.homelight .hl-anon .acts{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* ── 三大差異化 footer 條 ── */
+.homelight .hl-foot{max-width:1180px;margin:0 auto;padding:0 26px 64px;}
+.homelight .hl-fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);}
+.homelight .hl-fitem{padding:26px 26px 4px 0;}
+.homelight .hl-fitem:not(:first-child){padding-left:26px;border-left:1px solid var(--line);}
+.homelight .hl-fitem .ft{font-size:15px;font-weight:750;margin:0 0 5px;display:flex;align-items:center;gap:9px;color:var(--ink);}
+.homelight .hl-fitem .fd{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin:0;}
+.homelight .hl-fitem .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;}
+
+/* ── 頁尾（導覽連結 + 公司列） ── */
+.homelight .hl-bottom{border-top:1px solid var(--line);}
+.homelight .hl-bottom .in{max-width:1180px;margin:0 auto;padding:22px 26px 34px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink-3);}
+.homelight .hl-bottom a{color:var(--ink-2);text-decoration:none;}
+.homelight .hl-bottom a:hover{color:var(--ink);}
+.homelight .hl-bottom .co{margin-left:auto;}
+
+/* ── 手機收合：單欄、鴿哥置頂、輸入列直排 ── */
+@media (max-width:860px){
+  .homelight .hl-hero{grid-template-columns:1fr;text-align:center;gap:6px;}
+  .homelight .hl-stage{order:-1;min-height:300px;}
+  .homelight .hl-kick,.homelight .hl-scan{margin-left:auto;margin-right:auto;}
+  .homelight .hl-lede{margin-left:auto;margin-right:auto;}
+  .homelight .hl-trust{justify-content:center;}
+  .homelight .hl-scan{flex-direction:column;padding:10px;}
+  .homelight .hl-scan .hl-btn{width:100%;}
+  .homelight .hl-anon .row{grid-template-columns:repeat(2,1fr);}
+  .homelight .hl-fgrid{grid-template-columns:1fr;border-top:none;}
+  .homelight .hl-fitem{border-left:none !important;padding-left:0 !important;border-top:1px solid var(--line);}
+  .homelight .hl-bottom .co{margin-left:0;}
+}
+
+/* ── 減速偏好：關掉鴿哥浮動 / 雷達漣漪 / 掃描弧 ── */
+@media (prefers-reduced-motion:reduce){
+  .homelight .hl-pigeon,.homelight .hl-radar .live,
+  .homelight .hl-mark .sweep,.homelight .hl-kick .live{animation:none !important;}
+}

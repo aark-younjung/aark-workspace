@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
 // 暗黑版為現行主視覺；橘白版 Home 已移至 src/pages/_legacy/Home.jsx 保留備查
 import HomeDark from './pages/HomeDark'
+import HomeLight from './pages/HomeLight'   // 亮色鴿哥版首頁（並行驗收 /home-v2、硬切後接手 /）
 import Dashboard from './pages/Dashboard'
 import DashboardV2 from './pages/DashboardV2'
 import SEOAudit from './pages/SEOAudit'
@@ -104,6 +105,8 @@ function AppInner() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomeDark />} />
+        {/* 亮色鴿哥版首頁並行驗收路由（2026-08-18）——驗收通過後硬切 / 並移除 */}
+        <Route path="/home-v2" element={<HomeLight />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/showcase" element={<Showcase />} />

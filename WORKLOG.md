@@ -6,6 +6,15 @@
 
 ---
 
+### 2026-08-18b（亮色鴿哥版首頁實作——並行驗收路由 /home-v2 上線）
+
+高保真設計稿（暖白·深藍·橘·鴿哥）的「① 首頁」半邊補完實作（儀表板半邊 8/14 已成為 /app）。打法同 app-shell：
+- **[HomeLight.jsx](src/pages/HomeLight.jsx) + [homelight.css](src/styles/homelight.css)**：樣式全 scope `.homelight`、亮色 token 與 appshell 同套；含 html.dark-theme input !important 蓋回（同 appshell 教訓）；鴿哥圖抽出設計稿 base64 → `public/img/pigeon-hero.png`（468KB，待壓縮）。
+- **真功能非展示稿**：未登入 value-first 快掃（4 分析器共用 doc、不寫 audit 表、anon_scan_events + Pixel 同 HomeDark 規格、結果卡引導註冊）；登入走 runFullScan（唯一權威 service）→ 進 `/app/:id/overview`。錯誤記 error_logs（source: homelight_scan）。
+- **並行期掛 noindex** meta（硬切時移除）；路由 `/home-v2`；正式 `/` 不動。
+- 刻意未搬（硬切時再定去留）：我的網站列表、排行榜內嵌、FAQ 區、早鳥 banner。
+- 動畫全部有 prefers-reduced-motion 豁免；雷達掃描弧/漣漪為語意動畫。
+
 ### 2026-08-18a（taste-skill 審計首頁——P1 官方 logo + P2 破折號已修）
 
 design-taste-frontend 打主場審計 HomeDark 落地頁。用戶拍板修兩項：
