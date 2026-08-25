@@ -172,6 +172,85 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
 .homelight .hl-fitem .fd{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin:0;}
 .homelight .hl-fitem .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;}
 
+/* ── 早鳥優惠 banner（2026-08-19 硬切前置：從暗色版 EarlybirdBanner 移植視覺） ── */
+.homelight .hl-early{max-width:1180px;margin:0 auto 8px;padding:0 26px;}
+.homelight .hl-early .card{position:relative;overflow:hidden;border-radius:14px;padding:14px 44px 14px 16px;
+  background:linear-gradient(90deg,rgba(255,110,52,.08),rgba(255,193,7,.08));border:1px solid rgba(255,110,52,.28);}
+.homelight .hl-early .card.is-urgent{background:linear-gradient(90deg,rgba(220,38,38,.09),rgba(255,110,52,.09));border-color:rgba(220,38,38,.32);}
+.homelight .hl-early .bar{position:absolute;bottom:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),#f59e0b);transition:width .6s ease;}
+.homelight .hl-early .card.is-urgent .bar{background:linear-gradient(90deg,#dc2626,var(--accent));}
+.homelight .hl-early .in{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.homelight .hl-early .ic{font-size:22px;flex:none;line-height:1;}
+.homelight .hl-early .tx{flex:1;min-width:0;}
+.homelight .hl-early .t{font-weight:800;font-size:14px;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.homelight .hl-early .tag{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(255,110,52,.14);color:var(--accent-2);}
+.homelight .hl-early .d{font-size:13px;color:var(--ink-2);margin-top:2px;}
+.homelight .hl-early .d b{color:var(--ink);font-weight:800;}
+.homelight .hl-early .was{color:var(--ink-3);text-decoration:line-through;margin-left:6px;}
+.homelight .hl-early .left{color:var(--accent-2);font-weight:700;margin-left:4px;}
+.homelight .hl-early .card.is-urgent .left{color:#dc2626;}
+.homelight .hl-early .cta{flex:none;padding:9px 16px;border-radius:10px;background:var(--accent);color:#fff;
+  font-weight:750;font-size:13.5px;text-decoration:none;white-space:nowrap;}
+.homelight .hl-early .cta:hover{background:var(--accent-2);}
+.homelight .hl-early .x{position:absolute;top:10px;right:10px;width:24px;height:24px;display:grid;place-items:center;
+  border:none;background:transparent;color:var(--ink-3);cursor:pointer;border-radius:999px;font-size:13px;}
+.homelight .hl-early .x:hover{background:rgba(0,0,62,.06);color:var(--ink);}
+
+/* ── 排行榜內嵌（2026-08-19 硬切前置：從暗色版 HomeShowcaseSection 移植） ── */
+.homelight .hl-showcase{max-width:1180px;margin:0 auto;padding:12px 26px 8px;}
+.homelight .hl-showcase .hd{text-align:center;margin-bottom:28px;}
+.homelight .hl-showcase .kick{display:inline-flex;font-size:12.5px;font-weight:700;color:#b45309;
+  background:rgba(180,83,9,.1);padding:5px 13px;border-radius:999px;margin-bottom:12px;}
+.homelight .hl-showcase h2{font-size:26px;font-weight:850;color:var(--ink);margin:0 0 8px;letter-spacing:-.01em;}
+.homelight .hl-showcase .hd p{font-size:14px;color:var(--ink-2);margin:0;}
+.homelight .hl-showcase .body{display:grid;grid-template-columns:3fr 2fr;gap:20px;align-items:start;}
+.homelight .hl-showcase h3{font-size:14.5px;font-weight:750;color:var(--ink);margin:0 0 10px;}
+.homelight .hl-showcase .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--sh-sm);}
+.homelight .hl-showcase .empty{padding:44px 20px;text-align:center;font-size:13.5px;color:var(--ink-3);}
+.homelight .hl-showcase .empty span{display:block;margin-top:6px;font-size:12.5px;}
+.homelight .hl-showcase .row{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line);}
+.homelight .hl-showcase .row:last-child{border-bottom:none;}
+.homelight .hl-showcase .rank{width:26px;text-align:center;flex:none;font-size:16px;}
+.homelight .hl-showcase .nm{flex:1;min-width:0;}
+.homelight .hl-showcase .nm .t{font-size:14px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.homelight .hl-showcase .nm .u{font-size:12px;color:var(--ink-3);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.homelight .hl-showcase .scores{display:flex;align-items:center;gap:12px;flex:none;}
+.homelight .hl-showcase .scores .s{text-align:center;}   /* 窄螢幕隱藏，見手機收合區塊 */
+.homelight .hl-showcase .scores .s .n{font-size:13px;font-weight:800;}
+.homelight .hl-showcase .scores .s .l{font-size:10px;color:var(--ink-3);}
+.homelight .hl-showcase .scores .total{font-size:20px;font-weight:850;margin-left:4px;}
+.homelight .hl-showcase .starlist{display:flex;flex-direction:column;gap:10px;}
+.homelight .hl-showcase .star{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:13px;
+  background:linear-gradient(135deg,rgba(5,150,105,.08),var(--surface));border:1px solid rgba(5,150,105,.22);}
+.homelight .hl-showcase .star .ic{font-size:19px;flex:none;}
+.homelight .hl-showcase .star .nm{flex:1;min-width:0;}
+.homelight .hl-showcase .star .t{font-size:13.5px;font-weight:750;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.homelight .hl-showcase .star .d{font-size:12.5px;color:var(--ink-3);font-family:var(--mono);margin-top:1px;}
+.homelight .hl-showcase .star .delta{flex:none;font-size:13px;font-weight:800;color:var(--geo);
+  background:rgba(5,150,105,.12);padding:5px 10px;border-radius:9px;white-space:nowrap;}
+.homelight .hl-showcase .more{text-align:center;margin-top:20px;}
+.homelight .hl-showcase .more a{font-size:13.5px;font-weight:700;color:var(--accent-2);text-decoration:none;}
+.homelight .hl-showcase .more a:hover{text-decoration:underline;}
+
+/* ── 常見問題（2026-08-19 硬切前置：從暗色版 HomeFAQItem 移植，原生 <details> 取代自刻開合 state） ── */
+.homelight .hl-faq{max-width:840px;margin:0 auto;padding:8px 26px 8px;}
+.homelight .hl-faq .hd{text-align:center;margin-bottom:24px;}
+.homelight .hl-faq h2{font-size:24px;font-weight:850;color:var(--ink);margin:0 0 8px;}
+.homelight .hl-faq .hd p{font-size:13.5px;color:var(--ink-3);margin:0;}
+.homelight .hl-faq .list{display:flex;flex-direction:column;gap:10px;}
+.homelight .hl-faq .item{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+  padding:16px 18px;box-shadow:var(--sh-sm);}
+.homelight .hl-faq .item summary{cursor:pointer;font-size:14px;font-weight:650;color:var(--ink);list-style:none;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.homelight .hl-faq .item summary::-webkit-details-marker{display:none;}
+.homelight .hl-faq .item summary::after{content:"↓";flex:none;color:var(--ink-3);transition:transform .15s;}
+.homelight .hl-faq .item[open] summary::after{transform:rotate(180deg);}
+.homelight .hl-faq .item summary:focus-visible{outline:2px solid rgba(130,152,255,.55);outline-offset:3px;border-radius:6px;}
+.homelight .hl-faq .item p{font-size:13.5px;color:var(--ink-2);line-height:1.7;margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line);}
+.homelight .hl-faq .more{text-align:center;margin-top:18px;}
+.homelight .hl-faq .more a{font-size:13.5px;font-weight:700;color:var(--accent-2);text-decoration:none;}
+.homelight .hl-faq .more a:hover{text-decoration:underline;}
+
 /* ── 頁尾（導覽連結 + 公司列） ── */
 .homelight .hl-bottom{border-top:1px solid var(--line);}
 .homelight .hl-bottom .in{max-width:1180px;margin:0 auto;padding:22px 26px 34px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink-3);}
@@ -192,6 +271,11 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
   .homelight .hl-fgrid{grid-template-columns:1fr;border-top:none;}
   .homelight .hl-fitem{border-left:none !important;padding-left:0 !important;border-top:1px solid var(--line);}
   .homelight .hl-bottom .co{margin-left:0;}
+  .homelight .hl-showcase .body{grid-template-columns:1fr;}
+  .homelight .hl-showcase .scores .s{display:none;}   /* 窄螢幕只留合成總分，三個子分數太擠 */
+  .homelight .hl-early .card{padding:14px 40px 14px 14px;}
+  .homelight .hl-early .in{gap:10px;}
+  .homelight .hl-early .cta{width:100%;text-align:center;}
 }
 
 /* ── 減速偏好：關掉鴿哥浮動 / 雷達漣漪 / 掃描弧 ── */
@@ -202,4 +286,5 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
   .homelight .hl-anon .fl{transition:none !important;}
   .homelight .hl-anon .skel{animation:none !important;background-image:none !important;}
   .homelight .hl-done{animation:none !important;}
+  .homelight .hl-early .bar{transition:none !important;}
 }

@@ -11,6 +11,9 @@ import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { runFullScan } from '../services/scanService'
 import { logError } from '../lib/errorLog'
+import HomeLightEarlybird from '../components/homelight/EarlybirdBanner'
+import HomeLightShowcase from '../components/homelight/ShowcaseTeaser'
+import HomeLightFaq from '../components/homelight/FaqSection'
 import '../styles/homelight.css'
 
 /** 四面向卡：版面順序固定；翻開順序＝分析器真實完成順序（不排演、不假裝） */
@@ -274,6 +277,9 @@ export default function HomeLight() {
         </div>
       </section>
 
+      {/* 早鳥優惠（2026-08-19 硬切前置：從暗色版移植，邏輯不變只換視覺） */}
+      <HomeLightEarlybird />
+
       {/* 掃描等待 → 結果：同一張卡，骨架態逐格翻開（等待即展演；未登入完成後引導註冊） */}
       {(loading || anonResult) && (
         <section className="hl-anon">
@@ -351,6 +357,10 @@ export default function HomeLight() {
           <div className="hl-fitem"><div className="ft"><span className="dot" />為台灣網站校準</div><p className="fd">繁中原生、懂 Rank Math 與中文長度——不是把國際工具硬套在台灣站上。</p></div>
         </div>
       </section>
+
+      {/* 排行榜內嵌 + 常見問題（2026-08-19 硬切前置：從暗色版移植，查詢邏輯照抄只換視覺） */}
+      <HomeLightShowcase />
+      <HomeLightFaq />
 
       {/* 頁尾：常用導覽 + 公司列 */}
       <footer className="hl-bottom">

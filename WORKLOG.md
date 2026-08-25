@@ -6,6 +6,25 @@
 
 ---
 
+### 2026-08-19b（硬切前置：搬三個當初刻意沒搬的區塊進 HomeLight + 順手修三處引擎違規文案）
+
+盤點完舊版型頁面（見對話），用戶拍板「/ 硬切」是下一步投報率最高的事，先做前置：把 WORKLOG 2026-08-18b 當初刻意沒搬的四塊逐一決斷。
+
+**四塊的決定**：
+1. **我的網站列表 → 不搬**。查證發現這件事其實已經完成——[HomeLight.jsx](src/pages/HomeLight.jsx) 頂部導覽登入時本來就有「進入儀表板」按鈕連到 `/app/websites`，那裡（[AppSites.jsx](src/components/appshell/AppSites.jsx)）剛被這幾輪加強過（刪除驗證、每頁清單），沒必要在首頁重做一份一樣的查詢邏輯，兩邊改一次忘了另一邊。
+2. **排行榜內嵌**、3. **FAQ 折疊區**、4. **早鳥倒數 banner** → 都搬了，新建 `src/components/homelight/`（比照既有 `components/appshell/` 慣例）：
+   - [ShowcaseTeaser.jsx](src/components/homelight/ShowcaseTeaser.jsx)：查詢/計分邏輯照抄暗色版 `HomeShowcaseSection`（Top 5 AI 友善度 + 進步之星，同款分數門檻），只換視覺外殼成 `.homelight` token 系統。
+   - [FaqSection.jsx](src/components/homelight/FaqSection.jsx)：內容跟暗色版同一份 4 題，改用原生 `<details>`（比暗色版自己刻 `useState` 開合更少 code）。
+   - [EarlybirdBanner.jsx](src/components/homelight/EarlybirdBanner.jsx)：邏輯（即時名額／進度條／售完自動藏／關閉記憶）照抄，`STORAGE_KEY` 刻意跟暗色版共用同一把——使用者關過一次，硬切後兩邊都記得，不會又跳出來一次。
+   - 三個都是**刻意複製、不跟暗色版共用元件**：HomeDark 之後會整支退役，現在硬拉一層 theme prop 共用只會增加耦合換不到什麼。
+   - 頁面順序：Hero → 掃描結果卡 →（新）早鳥 banner → 三大差異化（既有）→（新）排行榜 →（新）FAQ → 頁尾。
+
+**順手修的三引擎違規文案**（跟這次無關的既有問題，但既然在動首頁一起清）：`index.html` description／og:description／twitter:description 寫著「ChatGPT、Perplexity、Google AI」；[HomeDark.jsx](src/pages/HomeDark.jsx) 兩處行銷文案＋FAQ 第一題也寫「Perplexity」「Google AI」——牴觸 2026-07-17 已定案的三引擎政策（只講 ChatGPT／Claude／Gemini）。全部改成 ChatGPT/Claude/Gemini。**沒動**的是 HomeDark 裡其餘 PerplexityBot 提及（爬蟲 UA 偵測、bot 可達性檢查）——PRODUCT.md 明講這類技術性提及可以保留，不在違規範圍。
+
+**驗證**：eslint 4 個新／改動檔案 0 問題（HomeDark.jsx 本身有 3 個跟這次改動無關的既有 lint 警告，用 git diff 核對過不是我引入的）；CSS 大括號平衡；**dev server 這次終於連上**（環境問題這幾輪間歇性擋 port，這次通了），5 個新/改檔案 transform 皆 200、`/home-v2` 路由本身也 200，過程中順手抓到一個自己寫的 bug（`.scores .s` CSS 寫成永遠 `display:none` 沒有解除，已修正）。
+
+**還沒做**：實際硬切本身（`/` 換成 HomeLight、HomeDark 移到逃生口路由、`/home-v2` 轉址回 `/`、拿掉 HomeLight 的 noindex）。這一步影響全部訪客流量＋SEO 索引＋廣告像素，風險層級跟「搬一個 FAQ 區塊」不一樣，先把這批新區塊晾在 `/home-v2` 給用戶看過一輪再翻正式開關。
+
 ### 2026-08-19a（同網域多頁「掃完看得到、離開回不去」——卡片補每頁清單）
 
 用戶實測（`lanecorner.qdm.tw/` 首頁 + `.../品牌故事` 品牌頁）發現：第二次掃品牌頁後，「我的網站」沒多出新卡片。查證用真實網址跑過 `normalizeUrl`/`buildSiteCards`，分組邏輯本身正確（兩筆會合併成一張卡、`共 2 頁`）——真正的洞是：**卡片主連結只導向代表頁（通常是首頁），同網域其他頁的資料進得去（掃完當下會直接導頁過去）、離開後完全沒有路能點回去**，`SiteSwitcher.jsx` 的下拉選單也是同一套 `buildSiteCards`、一樣只列代表頁。
