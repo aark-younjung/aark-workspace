@@ -28,6 +28,19 @@ function shortestWebsite(rows) {
   })[0]
 }
 
+// 頁面標籤：websites.name 存的是 hostname（建立時就這樣寫死，跟頁面無關），
+// 分不出「這是首頁還是品牌頁」，改從 url 的 path 現拆。中文網址通常是
+// percent-encode 存的（%E5%93%81...），decode 回可讀字才有意義。
+function pageLabel(url) {
+  try {
+    const u = new URL(url)
+    const path = decodeURIComponent(u.pathname).replace(/\/+$/, '')
+    return path || '首頁'
+  } catch {
+    return url || '（網址待修正）'
+  }
+}
+
 export function buildSiteCards({ websites = [], brands = [], audits = {} } = {}) {
   const groups = new Map()
 
@@ -58,11 +71,22 @@ export function buildSiteCards({ websites = [], brands = [], audits = {} } = {})
       .filter(Boolean)
       .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
 
+    // 每一頁各自的入口：card 主連結只導向代表頁，同網域其他頁掃完資料進得去、
+    // 沒有這份清單就出不來（2026-08-19 用戶實測發現：品牌頁掃完看得到，
+    // 離開後在「我的網站」再也點不回去）。代表頁排最前，其餘依網址長度排序。
+    const orderedPages = [...group.websites].sort((a, b) => {
+      if (a.id === representative.id) return -1
+      if (b.id === representative.id) return 1
+      return normalizeUrl(a.url).length - normalizeUrl(b.url).length
+    }).map(website => ({ id: website.id, label: pageLabel(website.url) }))
+
     return {
       host: group.host,
       websiteId: representative.id,
       // 整組網域底下所有 websites row 的 id——刪除要整組刪，只刪代表列會讓卡片「刪了卻還在」
       websiteIds: group.websites.map(website => website.id),
+      // 每一頁各自可點進去的入口（代表頁排最前）；只有一頁時 UI 端不用顯示這份清單
+      pages: orderedPages,
       name: brand?.name || representative.name || group.host,
       pageCount: group.websites.length,
       aivisState: brand ? 'linked' : 'unlinked',

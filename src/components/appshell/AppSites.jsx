@@ -178,57 +178,78 @@ export default function AppSites() {
       ) : (
         <div className="as-sites">
           {state.cards.map(card => (
-            <Link
-              key={card.host}
-              className="as-sitecard"
-              to={`/app/${card.websiteId}/overview`}
-              aria-label={`開啟 ${card.name} 總覽`}
-            >
-              <div className="s-nm">{card.name}</div>
-              {/* 站名就是網域時不重複顯示第二行（例：portaly.cc / portaly.cc 疊字很吵） */}
-              {card.name !== card.host && <div className="s-url" title={card.host}>{card.host}</div>}
-              <div className="s-row">
-                <div className="s-metric">
-                  <div className="m-l">AI 能見度</div>
-                  {/* 已接 coreExposureRates 共用聚合（近 30 天品類推薦曝光率）；沒掃描資料仍誠實顯示「接資料中」 */}
-                  {card.aivisState !== 'linked' ? (
-                    <div className="m-v is-setup">設定 aivis</div>
-                  ) : card.aivisRate == null ? (
-                    <div className="m-v is-pending" title="品牌已連結，完成一次 aivis 掃描後顯示曝光率">接資料中</div>
-                  ) : (
-                    <div className="m-v num is-score" title="近 30 天品類推薦曝光率（core 題）">{card.aivisRate}%</div>
-                  )}
+            // 外層改成 div（不是 Link）：card 內同時要放「開總覽」連結、刪除鈕、
+            // 每頁清單裡的多個連結，全部塞進一個 <a> 會是巢狀 <a>（無效 HTML、
+            // 瀏覽器會自動斷開破版）。真正可點開總覽的是內層 .as-sitecard-link。
+            <div key={card.host} className="as-sitecard">
+              <Link
+                className="as-sitecard-link"
+                to={`/app/${card.websiteId}/overview`}
+                aria-label={`開啟 ${card.name} 總覽`}
+              >
+                <div className="s-nm">{card.name}</div>
+                {/* 站名就是網域時不重複顯示第二行（例：portaly.cc / portaly.cc 疊字很吵） */}
+                {card.name !== card.host && <div className="s-url" title={card.host}>{card.host}</div>}
+                <div className="s-row">
+                  <div className="s-metric">
+                    <div className="m-l">AI 能見度</div>
+                    {/* 已接 coreExposureRates 共用聚合（近 30 天品類推薦曝光率）；沒掃描資料仍誠實顯示「接資料中」 */}
+                    {card.aivisState !== 'linked' ? (
+                      <div className="m-v is-setup">設定 aivis</div>
+                    ) : card.aivisRate == null ? (
+                      <div className="m-v is-pending" title="品牌已連結，完成一次 aivis 掃描後顯示曝光率">接資料中</div>
+                    ) : (
+                      <div className="m-v num is-score" title="近 30 天品類推薦曝光率（core 題）">{card.aivisRate}%</div>
+                    )}
+                  </div>
+                  <div className="s-metric">
+                    <div className="m-l">技術體質</div>
+                    {card.technicalScore == null ? (
+                      <div className="m-v is-pending" title={`四面向已有 ${card.technicalReadyCount} / 4 筆資料`}>接資料中</div>
+                    ) : (
+                      <div className="m-v num is-score">{card.technicalScore}</div>
+                    )}
+                  </div>
                 </div>
-                <div className="s-metric">
-                  <div className="m-l">技術體質</div>
-                  {card.technicalScore == null ? (
-                    <div className="m-v is-pending" title={`四面向已有 ${card.technicalReadyCount} / 4 筆資料`}>接資料中</div>
-                  ) : (
-                    <div className="m-v num is-score">{card.technicalScore}</div>
-                  )}
-                </div>
-              </div>
-              <div className="s-foot">
-                <span>
-                  最後掃描：{formatLastScan(card.lastScannedAt)}
-                  {/* 同網域多筆頁面紀錄時明講出來——刪除鈕會一次刪掉這裡講的全部筆數 */}
-                  {card.pageCount > 1 && <span className="s-pages"> · 共 {card.pageCount} 頁</span>}
-                </span>
-                <span className="s-foot-r">
-                  <button
-                    type="button"
-                    className="s-del"
-                    disabled={busyHost === card.host}
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); deleteSite(card) }}
-                    title={card.pageCount > 1
-                      ? `刪除會移除這個網域底下全部 ${card.pageCount} 筆頁面的掃描紀錄，無法復原`
-                      : '刪除這個網站的所有掃描紀錄，無法復原'}
-                    aria-label={`刪除 ${card.name}`}
-                  >{busyHost === card.host ? '…' : '🗑'}</button>
+                <div className="s-foot">
+                  <span>
+                    最後掃描：{formatLastScan(card.lastScannedAt)}
+                    {/* 同網域多筆頁面紀錄時明講出來——刪除鈕會一次刪掉這裡講的全部筆數 */}
+                    {card.pageCount > 1 && <span className="s-pages"> · 共 {card.pageCount} 頁</span>}
+                  </span>
                   <span aria-hidden="true">→</span>
-                </span>
+                </div>
+              </Link>
+
+              <div className="s-actions">
+                <button
+                  type="button"
+                  className="s-del"
+                  disabled={busyHost === card.host}
+                  onClick={() => deleteSite(card)}
+                  title={card.pageCount > 1
+                    ? `刪除會移除這個網域底下全部 ${card.pageCount} 筆頁面的掃描紀錄，無法復原`
+                    : '刪除這個網站的所有掃描紀錄，無法復原'}
+                  aria-label={`刪除 ${card.name}`}
+                >{busyHost === card.host ? '…' : '🗑'}</button>
               </div>
-            </Link>
+
+              {/* 每一頁各自的入口——卡片主連結只導向代表頁，同網域其他頁掃完資料進得去、
+                  沒有這份清單就出不來（2026-08-19 實案：用戶掃完品牌頁看得到，離開後
+                  在「我的網站」再也點不回去）。原生 <details>：鍵盤/無障礙免費、不用自己管開合 state。 */}
+              {card.pageCount > 1 && (
+                <details className="s-pagelist">
+                  <summary>看每一頁（共 {card.pageCount} 頁）</summary>
+                  <ul>
+                    {card.pages.map(page => (
+                      <li key={page.id}>
+                        <Link to={`/app/${page.id}/overview`}>{page.label}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
           ))}
 
           {remaining > 0 && (

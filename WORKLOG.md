@@ -6,6 +6,21 @@
 
 ---
 
+### 2026-08-19a（同網域多頁「掃完看得到、離開回不去」——卡片補每頁清單）
+
+用戶實測（`lanecorner.qdm.tw/` 首頁 + `.../品牌故事` 品牌頁）發現：第二次掃品牌頁後，「我的網站」沒多出新卡片。查證用真實網址跑過 `normalizeUrl`/`buildSiteCards`，分組邏輯本身正確（兩筆會合併成一張卡、`共 2 頁`）——真正的洞是：**卡片主連結只導向代表頁（通常是首頁），同網域其他頁的資料進得去（掃完當下會直接導頁過去）、離開後完全沒有路能點回去**，`SiteSwitcher.jsx` 的下拉選單也是同一套 `buildSiteCards`、一樣只列代表頁。
+
+**用戶提案的替代方案（改成「同站新掃描覆蓋舊資料」）被否決**：會弄丟 2026-07-28 已經定案保留的真實分頁紀錄（首頁跟品牌頁的 SEO/AEO 體質本來就可能差很多），還會讓「改前/改後」趨勢圖失去意義（那張圖假設同一頁分數隨時間變化，資料被不同頁面輪流覆蓋後走勢線變成雜訊）。用戶認可後改採「資料不動、只補入口」的方案。
+
+**修法**：
+- [siteData.js](src/components/appshell/siteData.js) `buildSiteCards` 新增 `pages` 陣列（`{id, label}[]`，代表頁排最前）。`pageLabel()` 從 `website.url` 現拆路徑當標籤——`websites.name` 建立時就寫死成 hostname、分不出首頁/品牌頁；中文網址是 percent-encode 存的，用 `decodeURIComponent` 還原成可讀字（`/%E5%93%81...` → `/品牌故事`）。
+- [AppSites.jsx](src/components/appshell/AppSites.jsx) 卡片內加原生 `<details>`「看每一頁」，pageCount>1 才顯示，每一項連到該頁自己的 `/app/:id/overview`。
+- **結構性重構（順便修掉一個潛在 bug）**：卡片外層從 `<Link>` 改成 `<div>`。原本整張卡是一個 `<a>`，這次要塞進刪除鈕＋每頁清單的多個連結，會變成巢狀 `<a>`（無效 HTML，瀏覽器解析時會自動斷開破版）。改成：外層 `<div className="as-sitecard">` + 內層 `<Link className="as-sitecard-link">`（原本的名稱/分數/foot）+ 同層 sibling 的 `.s-actions`（刪除鈕，改用絕對定位在右上角，**不再需要 `preventDefault/stopPropagation`**——這次順便讓刪除鈕不用再攔截外層跳轉，程式碼變簡單）+ 同層 sibling 的 `.s-pagelist`（`<details>`）。CSS 對應調整：focus-visible 從 `.as-sitecard` 移到 `.as-sitecard-link`；`.as-sites` 加 `align-items:start` 防止某張卡展開 `<details>` 變高時把同一排其他卡片拉伸。
+
+**驗證**：eslint 兩檔 0 問題；CSS 大括號平衡；**直接拿用戶回報的真實網址**（`https://lanecorner.qdm.tw/` + `https://lanecorner.qdm.tw/%E5%93%81%E7%89%8C%E6%95%85%E4%BA%8B`）跑過 `buildSiteCards`，確認分組成 `pageCount:2`、`pages` 標籤正確解碼成「首頁」「/品牌故事」。⚠️ 沒能起本機 dev server（環境持續間歇性擋 port，這是本次 session 第三次遇到），沒有瀏覽器實機驗證這次的巢狀元素重構在真實 DOM 下的呈現。
+
+**沒做的事**：`SiteSwitcher.jsx`（各分頁頂部的網站切換下拉）目前也只列代表頁，同樣有「切不到非代表頁」的問題，但用戶這次沒提、範圍只談「我的網站」卡片，先不動，之後有需要再補。
+
 ### 2026-08-18h（刪除網站「整組刪」實際只刪掉一部分——改成有驗證的刪除）
 
 用戶回報：同網域多頁的卡片（「共 N 頁」）刪除後，其中一頁的網址還在。查碼確認 [siteData.js](src/components/appshell/siteData.js) 的 `websiteIds` 分組邏輯本身是對的（獨立跑過單元測試沒問題）——問題在 [AppSites.jsx](src/components/appshell/AppSites.jsx) 的刪除呼叫：`supabase.from('websites').delete().in('id', ids)` **有呼叫、沒 error，不等於每一列都真的被刪掉**。若 RLS policy 擋掉其中幾列，Postgres 不會回報 error，只會悄悄跳過那幾列不刪；程式碼卻照樣樂觀更新把整張卡從畫面拿掉，讓用戶以為刪乾淨了——結果重新整理後那幾列又冒出來，看起來像「沒刪掉」。本機沒有 Supabase 存取權限，無法直接查 RLS policy 內容鎖定根因，先把症狀本身變誠實。

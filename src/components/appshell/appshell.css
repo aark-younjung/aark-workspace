@@ -192,15 +192,20 @@ html.dark-theme .appshell textarea::placeholder{
 
 .appshell .as-loading{padding:60px;text-align:center;color:var(--ink-3);font-size:14px;}
 
-/* 我的網站：依正規化 host 分組後的扁平卡片清單 */
+/* 我的網站：依正規化 host 分組後的扁平卡片清單
+   卡片外層是 div（不是 a）：一張卡同時要放「開總覽」連結＋刪除鈕＋每頁清單裡的多個連結，
+   全塞進一個 <a> 會是巢狀 <a>（無效 HTML、瀏覽器自動斷開破版）——真正的連結是 .as-sitecard-link，
+   刪除鈕與每頁清單是同層 sibling，各自獨立可互動、不用再靠 preventDefault/stopPropagation 擋外層跳轉。 */
+.appshell .as-sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;align-items:start;}
 .appshell .as-sites-head .as-sites-add{margin-top:0;margin-left:auto;}
-.appshell .as-sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
-.appshell .as-sitecard{padding:18px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);
-  box-shadow:var(--sh-sm);text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s,border-color .15s;}
+.appshell .as-sitecard{position:relative;padding:18px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);
+  box-shadow:var(--sh-sm);transition:transform .15s,box-shadow .15s,border-color .15s;}
 .appshell .as-sitecard:hover{transform:translateY(-2px);box-shadow:var(--sh);border-color:var(--line-2);}
-.appshell .as-sitecard:focus-visible,.appshell .as-addsite:focus-visible,.appshell .as-sites-add:focus-visible{
+.appshell .as-sitecard-link{display:block;text-decoration:none;color:inherit;}
+.appshell .as-sitecard-link:focus-visible,.appshell .as-addsite:focus-visible,.appshell .as-sites-add:focus-visible{
   outline:3px solid rgba(130,152,255,.55);outline-offset:3px;}
-.appshell .as-sitecard .s-nm{font-size:15px;font-weight:800;margin-bottom:2px;overflow-wrap:anywhere;}
+.appshell .as-sitecard .s-nm{font-size:15px;font-weight:800;margin-bottom:2px;overflow-wrap:anywhere;
+  padding-right:28px;}   /* 讓站名不會鑽到右上角刪除鈕底下 */
 .appshell .as-sitecard .s-url{font-size:12.5px;color:var(--ink-3);font-family:var(--mono);margin-bottom:14px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .appshell .as-sitecard .s-row{display:flex;gap:18px;align-items:flex-start;}
@@ -214,13 +219,24 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-sitecard .s-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;
   color:var(--ink-3);display:flex;justify-content:space-between;align-items:center;gap:12px;}
 .appshell .as-sitecard .s-pages{color:var(--ink-3);}
-.appshell .as-sitecard .s-foot-r{display:flex;align-items:center;gap:11px;}
-/* 刪除鈕：icon-only、預設低調灰、hover 才轉紅（避免整排卡片視覺太吵） */
+/* 刪除鈕：卡片右上角，絕對定位——獨立於「開總覽」連結之外，不用再攔截點擊事件 */
+.appshell .as-sitecard .s-actions{position:absolute;top:14px;right:14px;}
 .appshell .as-sitecard .s-del{background:transparent;border:none;padding:5px;margin:-5px;line-height:1;
   color:var(--ink-3);cursor:pointer;font-size:13px;border-radius:6px;transition:color .15s,background-color .15s;}
 .appshell .as-sitecard .s-del:hover{color:#b91c1c;background:rgba(185,28,28,.08);}
 .appshell .as-sitecard .s-del:disabled{opacity:.5;cursor:not-allowed;}
 .appshell .as-sitecard .s-del:focus-visible{outline:2px solid rgba(130,152,255,.55);outline-offset:2px;}
+
+/* 每一頁各自入口（同網域多頁時）：原生 <details>，展開的三角形標記交給瀏覽器免費畫 */
+.appshell .as-sitecard .s-pagelist{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;}
+.appshell .as-sitecard .s-pagelist summary{cursor:pointer;color:var(--ink-2);font-weight:700;}
+.appshell .as-sitecard .s-pagelist summary:hover{color:var(--ink);}
+.appshell .as-sitecard .s-pagelist summary:focus-visible{outline:2px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:4px;}
+.appshell .as-sitecard .s-pagelist ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.appshell .as-sitecard .s-pagelist li a{color:var(--accent-2);text-decoration:none;font-family:var(--mono);
+  font-size:12px;overflow-wrap:anywhere;}
+.appshell .as-sitecard .s-pagelist li a:hover{text-decoration:underline;}
+.appshell .as-sitecard .s-pagelist li a:focus-visible{outline:2px solid rgba(130,152,255,.55);outline-offset:2px;border-radius:3px;}
 
 /* 我的網站：新增站點卡，對齊核可稿的虛線樣式 */
 .appshell .as-addsite{border:1.5px dashed var(--line-2);background:transparent;display:grid;place-items:center;
