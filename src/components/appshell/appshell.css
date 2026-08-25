@@ -43,7 +43,10 @@ html.dark-theme .appshell textarea::placeholder{
 /* 左側選單 */
 .appshell .as-side{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px;
   display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
-.appshell .as-brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;}
+.appshell .as-brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;border-radius:10px;
+  text-decoration:none;color:inherit;transition:background-color .15s;}
+.appshell .as-brand:hover{background:var(--surface-2);}
+.appshell .as-brand:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
 .appshell .as-brand .nm{font-weight:800;font-size:16px;}
 .appshell .sweep{transform-origin:center;animation:as-sweep 4s linear infinite;}
 @keyframes as-sweep{to{transform:rotate(360deg);}}

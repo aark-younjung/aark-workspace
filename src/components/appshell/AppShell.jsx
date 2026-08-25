@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useParams } from 'react-router-dom'
+import { Link, NavLink, Outlet, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import './appshell.css'
 
@@ -28,10 +28,12 @@ export default function AppShell() {
   return (
     <div className="appshell">
       <aside className="as-side">
-        <div className="as-brand">
+        {/* logo 本身也回首頁——「＋ 新增網站」入口是文字，logo 是大家最先試的地方
+            （用戶回報：進到網站頁面後，第一直覺是點 logo，不是找側欄文字連結） */}
+        <Link to="/" className="as-brand" aria-label="回首頁">
           <svg width="30" height="30" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15.5" fill="none" stroke="rgba(0,0,62,.14)"/><circle cx="17" cy="17" r="10" fill="none" stroke="rgba(0,0,62,.14)"/><g className="sweep"><path d="M17 17 L17 1.5 A15.5 15.5 0 0 1 30 9 Z" fill="#ff6e34" opacity=".9"/></g><circle cx="17" cy="17" r="2.4" fill="#00003e"/></svg>
           <div className="nm">AI 雷達</div>
-        </div>
+        </Link>
 
         {wsItem('overview', I.overview, '總覽')}
         {wsItem('visibility', I.radar, 'AI 曝光監測', '主力')}
