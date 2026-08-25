@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-08-19e（🚀 首頁硬切：/ 正式換成亮色鴿哥版 HomeLight）
+
+用戶拍板「先完成首頁硬切」。[App.jsx](src/App.jsx) 路由改動：
+- `/` 從 `<HomeDark/>` 換成 `<HomeLight/>`
+- 舊版逃生口移到 `/home-classic`（觀察期後移除）
+- `/home-v2` 改成 `<Navigate to="/" replace/>`（避免硬切後兩個路徑同時有一份一樣的內容被索引）
+- HomeLight.jsx 拿掉並行測試期用的 `noindex` meta 注入（`/home-v2` 不會再實際渲染這個元件，那段程式碼變死碼，刪掉）
+
+**硬切前抓到兩個原本會直接斷線的地方**：
+1. **側欄「← 回經典版」的無 websiteId 分支**（[AppShell.jsx](src/components/appshell/AppShell.jsx)）原本寫死連 `'/'`——硬切後 `/` 已經是亮色版，這顆按鈕點下去會停在亮色版、文不對題（標籤講「回經典版」結果沒回到經典版）。改連 `/home-classic`。
+2. **廣告漏斗會斷**（這個如果沒抓到，正在跑的 FB 廣告會悄悄零轉換）：[LandingPage.jsx](src/pages/lp/LandingPage.jsx)（`/lp/:variant` 廣告落地頁）把使用者打的網址存進 `sessionStorage.lp_pending_url` 後 `navigate('/')`，外部靜態落地頁則直接帶 `?url=` 查詢參數連到 `/`——這條「回首頁自動帶入網址並開始掃」的交棒邏輯**一直只寫在 HomeDark.jsx 裡**，硬切後 `/` 換成 HomeLight、但這段邏輯沒有跟著搬，廣告帶來的人會落地在空白的首頁、網址沒有自動填入也不會自動掃描。已把同一段邏輯（讀 `lp_pending_url` 或 `?url=`、`setUrl`+`handleSubmit` 自動觸發，`[user]` 依賴確保跨登入狀態都接得住）逐字搬進 HomeLight.jsx，並讓 `handleSubmit` 支援 `urlOverride` 參數（原本只吃 state）。
+
+**查過確認不用動的地方**：FB Pixel 基礎初始化（`initPixel()`）在 `main.jsx` 全站入口跑、不綁定特定頁面，不受影響；HomeDark.jsx 除了預設匯出沒有其他檔案依賴的具名匯出；HomeDark 內部的 `window.location.pathname` 用法是動態讀取、不是寫死 `/`，搬到 `/home-classic` 後行為不變。
+
+**驗證**：eslint 3 個改動檔案 0 問題；dev server 這次連上，直接讀編譯後的 `App.jsx` 確認三條路由編譯結果正確（`/` → HomeLight、`/home-classic` → HomeDark、`/home-v2` → Navigate to `/`）。⚠️ 沒有瀏覽器實機把整個掃描流程（含廣告交棒）跑過一次端到端，這是這次改動裡風險最高的一塊，**部署後務必實際測一次**：(1) 直接開 `/` 確認顯示亮色版 (2) 開 `/home-classic` 確認舊版還在 (3) 開 `/home-v2` 確認轉址回 `/` (4) 側欄「回經典版」在沒有 websiteId 時真的連到 `/home-classic` (5) 若方便，實際跑一次 `/lp/:variant` 掃描漏斗，確認網址有自動帶入首頁並觸發掃描。
+
 ### 2026-08-19d（網站體檢「建議」文字全白看不到——根因是 CSS 變數從沒定義過亮色版）
 
 用戶回報：`/app/:id/health` 裡「立即修復」lane 下面的建議文字全白、看不到。

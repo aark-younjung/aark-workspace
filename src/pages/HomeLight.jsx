@@ -52,15 +52,14 @@ function summarize(scores) {
 }
 
 /**
- * 新版首頁（亮色鴿哥版）— 2026-08-18 並行驗收路由 /home-v2
+ * 首頁（亮色鴿哥版）— 2026-08-19 硬切為正式 `/`（原本在 /home-v2 並行驗收，
+ * 已完成排行榜/FAQ/早鳥 banner 移植）。舊版暗色首頁逃生口在 /home-classic。
  *
  * 視覺：照高保真設計稿「① 首頁」半邊 1:1 實作（暖白·深藍·橘·鴿哥）。
  * 功能（真流程、非展示稿）：
  * - 未登入：value-first 快掃——4 分析器瀏覽器端跑、不寫 audit 表，
  *   inline 給分數 + anon_scan_events 日誌 + Pixel 事件（與 HomeDark 同規格）
  * - 登入：找/建 websites row → runFullScan（唯一權威 service）→ 進 /app 新版總覽
- * 硬切前刻意不搬：我的網站列表、排行榜內嵌、FAQ（暗色版還在 / 撐著；
- * 硬切時再決定去留）。並行期掛 noindex，不跟正式首頁搶 SEO。
  *
  * 等待畫面（2026-08-18 critique B）：結果卡在按下按鈕當下就以「骨架態」出現，
  * 四個分析器誰先 resolve 誰就先翻開自己那張——30-60 秒的死畫面變成逐項展演，
@@ -92,15 +91,6 @@ export default function HomeLight() {
     setStatus(''); setErrMsg(''); setUrl('')
   }
 
-  // 並行驗收路由不進搜尋索引（硬切換上 / 時移除這段）
-  useEffect(() => {
-    const meta = document.createElement('meta')
-    meta.name = 'robots'
-    meta.content = 'noindex'
-    document.head.appendChild(meta)
-    return () => meta.remove()
-  }, [])
-
   // 掃描一開始就把骨架卡帶進視窗——手機上它必定落在 hero 下方，看不到就白翻了
   useEffect(() => {
     if (!loading) return
@@ -114,9 +104,9 @@ export default function HomeLight() {
     resultRef.current?.scrollIntoView({ behavior: prefersReduce() ? 'auto' : 'smooth', block: 'nearest' })
   }, [anonResult])
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e, urlOverride) {
     e?.preventDefault?.()
-    const rawUrl = (url ?? '').trim()
+    const rawUrl = (urlOverride ?? url ?? '').trim()
     if (!rawUrl) return
     if (scanInFlightRef.current) return   // 防重入（同步 ref 擋同一輪重複觸發）
     scanInFlightRef.current = true
@@ -204,6 +194,28 @@ export default function HomeLight() {
       setLoading(false)
     }
   }
+
+  // 外部交棒自動掃：廣告落地頁（LandingPage.jsx）留 URL 在 sessionStorage 後 navigate('/')，
+  // 或外部連結直接帶 ?url= 過來——首頁硬切前這條路一直是 HomeDark 在接，搬到這裡維持廣告漏斗不斷線。
+  useEffect(() => {
+    let pending = sessionStorage.getItem('lp_pending_url')
+    if (pending) {
+      sessionStorage.removeItem('lp_pending_url')
+    } else {
+      // 外部 LP 交棒：讀 ?url= 後把它從網址列清掉，避免重新整理又自動掃一次
+      const params = new URLSearchParams(window.location.search)
+      const fromQuery = params.get('url')
+      if (fromQuery) {
+        pending = fromQuery
+        params.delete('url')
+        window.history.replaceState({}, '', window.location.pathname + (params.toString() ? '?' + params.toString() : ''))
+      }
+    }
+    if (!pending) return
+    setUrl(pending)
+    handleSubmit(null, pending)   // 直接帶網址自動掃，不等 state 更新
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const check = (
     <svg className="tk" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M20 6L9 17l-5-5" /></svg>

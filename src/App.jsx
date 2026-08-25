@@ -2,9 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from '
 import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
-// 暗黑版為現行主視覺；橘白版 Home 已移至 src/pages/_legacy/Home.jsx 保留備查
+// 2026-08-19 硬切：亮色鴿哥版（HomeLight）為現行主視覺，掛在 /；暗黑版（HomeDark）
+// 降為觀察期逃生口 /home-classic。橘白版 Home 更早之前已移至 src/pages/_legacy/Home.jsx 保留備查
 import HomeDark from './pages/HomeDark'
-import HomeLight from './pages/HomeLight'   // 亮色鴿哥版首頁（並行驗收 /home-v2、硬切後接手 /）
+import HomeLight from './pages/HomeLight'
 import Dashboard from './pages/Dashboard'
 import DashboardV2 from './pages/DashboardV2'
 import SEOAudit from './pages/SEOAudit'
@@ -104,9 +105,11 @@ function AppInner() {
       {isDark && <GlobalDarkBg />}
       <ScrollToTop />
       <Routes>
-        <Route path="/" element={<HomeDark />} />
-        {/* 亮色鴿哥版首頁並行驗收路由（2026-08-18）——驗收通過後硬切 / 並移除 */}
-        <Route path="/home-v2" element={<HomeLight />} />
+        {/* 2026-08-19 硬切：/ 換成亮色鴿哥版首頁（原本在 /home-v2 並行驗收）。
+            舊版逃生口：/home-classic（觀察期後移除）。/home-v2 轉址回 /，避免兩份內容同時被索引。 */}
+        <Route path="/" element={<HomeLight />} />
+        <Route path="/home-classic" element={<HomeDark />} />
+        <Route path="/home-v2" element={<Navigate to="/" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/showcase" element={<Showcase />} />

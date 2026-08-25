@@ -49,8 +49,10 @@ export default function AppShell() {
         {/* 競品格（AI 提及比較）：功能上線後加在此處＝選單最後一項，現在不佔位（2026-08-13 定案） */}
 
         <div className="as-sp" />
-        {/* Beta 並行期：一鍵切回經典版（有網站脈絡回該站儀表板、否則回首頁）——降低嘗鮮門檻 */}
-        <NavLink to={websiteId ? `/dashboard-v2/${websiteId}` : '/'} className="as-nav as-classic">← 回經典版</NavLink>{/* 轉址後 /dashboard 已導新版，逃生口走 /dashboard-v2 */}
+        {/* Beta 並行期：一鍵切回經典版（有網站脈絡回該站儀表板、否則回經典首頁）——降低嘗鮮門檻。
+            2026-08-19 首頁硬切後 '/' 已經是亮色版，這裡的無 websiteId 分支改連 /home-classic
+            （沒改的話「回經典版」點下去會停在亮色版、文不對題）。 */}
+        <NavLink to={websiteId ? `/dashboard-v2/${websiteId}` : '/home-classic'} className="as-nav as-classic">← 回經典版</NavLink>{/* 轉址後 /dashboard 已導新版，逃生口走 /dashboard-v2 */}
         {/* 帳號移到左下個人區（Codex IA 建議）：整塊可點、直達 /account，不佔主導覽格 */}
         <NavLink to="/account" className="as-acct" aria-label="帳號與方案設定">
           <span className="av">{(userName || 'U').slice(0, 1).toUpperCase()}</span>
