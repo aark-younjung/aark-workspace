@@ -11,23 +11,8 @@
  */
 
 export const LP_VARIANTS = {
-  // A 組 — 一般品牌主（已做 SEO、AI 看不見）
-  'google-vs-ai': {
-    mode: 'scan',
-    badge: 'AI 能見度 30 秒檢測',
-    headline: [
-      [{ t: '你的 ', c: null }, { t: 'Google 排第一', c: 'green' }, { t: '，', c: null }],
-      [{ t: 'ChatGPT 卻', c: null }, { t: '從沒推薦過你', c: 'red' }, { t: '。', c: null }],
-    ],
-    sub: '排名是 Google 的邏輯，推薦是 AI 的邏輯——兩套系統、兩場仗。30 秒掃出你在 AI 眼中的真實樣子。',
-    bullets: [
-      'ChatGPT、Claude、Gemini 三大引擎實測提及率',
-      'AI 推薦了誰、為什麼不是你',
-      '每一個紅燈，附對應的修復指南',
-    ],
-    cta: '免費掃描我的網站',
-    inputPlaceholder: '貼上你的網站網址',
-  },
+  // A 組（一般品牌主）2026-08-19 起改走專屬「清新日系」元件 LpSageA.jsx，
+  // 不再吃這份共用模板——文案/視覺都在那支元件裡，這裡不留舊版備份（git history 找得到）。
 
   // C 組 — AI 建站族群（vibe coding / v0 / Lovable）
   'ai-site-check': {

@@ -6,6 +6,26 @@
 
 ---
 
+### 2026-08-19f（廣告落地頁 A 組換成「清新日系」設計——獨立元件，不吃共用模板）
+
+用戶測廣告落地頁流程時發現線上 `/lp/google-vs-ai` 不是他做的最新版本；查證後用戶指名兩份 mockup（`行銷/落地頁設計/清新日系-A組-LP(-PC).html`，PC 版檔頭自己寫「RWD 示意，正式做進 React 會更細」——等於作者本人已經預期要搬進 React）。素材（`2.avif`／`aic-back.avif`／`01-03.svg`／`mockup-left.png`／兩支 iframe 動畫）**已經有人事先放進 `public/lp-assets/`**，只是還沒有元件消費，這次直接接上。
+
+**架構決定**：這組視覺跟另外兩組（`ai-site-check`/`agency`）差異太大，沒有硬拗進 [LandingPage.jsx](src/pages/lp/LandingPage.jsx) 共用模板，改成獨立元件 [LpSageA.jsx](src/pages/lp/LpSageA.jsx) + 專屬樣式 [lp-sage.css](src/styles/lp-sage.css)（比照 `.homelight`/`.appshell` 慣例，全部 scope 在 `.lp-sage` 底下、CSS 變數蓋掉全域暗色 `html.dark-theme input` 的 `!important` reset）。`LandingPage.jsx` 在所有 hook 呼叫**之後**（避免 `/lp/:variant` 同路由切換 variant 時違反 hooks 規則）判斷 `variant === 'google-vs-ai'` 就直接 `return <LpSageA/>`，其餘兩組維持原邏輯不動。`lpContent.js` 移除已經沒人讀的 `google-vs-ai` 條目（舊版留在 git history）。
+
+**真功能，不是靜態 mockup**：兩處掃描輸入框（hero + 結尾）共用同一份 `handleSubmit`——複製既有 `LandingPage.jsx` 的規則（`trackPixel('Lead', {content_name:'lp_google-vs-ai'})` → `sessionStorage.lp_pending_url` → `navigate('/')`），跟這次首頁硬切時搬進 HomeLight.jsx 的交棒邏輯是同一條路徑，沒有另外發明。
+
+**移植時順手修正的地方（mockup 是靜態展示稿，實際頁面要對真實使用者負責）**：
+- mockup 全域 `*{box-sizing:border-box;margin:0;padding:0}`、裸的 `h1`/`h2`/`section` 選擇器**逐一補上 `.lp-sage` 前綴**——照抄會污染全站每個 h1/h2（這是移植任何 standalone HTML mockup 進既有 SPA 的通則，不是這份 mockup 特有問題）。
+- `@keyframes marq` 改名 `lp-sage-marq`（防跟未來其他元件同名衝突，雖然目前查過沒撞名）。
+- 加 `prefers-reduced-motion` 處理（跑馬燈、卡片 hover 位移/縮放全關）——mockup 原本沒有，這裡照全站既有無障礙慣例補上。
+- 分數卡的 `example.com` 示例數字補一個「・示例」小字——mockup 沒標、照公平交易法紅線（PRODUCT.md：不得捏造數據）這裡必須講清楚是範例不是真掃描結果。
+- input 補 `inputMode="url"`／`autoCapitalize="none"` 等手機鍵盤屬性（跟 HomeLight critique 那輪的修法一致）。
+- 字型：`index.html` 加一行 Noto Sans/Serif TC 的 Google Fonts `<link>`（全站原本沒載入這兩款字）。
+
+**驗證**：eslint 通過（`LandingPage.jsx` 原有 2 個 lint 錯誤跟這次改動無關，用 git diff 核對過不在我碰的行數範圍內）；CSS 大括號平衡；dev server 這次連上，確認新元件/CSS/所有素材（含兩支 iframe 動畫）都 200、`/lp/google-vs-ai` 路由本身 200、編譯後的 `LandingPage.jsx` 確實引用 `LpSageA`。⚠️ **沒有瀏覽器實機看過這頁長什麼樣**——這是這次改動裡規模最大、最該找時間實際點開看的一塊（斜切色塊、跑馬燈、hover 卡片、iframe 動畫縮放這些效果單靠讀 CSS 沒辦法 100%確定觀感對不對）。
+
+**沒做、值得之後排的優化**：`mockup-left.png` 2.7MB，廣告頁對載入速度很敏感，之後可轉 WebP/AVIF 壓縮；這次沒動（範圍是「同步設計」不是「效能優化」，且本機沒有現成的圖片轉檔工具）。
+
 ### 2026-08-19e（🚀 首頁硬切：/ 正式換成亮色鴿哥版 HomeLight）
 
 用戶拍板「先完成首頁硬切」。[App.jsx](src/App.jsx) 路由改動：

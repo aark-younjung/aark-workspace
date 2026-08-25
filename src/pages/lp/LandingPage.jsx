@@ -1,16 +1,17 @@
 /**
  * FB 廣告落地頁 — /lp/:variant（2026-06-13）
  *
- * 三個 variant 共用此模板（文案在 lpContent.js）：
- *   /lp/google-vs-ai  → A 組（品牌主）
- *   /lp/ai-site-check → C 組（AI 建站族群）
- *   /lp/agency        → B 組（代理商候補）
+ * 三個 variant：
+ *   /lp/google-vs-ai  → A 組（品牌主）—— 2026-08-19 起改走專屬「清新日系」元件 LpSageA
+ *     （視覺與其他兩組差異太大，不再共用下面的模板；文案不在 lpContent.js 了）
+ *   /lp/ai-site-check → C 組（AI 建站族群）—— 沿用下面共用模板（文案在 lpContent.js）
+ *   /lp/agency        → B 組（代理商候補）—— 沿用下面共用模板（文案在 lpContent.js）
  *
  * 落地頁鐵律（與首頁的差異就是存在理由）：
  *   1. message match — 第一屏延續廣告大標話術
  *   2. 無導覽列、無逃生門 — 只有一個 CTA
- *   3. 掃描漏斗：未登入者留 URL（sessionStorage.lp_pending_url）→ /register
- *      → 註冊完回首頁，HomeDark 會自動把網址帶入輸入框
+ *   3. 掃描漏斗：未登入者留 URL（sessionStorage.lp_pending_url）→ 導回首頁，
+ *      HomeLight（原 HomeDark，2026-08-19 首頁硬切）會自動把網址帶入輸入框並開始掃
  *   4. Pixel：CTA 觸發 Lead 事件（pixel.js，沒設 ID 時靜默）
  */
 import { useState, useEffect } from 'react'
@@ -20,6 +21,7 @@ import AarkMark from '../../components/v2/AarkMark'
 import AgencyWaitlistModal from '../../components/v2/AgencyWaitlistModal'
 import { trackPixel } from '../../lib/pixel'
 import { LP_VARIANTS } from './lpContent'
+import LpSageA from './LpSageA'
 
 // 行內分段標色（color: null=白 / green=品牌青綠 / red=警示紅）
 const SEG_COLOR = { green: '#18c590', red: '#ef4444' }
@@ -96,6 +98,12 @@ export default function LandingPage() {
       .then(data => { if (data) setStats(data) })
       .catch(() => {})
   }, [])
+
+  // A 組（google-vs-ai）2026-08-19 起是完全獨立的視覺，不吃下面的共用模板。
+  // 放在所有 hook 呼叫之後（同下面 !content 分支的位置）：/lp/:variant 是同一個路由
+  // pattern，在 variant 之間切換時 React Router 不會重新掛載，variant 可能在同一個
+  // instance 上換值——提早 return 會讓 hook 呼叫數在渲染間不一致，違反 hooks 規則。
+  if (variant === 'google-vs-ai') return <LpSageA />
 
   // 未知 variant → 回首頁（防亂打網址 404 體驗）
   if (!content) return <Navigate to="/" replace />
