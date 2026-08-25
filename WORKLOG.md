@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-08-19d（網站體檢「建議」文字全白看不到——根因是 CSS 變數從沒定義過亮色版）
+
+用戶回報：`/app/:id/health` 裡「立即修復」lane 下面的建議文字全白、看不到。
+
+**查根因**：[IssueBoard.jsx](src/components/v2/IssueBoard.jsx) 是 v2 舊元件，文字色走 `T.text`/`T.textMid`/`T.textLow`（[v2-tokens.js](src/styles/v2-tokens.js)），這些其實是 `var(--t-text, rgba(255,255,255,.93))` 這種 CSS 變數。[themes.js](src/styles/themes.js) 目前**只有三套深色主題**（teal/navy/graphite，檔頭註解寫明「亮色主題等 994 處深色 class 掃乾淨再開」）——從沒定義過亮色版 `--t-text` 系列，所以這幾個變數在全站任何地方都解析成 fallback 近白色。之前硬切 AppHealth 時已經對 IssueBoard 做過一輪亮色化（appshell.css 既有一串 `.as-health-board .v2-issue-board>div>div:first-child...{color:var(--ink)!important}` 這種**按 DOM 結構位置**的補丁），但「建議：」後面真正的建議內容文字（[IssueBoard.jsx:190](src/components/v2/IssueBoard.jsx) `color: T.textMid` 那個 div）剛好沒被抓到，還是白的。
+
+**修法**：不再一個個抓 DOM 位置補丁，改在 [appshell.css](src/components/appshell/appshell.css) 的 `.as-health-board` 這個掛載點**直接重新定義 CSS 變數本身**：`--t-text:var(--ink); --t-text-mid:var(--ink-2); --t-text-low:var(--ink-3); --t-card-border:var(--line-2);`。IssueBoard 內所有吃這幾個 token 的地方（含這次漏掉的、含未來新增的）都會一次跟著對，不用再逐一補丁。舊的按位置補丁沒刪——它們現在跟新的變數覆蓋算出同一個顏色，不衝突，但沒有實機瀏覽器可驗證的情況下，先不冒險刪掉已經在跑的東西。
+
+**一併查了但沒動**：同頁 AEO 分頁的 Org Schema 產生器（[AppHealth.jsx:137](src/components/appshell/AppHealth.jsx)）也是 v2 舊元件、也吃同一套 token，理論上有同樣風險——但那裡的程式碼註解寫明「深色卡樣式暫留（硬切後再亮色化）」，是**刻意延後**的既定安排，不是遺漏，所以沒有跟著改，維持原規劃節奏。
+
+**驗證**：CSS 大括號平衡；dev server 確認新規則正確編譯進 `.as-health-board` 選擇器。⚠️ 沒有瀏覽器實機驗證顏色渲染結果，純靠 CSS 變數解析鏈路推導（`.as-health-board` 是 `.appshell` 的子孫、`var(--ink)` 等能正確往上層找到定義）。
+
 ### 2026-08-19c（side 選單 logo 補回首頁連結——「＋ 新增網站」文案不夠直覺）
 
 用戶截圖回報：在網站總覽頁找不到路回首頁。上次（2026-08-18g）已經加了「＋ 新增網站」連到 `/`，這次用戶截圖顯示那顆連結其實在側欄裡（有點進去），但用戶第一直覺還是想點左上角 logo——logo 當時只是個 `<div>`，點了沒反應。

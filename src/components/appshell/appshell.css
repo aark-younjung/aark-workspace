@@ -265,7 +265,20 @@ html.dark-theme .appshell textarea::placeholder{
   margin-bottom:16px;line-height:1.6;display:flex;align-items:flex-start;gap:7px;overflow-wrap:anywhere;}
 .appshell .as-health-scope b{color:var(--ink-2);}
 
-/* 網站體檢：保留既有 IssueBoard 行為，僅在 app-shell 內轉為核可亮色系 */
+/* 網站體檢：保留既有 IssueBoard 行為，僅在 app-shell 內轉為核可亮色系
+   根因（2026-08-19 用戶回報「建議文字全白看不到」）：IssueBoard 是 v2 舊元件，
+   文字色走 T.text/T.textMid/T.textLow（見 v2-tokens.js），這些 token 其實是
+   var(--t-text, rgba(255,255,255,.93)) 這種 CSS 變數——而 themes.js 目前只有
+   三套深色主題（teal/navy/graphite），從未定義過亮色版 --t-text 系列，
+   所以這幾個變數在全站任何地方都解析成 fallback 的近白色。之前的做法是
+   一條條找 DOM 位置加 !important 硬蓋色（下面幾行還留著），但「建議：」
+   後面那段真正的建議內容文字剛好沒被抓到、還是白的。這裡改成在 --t-text 系列
+   變數本身重新定義——IssueBoard 內所有吃這幾個 token 的地方會一次全對，
+   不用再一個個抓 DOM 結構補丁。*/
+.appshell .as-health-board{
+  --t-text:var(--ink); --t-text-mid:var(--ink-2); --t-text-low:var(--ink-3);
+  --t-card-border:var(--line-2);
+}
 .appshell .as-health-board .v2-issue-board{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;}
 .appshell .as-health-board .v2-issue-board>div{background:var(--surface)!important;border-radius:var(--r-lg)!important;
   box-shadow:var(--sh-sm)!important;}
