@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { logError } from '../../lib/errorLog'
 import { buildSiteCards, formatLastScan } from './siteData'
 import { coreExposureRates } from './aivisData'
 
@@ -16,106 +17,129 @@ export default function AppSites() {
   const { user, siteLimit, tierName } = useAuth()
   const [state, setState] = useState({ loading: true, error: '', cards: [] })
   const [busyHost, setBusyHost] = useState(null)   // 正在刪除中的 host（擋重複點擊）
+  const cancelledRef = useRef(false)   // loadSites 也被 deleteSite 手動呼叫，用 ref 取代原本的 effect-scoped cancelled
+
+  // 讀「我的網站」清單（依 host 分組 + aivis 曝光率）。抽成可重複呼叫的函式：
+  // 掛載時跑一次，刪除發現「部分刪除」時也要靠它重新整批讀出 DB 真實狀態。
+  const loadSites = useCallback(async () => {
+    if (!user) {
+      if (!cancelledRef.current) setState({ loading: false, error: '', cards: [] })
+      return
+    }
+
+    setState(current => ({ ...current, loading: true, error: '' }))
+    try {
+      // websites 是「一頁一筆」；這裡必須先抓完整 row，再於 UI 層依 host 分組。
+      const websiteResult = await supabase
+        .from('websites')
+        .select('id, name, url, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      if (websiteResult.error) throw websiteResult.error
+
+      const websites = websiteResult.data || []
+      if (websites.length === 0) {
+        if (!cancelledRef.current) setState({ loading: false, error: '', cards: [] })
+        return
+      }
+
+      const websiteIds = websites.map(website => website.id)
+      const [seo, aeo, geo, eeat, brands] = await Promise.all([
+        ...Object.values(AUDIT_TABLES).map(table => supabase
+          .from(table)
+          .select('website_id, score, created_at')
+          .in('website_id', websiteIds)
+          .order('created_at', { ascending: false })),
+        supabase
+          .from('aivis_brands')
+          .select('id, name, website_id')
+          .in('website_id', websiteIds),
+      ])
+      const failed = [seo, aeo, geo, eeat, brands].find(result => result.error)
+      if (failed?.error) throw failed.error
+
+      const cards = buildSiteCards({
+        websites,
+        brands: brands.data || [],
+        audits: {
+          seo: seo.data || [],
+          aeo: aeo.data || [],
+          geo: geo.data || [],
+          eeat: eeat.data || [],
+        },
+      })
+
+      // 站卡 aivis 分數：對「有連結品牌」的卡，抓近 30 天題庫+回應、算品類推薦曝光率
+      // （與 AppVisibility 同一支聚合，數字永遠一致；沒掃描資料的品牌回 null → 顯示「接資料中」）
+      const brandIds = cards.map(card => card.brandId).filter(Boolean)
+      if (brandIds.length) {
+        const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
+        const [promptResult, responseResult] = await Promise.all([
+          supabase.from('aivis_prompts').select('id, brand_id, tier, is_active').in('brand_id', brandIds),
+          supabase.from('aivis_responses')
+            .select('id, brand_id, prompt_id, brand_mentioned, created_at, engine_results')
+            .in('brand_id', brandIds).gte('created_at', since),
+        ])
+        if (!promptResult.error && !responseResult.error) {
+          const rates = coreExposureRates({ prompts: promptResult.data || [], responses: responseResult.data || [], rangeDays: 30 })
+          for (const card of cards) {
+            if (card.brandId) card.aivisRate = rates.get(card.brandId) ?? null
+          }
+        }
+      }
+      if (!cancelledRef.current) setState({ loading: false, error: '', cards })
+    } catch (error) {
+      console.error('AppSites load error:', error)
+      if (!cancelledRef.current) setState({ loading: false, error: error.message || '網站資料載入失敗', cards: [] })
+    }
+  }, [user])
+
+  useEffect(() => {
+    cancelledRef.current = false
+    loadSites()
+    return () => { cancelledRef.current = true }
+  }, [loadSites])
 
   // 刪除「我的網站」——整組網域底下所有 websites row 一起刪（同 host 分組邏輯，只刪代表列
   // 會讓卡片消失後又因剩餘 row 重新冒出來、看起來像沒刪掉）。2026-06-19 舊版曾有此功能、
   // 硬切轉址到 /app 時漏搬，這裡補回。RLS 需允許 owner 刪自己的站（已於當時建好 policy）。
+  //
+  // 2026-08-18 實案：用戶回報同網域多頁的卡片砍掉後，其中一頁的網址還在——查碼確認
+  // websiteIds 分組本身是對的，問題在 supabase .delete() 對「有呼叫、無 error」跟「真的每一列
+  // 都被刪掉」是兩件事：若 RLS 擋掉其中幾列，Postgres 不會回報 error，只會悄悄不刪那幾列，
+  // 樂觀更新卻照樣把整張卡從畫面上拿掉，讓用戶以為刪乾淨了。改用 .select('id') 拿回「實際被
+  // 刪掉的列」比對筆數，兜不起來就不信任樂觀更新、改重新整批讀一次讓畫面反映 DB 真實狀態，
+  // 並記進 error_logs（後台看得到，不再是「靜默失敗」）。
   async function deleteSite(card) {
     const scopeNote = card.pageCount > 1
       ? `\n這個網域底下共有 ${card.pageCount} 筆頁面紀錄，刪除會把整組一起移除`
       : ''
     if (!confirm(`確定要刪除「${card.name}」嗎？${scopeNote}\n所有掃描紀錄會一併移除，無法復原。`)) return
     setBusyHost(card.host)
-    const { error } = await supabase.from('websites').delete().in('id', card.websiteIds)
+    const { data, error } = await supabase.from('websites').delete().in('id', card.websiteIds).select('id')
     if (error) {
       console.error('[AppSites] delete website error:', error)
       alert(`刪除失敗：${error.message || '請稍後再試'}`)
       setBusyHost(null)
       return
     }
+    const deletedCount = data?.length ?? 0
+    if (deletedCount < card.websiteIds.length) {
+      console.error('[AppSites] partial delete:', { host: card.host, requested: card.websiteIds, deletedCount })
+      logError({
+        source: 'app_sites_delete',
+        message: `只刪除 ${deletedCount}/${card.websiteIds.length} 筆（可能是 RLS 擋掉部分列）`,
+        userId: user?.id,
+        detail: { host: card.host, websiteIds: card.websiteIds },
+      })
+      alert(`只刪除了 ${deletedCount}／${card.websiteIds.length} 筆頁面紀錄，可能是權限問題。已重新整理清單，若還有殘留請再刪一次或聯絡客服。`)
+      await loadSites()
+      setBusyHost(null)
+      return
+    }
     setState(current => ({ ...current, cards: current.cards.filter(c => c.host !== card.host) }))
     setBusyHost(null)
   }
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
-      if (!user) {
-        setState({ loading: false, error: '', cards: [] })
-        return
-      }
-
-      setState(current => ({ ...current, loading: true, error: '' }))
-      try {
-        // websites 是「一頁一筆」；這裡必須先抓完整 row，再於 UI 層依 host 分組。
-        const websiteResult = await supabase
-          .from('websites')
-          .select('id, name, url, created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-        if (websiteResult.error) throw websiteResult.error
-
-        const websites = websiteResult.data || []
-        if (websites.length === 0) {
-          if (!cancelled) setState({ loading: false, error: '', cards: [] })
-          return
-        }
-
-        const websiteIds = websites.map(website => website.id)
-        const [seo, aeo, geo, eeat, brands] = await Promise.all([
-          ...Object.values(AUDIT_TABLES).map(table => supabase
-            .from(table)
-            .select('website_id, score, created_at')
-            .in('website_id', websiteIds)
-            .order('created_at', { ascending: false })),
-          supabase
-            .from('aivis_brands')
-            .select('id, name, website_id')
-            .in('website_id', websiteIds),
-        ])
-        const failed = [seo, aeo, geo, eeat, brands].find(result => result.error)
-        if (failed?.error) throw failed.error
-
-        const cards = buildSiteCards({
-          websites,
-          brands: brands.data || [],
-          audits: {
-            seo: seo.data || [],
-            aeo: aeo.data || [],
-            geo: geo.data || [],
-            eeat: eeat.data || [],
-          },
-        })
-
-        // 站卡 aivis 分數：對「有連結品牌」的卡，抓近 30 天題庫+回應、算品類推薦曝光率
-        // （與 AppVisibility 同一支聚合，數字永遠一致；沒掃描資料的品牌回 null → 顯示「接資料中」）
-        const brandIds = cards.map(card => card.brandId).filter(Boolean)
-        if (brandIds.length) {
-          const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
-          const [promptResult, responseResult] = await Promise.all([
-            supabase.from('aivis_prompts').select('id, brand_id, tier, is_active').in('brand_id', brandIds),
-            supabase.from('aivis_responses')
-              .select('id, brand_id, prompt_id, brand_mentioned, created_at, engine_results')
-              .in('brand_id', brandIds).gte('created_at', since),
-          ])
-          if (!promptResult.error && !responseResult.error) {
-            const rates = coreExposureRates({ prompts: promptResult.data || [], responses: responseResult.data || [], rangeDays: 30 })
-            for (const card of cards) {
-              if (card.brandId) card.aivisRate = rates.get(card.brandId) ?? null
-            }
-          }
-        }
-        if (!cancelled) setState({ loading: false, error: '', cards })
-      } catch (error) {
-        console.error('AppSites load error:', error)
-        if (!cancelled) setState({ loading: false, error: error.message || '網站資料載入失敗', cards: [] })
-      }
-    }
-
-    load()
-    return () => { cancelled = true }
-  }, [user])
 
   if (state.loading) return <div className="as-loading" aria-live="polite">載入中…</div>
 

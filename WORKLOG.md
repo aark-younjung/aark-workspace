@@ -6,6 +6,19 @@
 
 ---
 
+### 2026-08-18h（刪除網站「整組刪」實際只刪掉一部分——改成有驗證的刪除）
+
+用戶回報：同網域多頁的卡片（「共 N 頁」）刪除後，其中一頁的網址還在。查碼確認 [siteData.js](src/components/appshell/siteData.js) 的 `websiteIds` 分組邏輯本身是對的（獨立跑過單元測試沒問題）——問題在 [AppSites.jsx](src/components/appshell/AppSites.jsx) 的刪除呼叫：`supabase.from('websites').delete().in('id', ids)` **有呼叫、沒 error，不等於每一列都真的被刪掉**。若 RLS policy 擋掉其中幾列，Postgres 不會回報 error，只會悄悄跳過那幾列不刪；程式碼卻照樣樂觀更新把整張卡從畫面拿掉，讓用戶以為刪乾淨了——結果重新整理後那幾列又冒出來，看起來像「沒刪掉」。本機沒有 Supabase 存取權限，無法直接查 RLS policy 內容鎖定根因，先把症狀本身變誠實。
+
+**修法**：
+- delete 呼叫加 `.select('id')` 拿回**實際被刪掉**的列，跟請求刪除的筆數比對。
+- 筆數兜不起來（部分刪除）：**不信任樂觀更新**，改呼叫重構出來的 `loadSites()` 重新整批讀一次，讓畫面反映 DB 真實狀態；同時 `alert()` 明講「只刪除了 N／M 筆，可能是權限問題」，並用 [errorLog.js](src/lib/errorLog.js) 記進 `error_logs`（source: `app_sites_delete`，帶 host + 完整 websiteIds）——後台看得到，不再是靜默失敗，下次發生時有診斷線索可以鎖定真正的 RLS 根因。
+- 原本內嵌在 `useEffect` 裡的 `load()` 抽成 `loadSites`（`useCallback` + `cancelledRef` 取代原本 effect-scoped 的 `cancelled` 變數），讓 `deleteSite` 也能呼叫它做「部分刪除後重新整批讀」；行為與原本的 mount-effect 完全等價。
+
+**待用戶協助**：進 Supabase Dashboard 查 `websites` 表的 delete RLS policy 實際內容（`auth.uid() = user_id` 是否有例外條件、或這批殘留 row 的 `user_id` 是否真的等於目前登入帳號）——這才是治本，這次改動只是讓失敗不再無聲。
+
+**驗證**：eslint 0 問題；讀碼確認 `loadSites` 重構後行為等價（成功路徑）。⚠️ 沒有 DB 存取權限，無法重現「部分刪除」情境做端到端驗證，也沒能起本機 dev server（環境間歇性擋 port）。
+
 ### 2026-08-18g（新版側欄找不到回首頁的路——加「＋ 新增網站」入口）
 
 用戶回報：新版連不回首頁，沒辦法重複掃描。查證 [AppShell.jsx](src/components/appshell/AppShell.jsx) 側欄：唯一可能連到 `/` 的「← 回經典版」連結，只在**還沒選定任何網站**時才連 `/`——一旦進到某個網站的總覽/體檢/曝光監測頁（`websiteId` 存在），它改連 `/dashboard-v2/:id`（經典舊儀表板），不是首頁。logo 也只是 `<div>`，點了沒反應。結果：人在任一網站頁面時，側欄完全沒有明講的路能回首頁掃新網址。
