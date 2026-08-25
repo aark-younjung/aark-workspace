@@ -6,6 +6,20 @@
 
 ---
 
+### 2026-08-18f（補回 /app/websites 刪除網站——硬切轉址時漏搬的功能）
+
+用戶回報：舊版前台可以自由刪除已測過的網站，新版沒了。查證：舊版 2026-06-19 才特地加的功能（[HomeDark.jsx:396](src/pages/HomeDark.jsx)，含 RLS delete policy），硬切轉址到 `/app` 時整個沒搬過去——[AppSites.jsx](src/components/appshell/AppSites.jsx) 原本零 delete 相關程式碼，是真的漏掉，不是刻意拿掉。
+
+**跟舊版不能照抄的地方**：舊版一筆掃描紀錄一張卡，刪一筆刪一列；新版依網域分組（2026-07-28 拍板：同網域不同頁面各自留著真實紀錄、不合併不刪 row），一張卡背後可能對應多筆 `websites` row。若照舊版邏輯只刪代表列，分組邏輯會挑另一筆頂上、卡片不會消失——用戶會以為刪除沒生效。
+
+**修法**：
+- [siteData.js](src/components/appshell/siteData.js) `buildSiteCards` 新增回傳 `websiteIds`（該網域底下**全部** row 的 id，不只代表列那一筆）。
+- [AppSites.jsx](src/components/appshell/AppSites.jsx) 卡片頁尾加 🗑 刪除鈕（`e.preventDefault()+stopPropagation()` 擋掉外層 Link 跳轉，同舊版手法）；`deleteSite()` 用 `supabase.from('websites').delete().in('id', card.websiteIds)` **一個 SQL 整組刪**（原子性，不會半刪）。
+- **兩層說明**（用戶要求）：①卡片頁尾常駐顯示「共 N 頁」（僅 pageCount>1 時出現，不干擾單頁站的清爽）②confirm() 對話框在 pageCount>1 時明講「這個網域底下共有 N 筆頁面紀錄，刪除會把整組一起移除」；刪除鈕 `title` tooltip 同步講清楚範圍。
+- 刪除中 disable 按鈕防重複點擊（`busyHost` state）；失敗走 `alert()` 同舊版，成功用樂觀更新從清單移除。
+
+**驗證**：eslint 兩檔 0 問題；CSS 大括號平衡；`buildSiteCards` 獨立跑過（foo.com 兩頁分組出 `websiteIds:['a1','a2']`、bar.com 單頁出 `['b1']`，符合預期）。⚠️ dev server 本次連不上（`EACCES: permission denied` 綁 port，環境問題、非程式碼問題），未能實機點擊驗證——**驗收時務必實際點一次刪除鈕**（含一個多頁網域），確認卡片真的消失、DB 沒留孤兒 row。
+
 ### 2026-08-18e（critique C：分數意義層 + 手機 inputMode）
 
 修 critique 的 C 項（P1「分數沒有意義層」＋ Casey persona 的手機鍵盤）。都在 [HomeLight.jsx](src/pages/HomeLight.jsx) / [homelight.css](src/styles/homelight.css)，`/app` 一律沒動。

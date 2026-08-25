@@ -61,6 +61,8 @@ export function buildSiteCards({ websites = [], brands = [], audits = {} } = {})
     return {
       host: group.host,
       websiteId: representative.id,
+      // 整組網域底下所有 websites row 的 id——刪除要整組刪，只刪代表列會讓卡片「刪了卻還在」
+      websiteIds: group.websites.map(website => website.id),
       name: brand?.name || representative.name || group.host,
       pageCount: group.websites.length,
       aivisState: brand ? 'linked' : 'unlinked',

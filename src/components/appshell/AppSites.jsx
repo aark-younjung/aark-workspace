@@ -15,6 +15,27 @@ const AUDIT_TABLES = {
 export default function AppSites() {
   const { user, siteLimit, tierName } = useAuth()
   const [state, setState] = useState({ loading: true, error: '', cards: [] })
+  const [busyHost, setBusyHost] = useState(null)   // 正在刪除中的 host（擋重複點擊）
+
+  // 刪除「我的網站」——整組網域底下所有 websites row 一起刪（同 host 分組邏輯，只刪代表列
+  // 會讓卡片消失後又因剩餘 row 重新冒出來、看起來像沒刪掉）。2026-06-19 舊版曾有此功能、
+  // 硬切轉址到 /app 時漏搬，這裡補回。RLS 需允許 owner 刪自己的站（已於當時建好 policy）。
+  async function deleteSite(card) {
+    const scopeNote = card.pageCount > 1
+      ? `\n這個網域底下共有 ${card.pageCount} 筆頁面紀錄，刪除會把整組一起移除`
+      : ''
+    if (!confirm(`確定要刪除「${card.name}」嗎？${scopeNote}\n所有掃描紀錄會一併移除，無法復原。`)) return
+    setBusyHost(card.host)
+    const { error } = await supabase.from('websites').delete().in('id', card.websiteIds)
+    if (error) {
+      console.error('[AppSites] delete website error:', error)
+      alert(`刪除失敗：${error.message || '請稍後再試'}`)
+      setBusyHost(null)
+      return
+    }
+    setState(current => ({ ...current, cards: current.cards.filter(c => c.host !== card.host) }))
+    setBusyHost(null)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -163,7 +184,26 @@ export default function AppSites() {
                   )}
                 </div>
               </div>
-              <div className="s-foot"><span>最後掃描：{formatLastScan(card.lastScannedAt)}</span><span aria-hidden="true">→</span></div>
+              <div className="s-foot">
+                <span>
+                  最後掃描：{formatLastScan(card.lastScannedAt)}
+                  {/* 同網域多筆頁面紀錄時明講出來——刪除鈕會一次刪掉這裡講的全部筆數 */}
+                  {card.pageCount > 1 && <span className="s-pages"> · 共 {card.pageCount} 頁</span>}
+                </span>
+                <span className="s-foot-r">
+                  <button
+                    type="button"
+                    className="s-del"
+                    disabled={busyHost === card.host}
+                    onClick={e => { e.preventDefault(); e.stopPropagation(); deleteSite(card) }}
+                    title={card.pageCount > 1
+                      ? `刪除會移除這個網域底下全部 ${card.pageCount} 筆頁面的掃描紀錄，無法復原`
+                      : '刪除這個網站的所有掃描紀錄，無法復原'}
+                    aria-label={`刪除 ${card.name}`}
+                  >{busyHost === card.host ? '…' : '🗑'}</button>
+                  <span aria-hidden="true">→</span>
+                </span>
+              </div>
             </Link>
           ))}
 
