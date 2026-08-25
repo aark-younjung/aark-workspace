@@ -6,6 +6,16 @@
 
 ---
 
+### 2026-08-18g（新版側欄找不到回首頁的路——加「＋ 新增網站」入口）
+
+用戶回報：新版連不回首頁，沒辦法重複掃描。查證 [AppShell.jsx](src/components/appshell/AppShell.jsx) 側欄：唯一可能連到 `/` 的「← 回經典版」連結，只在**還沒選定任何網站**時才連 `/`——一旦進到某個網站的總覽/體檢/曝光監測頁（`websiteId` 存在），它改連 `/dashboard-v2/:id`（經典舊儀表板），不是首頁。logo 也只是 `<div>`，點了沒反應。結果：人在任一網站頁面時，側欄完全沒有明講的路能回首頁掃新網址。
+
+**修法**：側欄「我的網站」下方加一個常駐 `<NavLink to="/" end>＋ 新增網站</NavLink>`（不管有沒有 `websiteId` 都在），文案沿用 [AppSites.jsx](src/components/appshell/AppSites.jsx) 既有 CTA 同一句（同狀態同字）。`end` prop 是必要的——NavLink 對 `to="/"` 預設會被任何路徑前綴匹配成「啟用中」，沒加會讓這一項在所有 `/app/*` 頁面都常駐高亮。`.as-nav` class 不在 900px 手機版的隱藏清單內（會被隱藏的只有 `.as-brand`/`.as-sp`），確認手機版也看得到。
+
+**沒動的地方**：AppOverview 既有的「🔄 重新掃描」（同一支 website 重新跑）本來就正常，這次只補「掃一個新網址／回首頁」這條路，沒有動到既有的 rescan 邏輯。
+
+**驗證**：eslint 0 問題；讀碼確認 `.as-nav` 未被手機 media query 隱藏。⚠️ 這次一樣沒能起本機 dev server（環境間歇性擋 port），沒有實機點擊。
+
 ### 2026-08-18f（補回 /app/websites 刪除網站——硬切轉址時漏搬的功能）
 
 用戶回報：舊版前台可以自由刪除已測過的網站，新版沒了。查證：舊版 2026-06-19 才特地加的功能（[HomeDark.jsx:396](src/pages/HomeDark.jsx)，含 RLS delete policy），硬切轉址到 `/app` 時整個沒搬過去——[AppSites.jsx](src/components/appshell/AppSites.jsx) 原本零 delete 相關程式碼，是真的漏掉，不是刻意拿掉。

@@ -10,6 +10,7 @@ const I = {
   target: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>,
   globe: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>,
   user: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>,
+  add: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>,
 }
 
 const navCls = ({ isActive }) => 'as-nav' + (isActive ? ' on' : '')
@@ -38,6 +39,11 @@ export default function AppShell() {
         {/* 2026-08-13 改名：內容缺口 → 內容機會（正向框架、日後承接文章工具與任務單；URL 維持 /gap 不破壞深連結） */}
         {wsItem('gap', I.target, '內容機會')}
         <NavLink to="/app/websites" className={navCls}>{I.globe}我的網站</NavLink>
+        {/* 用戶回報：進到任一網站頁面後側欄找不到回首頁的路（「回經典版」在有 websiteId 時
+            改連 /dashboard-v2、不連 /；logo 也只是 div、不可點）——加明講的入口，不靠猜。
+            文案同 AppSites.jsx 既有 CTA「＋ 新增網站」（同狀態同字）。 */}
+        {/* end：NavLink 對 to="/" 預設會被任何路徑前綴匹配成「啟用中」，加 end 避免整組選單常駐高亮 */}
+        <NavLink to="/" end className={navCls}>{I.add}＋ 新增網站</NavLink>
         {/* 競品格（AI 提及比較）：功能上線後加在此處＝選單最後一項，現在不佔位（2026-08-13 定案） */}
 
         <div className="as-sp" />
