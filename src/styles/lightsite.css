@@ -1,0 +1,60 @@
+/* ══════════════════════════════════════════════════════════════
+   亮色站台共用樣式（2026-08-26）— FAQ / Pricing / Showcase 共用。
+   Token 值對齊 .homelight/.appshell（同一套暖白·深藍·橘），全部 scope 在
+   .ls-page 底下：不外洩、不吃全站深色假設的毒。頁面各自的內容區塊樣式
+   寫在各自檔案（faq-light.css / pricing-light.css / showcase-light.css）。
+   ══════════════════════════════════════════════════════════════ */
+
+.ls-page{
+  --bg:#f4f5f7; --surface:#ffffff; --surface-2:#eef0f4; --surface-3:#e6e9ef;
+  --ink:#00003e; --ink-2:#4a4a63; --ink-3:#6e6e82;
+  --line:rgba(0,0,62,.08); --line-2:rgba(0,0,62,.14);
+  --accent:#ff6e34; --accent-2:#e85114; --accent-soft:rgba(255,110,52,.1);
+  --pop:#8298ff;
+  --seo:#2563eb; --aeo:#7c3aed; --geo:#059669; --eeat:#b45309;
+  --sh-sm:0 1px 2px rgba(0,0,62,.05);
+  --sh:0 1px 2px rgba(0,0,62,.04), 0 14px 32px rgba(0,0,62,.07);
+  --font:"PingFang TC","Microsoft JhengHei","Noto Sans TC",system-ui,-apple-system,sans-serif;
+  --mono:"SFMono-Regular","Cascadia Code","Consolas",ui-monospace,monospace;
+
+  position:relative; z-index:0;               /* 蓋過 -z-20 的全域暗底（同 .homelight 手法） */
+  min-height:100vh; background:var(--bg); color:var(--ink);
+  font-family:var(--font); -webkit-font-smoothing:antialiased;
+}
+.ls-page *{box-sizing:border-box;}
+
+/* 全域暗色主題的 input reset 用了 !important → 以更高特異度蓋回亮色（同 homelight.css 教訓） */
+html.dark-theme .ls-page input,
+html.dark-theme .ls-page textarea{
+  background-color:#fff !important; border-color:var(--line) !important; color:var(--ink) !important;
+}
+html.dark-theme .ls-page input::placeholder{ color:var(--ink-3) !important; }
+
+/* ── 按鈕家族（同 .homelight .hl-btn） ── */
+.ls-page .ls-btn{font-family:var(--font);font-weight:750;border:none;cursor:pointer;border-radius:11px;
+  transition:background-color .16s,transform .16s,box-shadow .16s;letter-spacing:.01em;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;}
+.ls-page .ls-cta{background:var(--accent);color:#fff;box-shadow:0 8px 18px rgba(255,110,52,.28);}
+.ls-page .ls-cta:hover{background:var(--accent-2);transform:translateY(-1px);box-shadow:0 12px 24px rgba(255,110,52,.34);}
+.ls-page .ls-ghost{background:transparent;color:var(--ink-2);}
+.ls-page .ls-ghost:hover{color:var(--ink);background:var(--surface-2);}
+.ls-page .ls-sm{padding:9px 17px;font-size:14.5px;}
+
+/* ── 頂部導覽 ── */
+.ls-page .ls-nav{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 26px;}
+.ls-page .ls-nav .r{display:flex;align-items:center;gap:6px;}
+.ls-page .ls-wm{display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit;}
+.ls-page .ls-wm .nm{font-weight:800;font-size:17px;letter-spacing:-.01em;}
+.ls-page .ls-mark .sweep{transform-origin:center;animation:ls-sweep 4s linear infinite;}
+@keyframes ls-sweep{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){ .ls-page .ls-mark .sweep{animation:none !important;} }
+
+/* ── 頁尾 ── */
+.ls-page .ls-bottom{border-top:1px solid var(--line);margin-top:64px;}
+.ls-page .ls-bottom .in{max-width:1180px;margin:0 auto;padding:22px 26px 34px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--ink-3);}
+.ls-page .ls-bottom a{color:var(--ink-2);text-decoration:none;}
+.ls-page .ls-bottom a:hover{color:var(--ink);}
+.ls-page .ls-bottom .co{margin-left:auto;}
+@media (max-width:640px){ .ls-page .ls-bottom .co{margin-left:0;} }
+
+/* ── 通用內容容器：頁面主體內縮，跟 hero/footer 對齊 ── */
+.ls-page .ls-wrap{max-width:900px;margin:0 auto;padding:0 26px;}

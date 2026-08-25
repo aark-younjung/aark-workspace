@@ -1,13 +1,20 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
-import Footer from '../components/Footer'
-import { T } from '../styles/v2-tokens'
-import { GlassCard } from '../components/v2'
-import NotificationBell from '../components/v2/NotificationBell'
-import AarkMark from '../components/v2/AarkMark'
+import SiteHeader from '../components/lightsite/SiteHeader'
+import SiteFooter from '../components/lightsite/SiteFooter'
+import '../styles/lightsite.css'
+import '../styles/faq-light.css'
 
+/**
+ * 常見問題（亮色版）— 2026-08-26 全面重做，不再吃 isDark 分支。
+ *
+ * 原本這頁有 dark/light（橘白舊版）雙分支，light 分支是已退役的橘白配色
+ * （CLAUDE.md：橘白版已下線，只留分支供未來切換復原）——不是這次要接軌的
+ * 目標視覺。改成跟 HomeLight/AppShell 同一套 token 的亮色版，不看 isDark，
+ * 一律亮色（同 .homelight 手法：opaque 背景蓋過全域暗色底）。
+ *
+ * 內容保留原有 4 分類全部題目，只修正「Perplexity」三引擎政策違規措辭
+ * （2026-07-17 已定案只講 ChatGPT／Claude／Gemini）。
+ */
 const FAQ_ITEMS = [
   {
     category: '基本概念',
@@ -15,7 +22,7 @@ const FAQ_ITEMS = [
     questions: [
       {
         q: '什麼是 AI 能見度？',
-        a: 'AI 能見度是指你的網站在 ChatGPT、Perplexity、Google AI Overview、Claude 等 AI 搜尋引擎中被「看見」、「理解」並「引用」的能力。傳統 SEO 讓你出現在 Google 搜尋結果，AI 能見度則讓你出現在 AI 的回答中。'
+        a: 'AI 能見度是指你的網站在 ChatGPT、Claude、Gemini 等 AI 搜尋引擎中被「看見」、「理解」並「引用」的能力。傳統 SEO 讓你出現在 Google 搜尋結果，AI 能見度則讓你出現在 AI 的回答中。'
       },
       {
         q: '什麼是 SEO？',
@@ -23,15 +30,15 @@ const FAQ_ITEMS = [
       },
       {
         q: '什麼是 AEO？',
-        a: '問答引擎最佳化（Answer Engine Optimization）是讓你的網站內容被 AI 助理直接引用為「答案」的技術。透過 JSON-LD 結構化資料、FAQ Schema、問句式標題等方式，讓 Siri、Google AI、ChatGPT 在回答用戶問題時優先選擇你的內容。'
+        a: '問答引擎最佳化（Answer Engine Optimization）是讓你的網站內容被 AI 助理直接引用為「答案」的技術。透過 JSON-LD 結構化資料、FAQ Schema、問句式標題等方式，讓 AI 在回答用戶問題時優先選擇你的內容。'
       },
       {
         q: '什麼是 GEO？',
-        a: '生成式引擎最佳化（Generative Engine Optimization）是針對 ChatGPT、Claude、Perplexity、Gemini 等生成式 AI 的優化策略。重點在於讓 AI 在生成長篇回答時，能夠引用並推薦你的品牌，而不是競爭對手。'
+        a: '生成式引擎最佳化（Generative Engine Optimization）是針對 ChatGPT、Claude、Gemini 等生成式 AI 的優化策略。重點在於讓 AI 在生成長篇回答時，能夠引用並推薦你的品牌，而不是競爭對手。'
       },
       {
         q: '什麼是 LLMO？跟 GEO、AEO 差在哪？',
-        a: 'LLMO（Large Language Model Optimization，大型語言模型優化）是 2024-2025 興起的新概念，業界也叫「AI 搜尋優化」或「生成式 AI 曝光」— 它是大傘、不是子集。傘下包含：①SEO（讓 Google 找到你 — 基礎底盤）、②AEO（讓 AI 把你當答案、引用你的內容）、③GEO（讓生成式 AI 在長篇回答推薦你）、④E-E-A-T（讓 AI 判斷你可信、值得引用）、⑤跨 LLM 引用率追蹤（實際量化你在 ChatGPT / Perplexity / Gemini 被提幾次）。方舟 AI 雷達把 LLMO 拆成這 5 個可測量子訊號、各自打分、合成總分。市面上多數工具只做 SEO 一層、方舟 AI 雷達是台灣第一個完整覆蓋 LLMO 的監測平台。'
+        a: 'LLMO（Large Language Model Optimization，大型語言模型優化）是 2024-2025 興起的新概念，業界也叫「AI 搜尋優化」或「生成式 AI 曝光」— 它是大傘、不是子集。傘下包含：①SEO（讓 Google 找到你 — 基礎底盤）、②AEO（讓 AI 把你當答案、引用你的內容）、③GEO（讓生成式 AI 在長篇回答推薦你）、④E-E-A-T（讓 AI 判斷你可信、值得引用）、⑤跨 LLM 引用率追蹤（實際量化你在 ChatGPT、Claude、Gemini 被提幾次）。方舟 AI 雷達把 LLMO 拆成這 5 個可測量子訊號、各自打分、合成總分。市面上多數工具只做 SEO 一層、方舟 AI 雷達是台灣第一個完整覆蓋 LLMO 的監測平台。'
       },
       {
         q: '什麼是 E-E-A-T？',
@@ -39,7 +46,7 @@ const FAQ_ITEMS = [
       },
       {
         q: 'SEO、AEO、GEO、LLMO、E-E-A-T 到底差在哪？我需要哪個？',
-        a: 'LLMO 是大傘、其他 4 個是傘下的子訊號層：①SEO 解 Google 排名（地基，沒這個 AI 也找不到你）；②AEO 解答案引擎引用（Google Featured Snippets、語音助理）；③GEO 解生成式 AI 推薦（ChatGPT、Perplexity 長篇答案）；④E-E-A-T 解可信度（AI 判斷你值不值得引用的訊號）；⑤aivis 解結果驗證（實際追蹤你被跨 LLM 引用的次數）。5 個訊號不是替代關係、是疊加關係。方舟 AI 雷達一次幫你看完全部 — 從 Meta tag 到 llms.txt、從作者 bio 到 ChatGPT 引用率。'
+        a: 'LLMO 是大傘、其他 4 個是傘下的子訊號層：①SEO 解 Google 排名（地基，沒這個 AI 也找不到你）；②AEO 解答案引擎引用（Google Featured Snippets、語音助理）；③GEO 解生成式 AI 推薦（ChatGPT、Claude、Gemini 長篇答案）；④E-E-A-T 解可信度（AI 判斷你值不值得引用的訊號）；⑤aivis 解結果驗證（實際追蹤你被跨 LLM 引用的次數）。5 個訊號不是替代關係、是疊加關係。方舟 AI 雷達一次幫你看完全部 — 從 Meta tag 到 llms.txt、從作者 bio 到 ChatGPT 引用率。'
       },
     ]
   },
@@ -57,11 +64,11 @@ const FAQ_ITEMS = [
       },
       {
         q: '分數代表什麼意思？',
-        a: '分數範圍為 0–100，代表該面向的優化完整度。70 分以上為良好，50–70 分有改善空間，50 分以下需要優先處理。儀表板中的 AI 優化工具會根據你的失敗項目，自動列出最重要的 5 條改善行動。'
+        a: '分數範圍為 0–100，代表該面向的優化完整度。70 分以上為良好，50–70 分有改善空間，50 分以下需要優先處理。登入後的「網站體檢」會依你的失敗項目，列出對應的改善行動與可直接複製的修復程式碼。'
       },
       {
         q: '可以分析競爭對手的網站嗎？',
-        a: '可以。你可以使用「競品比較」功能，同時分析自己和對手的網站，並以雷達圖呈現四個面向的差距。這有助於找出競爭對手的優勢，以及你可以快速超越的機會點。'
+        a: '可以。你可以在「AI 曝光監測」的「競品比較」分頁設定觀察名單，在同一批問句下比較自己和對手被 AI 提及的比例，找出落後與領先的地方。'
       },
       {
         q: '分析結果會儲存嗎？',
@@ -79,7 +86,7 @@ const FAQ_ITEMS = [
     questions: [
       {
         q: '免費方案有什麼限制？',
-        a: '免費方案可以進行基本的 SEO、AEO、GEO、E-E-A-T 檢測，查看分數與主要問題。Pro 方案額外提供：完整的修復建議、程式碼修復產生器、歷史趨勢追蹤、競品比較功能，以及 PDF 報告匯出。'
+        a: '免費方案可以進行基本的 SEO、AEO、GEO、E-E-A-T 檢測，查看分數與主要問題。Pro 方案額外提供：完整的修復建議、程式碼修復產生器、歷史趨勢追蹤、競品比較功能、AI 曝光監測，以及 PDF 報告匯出。'
       },
       {
         q: 'Pro 方案值得嗎？',
@@ -123,100 +130,10 @@ const FAQ_ITEMS = [
   },
 ]
 
-// FAQ 折疊項 — dark 版用 GlassCard + T.orange hover 邊；light 版維持原 bg-white/50
-function FAQItem({ catIdx, qIdx, item, isOpen, onToggle, isDark }) {
-  if (isDark) {
-    return (
-      <GlassCard color={T.orange} style={{ overflow: 'hidden', padding: 0 }}>
-        <button
-          onClick={() => onToggle(catIdx, qIdx)}
-          className="w-full flex items-center justify-between px-6 py-4 text-left gap-4"
-        >
-          <span className="font-semibold text-sm leading-relaxed" style={{ color: T.text }}>{item.q}</span>
-          <span
-            className={`flex-shrink-0 text-lg transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`}
-            style={{ color: T.orange }}
-          >+</span>
-        </button>
-        {isOpen && (
-          <div className="px-6 pb-5">
-            <div className="h-px mb-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
-            <p className="text-sm leading-relaxed" style={{ color: T.textMid }}>{item.a}</p>
-          </div>
-        )}
-      </GlassCard>
-    )
-  }
-  return (
-    <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl overflow-hidden shadow-sm">
-      <button
-        onClick={() => onToggle(catIdx, qIdx)}
-        className="w-full flex items-center justify-between px-6 py-4 text-left gap-4"
-      >
-        <span className="font-semibold text-slate-800 text-sm leading-relaxed">{item.q}</span>
-        <span className={`text-orange-500 flex-shrink-0 text-lg transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`}>+</span>
-      </button>
-      {isOpen && (
-        <div className="px-6 pb-5">
-          <div className="h-px bg-orange-100 mb-4" />
-          <p className="text-slate-600 text-sm leading-relaxed">{item.a}</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function FAQ() {
-  const { user, isPro, userName, signOut } = useAuth()
-  const { isDark } = useTheme()
-  const [openItems, setOpenItems] = useState({})
-
-  const toggle = (catIdx, qIdx) => {
-    const key = `${catIdx}-${qIdx}`
-    setOpenItems(prev => ({ ...prev, [key]: !prev[key] }))
-  }
-
   return (
-    <div
-      className="min-h-screen relative overflow-hidden"
-      style={isDark
-        ? { background: '#000' }
-        : { background: 'radial-gradient(ellipse at 65% 35%, #fb923c 0%, #fed7aa 22%, #fff7ed 50%, #e1ddd2 78%)' }
-      }
-    >
-      {/* dark 模式雙端漸層 — 與 HomeDark 一致，上方左上亮 + 下方右下亮，中段純黑
-         FAQ 頁高度約 2500-3500px，bottom 用 1800px 即可避免兩層全頁覆蓋 */}
-      {isDark && (
-        <>
-          <div className="absolute top-0 left-0 right-0 pointer-events-none z-0" style={{
-            height: '2400px',
-            background: 'var(--t-bg, linear-gradient(155deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%))',
-            mixBlendMode: 'lighten',
-          }} />
-          <div className="absolute bottom-0 left-0 right-0 pointer-events-none z-0" style={{
-            height: '1800px',
-            background: 'linear-gradient(335deg, #18c590 0%, #0d7a58 10%, #084773 15%, #011520 30%, #000000 50%)',
-            mixBlendMode: 'lighten',
-          }} />
-        </>
-      )}
-
-      {/* 雜訊疊層 — dark 用 0.12/overlay，light 用 0.25/overlay */}
-      <div className="absolute inset-0 pointer-events-none z-0" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='${isDark ? 4 : 3}' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
-        opacity: isDark ? 0.12 : 0.25,
-        mixBlendMode: 'overlay',
-      }} />
-
-      {/* light 模式才有的橘色點陣紋路（dark 模式不需要） */}
-      {!isDark && (
-        <div className="absolute inset-0 pointer-events-none z-0" style={{
-          backgroundImage: 'radial-gradient(circle, rgba(249,115,22,0.15) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-        }} />
-      )}
-
-      {/* JSON-LD FAQ Schema — SEO 必要，dark/light 都要保留 */}
+    <div className="ls-page faq-light">
+      {/* JSON-LD FAQ Schema — SEO 必要 */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
@@ -227,163 +144,39 @@ export default function FAQ() {
         })))
       }) }} />
 
-      {/* Header — dark 用 bg-black/50 + 白色文字，light 維持原 bg-white/30 */}
-      <header className={`relative sticky top-0 z-40 border-b backdrop-blur-md ${
-        isDark ? 'border-white/8 bg-black/50' : 'border-white/40 bg-white/30'
-      }`}>
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          {/* Logo（2026-06-06 v3）— C 方向 radar dial mark + Aark wordmark + AI 雷達 中文副標 */}
-          <Link to="/" className="flex items-center gap-2 no-underline">
-            <AarkMark size={32} color={isDark ? '#18c590' : '#0d7a58'} className="flex-shrink-0" />
-            <span className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}
-              style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                letterSpacing: '-0.04em',
-              }}>
-              Aark
-            </span>
-            <span className={`hidden sm:inline text-sm ${isDark ? 'text-white/55' : 'text-slate-500'}`}>· AI 雷達</span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link to="/" className={`hidden sm:block text-sm transition-colors ${
-              isDark ? 'text-white/85 hover:text-orange-300' : 'text-slate-600 hover:text-slate-900'
-            }`}>首頁</Link>
-            <Link to="/pricing" className={`hidden sm:block text-sm transition-colors ${
-              isDark ? 'text-white/85 hover:text-orange-300' : 'text-slate-600 hover:text-slate-900'
-            }`}>定價</Link>
-            <NotificationBell />
-            {user ? (
-              <>
-                {!isPro && (
-                  <Link to="/pricing" className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm sm:text-sm rounded-lg transition-colors font-medium">升級 Pro</Link>
-                )}
-                <Link to="/account" className="w-8 h-8 rounded-full overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0" title={userName || user.email}>
-                  {user?.user_metadata?.avatar_url ? (
-                    <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white text-sm font-bold">
-                      {(userName || user?.email || '?').slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                </Link>
-                <button onClick={signOut} className={`text-sm sm:text-sm transition-colors ${
-                  isDark ? 'text-white/50 hover:text-white/85' : 'text-slate-400 hover:text-slate-700'
-                }`}>登出</button>
-              </>
-            ) : (
-              <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm sm:text-sm rounded-lg transition-colors font-medium">登入</Link>
-            )}
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
-      <main className="relative z-10 max-w-3xl mx-auto px-6 py-16">
-        {/* Hero — dark 用 T.orange 膠囊 + T.text H1 + T.textMid 副標 */}
-        <div className="text-center mb-14">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-6"
-            style={isDark
-              ? { background: `color-mix(in srgb, ${T.orange} 12%, transparent)`, border: `1px solid color-mix(in srgb, ${T.orange} 33%, transparent)`, color: T.orange }
-              : { background: '#fed7aa55', color: '#ea580c' }
-            }
-          >
-            💬 常見問題
-          </div>
-          <h1
-            className="text-4xl font-bold mb-4"
-            style={isDark
-              ? { color: T.text, letterSpacing: '-0.02em' }
-              : { color: '#1e293b' }
-            }
-          >有任何問題嗎？</h1>
-          <p
-            className="text-lg"
-            style={isDark
-              ? { color: T.textMid, lineHeight: 1.7 }
-              : { color: '#64748b' }
-            }
-          >關於 AI 能見度、工具使用與方案的常見問題解答</p>
+      <main className="ls-wrap fq-main">
+        <div className="fq-hero">
+          <span className="fq-badge">💬 常見問題</span>
+          <h1>有任何問題嗎？</h1>
+          <p>關於 AI 能見度、工具使用與方案的常見問題解答</p>
         </div>
 
-        {/* FAQ 分類 */}
-        <div className="space-y-10">
-          {FAQ_ITEMS.map((cat, catIdx) => (
-            <div key={catIdx}>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xl">{cat.icon}</span>
-                <h2
-                  className="text-lg font-bold"
-                  style={isDark ? { color: T.text } : { color: '#334155' }}
-                >{cat.category}</h2>
-              </div>
-              <div className="space-y-3">
-                {cat.questions.map((item, qIdx) => {
-                  const key = `${catIdx}-${qIdx}`
-                  return (
-                    <FAQItem
-                      key={qIdx}
-                      catIdx={catIdx}
-                      qIdx={qIdx}
-                      item={item}
-                      isOpen={openItems[key]}
-                      onToggle={toggle}
-                      isDark={isDark}
-                    />
-                  )
-                })}
-              </div>
+        {FAQ_ITEMS.map((cat, catIdx) => (
+          <section className="fq-cat" key={catIdx}>
+            <div className="fq-cat-hd"><span className="ic" aria-hidden="true">{cat.icon}</span><h2>{cat.category}</h2></div>
+            <div className="fq-list">
+              {cat.questions.map((item, qIdx) => (
+                <details className="fq-item" key={qIdx}>
+                  <summary>{item.q}</summary>
+                  <p>{item.a}</p>
+                </details>
+              ))}
             </div>
-          ))}
-        </div>
+          </section>
+        ))}
 
-        {/* CTA — dark 用 GlassCard，light 維持原樣 */}
-        {isDark ? (
-          <GlassCard color={T.orange} style={{ marginTop: 64, padding: 32, textAlign: 'center' }}>
-            <div className="text-3xl mb-3">🚀</div>
-            <h2 className="text-xl font-bold mb-2" style={{ color: T.text }}>還有其他問題？</h2>
-            <p className="text-sm mb-4" style={{ color: T.textMid }}>直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
-            <Link to="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-900/60">
-              取得我的免費報告 →
-            </Link>
-            <p className="mt-4 text-sm" style={{ color: T.textMid }}>
-              或直接寫信給我們：
-              <a href="mailto:aark.younjung@gmail.com" className="font-medium ml-1" style={{ color: T.orange }}>
-                aark.younjung@gmail.com
-              </a>
-            </p>
-          </GlassCard>
-        ) : (
-          <div className="mt-16 p-8 bg-white/50 backdrop-blur-md border border-white/60 rounded-2xl text-center shadow-sm">
-            <div className="text-3xl mb-3">🚀</div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">還有其他問題？</h2>
-            <p className="text-slate-500 text-sm mb-4">直接用你的網址試試看，60 秒內看到完整 AI 能見度報告</p>
-            <Link to="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-200">
-              取得我的免費報告 →
-            </Link>
-            <p className="mt-4 text-sm text-slate-500">
-              或直接寫信給我們：
-              <a href="mailto:aark.younjung@gmail.com" className="text-orange-500 hover:text-orange-600 font-medium ml-1">
-                aark.younjung@gmail.com
-              </a>
-            </p>
-          </div>
-        )}
-
-        {/* Footer nav */}
-        <div className="mt-6 text-center">
-          <Link
-            to="/"
-            className="text-sm transition-colors"
-            style={isDark
-              ? { color: T.textLow }
-              : undefined
-            }
-          >← 返回首頁</Link>
+        <div className="fq-cta">
+          <div className="ic" aria-hidden="true">🚀</div>
+          <h2>還有其他問題？</h2>
+          <p>直接用你的網址試試看，30 秒內看到 AI 能見度分數</p>
+          <Link to="/" className="ls-btn ls-cta">取得我的免費報告 →</Link>
+          <p className="mail">或直接寫信給我們：<a href="mailto:aark.younjung@gmail.com">aark.younjung@gmail.com</a></p>
         </div>
       </main>
-      <Footer />
+
+      <SiteFooter />
     </div>
   )
 }

@@ -1,0 +1,42 @@
+/* ══════════════════════════════════════════════════════════════
+   /faq 頁專屬樣式（2026-08-26）— 疊在 lightsite.css 共用 token 之上。
+   ══════════════════════════════════════════════════════════════ */
+
+.faq-light .fq-main{padding:20px 26px 8px;max-width:760px;}
+
+.faq-light .fq-hero{text-align:center;margin-bottom:44px;}
+.faq-light .fq-badge{display:inline-flex;font-size:13px;font-weight:700;color:var(--accent-2);
+  background:var(--accent-soft);padding:6px 15px;border-radius:999px;margin-bottom:18px;}
+.faq-light .fq-hero h1{font-size:clamp(28px,4vw,36px);font-weight:850;color:var(--ink);margin:0 0 12px;letter-spacing:-.01em;}
+.faq-light .fq-hero p{font-size:16px;color:var(--ink-2);line-height:1.7;margin:0;}
+
+.faq-light .fq-cat{margin-bottom:36px;}
+.faq-light .fq-cat-hd{display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+.faq-light .fq-cat-hd .ic{font-size:19px;}
+.faq-light .fq-cat-hd h2{font-size:17px;font-weight:800;color:var(--ink);margin:0;}
+.faq-light .fq-list{display:flex;flex-direction:column;gap:10px;}
+
+.faq-light .fq-item{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+  padding:16px 18px;box-shadow:var(--sh-sm);}
+.faq-light .fq-item summary{cursor:pointer;font-size:14.5px;font-weight:650;color:var(--ink);list-style:none;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;line-height:1.5;}
+.faq-light .fq-item summary::-webkit-details-marker{display:none;}
+.faq-light .fq-item summary::after{content:"+";flex:none;font-size:19px;font-weight:400;color:var(--accent-2);
+  transition:transform .18s;line-height:1;}
+.faq-light .fq-item[open] summary::after{transform:rotate(45deg);}
+.faq-light .fq-item summary:focus-visible{outline:2px solid rgba(130,152,255,.55);outline-offset:3px;border-radius:6px;}
+.faq-light .fq-item p{font-size:14.5px;color:var(--ink-2);line-height:1.75;margin:14px 0 0;padding-top:14px;border-top:1px solid var(--line);}
+
+.faq-light .fq-cta{margin-top:56px;padding:36px 32px;text-align:center;background:var(--surface);
+  border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh);}
+.faq-light .fq-cta .ic{font-size:30px;margin-bottom:10px;}
+.faq-light .fq-cta h2{font-size:20px;font-weight:800;color:var(--ink);margin:0 0 8px;}
+.faq-light .fq-cta p{font-size:14.5px;color:var(--ink-2);margin:0 0 18px;}
+.faq-light .fq-cta .mail{margin:16px 0 0;font-size:13.5px;color:var(--ink-3);}
+.faq-light .fq-cta .mail a{color:var(--accent-2);font-weight:600;text-decoration:none;}
+.faq-light .fq-cta .mail a:hover{text-decoration:underline;}
+
+@media (max-width:640px){
+  .faq-light .fq-main{padding:12px 20px 8px;}
+  .faq-light .fq-cta{padding:28px 20px;}
+}

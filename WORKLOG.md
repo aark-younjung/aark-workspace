@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-08-26a（🚀 /faq、/pricing、/showcase 全面亮色化——首頁硬切前答應過的三個頁面）
+
+用戶拍板繼續做首頁硬切前延後的三個頁面（點首頁排行榜/FAQ/早鳥 banner「查看更多」進去還是暗色頁面的落差）。三頁都不再吃 `isDark` 分支——那個分支是已退役的橘白舊版（CLAUDE.md 明講「留給未來切換復原」，`isDark` 全站預設 `true` 從未真的顯示過），不是這次要接軌的目標視覺。改成跟 HomeLight/AppShell 同一套 token、一律亮色（同 `.homelight` 手法：opaque 背景蓋過全域暗色底）。
+
+**新增共用元件**（三頁都用，比照 `.homelight`/`.appshell` 慣例）：
+- [SiteHeader.jsx](src/components/lightsite/SiteHeader.jsx) + [SiteFooter.jsx](src/components/lightsite/SiteFooter.jsx)：文案/結構照抄 HomeLight 的 hl-nav/hl-bottom（同狀態同字）。
+- [lightsite.css](src/styles/lightsite.css)：三頁共用 token（跟 homelight/appshell 同一套暖白·深藍·橘數值）+ 導覽/頁尾樣式。各頁再疊自己的 `*-light.css`。
+
+**/faq**（[FAQ.jsx](src/pages/FAQ.jsx)）：內容全部保留（4 分類、24 題），改用原生 `<details>` 取代原本的 `useState` 開合狀態（少一整層 state）。
+
+**/pricing**（[Pricing.jsx](src/pages/Pricing.jsx)）— **這頁碰真金流，處理方式跟前兩頁不同**：state、`useEffect`（stats 拉取／profile refetch／`pro_success` toast）、`handleStartTrial`、`handleUpgrade`（含 NewebPay 表單動態建立送出）**逐字保留**，只換視覺層。改完用 `diff` 逐一比對 `handleStartTrial`／`handleUpgrade`／價格常數／三個 FEATURES 陣列／兩個 `useEffect` 區塊，全部跟 git HEAD 版本位元級相同，才敢認定沒有動到金流邏輯。**查到但沒修的既有問題**：Sticky 早鳥 bar 本來就沒有 `earlybirdAvailable` 判斷式包住，早鳥名額售完後這條 bar 理論上會顯示「剩負數名」——這是舊碼本來就有的缺口，不在這次「純視覺重做」範圍內，沒有動，但要記錄下來、之後找機會補。
+
+**/showcase**（[Showcase.jsx](src/pages/Showcase.jsx)）：`fetchData`／`SAMPLE_SITES`／排序與輪播衍生邏輯同樣逐一 diff 比對過、位元級相同。原本 `scoreColor` 回傳 Tailwind 深色 class（`text-green-400` 等），改回傳 CSS 變數/hex（跟 ShowcaseTeaser.jsx／lp-sage.css 同一套配色語言）。
+
+**四處順手修正的三引擎違規文案**（跟這次重做不直接相關，但既然逐字讀過內容就一起清）：Pricing.jsx 5 處「Perplexity」（FAQ 內容 3 處 + hero 文案 1 處 + 痛點文案 1 處）全改成 ChatGPT／Claude／Gemini。
+
+**驗證**：eslint 三頁 0 問題；三個新 CSS 檔大括號平衡；dev server 逐一確認三頁與新元件/CSS 皆 200。⚠️ 沒有瀏覽器實機看過任何一頁的最終呈現——這三頁份量都不小（Pricing 尤其是多狀態卡片＋金流按鈕），**強烈建議部署後實際跑一輪**：/faq 點開幾題手風琴、/pricing 切年繳月繳＋（若方便）用測試帳號跑一次試用或早鳥流程確認按鈕沒失效、/showcase 切排行榜五個分頁＋看進步之星輪播與成功案例跑馬燈動畫。
+
 ### 2026-08-19g（首頁字級偏小——比照 2026-08-13 appshell.css 那次的校準手法補上）
 
 用戶回報「整體網站文字偏小，記得舊版沒這麼小」。先量測不用猜：`HomeDark.jsx` 的 Tailwind 文字 class 裡 `text-sm`（14px）用了 61 次、是壓倒性的主要正文基準，`text-base`（16px）也用了 12 次；而 [homelight.css](src/styles/homelight.css) 當時最大宗的兩級是 13.5px（10 處）跟 13px（9 處）——確實全面比舊版基準矮一截，記憶沒錯。
