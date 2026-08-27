@@ -139,15 +139,22 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
   background:var(--surface-2);border-radius:12px;padding:12px 14px;}
 /* 動作列：改掃首頁（主）＋重試（次，倒數期間停用） */
 .homelight .hl-fail .ops{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+/* .hl-btn 本身刻意不帶 padding（.hl-sm／.hl-scan .hl-btn 各自給），這裡沿用 hero 掃描鈕的數值 */
+.homelight .hl-fail .hl-btn{padding:11px 20px;font-size:14.5px;white-space:nowrap;}
+/* 次要鈕補一圈框線：hl-ghost 是全透明的，在白卡片上沒有框就讀不出來是可以點的東西 */
+.homelight .hl-fail .hl-ghost{border:1px solid var(--line-2);}
 .homelight .hl-fail .ops .hl-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
 /* email 收集：跟卡片其他區塊用一條分隔線隔開，讀起來是「另一件事」不是失敗訊息的一部分 */
 .homelight .hl-fail .notify{border-top:1px solid var(--line);padding-top:16px;}
 .homelight .hl-fail .notify label{display:block;font-size:14px;font-weight:700;
   color:var(--ink);margin-bottom:9px;}
 .homelight .hl-fail .notify .row{display:flex;gap:10px;flex-wrap:wrap;}
+/* border-color / background-color 必須帶 !important：檔頭那條 html.dark-theme .homelight input
+   的暗色 reset 用了 !important 把邊框設成透明，不蓋回來這個輸入框會看起來像一段純文字 */
 .homelight .hl-fail .notify input{flex:1;min-width:220px;border:1px solid var(--line-2);
-  border-radius:12px;padding:11px 14px;font-size:15px;background:var(--surface);color:var(--ink);}
-.homelight .hl-fail .notify input:focus{outline:none;border-color:var(--accent);
+  border-color:var(--line-2)!important;background-color:var(--surface)!important;
+  border-radius:12px;padding:11px 14px;font-size:15px;color:var(--ink);}
+.homelight .hl-fail .notify input:focus{outline:none;border-color:var(--accent)!important;
   box-shadow:0 0 0 3px var(--accent-soft);}
 .homelight .hl-fail .ok{border-top:1px solid var(--line);padding-top:16px;margin:0;
   font-size:14.5px;font-weight:700;color:#047857;}

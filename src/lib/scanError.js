@@ -58,6 +58,16 @@ export function classifyScanError(error) {
       action: '過幾分鐘再掃一次通常就好。',
     }
   }
+  // DNS 要排在逾時前面：後端三輪直連全掛時，DNS 失敗與「連得上但沒回應」的表徵一樣，
+  // 只有 dnsFailed 旗標分得出來。順序寫反的話打錯網址的人會被告知「你掃太多次被限流」。
+  if (error?.dnsFailed) {
+    return {
+      ...base, kind: 'network', retryable: false, userFixable: true, sellable: false,
+      title: '查不到這個網域',
+      hint: 'DNS 沒有回傳任何位址——這個網域名稱在網路上找不到。最常見的原因是網址拼錯，其次是網域過期或還沒設定 DNS。',
+      action: '檢查一下拼字（尤其是 .com／.com.tw 這種結尾），或直接複製瀏覽器網址列的網址再貼一次。',
+    }
+  }
   if (isTimeout) {
     return {
       ...base, kind: 'timeout', retryable: true, userFixable: false, sellable: false,

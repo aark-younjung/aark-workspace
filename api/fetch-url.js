@@ -115,6 +115,14 @@ export default async function handler(req, res) {
     let uaFallback = false       // true 代表用了第二或第三輪 UA
     let antiBotBlocked = false   // true 代表 3 輪都被擋 = 真的鎖很嚴
 
+    // 2026-08-27：把「這個網域根本不存在」跟「連得上但沒回應」分開。
+    // 舊版三輪直連全失敗一律回 timedOut:true，前端就照逾時的話術講「可能是短時間掃太多次
+    // 被限流」——客戶打錯自家網址時看到的是這段完全不相干的解釋，而真正的原因（拼錯字）
+    // 被藏起來。這裡收集三輪直連各自的錯誤碼，全部都是 DNS 級失敗才判定為「查無此網域」。
+    const uaRoundErrors = []
+    const DNS_CODES = ['ENOTFOUND', 'EAI_AGAIN', 'EAI_NODATA', 'ERR_NAME_NOT_RESOLVED']
+    const isDnsError = err => DNS_CODES.includes(err?.cause?.code || err?.code)
+
     // helper：判斷該不該嘗試下一輪 — null response（前輪 timeout/throw）或 anti-bot status 都該繼續
     const shouldFallback = (r) => !r || [403, 503, 429].includes(r.status)
 
@@ -136,11 +144,13 @@ export default async function handler(req, res) {
           sslFallback = true
         } catch (retryErr) {
           console.error(`[fetch-url] SSL fallback failed for ${hostname}:`, retryErr.message)
+          uaRoundErrors.push(retryErr)
           response = null   // SSL fallback 也失敗 → 讓後續輪有機會（雖然 SSL 是該 host 通病，但說不定 cdn IP 改了）
         }
       } else {
         // timeout / network error：不 throw，讓後續輪嘗試（Round 1 timeout 的網站 Round 2 可能成功）
         console.warn(`[fetch-url] Round 1 (Googlebot) failed for ${hostname}: ${err.message}`)
+        uaRoundErrors.push(err)
         response = null
       }
     }
@@ -155,6 +165,7 @@ export default async function handler(req, res) {
         uaFallback = true
       } catch (uaErr) {
         console.error(`[fetch-url] Chrome UA fallback failed for ${hostname}:`, uaErr.message)
+        uaRoundErrors.push(uaErr)
         // 不更新 response — 維持 Round 1 結果（或 null）
       }
     }
@@ -169,6 +180,7 @@ export default async function handler(req, res) {
         uaFallback = true
       } catch (botErr) {
         console.error(`[fetch-url] Bingbot UA fallback failed for ${hostname}:`, botErr.message)
+        uaRoundErrors.push(botErr)
       }
     }
 
@@ -218,6 +230,21 @@ export default async function handler(req, res) {
     // 我們的抓取器在美國機房，對「回應慢」或「擋機房 IP」的台灣小站可能連不上；
     // 但真正的 AI 引擎（ChatGPTBot 等）走自己的 IP —— 我們連不上 ≠ AI 連不上。
     // 所以這裡不謊報「對 AI 完全隱形」，回逾時、請重試（2026-07-17 修 false CRITICAL 警報）。
+    // 三輪直連全都是 DNS 級失敗 → 這個網域查不到，不是逾時。分開回報，前端才講得出正確的話。
+    if (!response && uaRoundErrors.length > 0 && uaRoundErrors.every(isDnsError)) {
+      return res.status(502).json({
+        error: 'DNS lookup failed',
+        fetchTime,
+        sslFallback,
+        uaFallback,
+        proxyFallback,
+        antiBotBlocked: false,
+        timedOut: false,
+        dnsFailed: true,
+        hint: '這個網域查不到——DNS 沒有回傳任何位址。最常見的原因是網址拼錯，其次是網域過期或尚未設定 DNS。',
+      })
+    }
+
     if (!response) {
       return res.status(504).json({
         error: 'All fetch rounds timed out',

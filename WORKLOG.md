@@ -6,6 +6,30 @@
 
 ---
 
+### 2026-08-27c（失敗卡實測抓到兩個 bug：DNS 失敗被講成「你掃太多次」＋按鈕沒有 padding）
+
+用戶照建議掃 `this-domain-does-not-exist-99999.com` 驗收失敗卡，截圖回報。卡片本體對了，但露出兩個問題：
+
+**1. 分類錯誤——而且是會誤導客戶的那種（真 bug）**
+
+不存在的網域顯示的是逾時話術：「最常見的原因是短時間內對同一個網站掃太多次，被對方主機的速率限制暫時擋住」。**完全不相干**——真正的原因是 DNS 查無此網域。查根因：[api/fetch-url.js](api/fetch-url.js) 三輪直連全失敗時**一律**回 `timedOut:true`（實測那個網域回 504 + `timedOut:true`、耗時 19.4 秒），前端只能照逾時講。真實情境下這個 bug 的受害者是**打錯自家網址的客戶**：他看到一段看不懂又不適用的限流解釋，真正的原因（拼錯字）反而被藏起來。
+
+- 後端：三輪直連各自的錯誤存進 `uaRoundErrors`，判斷 `err.cause?.code` 是否為 `ENOTFOUND`／`EAI_AGAIN`／`EAI_NODATA`／`ERR_NAME_NOT_RESOLVED`。**全部都是 DNS 級失敗**才回新的 502 + `dnsFailed:true`（只要有一輪是別種失敗就仍走原本的逾時路徑，不搶答）。
+- [seoAnalyzer.js](src/services/seoAnalyzer.js) `fetchPageContent` 把 `dnsFailed` 掛上 error 物件（比照既有的 `timedOut`）。
+- [lib/scanError.js](src/lib/scanError.js) 新增「查不到這個網域」分類，**且必須排在 `isTimeout` 之前**——兩者在後端表徵一樣，只有旗標分得出來，順序寫反等於沒修。標 `userFixable:true`，所以**不收 email**（打錯字不是我們掃不到，收了也沒用）。
+
+**2. 兩個按鈕沒有 padding（視覺 bug）**
+
+截圖裡「重試這個網址」是一行純文字、「通知我」擠成小方塊貼在右邊。根因：[homelight.css](src/styles/homelight.css) 的 `.hl-btn` **本身刻意不帶 padding**（由 `.hl-sm`／`.hl-scan .hl-btn` 等各情境自己給），我在 ScanFailCard 用了 `hl-btn hl-cta` 卻沒給尺寸類。補 `.hl-fail .hl-btn{padding:11px 20px;font-size:14.5px}`（沿用 hero 掃描鈕數值），並給 `.hl-ghost` 補一圈 `--line-2` 框線——它整個透明，在白卡片上沒有框就讀不出來能點。
+
+**3. email 輸入框沒有邊框**
+
+同一張截圖裡 email 欄位看起來像純文字。根因是 homelight.css 檔頭那條 `html.dark-theme .homelight input` 暗色 reset 用了 `border-color:transparent !important`，把我的 `.notify input` 邊框吃掉。用同等武器蓋回來（`border-color`／`background-color` 各加 `!important`），註解寫明為什麼這裡非用 `!important` 不可。
+
+**驗證**：`node --check api/fetch-url.js` 通過；用 node 直接載入 `scanError.js` 單測分類順序，確認 `dnsFailed` 走「查不到這個網域」（userFixable=true）、`timedOut` 仍走逾時、`homepageOf` 內頁/首頁兩種輸入都正確；eslint 0 問題；CSS 大括號平衡 229/229。⚠️ 後端改動沒辦法本機驗（vite dev 不跑 /api），要等部署後對 `this-domain-does-not-exist-99999.com` 重打一次確認回 `dnsFailed:true`。
+
+**驗收 email 表單要用別的網址**：DNS 失敗現在標成 userFixable、不再顯示 email 欄。要測收名單那條路，用 `https://httpbin.org/status/503`——實測回 `antiBotBlocked:true`，會走「你的網站擋下了我們的爬蟲」那張卡，email 表單在。
+
 ### 2026-08-27b（掃描失敗改成「收名單」＋降低觸發對方限流的機率＋導覽補內容連結）
 
 接續 2026-08-27a 的驗收發現。用戶實測廣告漏斗時掃兩個日本企業站（`shinkin.co.jp/echishin/recruit/`＝信用金庫、`dorokogyo.co.jp`）都回 `All fetch rounds timed out`。
