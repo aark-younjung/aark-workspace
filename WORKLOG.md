@@ -6,6 +6,28 @@
 
 ---
 
+### 2026-08-27e（DNS 快速失敗 19.5 秒→約 6 秒 ＋ 廣告落地頁主圖 2.7MB→97KB）
+
+用戶點頭做這兩項（都是前一輪盤點出來、沒做完的）。
+
+**1. DNS 快速失敗（[api/fetch-url.js](api/fetch-url.js)）**
+
+實測不存在的網域要 **19.5 秒**才回「查不到這個網域」——因為三輪 UA fallback 每輪各自等 DNS 逾時。但**換 User-Agent 不可能讓 DNS 解析成功**：UA 影響的是對方伺服器怎麼回應，而這裡連「對方伺服器在哪」都還沒問到。後兩輪是純浪費，代價由「打錯自家網址的客戶」承擔（最常見的使用者失誤之一）。
+
+- 第一輪就是 DNS 失敗 → `dnsFailFast=true`，跳過第二、三輪。
+- 第四輪 AllOrigins proxy 分情況：**硬失敗**（`ENOTFOUND`／`ERR_NAME_NOT_RESOLVED`＝NXDOMAIN，這名字全球 DNS 都沒有）連 proxy 都不試；**軟失敗**（`EAI_AGAIN`／`EAI_NODATA`＝暫時解析不到）照跑，讓 AllOrigins 用它自己的解析器再賭一次。這個區分是刻意的——軟失敗有機會是我們這端的暫時性問題，直接判死會冤枉真實存在的網站。
+- 檢查過不影響既有的 anti-bot 判定：`antiBotBlocked` 的賦值在 proxy 區塊內，而 `skipProxy` 只在 `dnsFailFast`（= 第一輪 throw、`response` 必為 null）時才為 true，403/503 那條路徑完全沒被動到。
+
+**2. 廣告落地頁主圖（[LpSageA.jsx](src/pages/lp/LpSageA.jsx)）**
+
+`mockup-left.png` 原本 **2.7MB**（1739×1848 RGBA），是 2026-08-19f 搬 mockup 進 React 時就記下「之後該壓」的待辦。廣告落地頁對首屏載入極度敏感，這張又是 hero 疊圖。
+
+用本機既有的 PIL（沒裝新依賴）轉成 WebP。比過四組尺寸／品質：860px q78=57KB、860 q84=66KB、1000 q78=70KB、1000 q84=81KB、**1200 q82=97KB ← 採用**。選 1200px 是因為 CSS 顯示寬度 430px，1200 = 2.8×，retina 上 UI 文字仍清晰；97KB 相對 2662KB 是**降 96%**。順手補 `width`/`height` 屬性讓瀏覽器先算好長寬比，避免載入時版面跳動。
+
+舊的 `.png` **暫時留在 `public/lp-assets/`**（已無任何引用）——實機確認新圖沒問題再刪，現在刪掉萬一觀感有落差就沒得比對。
+
+**驗證**：`node --check api/fetch-url.js` 通過；eslint 0 問題；WebP 產出確認 1200×1275、97KB。⚠️ DNS 快速失敗要等部署後對 `this-domain-does-not-exist-99999.com` 重測才知道實際秒數；WebP 的實機觀感也還沒看過（**這張是廣告主圖，麻煩開 `/lp/google-vs-ai` 看一眼有沒有糊掉**）。
+
 ### 2026-08-27d（失敗卡瀏覽器實機驗收通過——把前三筆的 ⚠️ 未驗收註記結掉）
 
 用戶用 `https://httpbin.org/status/503` 實機驗收（強制重整清掉快取後），截圖確認：

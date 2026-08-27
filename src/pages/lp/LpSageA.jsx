@@ -76,7 +76,12 @@ export default function LpSageA() {
           {scanBox}
           <div className="trust"><span className="dot" aria-hidden="true">✓</span> 免費・免註冊・30 秒看到結果</div>
         </div>
-        <img className="hero-mockup" src="/lp-assets/mockup-left.png" alt="方舟 AI 雷達 產品畫面（電腦＋手機）" />
+        {/* 2026-08-27：原本是 2.7MB 的 PNG——廣告落地頁對載入速度極度敏感（首屏大圖直接吃掉
+            前幾秒），改成 1200px 寬的 WebP、97KB（降 96%）。1200px 是 CSS 顯示寬度 430px 的
+            2.8 倍，retina 上仍然清晰。width/height 給瀏覽器先算好長寬比，避免載入時版面跳動。
+            舊的 .png 暫時留在 public/ 沒刪（沒有任何地方引用了，實機確認新圖沒問題就可以移除）。 */}
+        <img className="hero-mockup" src="/lp-assets/mockup-left.webp" width="1200" height="1275"
+             alt="方舟 AI 雷達 產品畫面（電腦＋手機）" />
       </section>
 
       {/* ② 痛點轉折 */}

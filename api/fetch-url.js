@@ -120,8 +120,18 @@ export default async function handler(req, res) {
     // 被限流」——客戶打錯自家網址時看到的是這段完全不相干的解釋，而真正的原因（拼錯字）
     // 被藏起來。這裡收集三輪直連各自的錯誤碼，全部都是 DNS 級失敗才判定為「查無此網域」。
     const uaRoundErrors = []
-    const DNS_CODES = ['ENOTFOUND', 'EAI_AGAIN', 'EAI_NODATA', 'ERR_NAME_NOT_RESOLVED']
-    const isDnsError = err => DNS_CODES.includes(err?.cause?.code || err?.code)
+    // 硬失敗＝這個名字不存在（NXDOMAIN）；軟失敗＝這次解析不到（DNS 伺服器忙/暫時性）。
+    // 分開的用途在下面的快速失敗：硬失敗連 proxy 都不用試，軟失敗值得讓 proxy 用它自己的
+    // 解析器再賭一次。
+    const DNS_HARD = ['ENOTFOUND', 'ERR_NAME_NOT_RESOLVED']
+    const DNS_SOFT = ['EAI_AGAIN', 'EAI_NODATA']
+    const errCode = err => err?.cause?.code || err?.code
+    const isDnsError = err => DNS_HARD.includes(errCode(err)) || DNS_SOFT.includes(errCode(err))
+    const isHardDnsError = err => DNS_HARD.includes(errCode(err))
+    // 2026-08-27 快速失敗：第一輪就是 DNS 失敗的話，換 User-Agent 再打兩輪毫無意義——
+    // UA 影響的是對方伺服器怎麼回應，而這裡連「對方伺服器在哪」都還沒問到。
+    // 舊版照打三輪，讓「網址打錯」這種最常見的使用者失誤要等 19.5 秒才得到答案。
+    let dnsFailFast = false
 
     // helper：判斷該不該嘗試下一輪 — null response（前輪 timeout/throw）或 anti-bot status 都該繼續
     const shouldFallback = (r) => !r || [403, 503, 429].includes(r.status)
@@ -151,12 +161,16 @@ export default async function handler(req, res) {
         // timeout / network error：不 throw，讓後續輪嘗試（Round 1 timeout 的網站 Round 2 可能成功）
         console.warn(`[fetch-url] Round 1 (Googlebot) failed for ${hostname}: ${err.message}`)
         uaRoundErrors.push(err)
+        if (isDnsError(err)) {
+          dnsFailFast = true
+          console.warn(`[fetch-url] DNS failure (${errCode(err)}) for ${hostname} — skipping UA fallback rounds`)
+        }
         response = null
       }
     }
 
     // 第二輪：Chrome UA + 完整 Sec-Ch-Ua 瀏覽器指紋頭（模擬真人）
-    if (shouldFallback(response)) {
+    if (shouldFallback(response) && !dnsFailFast) {
       const reason = response ? `HTTP ${response.status}` : 'Round 1 failed'
       console.warn(`[fetch-url] ${reason} with ${hostname}, retrying with Chrome UA + browser fingerprint headers`)
       try {
@@ -171,7 +185,7 @@ export default async function handler(req, res) {
     }
 
     // 第三輪：Bingbot UA（部分 Cloudflare 白名單只放 Bingbot 不放 Googlebot）
-    if (shouldFallback(response)) {
+    if (shouldFallback(response) && !dnsFailFast) {
       const reason = response ? `Round 2 returned HTTP ${response.status}` : 'Round 2 also failed'
       console.warn(`[fetch-url] ${reason} with ${hostname}, fallback round 3: Bingbot UA`)
       try {
@@ -188,7 +202,10 @@ export default async function handler(req, res) {
     // 對 Vercel 而言 AllOrigins 是不同 IP 段，Cloudflare 規則可能放它過、不放我們過
     // 注意：AllOrigins 回的 JSON 格式不同（contents 欄位包 HTML），要 unwrap
     let proxyFallback = false
-    if (shouldFallback(response)) {
+    // 硬 DNS 失敗（NXDOMAIN）連 proxy 都不試——這個名字在全球 DNS 都不存在，換誰查都一樣。
+    // 軟失敗（EAI_AGAIN 這種暫時性）則照跑：AllOrigins 用它自己的解析器，有機會查得到。
+    const skipProxy = dnsFailFast && uaRoundErrors.some(isHardDnsError)
+    if (shouldFallback(response) && !skipProxy) {
       const reason = response ? `Round 3 returned HTTP ${response.status}` : '3 UA rounds all failed'
       console.warn(`[fetch-url] ${reason}, last resort: AllOrigins proxy for ${hostname}`)
       try {
