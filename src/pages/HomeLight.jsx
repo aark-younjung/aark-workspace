@@ -11,9 +11,11 @@ import { analyzeGEO } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { runFullScan } from '../services/scanService'
 import { logError } from '../lib/errorLog'
+import { classifyScanError } from '../lib/scanError'
 import HomeLightEarlybird from '../components/homelight/EarlybirdBanner'
 import HomeLightShowcase from '../components/homelight/ShowcaseTeaser'
 import HomeLightFaq from '../components/homelight/FaqSection'
+import ScanFailCard from '../components/homelight/ScanFailCard'
 import '../styles/homelight.css'
 
 /** 四面向卡：版面順序固定；翻開順序＝分析器真實完成順序（不排演、不假裝） */
@@ -71,7 +73,9 @@ export default function HomeLight() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
-  const [errMsg, setErrMsg] = useState('')
+  // 失敗狀態：舊版只存一行字串，改存「分類結果 + 當時掃的那個網址」，
+  // 失敗卡才有辦法給出「改掃首頁」「重試這個網址」這種帶脈絡的動作
+  const [fail, setFail] = useState(null)
   const [anonResult, setAnonResult] = useState(null)
   const [scanTarget, setScanTarget] = useState(null)   // 掃描中就要有站名可顯示（卡先出現、分數後到）
   const [phases, setPhases] = useState(IDLE_PHASES)    // null＝該面向還在跑（骨架）；物件＝已翻開
@@ -88,7 +92,7 @@ export default function HomeLight() {
 
   function resetScan() {
     setAnonResult(null); setScanTarget(null); setPhases(IDLE_PHASES)
-    setStatus(''); setErrMsg(''); setUrl('')
+    setStatus(''); setFail(null); setUrl('')
   }
 
   // 掃描一開始就把骨架卡帶進視窗——手機上它必定落在 hero 下方，看不到就白翻了
@@ -111,7 +115,7 @@ export default function HomeLight() {
     if (scanInFlightRef.current) return   // 防重入（同步 ref 擋同一輪重複觸發）
     scanInFlightRef.current = true
     setLoading(true)
-    setErrMsg('')
+    setFail(null)
     setAnonResult(null)
     setPhases(IDLE_PHASES)
     setStatus(user ? '正在建立網站記錄…' : '正在分析網站…')
@@ -187,7 +191,8 @@ export default function HomeLight() {
       setScanTarget(null)
       setPhases(IDLE_PHASES)
       const detail = error?.message || String(error)
-      setErrMsg(`分析中斷：${detail}——如果多次失敗，可能是對方主機擋了自動請求，稍後再試或換一頁掃。`)
+      // 分類成人話（規則見 lib/scanError.js）——原始英文訊息仍寫進 error_logs 供除錯
+      setFail({ info: classifyScanError(error), url: normalizeUrl(rawUrl) || rawUrl })
       logError({ source: 'homelight_scan', message: detail, userId: user?.id, detail: { url: rawUrl } })
     } finally {
       scanInFlightRef.current = false
@@ -236,6 +241,12 @@ export default function HomeLight() {
           <div><div className="name">方舟 AI 雷達</div><div className="sub">Powered by AARK</div></div>
         </Link>
         <div className="r">
+          {/* 內容連結（2026-08-27）：原本頂部只有登入/註冊，「定價」只躺在頁尾——
+              用戶回報「除了首頁之外找不到付費頁面」，而訪客找價格的直覺就是右上角。
+              只放兩個：排行榜（社會證明、對陌生訪客有說服力）與定價（唯一的金流頁）。
+              常見問題／文章分析維持只在頁尾——每多一格就多分掉「免費檢測」主 CTA 的注意力。 */}
+          <Link to="/showcase" className="hl-navlink sec">排行榜</Link>
+          <Link to="/pricing" className="hl-navlink">定價</Link>
           {user ? (
             <Link to="/app/websites" className="hl-btn hl-cta hl-sm">進入儀表板</Link>
           ) : (
@@ -268,7 +279,6 @@ export default function HomeLight() {
           </form>
           {/* 常駐 live region：不隨文字清空而卸載，否則「完成」那一刻螢幕閱讀器是靜默的 */}
           <p className="hl-status" aria-live="polite">{status}</p>
-          {errMsg && <p className="hl-status err" role="alert">{errMsg}</p>}
           <div className="hl-trust">
             <span>{check}免註冊先看分數</span>
             <span>{check}繁中原生</span>
@@ -288,6 +298,17 @@ export default function HomeLight() {
           <span className="hl-tagline">🕊 <b>放出去偵察的信鴿</b>，替你探 AI 有沒有看見你</span>
         </div>
       </section>
+
+      {/* 掃描失敗：緊接 hero，不放在早鳥 banner 之後——失敗的人要先看到原因與下一步，
+          不是先看到促銷。onRescan 走同一個 handleSubmit（urlOverride 參數）。 */}
+      {fail && (
+        <ScanFailCard
+          info={fail.info}
+          url={fail.url}
+          user={user}
+          onRescan={target => { setUrl(target); handleSubmit(null, target) }}
+        />
+      )}
 
       {/* 早鳥優惠（2026-08-19 硬切前置：從暗色版移植，邏輯不變只換視覺） */}
       <HomeLightEarlybird />

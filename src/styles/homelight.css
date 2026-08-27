@@ -46,6 +46,16 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
 /* ── 頂部導覽（wordmark 雷達弧 + 登入/註冊） ── */
 .homelight .hl-nav{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 26px;}
 .homelight .hl-nav .r{display:flex;align-items:center;gap:6px;}
+/* 頂部導覽的文字連結（2026-08-27）：刻意做成安靜的文字、不做成按鈕——
+   右上角唯一該長得像按鈕的是「免費註冊／進入儀表板」，多一顆彩色鈕會打散主 CTA。 */
+.homelight .hl-navlink{font-size:14px;font-weight:650;color:var(--ink-2);text-decoration:none;
+  padding:8px 11px;border-radius:10px;transition:color .15s ease,background .15s ease;}
+.homelight .hl-navlink:hover{color:var(--ink);background:var(--surface-2);}
+.homelight .hl-navlink:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
+/* 手機：只留「定價」。標記 .sec 的次要連結收掉——手機頂部同時擺 logo＋兩個連結＋兩顆鈕會擠爆，
+   排行榜在頁尾與首頁區塊都還有入口，定價則是唯一的金流頁、不能藏。 */
+@media (max-width:720px){ .homelight .hl-navlink.sec{display:none;} }
+@media (max-width:400px){ .homelight .hl-navlink{padding:8px 7px;font-size:13.5px;} }
 .homelight .hl-wm{display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit;}
 .homelight .hl-wm .name{font-weight:800;font-size:17px;letter-spacing:-.01em;}
 .homelight .hl-wm .sub{font-weight:500;font-size:11.5px;color:var(--ink-3);letter-spacing:.02em;}
@@ -107,6 +117,45 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
 .homelight .hl-tagline b{color:var(--ink-2);}
 
 /* ── 掃描等待 → 快掃結果卡（同一張卡：骨架態出場、逐格翻開、完成後引導註冊） ── */
+/* ── 掃描失敗卡（2026-08-27）──────────────────────────────────────
+   位置在 hero 之後、早鳥 banner 之前。視覺刻意「不紅」：整張卡沿用一般結果卡的
+   白底圓角，只用左側琥珀色直條與圓形驚嘆號標記狀態。理由是多數失敗（暫時逾時、
+   對方限流）根本不是使用者的錯，用整片紅色警示會把「你的網站有問題」的錯誤印象
+   烙給他——而這頁的訪客九成是廣告帶來、第一次見面的陌生人。 */
+.homelight .hl-fail{max-width:1180px;margin:0 auto;padding:0 26px 40px;}
+.homelight .hl-fail .card{background:var(--surface);border:1px solid var(--line);
+  border-left:4px solid #f59e0b;border-radius:18px;padding:24px 26px;box-shadow:var(--sh);}
+/* 標頭：驚嘆號圓標 + 標題 + 這次掃的網址（mono 字體，跟結果卡同一個語彙） */
+.homelight .hl-fail .hd{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.homelight .hl-fail .hd .ic{flex:none;width:26px;height:26px;border-radius:50%;
+  background:rgba(245,158,11,.16);color:#b45309;font-weight:800;font-size:15px;
+  display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.homelight .hl-fail .hd b{display:block;font-size:18px;font-weight:800;line-height:1.4;}
+.homelight .hl-fail .hd .u{display:block;font-family:var(--mono);font-size:12.5px;
+  color:var(--ink-3);margin-top:3px;word-break:break-all;}
+/* 兩段說明：hint 講「為什麼」、act 講「怎麼辦」，act 用底色框起來讓行動指引不被讀成一般敘述 */
+.homelight .hl-fail .hint{font-size:14.5px;line-height:1.75;color:var(--ink-2);margin:0 0 10px;}
+.homelight .hl-fail .act{font-size:14px;line-height:1.7;color:var(--ink-2);margin:0 0 18px;
+  background:var(--surface-2);border-radius:12px;padding:12px 14px;}
+/* 動作列：改掃首頁（主）＋重試（次，倒數期間停用） */
+.homelight .hl-fail .ops{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+.homelight .hl-fail .ops .hl-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+/* email 收集：跟卡片其他區塊用一條分隔線隔開，讀起來是「另一件事」不是失敗訊息的一部分 */
+.homelight .hl-fail .notify{border-top:1px solid var(--line);padding-top:16px;}
+.homelight .hl-fail .notify label{display:block;font-size:14px;font-weight:700;
+  color:var(--ink);margin-bottom:9px;}
+.homelight .hl-fail .notify .row{display:flex;gap:10px;flex-wrap:wrap;}
+.homelight .hl-fail .notify input{flex:1;min-width:220px;border:1px solid var(--line-2);
+  border-radius:12px;padding:11px 14px;font-size:15px;background:var(--surface);color:var(--ink);}
+.homelight .hl-fail .notify input:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft);}
+.homelight .hl-fail .ok{border-top:1px solid var(--line);padding-top:16px;margin:0;
+  font-size:14.5px;font-weight:700;color:#047857;}
+@media (max-width:640px){
+  /* 手機：兩顆動作鈕各自撐滿一行（並排時字會被擠到換行） */
+  .homelight .hl-fail .ops .hl-btn{flex:1 1 100%;justify-content:center;}
+}
+
 .homelight .hl-anon{max-width:1180px;margin:0 auto;padding:0 26px 56px;}
 .homelight .hl-anon .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 26px;box-shadow:var(--sh);}
 .homelight .hl-anon .hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:16px;}

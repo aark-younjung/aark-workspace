@@ -7,6 +7,23 @@
 const API_BASE = '/api/fetch-url'
 
 /**
+ * 子資源探測的節流參數（2026-08-27）
+ *
+ * 起因：用戶實測兩個日本企業網站（其中一個是信用金庫＝有 WAF 的金融機構），
+ * 連續掃幾次之後全部回 "All fetch rounds timed out"；事後單獨測同樣兩個網址，
+ * 每次 0.6–1.8 秒就回來、離 8 秒單輪逾時很遠 —— 不是對方慢，是被暫時擋。
+ *
+ * 一次掃描原本會對同一台主機同時開四槍（主頁 + llms/robots/sitemap 三個探測平行），
+ * 每槍後端又各有最多 4 輪 fallback。對有速率限制的主機來說這個節奏很像攻擊。
+ * 改成三個探測「錯開序列」跑：總時間多約 1 秒（掃描本來就 30–60 秒，可忽略），
+ * 但瞬時併發從 3 降到 1。
+ */
+const PROBE_GAP_MS = 400   // 探測之間的間隔
+const PROBE_RETRY_MS = 800 // 重試前的退避（原本失敗後立刻再打一次，等於補拳）
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+/**
  * 1. llms.txt 檢測 (AI 爬蟲說明文件)
  */
 /**
@@ -29,6 +46,8 @@ async function probeResource(url, retries = 1) {
       if (response.status === 404 || response.status === 410) return { found: false }
       // 其他（504 逾時 / 5xx / 空回應）→ 落到重試
     } catch { /* 網路層失敗 → 落到重試 */ }
+    // 退避後再重試：逾時的常見成因就是對方限流，立刻再打一次只會讓封鎖更確定
+    if (attempt < retries) await sleep(PROBE_RETRY_MS)
   }
   return { unknown: true }
 }
@@ -260,12 +279,12 @@ export async function analyzeGEO(url, providedDoc = null) {
 
   const baseUrl = new URL(cleanUrl).origin
 
-  // 平行執行非同步檢測
-  const [llmsTxt, robotsAI, sitemap] = await Promise.all([
-    checkLLMsTxt(baseUrl),
-    checkRobotsAI(baseUrl),
-    checkSitemap(baseUrl)
-  ])
+  // 三個子資源探測：錯開序列跑，不平行（原因見檔頭 PROBE_GAP_MS 註解）
+  const llmsTxt = await checkLLMsTxt(baseUrl)
+  await sleep(PROBE_GAP_MS)
+  const robotsAI = await checkRobotsAI(baseUrl)
+  await sleep(PROBE_GAP_MS)
+  const sitemap = await checkSitemap(baseUrl)
 
   // 優先用呼叫端已經抓好的 doc（HomeDark 掃描時本來就抓過一次頁面）。
   // 2026-07-21：舊版一律自己再抓一次 —— (1) 多一趟沒必要的請求

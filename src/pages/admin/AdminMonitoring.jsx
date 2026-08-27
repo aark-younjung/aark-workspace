@@ -23,6 +23,7 @@ export default function AdminMonitoring() {
   const [trend30, setTrend30] = useState([])
   const [topUsers, setTopUsers] = useState([])
   const [errors, setErrors] = useState(null)   // 錯誤日誌（error_logs 近 50 筆；表未建時 null→顯示建表提示）
+  const [leads, setLeads] = useState(null)     // 掃描失敗留下的名單（scan_leads 近 50 筆；表未建時 null→顯示建表提示）
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -99,6 +100,17 @@ export default function AdminMonitoring() {
           .limit(50)
         setErrors(errErr ? null : (errRows || []))
       } catch { setErrors(null) }
+
+      // ── 掃描失敗名單（2026-08-27）：掃不通時留 email 的人。這是花錢買來的流量在失敗那一刻
+      // 唯一留下的東西，優先度不低於錯誤日誌——所以放在同一頁、緊接錯誤日誌下面。
+      try {
+        const { data: leadRows, error: leadErr } = await supabase
+          .from('scan_leads')
+          .select('id, created_at, email, url, error_kind, user_id')
+          .order('created_at', { ascending: false })
+          .limit(50)
+        setLeads(leadErr ? null : (leadRows || []))
+      } catch { setLeads(null) }
 
       // ── 本月 Top 10 重度使用者（按掃描次數）
       const userAgg = new Map()
@@ -277,6 +289,31 @@ export default function AdminMonitoring() {
                     <div className="min-w-0 flex-1">
                       <p className="text-slate-200 text-sm break-all">{e.message}</p>
                       <p className="text-slate-500 text-sm">{new Date(e.created_at).toLocaleString('zh-TW')}{e.website_id ? ` · site ${String(e.website_id).slice(0, 8)}` : ''}{e.brand_id ? ` · brand ${String(e.brand_id).slice(0, 8)}` : ''}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── 掃描失敗名單（scan_leads 近 50 筆）── */}
+          <div className="mt-6 bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-white font-semibold">📮 掃描失敗留的名單（近 50 筆）</h2>
+              <span className="text-slate-500 text-sm">首頁掃描失敗時留 email 的人——掃得通要回頭通知他們</span>
+            </div>
+            {leads === null ? (
+              <div className="px-6 py-6 text-slate-500 text-sm">讀不到 scan_leads——請先在 Supabase 跑建表 SQL（見 WORKLOG 2026-08-27）。</div>
+            ) : leads.length === 0 ? (
+              <div className="px-6 py-6 text-slate-500 text-sm">目前沒有名單。</div>
+            ) : (
+              <div className="divide-y divide-white/5 max-h-96 overflow-y-auto">
+                {leads.map(l => (
+                  <div key={l.id} className="px-6 py-3 flex items-start gap-3">
+                    <span className="text-sm px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono flex-shrink-0">{l.error_kind || '—'}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-slate-200 text-sm break-all">{l.email}<span className="text-slate-500"> · {l.url}</span></p>
+                      <p className="text-slate-500 text-sm">{new Date(l.created_at).toLocaleString('zh-TW')}{l.user_id ? ' · 已是註冊用戶' : ' · 未註冊'}</p>
                     </div>
                   </div>
                 ))}

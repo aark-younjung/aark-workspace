@@ -113,6 +113,7 @@ aark-workspace/
 | `aivis_prompts` | 每品牌的監測題庫。`tier`（2026-07-02 新增，`core`/`rotating`/`brand`/`info`，DEFAULT `core`，`info` 於 2026-07-17 加入 CHECK）＝四層題庫分流。`generated_by`（auto/user）、`is_active`（是否納入掃描）|
 | `aivis_responses` | 每次掃描 1 筆（1 row = 1 scan＝1 額度）。Claude 主欄 + `engine_results` JSONB（多引擎結果）。額度計數看本表列數 |
 | `anon_scan_events` | 未登入快掃事件日誌（value-first：url+SEO/AEO/GEO/EEAT 分數+時間，**不寫 audit 表**；2026-06-21 新增）。RLS：anon insert / admin select。在 /admin/websites 頂部「未登入快掃」區塊顯示 |
+| `scan_leads` | 掃描失敗時留 email 的名單（2026-08-27 新增）。首頁掃不通會出現失敗卡，非「使用者自己打錯網址」的失敗才收 email。欄位：`email`／`url`／`error_kind`（timeout/blocked/network/unknown）／`error_message`／`user_id`（可空）／`session_id`。RLS：anon+authenticated insert / admin select。在 /admin/monitoring「掃描失敗留的名單」區塊顯示；insert 失敗會退寫 `error_logs`（source=`scan_lead_fallback`）避免名單無聲消失 |
 
 **訂單表 `is_test_order` 欄位（2026-05-22 新增）：**
 - `aivis_newebpay_pending.is_test_order` + `aivis_newebpay_period.is_test_order` 兩張表都有 BOOLEAN DEFAULT false

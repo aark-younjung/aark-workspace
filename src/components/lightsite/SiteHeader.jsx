@@ -21,6 +21,10 @@ export default function SiteHeader() {
         <span className="nm">方舟 AI 雷達</span>
       </Link>
       <div className="r">
+        {/* 同 HomeLight 的兩個內容連結——三個亮色站台頁跟首頁的頂部導覽要長一樣，
+            不然從首頁點進 /faq 之後導覽列突然少東西，會讀成「進到另一個網站」 */}
+        <Link to="/showcase" className="ls-navlink sec">排行榜</Link>
+        <Link to="/pricing" className="ls-navlink">定價</Link>
         {user ? (
           <Link to="/app/websites" className="ls-btn ls-cta ls-sm">進入儀表板</Link>
         ) : (

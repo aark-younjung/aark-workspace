@@ -61,6 +61,16 @@ export default function AppShell() {
           ? <NavLink to="/pricing" className="as-nav as-classic">方案與價格</NavLink>
           : <NavLink to="/pricing" className="as-upgrade">{I.up}升級方案</NavLink>}
         <NavLink to={websiteId ? `/dashboard-v2/${websiteId}` : '/home-classic'} className="as-nav as-classic">← 回經典版</NavLink>{/* 轉址後 /dashboard 已導新版，逃生口走 /dashboard-v2 */}
+        {/* 公開頁小連結（2026-08-27）：用戶回報「客戶測完之後不會知道這些頁面只有首頁有」。
+            排行榜與常見問題在 /app 內原本 0 入口。刻意做成一排小字、不做成導覽項目——
+            它們是偶爾才用的參考頁，升格成 .as-nav 會跟總覽/曝光/體檢這些主功能搶視線。
+            文章分析不放這裡：/app 的「內容機會」頁已經有工具入口卡，重複開路只會兩邊都要維護。 */}
+        <div className="as-more">
+          <NavLink to="/showcase">排行榜</NavLink>
+          <span aria-hidden="true">·</span>
+          <NavLink to="/faq">常見問題</NavLink>
+        </div>
+
         {/* 帳號移到左下個人區（Codex IA 建議）：整塊可點、直達 /account，不佔主導覽格 */}
         <NavLink to="/account" className="as-acct" aria-label="帳號與方案設定">
           <span className="av">{(userName || 'U').slice(0, 1).toUpperCase()}</span>

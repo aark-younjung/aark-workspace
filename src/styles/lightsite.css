@@ -42,6 +42,13 @@ html.dark-theme .ls-page input::placeholder{ color:var(--ink-3) !important; }
 /* ── 頂部導覽 ── */
 .ls-page .ls-nav{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 26px;}
 .ls-page .ls-nav .r{display:flex;align-items:center;gap:6px;}
+/* 同 homelight.css 的 .hl-navlink（兩份 chrome 數值刻意一致，切換頁面時導覽列不能跳動） */
+.ls-page .ls-navlink{font-size:14px;font-weight:650;color:var(--ink-2);text-decoration:none;
+  padding:8px 11px;border-radius:10px;transition:color .15s ease,background .15s ease;}
+.ls-page .ls-navlink:hover{color:var(--ink);background:var(--surface-2);}
+.ls-page .ls-navlink:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
+@media (max-width:720px){ .ls-page .ls-navlink.sec{display:none;} }
+@media (max-width:400px){ .ls-page .ls-navlink{padding:8px 7px;font-size:13.5px;} }
 .ls-page .ls-wm{display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit;}
 .ls-page .ls-wm .nm{font-weight:800;font-size:17px;letter-spacing:-.01em;}
 .ls-page .ls-mark .sweep{transform-origin:center;animation:ls-sweep 4s linear infinite;}

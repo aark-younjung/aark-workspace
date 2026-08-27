@@ -6,6 +6,67 @@
 
 ---
 
+### 2026-08-27b（掃描失敗改成「收名單」＋降低觸發對方限流的機率＋導覽補內容連結）
+
+接續 2026-08-27a 的驗收發現。用戶實測廣告漏斗時掃兩個日本企業站（`shinkin.co.jp/echishin/recruit/`＝信用金庫、`dorokogyo.co.jp`）都回 `All fetch rounds timed out`。
+
+**先查清楚不是掃描器壞掉**：用線上 `/api/fetch-url` 對同樣兩個網址各測 3 次，全部 `success:true`、耗時 0.64–1.78 秒，離單輪 8 秒逾時差很遠。所以不是「那站慢」也不是「長期擋海外」——**是短時間重複掃描觸發對方速率限制**（用戶測了上下兩個表單 × 兩個網址）。
+
+#### 1. 降低觸發限流的機率（[geoAnalyzer.js](src/services/geoAnalyzer.js)）
+
+一次掃描原本對同一台主機**同時開四槍**：主頁（`fetchPageContent`）＋ `llms.txt`／`robots.txt`／`sitemap.xml` 三個探測 `Promise.all` 平行；每槍後端又各有最多 4 輪 UA fallback。對有 WAF 的金融／醫療類網站，這個節奏很像攻擊。
+
+- 三個探測改**錯開序列**（`PROBE_GAP_MS = 400`），瞬時併發從 3 降到 1、總時間多約 1 秒（掃描本來就 30–60 秒，可忽略）。
+- `probeResource` 的重試改**先退避再打**（`PROBE_RETRY_MS = 800`）——舊版失敗後立刻補一拳，而逾時最常見的成因就是限流，等於自己加深封鎖。
+- 兩條掃描路徑（未登入的 HomeLight 直呼、登入的 `runFullScan`）都吃同一支 `analyzeGEO`，改一處兩邊同時生效。
+
+#### 2. 失敗畫面改成收名單（新 [ScanFailCard.jsx](src/components/homelight/ScanFailCard.jsx) + 新 [lib/scanError.js](src/lib/scanError.js)）
+
+舊版失敗只給一行「分析中斷：All fetch rounds timed out——…」。廣告帶進來的陌生人看不懂那句英文，也沒有下一步 → 跳走，那次點擊的錢就沒了，而且他只會覺得「這工具是壞的」。
+
+- **[lib/scanError.js](src/lib/scanError.js)**：把 HomeDark.jsx catch 裡那套約 60 行的人話分類**抽成共用模組**（HomeDark 遲早退役，抽出來是為了讓失敗訊息有單一維護點）。回傳 `title`/`hint`/`action` 三段人話 ＋ `kind`/`retryable`/`userFixable`/`sellable` 四個旗標。逾時那一類的文案特別重寫，明講「最常見原因是短時間內對同一個網站掃太多次」——這正是用戶剛踩到的情況。另附 `homepageOf()`：掃內頁失敗時算出同網域首頁。
+- **[ScanFailCard.jsx](src/components/homelight/ScanFailCard.jsx)**：三個出口，順序＝成功率排序 —— ①**改掃首頁**（企業站常見內頁防護嚴、首頁開放，對用戶那個 `/echishin/recruit/` 正好適用）②**留 email，掃得通通知你** ③**重試**（帶 60 秒倒數，刻意不讓人立刻連打——連打正是問題成因）。`userFixable`（網址打錯／404）不收 email，那不是我們掃不到。
+- 視覺**刻意不紅**（白底卡＋左側琥珀直條）：多數失敗不是使用者的錯，整片紅會把「你的網站有問題」的印象烙給第一次見面的訪客。
+- 位置放 hero 之後、早鳥 banner 之前——失敗的人要先看到原因，不是先看到促銷。
+
+#### 3. 新表 `scan_leads` ⚠️ **需要在 Supabase 跑 SQL（見下）**
+
+`email`／`url`／`error_kind`／`error_message`／`user_id`（可空）／`session_id`。**insert 失敗會退寫 `error_logs`（source=`scan_lead_fallback`、detail 帶整筆內容）**——表還沒建或 RLS 擋住時名單不會無聲消失，使用者那邊照樣顯示成功（對他來說「我們收到了」是真的，只是落點不同）。[AdminMonitoring.jsx](src/pages/admin/AdminMonitoring.jsx) 加「📮 掃描失敗留的名單（近 50 筆）」區塊，比照既有錯誤日誌區塊的寫法（表未建→顯示建表提示，不是白畫面）。
+
+```sql
+create table if not exists public.scan_leads (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  url text not null,
+  error_kind text,
+  error_message text,
+  user_id uuid references auth.users(id) on delete set null,
+  session_id text,
+  created_at timestamptz not null default now(),
+  notified_at timestamptz
+);
+alter table public.scan_leads enable row level security;
+-- 未登入訪客也要能留 email（失敗卡就是給沒帳號的人看的）
+create policy "scan_leads insert anon" on public.scan_leads
+  for insert to anon, authenticated with check (true);
+-- 讀取只給 admin（同 anon_scan_events 的規則）
+create policy "scan_leads admin select" on public.scan_leads
+  for select to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin = true));
+create index if not exists scan_leads_created_idx on public.scan_leads (created_at desc);
+```
+
+#### 4. 導覽補內容連結（用戶提案 + 我的修正建議）
+
+用戶問「頂部導覽也加定價和文章分析？內頁是不是也該放這些被隱藏的頁面？」。量了站內連結數當依據：`/crawl-check` 全站只有 3 處連結、`/schema-check` 只有 2 處（真孤兒）；`/content-audit` 在 /app 的「內容機會」頁已經有工具入口卡。
+
+- **頂部導覽（[HomeLight.jsx](src/pages/HomeLight.jsx) + [SiteHeader.jsx](src/components/lightsite/SiteHeader.jsx)）加「排行榜 · 定價」**兩個安靜的文字連結（不是按鈕——右上角唯一該長得像按鈕的是註冊/進儀表板）。**沒有照用戶原提案加「文章分析」**：它是工具不是說服素材、未登入訪客手上沒資料、/app 內已有入口，每多一格就多分掉「免費檢測」主 CTA 的注意力；改放排行榜（社會證明）。兩份 chrome 數值刻意一致，切頁時導覽列不會跳動。手機收掉 `.sec`（排行榜）只留定價。
+- **[/app 側欄](src/components/appshell/AppShell.jsx)加一排小字「排行榜 · 常見問題」**（`.as-more`，字級比「回經典版」再小一階、顏色最淡，讀起來像頁尾）——這兩頁在 /app 內原本 0 入口。刻意不升格成 `.as-nav`，免得跟總覽/曝光/體檢搶視線。
+
+**驗證**：eslint 全部改動檔案 0 問題（geoAnalyzer.js 3 個 `no-empty` + AdminMonitoring.jsx 1 個 `no-unused-vars` 是既有錯誤——stash 掉本次改動後同樣 4 個，行號位移而已）；三支 CSS 大括號平衡；dev server 確認 10 個新／改檔案全部 200，且編譯後 HomeLight 確實含 `ScanFailCard`／`classifyScanError`／`hl-navlink`，geoAnalyzer 含 4 處 `PROBE_GAP_MS`、舊的平行 `Promise.all` 探測已消失。⚠️ **沒有瀏覽器實機看過失敗卡**——要看的話最快的方法是故意掃一個不存在的網域（例：`https://this-domain-does-not-exist-99999.com`）觸發失敗卡。
+
+**還沒做**：`/crawl-check`、`/schema-check` 兩個孤兒工具頁仍然只有 2–3 處入口，沒有處理（不在這輪範圍）。fetch-url.js 四輪 fallback 之間仍然沒有退避（原本規劃的第 3 項，用戶只點了 1+2）。
+
 ### 2026-08-27a（/app 側欄補 /pricing 入口——進了儀表板就再也找不到付費頁）
 
 用戶實機驗收時回報：「從首頁進入之後，除了首頁之外，其他頁面完全看不到付費頁面在哪裡」。查證屬實且分兩種情況：
