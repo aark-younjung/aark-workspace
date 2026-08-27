@@ -26,7 +26,13 @@
 
 舊的 `.png` **暫時留在 `public/lp-assets/`**（已無任何引用）——實機確認新圖沒問題再刪，現在刪掉萬一觀感有落差就沒得比對。
 
-**驗證**：`node --check api/fetch-url.js` 通過；eslint 0 問題；WebP 產出確認 1200×1275、97KB。⚠️ DNS 快速失敗要等部署後對 `this-domain-does-not-exist-99999.com` 重測才知道實際秒數；WebP 的實機觀感也還沒看過（**這張是廣告主圖，麻煩開 `/lp/google-vs-ai` 看一眼有沒有糊掉**）。
+**驗證**：`node --check api/fetch-url.js` 通過；eslint 0 問題；WebP 產出確認 1200×1275、97KB。
+
+**部署後實測**：
+- DNS 快速失敗生效——同一個不存在的網域 `fetchTime` 從 **19498ms 降到 7669ms**（端到端 8.6 秒），減少 61%。沒有到原先估的 6 秒，剩下的時間是單輪 DNS 逾時本身（約 6-7 秒）加上函式冷啟動，要再壓就得動每輪 timeout，不在這次範圍。
+- WebP 線上確認 `Content-Type: image/webp`、`Content-Length: 99624`。⚠️ **第一次 curl 曾回 SPA fallback 的 HTML，一度誤判成沒部署**——實際是打到還沒佈完的邊緣節點，加 cache-buster 重測即正常。這跟前一輪用戶遇到的快取誤判是同一類陷阱：**驗證剛部署的東西，第一次結果不對先重測一次再下結論**。
+
+⚠️ 仍未看過的：WebP 的實機觀感（**這張是廣告主圖，要開 `/lp/google-vs-ai` 確認沒糊掉**）、DNS 失敗卡的實機外觀。
 
 ### 2026-08-27d（失敗卡瀏覽器實機驗收通過——把前三筆的 ⚠️ 未驗收註記結掉）
 
