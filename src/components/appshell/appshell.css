@@ -60,6 +60,17 @@ html.dark-theme .appshell textarea::placeholder{
   background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;}
 .appshell .as-sp{flex:1;min-height:16px;}
 /* Beta 並行期「回經典版」：降一階存在感（小字、灰色），不與主導覽搶視覺 */
+/* 側欄升級入口（2026-08-26）：/app 內原本完全沒有 /pricing 的路，付費頁只掛在首頁導覽。
+   刻意不用 .as-nav 樣式——它要讀起來像「可以付款的動作」，不是又一列導覽項目。
+   底色用 accent-soft（跟 .as-nav.on 的啟用態同一支色票，但加了外框與整行 accent 字色做出按鈕感）。 */
+.appshell .as-upgrade{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;
+  font-size:14.5px;font-weight:750;color:var(--accent-2);background:var(--accent-soft);
+  border:1px solid rgba(255,110,52,.28);text-decoration:none;margin-bottom:10px;
+  transition:background .15s ease,border-color .15s ease;}
+/* icon 用 accent 原色（比字色亮一階），讓整顆鈕的視覺重心落在左側箭頭上 */
+.appshell .as-upgrade svg{flex:none;color:var(--accent);}
+.appshell .as-upgrade:hover{background:rgba(255,110,52,.16);border-color:rgba(255,110,52,.45);}
+.appshell .as-upgrade:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
 .appshell .as-classic{font-size:13.5px;color:var(--ink-3);padding:8px 12px;}
 .appshell .as-classic:hover{color:var(--ink-2);}
 /* 左下個人區＝可點連結直達 /account（帳號不佔主導覽格，Codex IA 建議） */
@@ -657,6 +668,8 @@ html.dark-theme .appshell textarea::placeholder{
   .appshell .as-acct{border-top:none;padding:6px;flex:none;}
   .appshell .as-acct .an,.appshell .as-acct .as,.appshell .as-acct .go{display:none;}
   .appshell .as-nav{white-space:nowrap;margin-bottom:0;}
+  /* 手機側欄是橫向捲動列：升級鈕的 10px 下邊距會讓它在該列裡對不齊，這裡歸零（同 .as-nav 處理） */
+  .appshell .as-upgrade{white-space:nowrap;margin-bottom:0;}
   .appshell .as-truth{grid-template-columns:1fr;text-align:center;}
   .appshell .as-gauge{margin:0 auto;}
   .appshell .as-scores{grid-template-columns:repeat(2,1fr);}

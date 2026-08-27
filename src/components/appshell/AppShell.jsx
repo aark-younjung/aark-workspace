@@ -11,13 +11,14 @@ const I = {
   globe: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>,
   user: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>,
   add: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>,
+  up: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 16V8M8.5 11.5 12 8l3.5 3.5"/></svg>,
 }
 
 const navCls = ({ isActive }) => 'as-nav' + (isActive ? ' on' : '')
 
 export default function AppShell() {
   const { websiteId } = useParams()
-  const { userName, tierName, isTrial, trialDaysRemaining } = useAuth()
+  const { userName, tierName, isTrial, isPro, trialDaysRemaining } = useAuth()
 
   // 網站範圍的選單項：有 websiteId 才是連結；未選網站時降透明並附提示（點了帶去選網站，不留死 UI）
   const wsItem = (path, icon, label, tag) =>
@@ -52,6 +53,13 @@ export default function AppShell() {
         {/* Beta 並行期：一鍵切回經典版（有網站脈絡回該站儀表板、否則回經典首頁）——降低嘗鮮門檻。
             2026-08-19 首頁硬切後 '/' 已經是亮色版，這裡的無 websiteId 分支改連 /home-classic
             （沒改的話「回經典版」點下去會停在亮色版、文不對題）。 */}
+        {/* 用戶回報（2026-08-26）：從首頁以外的任何頁面都找不到 /pricing 的入口——付費頁只掛在
+            首頁導覽，進了 /app 就等於消失。這裡補唯一的常駐入口：
+            - 非 Pro（免費／試用中）：accent CTA 樣式，要被看見、要讀起來像「可以付款的動作」
+            - 已付費 Pro：不再叫人升級，降成低調文字連結（仍要能查方案內容與價格） */}
+        {isPro && !isTrial
+          ? <NavLink to="/pricing" className="as-nav as-classic">方案與價格</NavLink>
+          : <NavLink to="/pricing" className="as-upgrade">{I.up}升級方案</NavLink>}
         <NavLink to={websiteId ? `/dashboard-v2/${websiteId}` : '/home-classic'} className="as-nav as-classic">← 回經典版</NavLink>{/* 轉址後 /dashboard 已導新版，逃生口走 /dashboard-v2 */}
         {/* 帳號移到左下個人區（Codex IA 建議）：整塊可點、直達 /account，不佔主導覽格 */}
         <NavLink to="/account" className="as-acct" aria-label="帳號與方案設定">

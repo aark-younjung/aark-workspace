@@ -6,6 +6,30 @@
 
 ---
 
+### 2026-08-27a（/app 側欄補 /pricing 入口——進了儀表板就再也找不到付費頁）
+
+用戶實機驗收時回報：「從首頁進入之後，除了首頁之外，其他頁面完全看不到付費頁面在哪裡」。查證屬實且分兩種情況：
+
+- **公開站台頁（/、/faq、/showcase）其實有**——[SiteFooter.jsx](src/components/lightsite/SiteFooter.jsx) 與 HomeLight 頁尾都有「定價」連結，只是**只在頁尾、頂部導覽沒有**（頂部只有登入/註冊/進入儀表板），所以體感上像不存在。
+- **[/app 側欄完全沒有](src/components/appshell/AppShell.jsx)**——這才是真的破口。側欄七個項目（總覽/曝光/體檢/內容機會/我的網站/新增網站/回經典版）＋左下帳號區，沒有任何一條路通到 `/pricing`。試用中的人想升級，只能自己記得打網址。
+
+**修法**（[AppShell.jsx](src/components/appshell/AppShell.jsx) + [appshell.css](src/components/appshell/appshell.css)）：側欄底部（`as-sp` 之後、「← 回經典版」之前）加常駐入口，依身分分兩種呈現：
+
+- **非 Pro（免費／試用中）**：`.as-upgrade` accent CTA 樣式（accent-soft 底＋橘框＋橘字＋向上箭頭 icon），**刻意不用 `.as-nav`**——它要讀起來像「可以付款的動作」，不是又一列導覽項目。
+- **已付費 Pro（且不在試用中）**：降成 `.as-classic` 低調文字連結「方案與價格」——不對已付費的人叫「升級」，但仍要能查方案內容。
+
+判斷式用 `isPro && !isTrial`，跟 [Pricing.jsx:228](src/pages/Pricing.jsx) `handleUpgrade` 既有的守門條件同一條（那裡 2026-06-08 修過「試用中也算 isPro、被誤擋」的 bug，這裡沿用同一個判準，避免試用者看到的是不能升級的低調連結）。手機側欄是橫向捲動列，補 `margin-bottom:0` 歸零（同既有 `.as-nav` 手機處理）。
+
+**回程確認過**：`/pricing` 用的 [SiteHeader.jsx](src/components/lightsite/SiteHeader.jsx) 對登入者顯示「進入儀表板」→ `/app/websites`，來回不會卡住。
+
+**還沒做、等用戶決定**：把「定價」補進頂部導覽（SiteHeader + HomeLight 的 hl-nav）。那是動公開首頁的導覽列、影響所有訪客，先問過再動。
+
+**驗證**：eslint 0 問題；CSS 大括號平衡（453/453）；dev server 確認 AppShell.jsx 編譯後同時含 `as-upgrade`／「升級方案」／「方案與價格」兩條分支與 2 處 `/pricing`，appshell.css 編譯後含 5 處 `as-upgrade`。⚠️ **本機 `npm run build` 跑不起來（exit 127、卡在 vite v8 產出階段）——用 git stash 拿掉本次改動再 build 一次確認 baseline 同樣 127，是這台環境的既有問題、不是這次改壞**（Vercel 遠端 build 正常，上一次部署成功）。沒有瀏覽器實機看過這顆鈕的長相。
+
+**同一輪驗收的其他結果**：/pricing 金流實測**成功跳轉藍新付款頁**（真金流通過）；P1（/faq 手風琴、/showcase 分頁輪播）、P2（路由、logo、體檢建議文字）用戶回報全部正常；廣告漏斗交棒**邏輯正常**（LP 兩個輸入框都有正確帶回首頁並觸發掃描），但掃描目標網站回 `All fetch rounds timed out`——用線上 `/api/fetch-url` 測 `a-ark.com.tw`／`example.com` 都秒回 `success:true`，所以是該站擋我們、不是掃描器故障，待用戶提供當時網址再判斷。
+
+**另外抓到、還沒修**：`/api/public?action=stats` 目前回 `mentions:0`，[Pricing.jsx:329](src/pages/Pricing.jsx) 會把它印成社會證明大字「0 次品牌被 AI 主動提及」——賣 AI 能見度的定價頁掛一個 0 是負面說服。來源是 `aivis_mentions` 裡 `brand_mentioned=true` 的筆數，寫入端 [api/aivis/fetch.js:374](api/aivis/fetch.js) 仍正常寫入，所以要嘛真的是 0（8 個品牌都沒被提及，很合理）、要嘛資料面有洞，待查。
+
 ### 2026-08-26a（🚀 /faq、/pricing、/showcase 全面亮色化——首頁硬切前答應過的三個頁面）
 
 用戶拍板繼續做首頁硬切前延後的三個頁面（點首頁排行榜/FAQ/早鳥 banner「查看更多」進去還是暗色頁面的落差）。三頁都不再吃 `isDark` 分支——那個分支是已退役的橘白舊版（CLAUDE.md 明講「留給未來切換復原」，`isDark` 全站預設 `true` 從未真的顯示過），不是這次要接軌的目標視覺。改成跟 HomeLight/AppShell 同一套 token、一律亮色（同 `.homelight` 手法：opaque 背景蓋過全域暗色底）。
