@@ -119,9 +119,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Brand not linked to this prompt' })
     }
 
-    // brand（品牌詞）near-deterministic、info（資訊型）看「網域有沒有被引用」→ 都只跑 1 次
+    // brand（品牌詞）near-deterministic、info（資訊型）看「網域有沒有被引用」、
+    // competitor（競品詞，2026-09-04）問的是「AI 站在誰那邊」也是近乎確定的答案 → 都只跑 1 次
     // （伺服器端強制夾成 1，即使前端忘傳也守得住）。core / rotating 維持呼叫端次數。
-    if (tier === 'brand' || tier === 'info') runs = 1
+    if (tier === 'brand' || tier === 'info' || tier === 'competitor') runs = 1
 
     // 拉用戶 profile 看是否為試用用戶 — 試用期額度與付費 Pro 不同（50 vs 150）
     // 試用期計算起始也不一樣：付費 Pro 用 calendar month，試用用 trial_started_at

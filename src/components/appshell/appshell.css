@@ -447,6 +447,31 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-pm-notice{font-size:13.5px;line-height:1.6;padding:10px 14px;border-radius:12px;margin-bottom:12px;}
 .appshell .as-pm-notice.ok{background:rgba(5,150,105,.07);border:1px solid rgba(5,150,105,.25);color:#047857;}
 .appshell .as-pm-notice.warn{background:#fffaf0;border:1px solid #f0d9ae;color:#8a6d3b;}
+/* 題庫意圖覆蓋率（2026-09-04）：這把尺量得夠不夠全 —— 六類意圖各有幾條、缺哪一類 */
+.appshell .as-pm-coverage{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:18px;}
+/* 標題列：標題＋覆蓋分數＋一句話說明，窄螢幕自動換行 */
+.appshell .as-pm-coverage .ch{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.appshell .as-pm-coverage .ch b{font-size:14.5px;}
+.appshell .as-pm-coverage .ch .sub{font-size:12.5px;color:var(--ink-3);flex:1;min-width:200px;}
+/* 覆蓋分數：全滿轉綠、有盲區轉琥珀（顏色只是輔助，文字本身已說明幾類） */
+.appshell .as-pm-coverage .score{font-size:12.5px;font-weight:800;padding:2px 9px;border-radius:99px;}
+.appshell .as-pm-coverage .score.ok{background:rgba(5,150,105,.08);color:#059669;border:1px solid rgba(5,150,105,.3);}
+.appshell .as-pm-coverage .score.warn{background:#fffaf0;color:#8a6d3b;border:1px solid #f0d9ae;}
+/* 六類 chip 橫排：有題目的顯示條數，沒有的直接寫「盲區」不靠顏色傳達 */
+.appshell .as-pm-coverage .chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;}
+.appshell .as-pm-coverage .chips li{display:flex;align-items:center;gap:7px;border:1px solid var(--line-2);
+  border-radius:99px;padding:5px 12px;background:var(--surface);}
+.appshell .as-pm-coverage .chips .n{font-size:13px;font-weight:700;color:var(--ink-2);}
+.appshell .as-pm-coverage .chips .c{font-size:12px;color:var(--ink-3);}
+/* 盲區 chip：邊框與文字都轉琥珀，跟「已覆蓋」明顯區隔 */
+.appshell .as-pm-coverage .chips li.blind{border-color:#f0d9ae;background:#fffaf0;}
+.appshell .as-pm-coverage .chips li.blind .n,.appshell .as-pm-coverage .chips li.blind .c{color:#8a6d3b;}
+/* 盲區提示：每一條都直接寫「該做什麼」，不要只告訴用戶缺了什麼 */
+.appshell .as-pm-coverage .hints{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;}
+.appshell .as-pm-coverage .hints li{font-size:12.5px;line-height:1.65;color:var(--ink-2);}
+.appshell .as-pm-coverage .hints b{color:#8a6d3b;}
+/* 推測比例註記：舊題庫沒有 intent 欄位，分類是推的 —— 一定要說出來 */
+.appshell .as-pm-coverage .note{font-size:12px;line-height:1.6;color:var(--ink-3);margin:10px 0 0;}
 /* 各層區塊：人話標題＋規則副標＋新增鈕 */
 .appshell .as-pm-tier{margin-bottom:18px;}
 .appshell .as-pm-tier .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px;}

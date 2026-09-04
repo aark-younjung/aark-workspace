@@ -84,7 +84,7 @@ aark-workspace/
 │   ├── services/
 │   │   ├── seoAnalyzer.js        # SEO 分析：Meta、H1、Alt、Mobile、Speed
 │   │   ├── aeoAnalyzer.js        # AEO 分析：JSON-LD、FAQ Schema、OG、Canonical 等
-│   │   ├── geoAnalyzer.js        # GEO 分析：llms.txt、品牌提及、結構化資料等
+│   │   ├── geoAnalyzer.js        # GEO 分析：robots AI 爬蟲開放性（RFC 9309 解析、共用純函式）、Sitemap、OG、JSON-LD 引用、lastmod 新鮮度、AI 摘要抑制指令等 9 項計分；llms.txt 偵測不計分
 │   │   ├── eeatAnalyzer.js       # E-E-A-T：作者、About、Contact、隱私、Schema
 │   │   └── pdfExport.js          # PDF 報告匯出
 │   ├── App.jsx                   # 路由設定
@@ -110,7 +110,7 @@ aark-workspace/
 | `eeat_audits` | E-E-A-T 分析結果 |
 | `content_audits` | 內容品質分析結果（15 項檢測，含 heading/word_count/meta/aeo/author/images/links/outbound/multimedia/readability JSONB；2026-05-20 新增，給 `/content-audit/:id` 詳情頁吃 cached + 趨勢迷你圖）|
 | `aivis_brands` | AI 曝光監測模組 — 使用者追蹤的品牌清單（Phase 1，2026-04-23 新增）。`website_id`（2026-07-28 新增，FK→`websites.id`、可空、`on delete set null`）＝一站一品牌關聯，供改版總覽以網站解析品牌；backfill 用「該網域最短 URL（首頁）那筆」|
-| `aivis_prompts` | 每品牌的監測題庫。`tier`（2026-07-02 新增，`core`/`rotating`/`brand`/`info`，DEFAULT `core`，`info` 於 2026-07-17 加入 CHECK）＝四層題庫分流。`generated_by`（auto/user）、`is_active`（是否納入掃描）|
+| `aivis_prompts` | 每品牌的監測題庫。`tier`（2026-07-02 新增，`core`/`rotating`/`brand`/`info`/`competitor`，DEFAULT `core`，`info` 於 2026-07-17、`competitor` 於 2026-09-04 加入 CHECK）＝**掃描行為**分流。`intent`（2026-09-04 新增，`brand`/`competitor`/`decision`/`category`/`painpoint`/`info`，可為 NULL）＝**語意分類**，與 tier 正交、供題庫意圖覆蓋率診斷用。`generated_by`（auto/user）、`is_active`（是否納入掃描）|
 | `aivis_responses` | 每次掃描 1 筆（1 row = 1 scan＝1 額度）。Claude 主欄 + `engine_results` JSONB（多引擎結果）。額度計數看本表列數 |
 | `anon_scan_events` | 未登入快掃事件日誌（value-first：url+SEO/AEO/GEO/EEAT 分數+時間，**不寫 audit 表**；2026-06-21 新增）。RLS：anon insert / admin select。在 /admin/websites 頂部「未登入快掃」區塊顯示 |
 | `scan_leads` | 掃描失敗時留 email 的名單（2026-08-27 新增）。首頁掃不通會出現失敗卡，非「使用者自己打錯網址」的失敗才收 email。欄位：`email`／`url`／`error_kind`（timeout/blocked/network/unknown）／`error_message`／`user_id`（可空）／`session_id`。RLS：anon+authenticated insert / admin select。在 /admin/monitoring「掃描失敗留的名單」區塊顯示；insert 失敗會退寫 `error_logs`（source=`scan_lead_fallback`）避免名單無聲消失 |
@@ -241,12 +241,16 @@ linear-gradient(135deg, #a21540 0%, #6b0e2a 18%, #2a0510 32%, #0a0208 46%, #0000
 
 **aivis 設計原則：** 已整合進 Pro 核心，不可獨立訂閱（5 LLM 共識）。理由：SEO 修復是一次性的，但 AI 引用率天天在變、競爭對手天天在優化 — aivis 是 Pro 持續訂閱的核心鉤子，把它獨立加購會讓用戶「改完就退訂」。
 
-**aivis 四層題庫（2026-07-02 建三層 / 2026-07-17 加 info）：** 掃描的統計效度靠 `aivis_prompts.tier` 分流 —
+**aivis 五層題庫（2026-07-02 建三層 / 2026-07-17 加 info / 2026-09-04 加 competitor）：** 掃描的統計效度靠 `aivis_prompts.tier` 分流 —
 - **core（固定核心）**：品類問句、不含品牌名。每次掃描全跑，是**頭條曝光率與趨勢線的唯一基準**（固定樣本才能有效比較「這週 vs 上週」）。啟用上限 `PROMPT_CAP=10`。
 - **rotating（輪替池）**：長尾品類問句。每次掃描**隨機抽 `ROTATING_SAMPLE_PER_SCAN`（預設 2）條**，擴大覆蓋、抓核心題測不到的盲點、防「應試化」（Goodhart）。
 - **brand（品牌詞）**：帶品牌名。量「AI 認不認得你」、near-deterministic → fetch.js **強制 runs=1**；**刻意排除在頭條曝光率/趨勢之外**（另計 `brandRecogRate`），避免用品牌詞灌水（誠實 + 公平交易法）。
 - **info（資訊型，Phase 2a）**：不含品牌名的知識/how-to 問句（例：「電波拉皮術後要注意什麼？」）。計分**不看有沒有被念名字，改看「AI 這題的引用來源裡有沒有你的網域」** → `contentExposure` 內容引用率（`InfoExposureCard`）。量的是**內容行銷／SEO 有沒有打進 AI（被當知識來源）**，是最能反映 SEO 成效、也最容易做出 before/after ROI 的軸。fetch.js `runs=1`、每次全掃（固定內容記分卡、不抽樣）；`INFO_COUNT=5`。**跟 brand 一樣刻意排除在頭條曝光率/趨勢之外**、獨立呈現，不拿來灌能見度分數（誠實 + 公平交易法）。`is_active=false` 進「池子」、不佔 `PROMPT_CAP=10` 上限。
-- 題量在 [generate-prompts.js](api/aivis/generate-prompts.js) 檔頭常數可調；改動連動每次掃描額度花費（≈ core×3 + 抽樣×3 + brand×1 + info×1）。
+- **competitor（競品詞，2026-09-04）**：同時含自家品牌名與競品名的問句（例：「A 跟 B 哪個好？」）。客戶問這種問題時已經在比價，AI 的答案直接影響成交，是商業價值最高的一類。**只有用戶在「競品比較」設了觀察名單（`aivis_brands.competitors`）才會產**——沒名單就硬掰對手，量到的東西沒有意義。規格同 brand：`is_active=false` 進池子、fetch.js 強制 `runs=1`、**刻意排除在頭條曝光率/趨勢之外**；`COMPETITOR_COUNT=2`。
+- 題量在 [generate-prompts.js](api/aivis/generate-prompts.js) 檔頭常數可調；改動連動每次掃描額度花費（= core×3 + 抽樣×3 + brand×1 + info×1 + competitor×1，目前 31，有競品名單時 33）。
+- ⚠️ **tier 的 fan-out 有四份複本**，加新層時四份都要改，否則手動掃與自動掃的分母會不一致：[aivisScanService.js](src/services/aivisScanService.js)`buildScanTargets`（權威）、[AIVisibilityDashboard.jsx](src/pages/AIVisibilityDashboard.jsx)（經典版 `/ai-visibility/:id` 仍在路由上）、[cron-weekly-reports.js](api/cron-weekly-reports.js)（每週自動掃）、[fetch.js](api/aivis/fetch.js)（後端強制夾 runs）。
+
+**題庫意圖覆蓋率（2026-09-04）：** `tier` 管掃描行為，回答不了「客戶購買旅程的哪一段沒被測到」——`intent` 補這一格。六類（`brand`/`competitor`/`decision`/`category`/`painpoint`/`info`）取自 Google Ads 關鍵字分類的意圖分法，去掉「排除詞」（我們不出價、沒有預算要保護）。純函式在 [aivisData.js](src/components/appshell/aivisData.js) 的 `inferPromptIntent()` / `buildIntentCoverage()`，UI 在 [PromptManager.jsx](src/components/appshell/PromptManager.jsx)。**2026-09-04 之前產的題庫沒有 intent**，讀取端用 tier + 關鍵詞推測並強制標記 `inferred`，UI 必須照實寫「推測」。
 
 **aivis Top-up 加購（隱藏於定價頁，just-in-time 揭露）：**
 - 小包：NT$490 / +40 次（每次 NT$12.25，補檔用）

@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { runAivisScan, PROMPT_CAP, SCAN_RUNS, ROTATING_SAMPLE_PER_SCAN } from '../../services/aivisScanService'
 import { logError } from '../../lib/errorLog'
 import Badge from './Badge'
+import { buildIntentCoverage } from './aivisData'
 
 /**
  * 監測題目管理（2026-08-13 硬切前置 #3 · 題庫搬進新版）：
@@ -14,7 +15,57 @@ const TIER_META = [
   { tier: 'rotating', title: '長尾輪替題', sub: `輪替池——每次掃描隨機抽 ${ROTATING_SAMPLE_PER_SCAN} 條、抓核心題測不到的盲點`, addable: false },
   { tier: 'brand', title: 'AI 認不認得你', sub: '含品牌名的題——另計「品牌認知率」、刻意不灌入曝光率', addable: false },
   { tier: 'info', title: '知識題（內容引用）', sub: '不含品牌名的知識問句——看 AI 引用來源有沒有你的網域，餵「內容機會」', addable: true },
+  // 2026-09-04：客戶在比價時問「A 跟 B 哪個好」，AI 的答案直接影響成交——過去完全沒測。
+  // 只有設了競品觀察名單才會被自動產生器建立（沒名單就硬掰對手，量到的東西沒有意義）。
+  { tier: 'competitor', title: '比價時 AI 站在誰那邊', sub: '同時含你與競品名的題——需要先設好「競品比較」的觀察名單；每條掃 1 次、不灌入曝光率', addable: false },
 ]
+
+/**
+ * 題庫意圖覆蓋率面板（2026-09-04）
+ * tier 管的是掃描行為，回答不了「客戶購買旅程的哪一段沒被測到」——這一塊補的就是那個問題。
+ * 舊題庫沒有 intent 欄位、分類是從文字推測的，所以推測比例一定照實寫出來。
+ */
+function IntentCoverage({ brand, prompts }) {
+  const coverage = buildIntentCoverage({
+    prompts,
+    brandName: brand?.name || '',
+    competitors: brand?.competitors || [],
+  })
+  if (coverage.total === 0) return null
+
+  return (
+    <div className="as-pm-coverage">
+      <div className="ch">
+        <b>題庫意圖覆蓋率</b>
+        <span className={`score ${coverage.blindSpots.length ? 'warn' : 'ok'}`}>
+          {coverage.coveredCount}/{coverage.intentCount} 類
+        </span>
+        <span className="sub">量得到客戶購買旅程的哪幾段——缺的那一類就是量不到的盲區</span>
+      </div>
+      <ul className="chips">
+        {coverage.byIntent.map(item => (
+          <li key={item.key} className={item.covered ? '' : 'blind'} title={item.why}>
+            <span className="n">{item.label}</span>
+            <span className="c">{item.covered ? `${item.count} 條` : '盲區'}</span>
+          </li>
+        ))}
+      </ul>
+      {coverage.blindSpots.length > 0 && (
+        <ul className="hints">
+          {coverage.blindSpots.map(item => (
+            <li key={item.key}><b>{item.label}</b>：{item.blindSpotHint}</li>
+          ))}
+        </ul>
+      )}
+      {coverage.inferredCount > 0 && (
+        <p className="note">
+          ※ 其中 {coverage.inferredCount} 條（{coverage.inferredRatio}%）的分類是依題目文字推測的，不是產生題庫時標記的。
+          按「重新產生題庫」可以拿到精準標籤。
+        </p>
+      )}
+    </div>
+  )
+}
 
 export default function PromptManager({ brand, prompts, userId, onPromptsChange }) {
   const [editing, setEditing] = useState(null)   // { id, text }
@@ -127,6 +178,8 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
       </div>
 
       {notice && <div className={`as-pm-notice ${notice.kind}`} role="alert">{notice.msg}</div>}
+
+      <IntentCoverage brand={brand} prompts={prompts} />
 
       {TIER_META.map(meta => {
         const list = prompts.filter(prompt => (prompt.tier || 'core') === meta.tier)

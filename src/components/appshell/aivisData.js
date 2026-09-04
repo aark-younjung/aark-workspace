@@ -41,7 +41,9 @@ function normalizedHost(value) {
   }
 }
 
-function hostMatches(candidate, ownHost) {
+// export 給報告頁共用：判「這個網域算不算你自己的」要包含子網域，
+// 兩邊各寫一份遲早會不一致（證據頁一度用嚴格相等、子網域會漏判成別人的站）。
+export function hostMatches(candidate, ownHost) {
   return candidate === ownHost || candidate.endsWith(`.${ownHost}`) || ownHost.endsWith(`.${candidate}`)
 }
 
@@ -214,6 +216,153 @@ function classifySourceHost(host, ownHost) {
 export { SOURCE_CATEGORY_LABEL }
 
 /**
+ * 題庫意圖覆蓋率（2026-09-04）
+ *
+ * 為什麼要有這個：題庫是整個 aivis 的量測工具，但我們從來沒問過「這把尺量得夠不夠全」。
+ * tier（core / rotating / brand / info）管的是**掃描行為**——跑幾次、抽不抽樣、算進哪個指標；
+ * 它不回答「客戶在購買旅程的哪一段沒被測到」。intent 補的就是這一格。
+ *
+ * 六類意圖（取自 Google Ads 關鍵字分類的意圖分法，去掉「排除詞」——我們不出價、
+ * 沒有預算要保護，那一類在 AI 能見度裡沒有對應物）：
+ *   competitor 最有商業價值也最常是盲區——客戶問「A 跟 B 哪個好」時已經在比價，
+ *   AI 那句話直接決定成交，而我們的題庫產生器過去從來不產這種題。
+ *
+ * 誠實邊界：舊題庫沒有 intent 欄位（2026-09-04 之前產的都是 null）。
+ * 這裡會用 tier + 關鍵詞推測，但**推測出來的一定標記 inferred**，
+ * UI 要照實說「推測」，不能讓用戶以為那是精準標籤。
+ */
+export const INTENT_META = [
+  {
+    key: 'brand',
+    label: '品牌詞',
+    desc: '含自己品牌名的問句',
+    why: '量「AI 到底認不認得你」，是其他所有指標的地板',
+    blindSpotHint: '沒有品牌題就不知道 AI 認不認得你——重新產生題庫會自動補上',
+  },
+  {
+    key: 'competitor',
+    label: '競品詞',
+    desc: '含競爭對手名稱的問句，例如「A 跟 B 哪個好」',
+    why: '客戶問這種問題時已經在比價，AI 的答案直接影響成交，商業價值最高',
+    blindSpotHint: '先到「競品比較」設好觀察名單，再重新產生題庫就會帶出競品題',
+  },
+  {
+    key: 'decision',
+    label: '決策比較詞',
+    desc: '推薦哪家、價格、評價、哪個比較好',
+    why: '購買意圖最明確的一類，通常也是轉換率最高的流量',
+    blindSpotHint: '補幾條「推薦哪一家」「費用大概多少」這類題，才測得到成交前那一步',
+  },
+  {
+    key: 'category',
+    label: '品類服務詞',
+    desc: '描述服務或品類本身，常帶地區',
+    why: '覆蓋面最廣的一類，是曝光率趨勢線的基準',
+    blindSpotHint: '這是最基本的一類，缺了代表題庫偏窄，建議重新產生',
+  },
+  {
+    key: 'painpoint',
+    label: '痛點詞',
+    desc: '從具體困擾切入、不點名解決方案',
+    why: '抓還不知道有你這種服務的人，是最上游的客源',
+    blindSpotHint: '補幾條「一直做不好怎麼辦」這類題，測得到還沒開始找解方的人',
+  },
+  {
+    key: 'info',
+    label: '資訊知識詞',
+    desc: '知識、how-to、術後注意事項這類問句',
+    why: '看 AI 回答時會不會引用你的網域當來源，餵「內容機會」',
+    blindSpotHint: '補知識題才知道你的部落格內容有沒有被 AI 當成來源',
+  },
+]
+
+const INTENT_KEYS = INTENT_META.map(meta => meta.key)
+
+// 關鍵詞表刻意分開放：改詞比改邏輯常見得多，放在一起才好維護。
+// 順序＝優先序，先命中先算（跟分類法本身的優先序一致：競品 > 品牌 > 決策 > 痛點 > 資訊 > 品類）。
+const DECISION_WORDS = ['推薦', '哪一家', '哪家', '哪一間', '哪間', '哪一個', '比較好', '評價', '心得', '價格', '費用', '多少錢', '收費', '報價', '值得', '好不好', '排名', '推薦嗎']
+const PAINPOINT_WORDS = ['怎麼辦', '沒人', '一直', '都沒有', '下滑', '掉了', '解決', '改善', '救', '失敗', '問題', '困擾', '找不到']
+const INFO_WORDS = ['如何', '怎麼', '為什麼', '多久', '幾歲', '注意', '差別', '是什麼', '原理', '流程', '要不要', '可以嗎', '教學']
+
+const includesAny = (text, words) => words.some(word => text.includes(word))
+
+/**
+ * 判斷一條題目的意圖。
+ * 有存 intent 就直接用（精準）；沒有就從 tier + 文字推測，並標記 inferred。
+ *
+ * @param {{text?:string, tier?:string, intent?:string}} prompt
+ * @param {{brandName?:string, competitors?:string[]}} context
+ * @returns {{intent:string, inferred:boolean}}
+ */
+export function inferPromptIntent(prompt = {}, { brandName = '', competitors = [] } = {}) {
+  if (prompt.intent && INTENT_KEYS.includes(prompt.intent)) {
+    return { intent: prompt.intent, inferred: false }
+  }
+
+  const text = String(prompt.text || '')
+  const tier = prompt.tier || 'core'
+
+  // 競品名稱優先於一切：一條題同時提到自家和競品時，它問的是「比較」這件事
+  const rivals = competitors.map(name => String(name || '').trim()).filter(Boolean)
+  if (rivals.some(name => text.includes(name))) return { intent: 'competitor', inferred: true }
+
+  const brand = String(brandName || '').trim()
+  if (tier === 'brand' || (brand && text.includes(brand))) return { intent: 'brand', inferred: true }
+  if (tier === 'info') return { intent: 'info', inferred: true }
+
+  if (includesAny(text, DECISION_WORDS)) return { intent: 'decision', inferred: true }
+  if (includesAny(text, PAINPOINT_WORDS)) return { intent: 'painpoint', inferred: true }
+  if (includesAny(text, INFO_WORDS)) return { intent: 'info', inferred: true }
+
+  return { intent: 'category', inferred: true }
+}
+
+/**
+ * 題庫的意圖覆蓋率。
+ *
+ * 統計的是**整個題庫**、不是只有啟用中的題——rotating / info / brand 本來就以 is_active=false
+ * 當池子存放（見 api/aivis/fetch.js 的註解），只算啟用中的會把池子全部漏掉、得到假的盲區。
+ *
+ * @returns {{total, byIntent, blindSpots, coveredCount, inferredCount, inferredRatio}}
+ */
+export function buildIntentCoverage({ prompts = [], brandName = '', competitors = [] } = {}) {
+  const counts = Object.fromEntries(INTENT_KEYS.map(key => [key, { count: 0, inferred: 0 }]))
+
+  prompts.forEach(prompt => {
+    const { intent, inferred } = inferPromptIntent(prompt, { brandName, competitors })
+    counts[intent].count += 1
+    if (inferred) counts[intent].inferred += 1
+  })
+
+  const total = prompts.length
+  const byIntent = INTENT_META.map(meta => {
+    const { count, inferred } = counts[meta.key]
+    return {
+      ...meta,
+      count,
+      inferredCount: inferred,
+      // 佔比只在有題目時才有意義，沒題目就是 0、不要出現 NaN
+      share: total > 0 ? Math.round((count / total) * 100) : 0,
+      covered: count > 0,
+    }
+  })
+
+  const blindSpots = byIntent.filter(item => !item.covered)
+  const inferredCount = byIntent.reduce((sum, item) => sum + item.inferredCount, 0)
+
+  return {
+    total,
+    byIntent,
+    blindSpots,
+    coveredCount: byIntent.length - blindSpots.length,
+    intentCount: byIntent.length,
+    inferredCount,
+    // 推測比例高＝這個品牌的題庫是舊版產的，重新產生可以拿到精準標籤
+    inferredRatio: total > 0 ? Math.round((inferredCount / total) * 100) : 0,
+  }
+}
+
+/**
  * 誰在影響 AI 的答案（來源影響力）：彙整既有回答附帶的「真實引用來源」網域，
  * 排出最常被 AI 當作答案根據的網站。全部來自結構化 sources、零猜測。
  * 同一個引擎回答內同網域只計一次（避免單回答洗版）。
@@ -224,13 +373,19 @@ export function buildSourceInfluence({ brand, responses = [], rangeDays = 90, to
   const byHost = new Map()
   let answersWithSources = 0
 
+  // 分引擎統計（2026-08-28）：三個引擎取材的地方差很多，合併看會蓋掉最重要的訊息
+  // ——「官網打得到哪個引擎、哪個引擎只讀論壇」。報告要照這個分配資源，不能只給合併名次。
+  const byEngineHost = Object.fromEntries(ENGINE_KEYS.map(key => [key, new Map()]))
+  const engineAnswers = Object.fromEntries(ENGINE_KEYS.map(key => [key, 0]))
+
   for (const response of responses) {
     const time = new Date(response.created_at)
     if (Number.isNaN(time.getTime()) || time < cutoff || time > now) continue
-    for (const result of Object.values(normalizeEngineResults(response, {}))) {
+    for (const [engineKey, result] of Object.entries(normalizeEngineResults(response, {}))) {
       const sources = Array.isArray(result?.sources) ? result.sources : []
       if (!sources.length) continue
       answersWithSources += 1
+      if (engineAnswers[engineKey] != null) engineAnswers[engineKey] += 1
       const hostsInAnswer = new Set(
         sources.map(source => normalizedHost(source?.uri))
           .filter(host => host && !matchHostList(host, SOURCE_ARTIFACT_HOSTS))
@@ -240,6 +395,9 @@ export function buildSourceInfluence({ brand, responses = [], rangeDays = 90, to
         entry.answers += 1
         entry.prompts.add(response.prompt_id)
         byHost.set(host, entry)
+        // 同一個引擎的同一則回答內、同網域只計一次（與合併統計同規則）
+        const perEngine = byEngineHost[engineKey]
+        if (perEngine) perEngine.set(host, (perEngine.get(host) || 0) + 1)
       }
     }
   }
@@ -263,7 +421,25 @@ export function buildSourceInfluence({ brand, responses = [], rangeDays = 90, to
       isOwn: entry.category === 'own',
       isSocial: entry.category === 'social',
     }))
-  return { answersWithSources, items, totalHosts: byHost.size, categoryCounts }
+  // 每個引擎自己的前 topN 網域 + 有沒有讀到你的官網（報告「來源歸因」頁用）
+  const byEngine = ENGINE_KEYS.map(key => {
+    const tally = byEngineHost[key] || new Map()
+    const hosts = [...tally.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, topN)
+      .map(([host, answers]) => ({
+        host,
+        answers,
+        category: classifySourceHost(host, ownHost),
+        isOwn: !!ownHost && hostMatches(host, ownHost),
+      }))
+    const ownAnswers = ownHost
+      ? [...tally.entries()].filter(([host]) => hostMatches(host, ownHost)).reduce((sum, [, n]) => sum + n, 0)
+      : 0
+    return { engine: key, answers: engineAnswers[key] || 0, hosts, ownAnswers, totalHosts: tally.size }
+  })
+
+  return { answersWithSources, items, totalHosts: byHost.size, categoryCounts, byEngine }
 }
 
 /**
@@ -452,5 +628,172 @@ export function buildVisibilityModel({
     latestScanAt: latestResponses.length
       ? latestResponses.reduce((latest, response) => response.created_at > latest ? response.created_at : latest, latestResponses[0].created_at)
       : null,
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   客戶報告聚合（2026-08-28）
+   為什麼要另外一組：儀表板是「給經營者看趨勢」，報告是「給客戶看證據」。
+   證據要能被核對——所以每一格都帶分母（幾次觀測裡幾次提到）、帶 AI 原話節錄、
+   帶它引用的來源網域。這是我們相對同業最硬的地方，別在報告裡退化成打勾。
+   ══════════════════════════════════════════════════════════════════════ */
+
+// 一次掃描 = 對每條題目逐條打 API，12 條題目跑完可能要好幾分鐘。
+// 用「相鄰兩筆間隔超過 20 分鐘就切一場」比固定時間窗穩——長掃描不會被硬切成兩場。
+// ⚠️ 與儀表板 latestScanResponses 的 5 分鐘窗刻意不同（那是取「最後一批」，這是分場次）。
+export const SCAN_SESSION_GAP_MS = 20 * 60 * 1000
+
+/**
+ * 把回應切成一場一場的掃描（最新的在最前面）。
+ * @returns {Array<{startedAt:string, endedAt:string, responses:Array}>}
+ */
+export function groupScanSessions(responses = []) {
+  const valid = responses
+    .filter(response => Number.isFinite(new Date(response?.created_at).getTime()))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  const sessions = []
+  let current = null
+  for (const response of valid) {
+    const time = new Date(response.created_at).getTime()
+    if (current && current.lastTime - time <= SCAN_SESSION_GAP_MS) {
+      current.responses.push(response)
+      current.lastTime = time
+      continue
+    }
+    current = { responses: [response], firstTime: time, lastTime: time }
+    sessions.push(current)
+  }
+  return sessions.map(session => ({
+    startedAt: new Date(session.lastTime).toISOString(),
+    endedAt: new Date(session.firstTime).toISOString(),
+    responses: session.responses,
+  }))
+}
+
+// 從 AI 原文裡抓一段含品牌名的節錄（報告要能引原話，不能只給打勾）。
+// 抓不到就回空字串——不硬湊、不改寫 AI 的話。
+function brandSnippet(text, brandName, radius = 60) {
+  if (!text || !brandName) return ''
+  const flat = String(text).replace(/\s+/g, ' ').trim()
+  const index = flat.toLowerCase().indexOf(String(brandName).toLowerCase())
+  if (index < 0) return ''
+  const start = Math.max(0, index - radius)
+  const end = Math.min(flat.length, index + brandName.length + radius)
+  return `${start > 0 ? '…' : ''}${flat.slice(start, end)}${end < flat.length ? '…' : ''}`
+}
+
+// 一場掃描 → 逐題 × 逐引擎的矩陣。每格帶 runs（分母）、mentioned（分子）、名次、原話、來源網域。
+function sessionMatrix({ session, prompts, tierOf, mentionByResponseId, brandName, ownHost }) {
+  const corePrompts = prompts.filter(prompt => tierOf(prompt.id) === 'core' && prompt.is_active !== false)
+  return corePrompts.map(prompt => {
+    const promptResponses = session.responses.filter(response => response.prompt_id === prompt.id)
+    let observed = 0
+    let hit = 0
+    const engines = {}
+    for (const key of ENGINE_KEYS) {
+      let runs = 0
+      let mentioned = 0
+      let position = null
+      let snippet = ''
+      const hosts = new Set()
+      for (const response of promptResponses) {
+        const result = normalizeEngineResults(response, mentionByResponseId)[key]
+        if (!result) continue
+        runs += 1
+        if (result.mentioned) {
+          mentioned += 1
+          if (position == null && result.position != null) position = result.position
+          if (!snippet) {
+            snippet = mentionByResponseId[response.id]?.context
+              || brandSnippet(result.raw || response.raw_response, brandName)
+          }
+        }
+        for (const source of result.sources || []) {
+          const host = normalizedHost(source?.uri)
+          if (host && !matchHostList(host, SOURCE_ARTIFACT_HOSTS)) hosts.add(host)
+        }
+      }
+      observed += runs
+      hit += mentioned
+      engines[key] = runs
+        ? { runs, mentioned, position, snippet: snippet || '', hosts: [...hosts].slice(0, 6) }
+        : null
+    }
+    const enginesWithData = ENGINE_KEYS.filter(key => engines[key])
+    return {
+      promptId: prompt.id,
+      text: prompt.text,
+      engines,
+      enginesWithData: enginesWithData.length,
+      enginesMentioned: enginesWithData.filter(key => engines[key].mentioned > 0).length,
+      observed,
+      hit,
+      ownCited: [...new Set(enginesWithData.flatMap(key => engines[key].hosts))]
+        .some(host => ownHost && hostMatches(host, ownHost)),
+    }
+  }).filter(row => row.enginesWithData > 0)
+}
+
+/**
+ * 客戶報告用的 aivis 聚合：最新一場 + 上一場對照 + 分引擎來源歸因。
+ * 誠實邊界（PRODUCT.md）：只用 core 題（品類推薦題），brand / info 題不進報告分母。
+ * 沒有資料就回 { hasData: false }——報告端直接不放這幾頁，不放空殼頁。
+ */
+export function buildAivisReport({
+  brand,
+  prompts = [],
+  responses = [],
+  mentions = [],
+  rangeDays = 90,
+  now = new Date(),
+} = {}) {
+  const tierByPromptId = Object.fromEntries(prompts.map(prompt => [prompt.id, prompt.tier || 'core']))
+  const tierOf = promptId => tierByPromptId[promptId] || 'core'
+  const mentionByResponseId = Object.fromEntries(mentions.map(mention => [mention.response_id, mention]))
+  const ownHost = normalizedHost(brand?.domain)
+  const brandName = brand?.name || ''
+  const cutoff = new Date(now.getTime() - Math.max(1, rangeDays) * DAY_MS)
+
+  const ranged = responses.filter(response => {
+    const time = new Date(response?.created_at)
+    return !Number.isNaN(time.getTime()) && time >= cutoff && time <= now
+  })
+  if (!ranged.length) return { hasData: false }
+
+  const sessions = groupScanSessions(ranged)
+  const build = session => sessionMatrix({ session, prompts, tierOf, mentionByResponseId, brandName, ownHost })
+  const latestRows = sessions.length ? build(sessions[0]) : []
+  if (!latestRows.length) return { hasData: false }
+
+  // 上一場：往回找第一場「有 core 題資料」的（中間可能夾著只跑 brand/info 的場次）
+  let previous = null
+  for (let index = 1; index < sessions.length; index += 1) {
+    const rows = build(sessions[index])
+    if (rows.length) { previous = { at: sessions[index].endedAt, rows }; break }
+  }
+
+  const observed = latestRows.reduce((sum, row) => sum + row.observed, 0)
+  const hit = latestRows.reduce((sum, row) => sum + row.hit, 0)
+
+  // 來源歸因只看品類推薦題（core + rotating）——info 題是知識題，來源性質不同，混進去會誤導
+  const recommendResponses = ranged.filter(response => ['core', 'rotating'].includes(tierOf(response.prompt_id)))
+  const influence = buildSourceInfluence({ brand, responses: recommendResponses, rangeDays, topN: 6, now })
+
+  return {
+    hasData: true,
+    brandName,
+    ownHost,
+    latest: { at: sessions[0].endedAt, rows: latestRows },
+    previous,
+    totals: {
+      prompts: latestRows.length,
+      observed,
+      hit,
+      rate: observed ? Math.round(hit / observed * 100) : null,
+      enginesUsed: ENGINE_KEYS.filter(key => latestRows.some(row => row.engines[key])).length,
+    },
+    influence,
+    sessionCount: sessions.length,
+    rangeDays,
   }
 }

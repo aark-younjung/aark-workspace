@@ -6,6 +6,247 @@
 
 ---
 
+### 2026-09-04b（題庫意圖覆蓋率 + 競品題層）
+
+起因：用戶問 `google-ads-keyword-classifier` 這個 skill 能不能做成產品功能。**那個 skill 本身接不進來**——它吃 Google Keyword Planner 匯出的搜尋量（我們沒有，要 Google Ads OAuth 或付費 API），服務的是廣告出價（AI 能見度的單位是問句不是關鍵字），SERP 驗證還是人工在 Chrome 裡逐條做。但它的**意圖分類法**正好照出我們題庫的一個洞。
+
+**一、intent：語意分類，與 tier 正交**
+
+`tier` 管的是掃描行為（跑幾次、抽不抽樣、算進哪個指標），它回答不了「客戶購買旅程的哪一段沒被測到」。新增 `aivis_prompts.intent` 六類：品牌／競品／決策／品類／痛點／資訊——取自那個 skill 的七類，去掉「排除詞」（我們不出價、沒有預算要保護，那一類在 AI 能見度裡沒有對應物）。
+
+`inferPromptIntent()` / `buildIntentCoverage()` 放在 aivisData.js 當純函式，14 條單測。**2026-09-04 之前產的題庫沒有 intent**，讀取端用 tier + 關鍵詞推測，但推測出來的一律標記 `inferred`，UI 照實寫「其中 N 條是推測的」——不能讓用戶以為那是精準標籤。
+
+**二、competitor：補上最大的盲區**
+
+過去題庫產生器**從來不產含競品名稱的問句**。但客戶問「A 跟 B 哪個好」時已經在比價，AI 那句話直接決定成交——這是商業價值最高、我們卻完全沒測的一類。
+
+新增 `competitor` tier，規格同 brand：池子（`is_active=false`、不佔 10 條上限）、每次全掃、每條 1 次、**刻意不灌入頭條曝光率**。只有用戶在「競品比較」設了觀察名單才產——沒名單就硬掰一個對手出來測，量到的東西沒有意義，還會讓用戶以為那是我們幫他挑的對手。
+
+**三、題庫產生器輸出格式改版**
+
+每條題目從純字串變成 `{ q, intent }` 物件，meta prompt 要求 core + rotating 合計至少各有 1 條 decision / category / painpoint——**把覆蓋率的要求直接寫進生成端**，而不是產完再抱怨缺。
+
+解析器同時吃三種形狀（新物件格式／舊字串陣列／更舊的 `{prompts:[...]}`），8 條單測釘住。**LLM 的輸出格式不能當成保證**，這是唯一負責任的寫法。
+
+`MAX_TOKENS` 1024 → 2048：21 條題目改成帶 intent 的物件後輸出接近 1300 tokens，不改會被截斷、JSON 直接解析失敗。
+
+**踩到的坑 / 要注意的**
+
+- ⚠️ **tier 的 fan-out 有四份複本**：`aivisScanService.js`（權威）、`AIVisibilityDashboard.jsx`（經典版 `/ai-visibility/:id` 仍掛在路由上）、`cron-weekly-reports.js`（每週自動掃）、`fetch.js`（後端夾 runs）。四份都補了 competitor——漏掉自動掃那份的話，手動掃跟自動掃的分母會不一樣，趨勢圖會出現說不清楚的落差。已寫進 CLAUDE.md。
+- `tier` 有 CHECK 約束（CLAUDE.md 記著），加新值**必須連約束一起改**，否則競品題寫不進去。
+- `intent` 欄位若還沒建，寫入會失敗 → 加了退路：偵測到 intent 相關錯誤就退回不帶 intent 寫入。部署順序跑在 SQL 前面也不會讓「重新產生題庫」整個掛掉。
+- 掃描額度：31 → 33（僅在有競品觀察名單時）。順帶修正 generate-prompts.js 檔頭那個沒把 info 算進去的舊成本註解。
+
+**驗證**：新增 22 條單測（意圖 14 + 解析器 8），全專案 **100/100 通過**；改動檔案過 esbuild 語法檢查；eslint 無新增問題（generate-prompts.js 只剩既有的 `process is not defined`）。
+
+**這個功能還沒生效，等 SQL**（見下方 CLAUDE.md 的欄位說明）。
+
+
+---
+
+### 2026-09-04（GEO 誠實性修正：llms.txt 降權、robots 解析器重寫）
+
+起因：用戶裝了 claude-seo（MIT、24 skill + 18 subagent）問能不能接進 AI 雷達。**接不進來**（1.4GB、Python + Playwright、Vercel serverless 塞不下、進階能力全靠付費 key），但它的 `seo-geo` 知識庫等於一份免費的同儕審查，審出兩件我們該修的事。
+
+**一、llms.txt 從計分項降為選配（GEO 分母 8 → 7）**
+
+Google 官方 AI optimization guide（2026-05-15 發布、06-15 澄清）明文表示 llms.txt 對 Google Search 不需要、不幫助也不傷害；SE Ranking 30 萬網域研究與 OtterlyAI 的 server log 稽核也顯示主流 AI 搜尋實務上沒讀它。我們卻把它當 8 項等權檢查之一——**整個 GEO 分數有 12.5% 押在一個沒有證據的訊號上**，而且對外文案寫「讓 ChatGPT、Claude、Perplexity 更容易引用你」。這違背品牌承諾（誠實是機制不是口號），而且客戶只要 Google 一下就查得到官方說法，反噬的是整份報告的可信度。
+
+保留偵測、保留 `llms_txt` 欄位與代管功能（部分非 Google 系統可能參考），只是不再計分、不再宣稱它能提升引用。
+
+⚠️ **分數基準改變**：沒有 llms.txt 的網站（絕大多數）GEO 分數會往上跳一階。趨勢圖上這個斷點要當成改版標記讀，**不是那些網站變好了**。
+
+**二、robots.txt 解析器重寫（兩個會對客戶說反話的 bug）**
+
+舊版在 geoAnalyzer 與 Dashboard 終端機動畫各有一份複本，犯一模一樣的兩個錯：
+
+- **假陽性**（說你擋了、其實沒擋）：用 `section.includes('disallow: /')` 判斷，但 `Disallow: /wp-admin/` 本身就含這個字串 → 只要站方擋了任何子目錄，我們就回報「你封鎖了 GPTBot」。客戶會跑去改一個根本沒壞的設定。
+- **假陰性**（說你沒擋、其實整站都擋）：只找具名 `User-agent: <bot>`，完全沒讀 `User-agent: *`。整站通擋的網站反而判定為通過——那正是最該抓出來的情況。
+
+新版依 RFC 9309：具名 group 優先於萬用 group、只有管得到根路徑的規則（`/`、`/*`、`/$`）參與判定、同長度 Allow 勝過 Disallow。抽成純函式 `evaluateAiCrawlers()` 給兩處共用，配 9 條單測。
+
+同時補上 **OAI-SearchBot**（餵 ChatGPT 搜尋引用的那一隻，先前完全沒查）與 Bytespider。計分口徑跟全站三引擎文案對齊：只有 GPTBot / OAI-SearchBot / ClaudeBot / Google-Extended 被擋才扣分；PerplexityBot、CCBot 等一併偵測回報但不扣分（我們沒在賣 Perplexity 的能見度，就不該拿它扣客戶的分）。使用者觸發型爬蟲（ChatGPT-User）依設計不遵守 robots.txt，永遠不列入被封鎖。
+
+另一個口徑修正：**沒有 robots.txt 現在算通過**。舊版沒檔案就扣分，但對「AI 爬蟲開放性」這一項來說，沒有 robots.txt 就是最開放的狀態。
+
+**三、內容新鮮度分級（先鋪路、仍不計分）**
+
+新增 `freshnessTier()`：fresh ≤ 90 天 / recent ≤ 180 / aging ≤ 365 / stale。門檻依 SE Ranking 130 萬筆引用研究（3 個月內被引用機率約 3 倍、超過半年幾乎失去引用資格）。原本只有「有／沒有 lastmod」，講不出「哪幾頁該先翻新」這種可執行建議——而那正是月費監測服務的理由。
+
+**四、AI 摘要抑制指令偵測（新增，暫不顯示）**
+
+Google 講得很明白：**沒有 AI 專屬的 opt-out 檔案**。頁面會不會出現在 AI Overviews / AI Mode，是由一般的 preview 指令決定的——`nosnippet`、`max-snippet:0`、`data-nosnippet`、`noindex`。這跟 robots.txt 擋第三方 AI 爬蟲是兩件完全不同的事，我們原本只查了後者。
+
+實務上這是很常見的自傷：SEO 外掛預設值、開發時留下的 noindex、或為了防抄襲加上 nosnippet——客戶完全不知道自己親手關掉了 AI 引用。`evaluateSnippetDirectives()` 純函式 + 8 條單測已完成，但 `geo_audits` 沒有欄位可存，**先不顯示**（理由見下一段）。
+
+**五、修掉一個既有的假紅燈**
+
+GEOAudit 頁的狀態一律讀自 `geo_audits` 那一列，欄位不存在時 `geoAudit[id]` 是 `undefined`，而 IssueBoard 只認得 passed / 不 passed 兩種狀態——結果「內容新鮮度（lastmod）」這一項**對每個客戶都永遠亮紅燈**，從 2026-06-05 加進來之後一直如此。現在用 `dbBacked: false` 過濾掉沒有欄位撐著的訊號：寧可先不顯示，也不要顯示一個假的紅燈。
+
+**改動檔案**：`services/geoAnalyzer.js`、`services/geoAnalyzer.robots.test.js`（新增）、`pages/Dashboard.jsx`（改用共用解析器 + 6 處文案）、`pages/GEOAudit.jsx`（`isNewSignal` 統一改為 `unscored`）、`appshell/healthData.js`、`data/fixGuides.js`、`v2/MetricSignatures.jsx`（三家引擎的 key 清單拿掉 llms_txt）
+
+**驗證**：新增 9 條單測全過、全專案 70/70 測試通過、6 個改動檔案過 esbuild 語法檢查。eslint 只剩既有問題（全專案本來就 2988 個）。
+
+⚠️ **本機沒有 build gate**：`vite build` 在 transform 完 958 個模組後原生崩潰（`0xC0000409` STATUS_STACK_BUFFER_OVERRUN，rolldown binding），`dist/` 停在 6/23——是既有環境問題、不是這次改動造成，但代表完整建置只能靠 Vercel 驗。
+
+**Phase 2（同日完成，用戶已在 Supabase 跑完 SQL）**
+
+`geo_audits` 補上 `lastmod_passed` 與 `ai_snippet_passed` 兩欄（curl 打 REST 確認兩欄都回 200 才接線——不靠「應該跑好了」動手）。兩個訊號正式升為計分項，**GEO 分母 7 → 9**，`dbBacked` 過濾器留著當下一個「先偵測、後補欄位」訊號的護欄。
+
+四處寫入端一起補欄位：`scanService.js`（唯一權威版）、`Dashboard.jsx`、`GEOAudit.jsx`。漏掉任何一處就會重演 2026-08-13 aeo_audits 缺欄位靜默失敗一個月那個坑。
+
+**這一天分數基準總共動了兩次**：8 → 7（llms.txt 出列，多數網站上跳）→ 9（新增兩項，內容久未更新或有 nosnippet 的網站會下掉）。趨勢圖上 2026-09-04 是改版斷點，不是網站本身變好或變差。
+
+### 2026-08-28d（承諾邊界頁：把「我不能保證結果」寫成專業標誌）
+
+同業那份報告的最後一頁是「我們承諾什麼、不承諾什麼」三欄表，把不能保證結果從弱點翻成專業標誌。這正好是我們品牌承諾（誠實是機制不是口號）最該有、卻一直沒有的一頁。
+
+**刻意的設計界線** —— 這頁拆成兩塊：
+
+- **方法邊界**（程式產）：承諾的是可驗收的投入（固定 31 項、固定題庫 N 題 × M 引擎、核心題重複多輪每格附分母、原始回覆與來源網址全部保存可調閱）／追蹤呈現的是多期趨勢不是單次／**不承諾**具體提及次數、見效時間、搜尋排名——理由寫明「平台的模型版本、索引週期與取材來源都由平台決定，任何人都無法保證。說得出保證的，不是不懂就是在唬你」。
+- **服務承諾**（代理商自填）：SLA、無償展延、退費那類**一律不預設任何內容**，在匯出 modal 加一個 textarea，留空就整塊不出現。理由：**替別人生成他沒答應過的商業承諾，比報告裡放錯數字更嚴重**。
+
+兩個誠實提醒也照資料產：檢測範圍是單頁 + 站台層檔案不是全站爬蟲；有 aivis 就寫「這是 X 月 X 日的快照，這也是我們附上分母與前後對照的原因」，沒有就寫「這份報告只做到 AI 讀不讀得到你」。
+
+報告因此變成 **9 頁**（無 aivis 資料時 5 頁：封面／判語／分數／建議／明細＋承諾頁）。
+
+**踩到的坑**：placeholder 裡寫 `
+` 想斷行，經過 bash heredoc + Python 兩層跳脫後變成真正的換行字元塞進 JS 單引號字串，直接 parse error（`Unterminated string constant`）。**跨 bash → Python → JS 三層時不要用跳脫字元**，改單行文案解決。另外全形空格 `　` 會觸發 eslint `no-irregular-whitespace`，一律用 `&nbsp;`。
+
+**驗證**：eslint 全綠（只剩 ClientReportModal 既有的空 catch）；渲染兩種情境確認——有填服務承諾／未填且無 aivis，服務承諾區塊在未填時確實整塊不出現（全頁只出現 1 次），無 aivis 版文案自動換成「這份報告只做到」。標籤平衡、0 個未替換樣板變數。
+
+⚠️ 同樣尚未實機跑過 PDF。
+
+### 2026-08-28c（判語引擎上線：把數字收斂成一句可轉述的話，報告 4 頁 → 8 頁）
+
+用戶看完同業那份 10 頁提案後提的需求是「敘事要有強而有力的行銷口語」。拆下來真正要做的不是行銷詞，是**判語**——他們第 2 頁那句「技術面沒問題，問題在網站以外」，同時做到讓客戶不防衛（不是你網站爛）又把問題移到他自己搞不定的地方。我們的報告有分數、有分母、有來源，卻從來沒有「所以呢」。
+
+**新檔 [reportVerdict.js](src/services/reportVerdict.js)**
+
+刻意做成程式產不是手寫——**判語一旦手寫就會開始誇大**，那正是公平交易法紅線與品牌承諾要擋的東西。條件寫死、可單測、講不出資料不支持的話。
+
+核心是技術均分 × 實測提及率的交叉表：
+
+| 技術 | 提及率 | 判語 |
+|---|---|---|
+| ≥75 | ≤35% | 你的網站沒有問題，問題在網站以外。 |
+| ≥75 | ≥60% | 技術面與實際成績都在位——重點是守住，不是再優化網站。 |
+| ≥75 | 中間 | 網站已經到位，但 AI 回答裡你還只出現一部分——剩下的往站外補。 |
+| <60 | ≤35% | AI 現在連把你的網站讀完整都有困難。 |
+| <60 | ≥60% | 你目前靠站外內容撐著；網站補起來會更穩。 |
+| — | 無 aivis | 技術體質 N 分。但「AI 會不會推薦你」這份報告還答不了。 |
+
+加最多四張卡：目前最好的一塊（最高分那層，四層都不及格就不硬找好消息）／最強的一題（被最多引擎提到的，全命中才敢說「已經是 AI 講得出來的答案」）／真正的缺口（**只有連續兩次掛零才敢說「重複的零不是波動」**，單次紀錄措辭放軟）／資源該放哪裡（哪個引擎讀官網、哪個不讀）。
+
+⚠️ **試跑真實量級資料時抓到一個洞**：技術 91 分 + 提及率 33%，原本會掉進 fallback 說「技術面在中段」——跟 91 分自相矛盾。原因是 `rateLow` 門檻設 20 太嚴：三個引擎只有一個穩定講到你 ≈ 33%，那已經是「多數 AI 不提你」。門檻改 35，並補兩條迴歸測試釘住。**這個洞只有拿接近真實的數字跑才會現形，純靠邊界值單測抓不到。**
+
+**新頁 `buildExecutiveVerdictHTML`（[pdfAivisSections.js](src/services/pdfAivisSections.js)）**
+
+放在封面之後、分數之前。企業主翻開報告不是想看四個數字，是想知道「所以我現在到底怎樣」——原本第 2 頁直接上分數，等於把最重要的一句話留給客戶自己想。
+
+**章節重排**：封面（新增檢測範圍摘要行：「技術檢測 31 個項目｜實際提問 6 題 × 3 個 AI ＝ 18 次｜含與上一次檢測的同題對照」）→ 01 判語 → 02 五訊號層 → 03 實測矩陣 → 04 原話證據 → 05 前後對照 → 06 來源歸因 → 07 建議 → 08 逐項明細。共 8 頁（無 aivis 資料時 4 頁）。
+
+**驗證**：判語 18 條單測（含一條**禁用誇大詞守門測試**：保證／一定會／必定／大幅提升／立刻見效／第一名，四種資料情境全掃），連同既有共 **47/47 通過**；eslint 全綠；用示範資料渲染 5 頁確認判語與版面。
+
+⚠️ 預覽用示範資料一律用「範例商行」這種明顯假名 + 紅色警示條。**前一版預覽用了真實客戶名 + 我自己編的 AI 原話，那份已刪除**——編造的 AI 原話配真實公司名，一旦被誤認就是我們一路在批評同業的那件事。
+
+⚠️ 尚未實機驗收：判語頁與 aivis 四頁都沒有真的跑過 html2canvas + jsPDF，A4 分頁行為未知。
+
+### 2026-08-28b（aivis 進客戶 PDF：實測矩陣／原話證據／前後對照／來源歸因，並拿掉捏造統計）
+
+起因是拆完同業希希丁給客戶的 10 頁報告（NT$300,000 年約提案）。他們 10 頁裡只有 1 頁是技術檢測，其餘 9 頁是實測、歸因、計畫、報價、承諾邊界；我們的客戶 PDF 是 4 頁、全部是檢測。更難看的是 [pdfExport.js](src/services/pdfExport.js) 第 5 訊號層那一列永遠印「需 Pro 訂閱」——**我們最強的一層（實際去問三引擎）從來沒有進過客戶看得到的交付物**。
+
+用戶點頭做三件事，全部完成。
+
+**1. `buildSourceInfluence` 加分引擎維度（[aivisData.js](src/components/appshell/aivisData.js)）**
+
+原本把三個引擎的來源網域合併統計，等於蓋掉最重要的訊息——「哪個引擎讀你的官網、哪個只讀論壇」。那正是同業報告裡殺傷力最大的一頁，也是決定資源怎麼分的依據。新增 `byEngine`（各引擎 top 網域 + `ownAnswers` 官網被讀到幾次），既有回傳鍵一個沒動，儀表板不受影響（有單測守住）。
+
+**2. 新增 `buildAivisReport` 客戶報告聚合（同檔）**
+
+儀表板是給經營者看趨勢，報告是給客戶看證據——證據要能被核對，所以刻意跟儀表板的聚合分開：
+
+- `groupScanSessions()`：用「相鄰兩筆間隔 > 20 分鐘切一場」分場次。⚠️ 與儀表板 `latestScanResponses` 的固定 5 分鐘窗**刻意不同**——12 條題目跑完可能好幾分鐘，固定窗會把一場硬切成兩場。
+- 逐題 × 逐引擎矩陣，每格帶 `runs` / `mentioned` 分母、名次、AI 原話節錄、引用來源網域。
+- `previous` 往回找**第一場有 core 題資料的**場次（中間可能夾著只跑 brand/info 的場次）。
+- 誠實邊界：只用 core 題；沒有第二場就 `previous = null`（不用單次假裝趨勢）；原話抓不到回空字串（不改寫、不補字）；來源歸因排除 info 題（知識題來源性質不同，混進去會誤導）。
+
+**3. PDF 四頁（新檔 [pdfAivisSections.js](src/services/pdfAivisSections.js)）**
+
+拆成獨立模組，pdfExport.js 已經 34KB 不該再長。四頁分別是實測矩陣、AI 原話與來源、前後對照、分引擎來源歸因；每個 builder 沒資料自己回 `null`，`.filter(Boolean)` 掉——**沒接監測的網站就是原本的 4 頁報告，不放空殼頁**。組頁順序改成 封面 → Summary → aivis 四頁 → 建議 → 逐項明細，章節編號順移到 06/07。
+
+刻意做同業做不到的三件事：每格帶分母（他們每格 n=1）、附 AI 原話與可點擊核對的來源網域（他們只有打勾）、來源歸因分引擎且附次數（他們是文字排序「最多」「其次是」、沒有分母）。前後對照頁另外把「連續兩次掛零」單獨標紅——單次沒被提到可能是波動，重複的零才是訊號。
+
+所有塞進頁面的 AI 原文與使用者自訂題目都過 `esc()`，避免內容裡的角括號打壞版面。
+
+**4. ⚠️ 拿掉客戶 PDF 裡的捏造統計**
+
+`buildActionItems` 兩條建議寫著「補 FAQ Schema → **AI 引用率會提升 ~15%**」與「加作者署名 → **E-E-A-T 分數會 +6**」。這兩個數字沒有任何出處，是 PRODUCT.md 法規紅線第一條（不捏造數據/統計）的直接違反，而且出現在最不該出現的地方——客戶看的 PDF。改成講機制不講沒量過的成效數字。同業報告還專門用一整頁寫「我們不承諾什麼」，我們卻在承諾 15%。
+
+**5. 資料載入放在 `ClientReportModal`（[ClientReportModal.jsx](src/components/v2/ClientReportModal.jsx)）**
+
+不叫兩個呼叫端（AppOverview / DashboardV2）各自傳 aivis 資料進來——那要改兩個頁面、兩邊的 select 欄位還得手動同步，`scanService` 就是這樣出過漏欄位的 bug。改成 modal 開啟時自己查一次，平常頁面載入零成本，查失敗只是「這次報告少那四頁」不擋 PDF 產生。Modal 內加一行狀態，讓代理商送出前知道自己拿到的是幾頁版本、以及為什麼沒有前後對照頁。
+
+**驗證**：新增 13 條單測（[aivisReport.test.js](src/components/appshell/aivisReport.test.js)），連同既有共 **31/31 通過**；eslint 對四個異動檔 0 問題；dev server transform 四檔全 200。另用擬真的金鉑資料（6 題 × 3 引擎 × 兩場掃描）實際渲染四頁 HTML 驗版面：**4/4 頁產出**、標籤平衡（div 104/104、table 2/2、td 48/48…全對）、0 個未替換的樣板變數、關鍵文案全部到位。整體提及率 33%（18 次觀測 6 次命中）計算正確。
+
+⚠️ **尚未實機驗收**：沒有真的按過「匯出 PDF」跑完 html2canvas + jsPDF。四頁的 HTML 已驗證，但 **A4 分頁行為沒看過**——證據頁固定截在 5 則、來源歸因頁三個引擎各 6 個網域，都是照 794×1080 估的，實際可能超過一頁而被 `exportClientProposalPDF` 的分頁邏輯切開。要驗的話拿一個有 aivis 資料的網站按匯出。
+
+⚠️ 本機 `npm run build` 仍是既有的 exit 127（見上一筆與 08-19 / 08-25 紀錄），Vercel 不受影響。
+
+### 2026-08-28a（CSR / SPA 渲染警示上線 ＋ CCDing 競品拆解與相似度存證）
+
+起點是用戶丟來同業 https://ccding1043.com/ 問「是不是全 AI 做的」，一路拆到他們的 `/ai-visibility-check/` 檢測器，做完競品比較後決定做兩件事。
+
+**1. CSR / SPA 渲染警示（新檔 [src/lib/renderMode.js](src/lib/renderMode.js)）**
+
+抄自對方檢測器唯一真正比我們好的一條：他們會判斷「這頁內容是 JS 產生的」並跳警示，直說 GPTBot 看到的是一片空白、要修的是 SSR 不是補標籤。我們原本完全沒有這條——CSR 站掃出來的低分會被誤讀成「我內容不夠」，用戶就把力氣花在補 meta 標籤這種對他無效的事情上。
+
+實作上刻意比他們**多分一級確定性**（對方是「字少就喊 SPA」，會誤判真的很短的頁面）：
+
+| level | 判準 | 文案語氣 |
+|---|---|---|
+| `csr` | 抓到已知框架空掛載點 or SPA noscript，且可見字 < 1200 | 直說「這是 JS 渲染」，帶框架名 |
+| `empty` | 可見字 < 600 且完全沒有 h1/h2/h3 | 只說「我們讀到的幾乎是空白」，**明講看不出是哪一種、不猜** |
+| `thin` | 可見字 < 1200 且標題 < 2 | 一行灰字，不跳框 |
+| `ok` | 其餘 | 不顯示 |
+
+`csr` 仍要求「內容真的少」才報，是為了不誤傷 SSR 過的 Next.js／Nuxt（它們一樣有 `#__next`／`#__nuxt`）——誤報比漏報傷用戶。
+
+- 純函式 `classifyRender()` 與 DOM 讀取 `detectRenderMode()` 分離，前者可單測
+- 文案集中在 `renderModeNotice()`，暗色版與亮色版共用同一份，避免兩邊講不一樣的話
+- 接進：[scanService.js](src/services/scanService.js)（回傳 `render`，**不寫 DB、不需要跑 SQL**）、[HomeDark.jsx](src/pages/HomeDark.jsx) 與 [HomeLight.jsx](src/pages/HomeLight.jsx) 的未登入路徑、[AnonDiagnosis.jsx](src/components/AnonDiagnosis.jsx) 警示卡、[homelight.css](src/styles/homelight.css) 的 `.hl-render`（琥珀 `#b45309`，暖白底 4.6:1 過 AA；刻意不用紅——紅在那張卡代表「檢測沒過」）
+- 兩處 `anon_scan_events` 寫入都是明確列欄位的 `base` 物件，`render` 不會漏進 DB
+
+**驗證**：`node --test src/lib/renderMode.test.js` 12/12 通過；`npx eslint` 對六個異動檔 0 問題；dev server 對 6 個異動檔 transform 全 200，且編譯後內容確認含 `classifyRender`／`renderNote`／`.hl-render`／`detectRenderMode`。另用 jsdom 實抓 7 個真實網站跑 `detectRenderMode()`：
+
+| 網站 | 判定 | 是否符合預期 |
+|---|---|---|
+| aark-workspace.vercel.app | `csr` / 0 字 / React / Vite | ✅ 真陽性 |
+| app.a-ark.com.tw | `csr` / 0 字 / React / Vite | ✅ 真陽性 |
+| ccding1043.com（WordPress） | `ok` / 7855 字 / 32 標題 | ✅ |
+| ccding1043.com/seo-service | `ok` / 5586 字 | ✅ |
+| vercel.com（Next.js SSR） | `ok` / 3086 字 | ✅ 未誤報 |
+| nuxt.com（Nuxt SSR） | `ok` / 5798 字 | ✅ 未誤報 |
+| a-ark.com.tw | `ok` / 1779 字 / **0 標題** | ✅（0 標題另計，是 SEO 分析器的事） |
+
+⚠️ **本機 `npm run build` 一樣 exit 127** —— 這是本檔 2026-08-19 與 2026-08-25 兩筆已經記過的既有環境問題（rolldown / 原生套件缺，`@esbuild` 整包不在、`@rollup` 只剩 `pluginutils`），**Vercel 遠端建置不受影響**。這次照慣例用 `git stash` 拿掉改動再跑一次確認 baseline 同樣 127（955 modules），不是這次改壞的。改用 dev server transform 驗證（見下）。
+
+⚠️ **這次驗證順手撞出一個我們自己的問題**：`aark-workspace.vercel.app` 與 `app.a-ark.com.tw` 兩個正式網域，AI 爬蟲讀到的**可見字數都是 0**——React+Vite 純 CSR，`#root` 是空的。賣 AI 能見度的產品，自己的站對 GPTBot 隱形。這條沒有在本次修掉（要做 SSR/預渲染，是另一個量級的工程），**已知未解**。
+
+⚠️ 尚未實機驗收：警示卡在瀏覽器裡的實際外觀（暗色 `AnonDiagnosis` 與亮色 `hl-render` 兩版都沒看過）。要驗的話拿 `aark-workspace.vercel.app` 自己掃自己就會跳。
+
+**2. CCDing 競品拆解與相似度存證**
+
+歸檔在 `對標網站/CCDing希希丁_2026-08-28/`（沿用 Kuroma 那次的資料夾慣例），含頁面快照、他們的 31 項檢測器原始碼、自建外掛 CSS/JS、llms.txt、HTTP headers、SHA-256 雜湊，以及我方 commit `399ae0b`（2026-07-09）的 `AnonDiagnosis.jsx` 原始版本。
+
+技術面結論：他們是 WordPress 7.1（Bluehost + Cloudflare + WPBakery + Rank Math + WP Rocket），首頁與部分服務頁是 AI 產的客製碼塞在自建外掛 `ccd-homepage-2026`（`home.js` 開頭自己寫著 `vanilla JS port of the React reference`），且裝了 WordPress MCP Adapter 讓 AI 直連後台。檢測器**全部跑在瀏覽器端**、靠 `r.jina.ai` 抓取、無資料庫、`LIMIT_ON=false`（限流沒開），而且**這個檢測器本身不呼叫任何 AI API**——「四大平台會不會推薦你」不在檢測器裡，交件走 LINE。
+
+⚠️ **同日更正**：這段初稿寫「他們沒有真的去問 AI……是人工代跑」，兩處都過頭了。(1) 適用範圍是「檢測器」不是「他們」——他們確實有問（客戶報告第 4 頁有 6 題 × 4 平台矩陣），只是不在檢測器裡。(2)「人工代跑」是推論不是事實：問 AI 那段放 n8n / 本機腳本 / 另一台機器都不會在他們網站留痕跡，而且我原本拿來佐證的「REST 路由表裡沒有 AI 端點」已被推翻——他們自己的 JS 會呼叫 `aiv-quota`，該端點卻不在路由表中且實測 404，證明路由表不等於能力清單。**不受影響的結論**：他們沒有把回應結構化保存（報告拿不出原文、時間戳與次數表），所以沒有時間序列——我們的差異化建立在「可逐筆核對」，不建立在「他們不會自動化」（那點無法證明）。存證資料夾的 README 已同步更正。
+
+相似度部分（詳見該資料夾 `對照表_項目逐條比對.md`）：四組 `desc`「搜尋引擎地基／答案引擎引用／生成式 AI 推薦／可信度訊號」與我方**逐字相同**、顏色同色相、物件結構同形、項目數 **31 對 31**、其中 **17 項標籤逐字相同**。我方版本 2026-07-09 提交，對方原始碼最早的相關日期註解是 2026-08-20。
+
+處置：**不走法律途徑**（UI 文案難主張、舉證成本高、對品牌敘事無益），只存證。方向是把抄不走的那層做深——三引擎接地查詢、時間序列、平台別一鍵修復。
+
 ### 2026-08-27e（DNS 快速失敗 19.5 秒→約 6 秒 ＋ 廣告落地頁主圖 2.7MB→97KB）
 
 用戶點頭做這兩項（都是前一輪盤點出來、沒做完的）。

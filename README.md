@@ -43,7 +43,7 @@
 |------|------|----------|
 | SEO 分析 | `/seo-audit/:id` | Meta 標題/描述、H1 結構、Alt 覆蓋率、行動版相容、Core Web Vitals |
 | AEO 分析 | `/aeo-audit/:id` | JSON-LD、FAQ Schema、Canonical、麵包屑、Open Graph、問句標題、結構化答案 |
-| GEO 分析 | `/geo-audit/:id` | llms.txt、AI 爬蟲開放、Sitemap、OG/Twitter Card、JSON-LD 引用、HTTPS |
+| GEO 分析 | `/geo-audit/:id` | **計分 9 項**：AI 爬蟲開放（GPTBot / OAI-SearchBot / ClaudeBot / Google-Extended）、Sitemap、OG、Twitter Card、JSON-LD 引用、Canonical、HTTPS、內容新鮮度 lastmod、AI 摘要抑制指令（nosnippet / max-snippet:0 / noindex）。**偵測但不計分**：llms.txt（Google 官方表明不影響 Google 搜尋） |
 | E-E-A-T 分析 | `/eeat-audit/:id` | 作者資訊、關於我們、聯絡方式、隱私權政策、Organization Schema、社群連結 |
 | 文章內容分析 | `/content-audit` | 15 項 SEO/AEO 檢測（H1/字數/Title/Meta/Schema/可讀性等），ad-hoc URL 即時分析 |
 
@@ -56,6 +56,33 @@
 - 手動觸發掃描：對每條 active prompt 跑 3 runs Claude Haiku 4.5（單次掃描 ~$0.006 USD）
 - 30 天趨勢、品牌提及率、競品矩陣（Phase 2c.2 待開發）
 - 用量超過 80% 顯示 Top-up Banner，超過 150 次自動引導加購
+
+#### 客戶報告結構（2026-08-28 改版）
+白標 PDF 共 9 頁：封面（含檢測範圍摘要）→ **判語頁** → 五訊號層分數 → **aivis 四頁** → 建議 → 逐項明細 → **承諾邊界頁**。
+aivis 那四頁沒接監測就不會出現（不放空殼頁），此時報告是 4 頁版。
+
+**判語頁**（第 1 頁，`reportVerdict.js`）：一句話結論 + 最多四張卡（目前最好的一塊／最強的一題／真正的缺口／資源該放哪裡）。
+全部由實際數據推導、條件寫死可單測——**判語一旦手寫就會開始誇大**，那正是公平交易法紅線要擋的。
+單測含一條「禁用誇大詞」的守門測試（保證／一定會／大幅提升／立刻見效…）。
+
+核心是技術分數與實測提及率的交叉：技術高但沒被提到 → 「你的網站沒有問題，問題在網站以外」；
+沒有 aivis 資料時不假裝知道 AI 推不推薦你，改講「這份報告還答不了」。
+
+**aivis 四頁**：
+
+| 頁 | 內容 | 為什麼是這樣做 |
+|----|------|----------------|
+| 實測矩陣 | 逐題 × 逐引擎，**每格帶分母**（「2 / 3 次」＝問了 3 次有 2 次提到） | 單次問 AI 會波動，分母是「這不是運氣」的唯一依據 |
+| AI 原話與來源 | 被提及的每一則附原文節錄 + 該則回答引用的來源網域 | 客戶可以自己點進去核對，同業的人工報告給不出來 |
+| 前後對照 | 上一場 vs 這一場，並單獨標出「連續兩次掛零」的題 | 單次變化可能是雜訊；重複的零才是訊號 |
+| 來源歸因 | 分引擎統計各自引用哪些網域、讀到官網幾次 | 決定資源要放官網還是站外——會讀官網的引擎才值得投官網 |
+
+誠實邊界：只計 core（品類推薦題），brand / info 題不進分母；只有一場掃描就不產生前後對照頁；原話抓不到就留白不補字。
+
+**承諾邊界頁**（最後一頁，永遠出現）：三欄表（承諾／追蹤呈現／不承諾）＋兩個誠實提醒。
+⚠️ 刻意的界線——**方法邊界**由程式從實際檢測產生（那是工具負責的事，講得出也驗得了）；
+**服務承諾**（SLA、展延那類）留給代理商在匯出 modal 自填，留空就整塊不出現。
+替別人生成他沒答應過的商業承諾，比報告裡放錯數字更嚴重。
 
 ### 內容與 SEO 工具（Pro 解鎖完整版）
 - 5 條 AI 優化建議（依面向分類 + P1/P2/P3 優先級）
@@ -151,7 +178,9 @@ aark-workspace/
 │   │   ├── contentAnalyzer.js          # 文章內容 15 項檢測
 │   │   ├── ga4Analyzer.js / gscAnalyzer.js
 │   │   ├── googleAuth.js               # GA4/GSC OAuth
-│   │   └── pdfExport.js
+│   │   ├── pdfExport.js
+│   │   ├── pdfAivisSections.js  # 客戶 PDF 的判語頁 + aivis 四頁
+│   │   └── reportVerdict.js     # 判語引擎（把數字收斂成一句可轉述的話，全部由資料推導）
 │   ├── lib/
 │   │   ├── supabase.js
 │   │   └── inAppBrowser.js             # FB/LINE/IG webview 偵測 + 引導
@@ -226,7 +255,7 @@ aark-workspace/
 | 資料表 | 說明 |
 |--------|------|
 | `aivis_brands` | 使用者追蹤的品牌主檔 |
-| `aivis_prompts` | 每個品牌的測試 prompts（每 brand 最多 10 條，trigger 強制） |
+| `aivis_prompts` | 每個品牌的測試 prompts（每 brand 最多 10 條啟用，trigger 強制）。`tier` 管掃描行為（core/rotating/brand/info/competitor）、`intent` 管語意分類（六類，供意圖覆蓋率診斷） |
 | `aivis_responses` | Claude 每次回應原始資料 + 成本 |
 | `aivis_mentions` | 從 responses 偵測到的品牌提及（含位置 / 上下文片段） |
 | `aivis_topup_credits` | Top-up 加購餘額（gateway: stripe / newebpay） |
@@ -289,6 +318,8 @@ ANTHROPIC_API_KEY=...
 
 | 日期 | 更新內容 |
 |------|----------|
+| 2026-09-04 | **題庫意圖覆蓋率 + 競品題層**：題庫新增 `intent` 語意分類（品牌／競品／決策／品類／痛點／資訊六類，與掃描用的 `tier` 正交），題庫管理頁顯示「覆蓋幾類、哪一類是盲區、該做什麼」；舊題庫沒有標籤時用文字推測並照實標示為推測。新增 `competitor` 題層——同時含自家與競品名的問句（「A 跟 B 哪個好」），客戶比價時 AI 站在誰那邊過去完全沒測；只有設了競品觀察名單才產，規格同品牌詞（每條掃 1 次、不灌入曝光率）。題庫產生器輸出改為帶 intent 標籤的物件、解析器同時相容三種歷史格式 |
+| 2026-09-04 | **GEO 誠實性修正**：llms.txt 從計分項降為選配（Google 官方 AI optimization guide 明文表示不影響 Google 搜尋與 AI Overviews，SE Ranking 30 萬網域研究亦同）——GEO 分母 8→7，沒有 llms.txt 的網站分數會上跳一階，趨勢圖上是改版斷點不是網站變好；robots.txt 解析器依 RFC 9309 重寫並抽成共用純函式（修掉兩個誤判：`Disallow: /wp-admin/` 被當成整站封鎖、`User-agent: *` 通擋讀不到），補上 OAI-SearchBot 與 Bytespider 偵測，沒有 robots.txt 改判為通過；新增內容新鮮度分級 freshnessTier 與 AI 摘要抑制指令偵測（nosnippet / max-snippet:0 / noindex——Google 明確表示沒有 AI 專屬 opt-out，露出由這些一般 preview 指令控制），補 `geo_audits` 兩欄後兩者升為計分項，**GEO 分母 8 → 7 → 9**；順帶修掉「內容新鮮度」因欄位不存在而對每個客戶永遠亮紅燈的假紅燈 |
 | 2026-08-14 | **🚀 新版介面（亮色 app-shell）硬切上線成為預設**：舊 URL 1:1 轉址（/dashboard→/app/:id/overview、四大 audit→/app/:id/health/:tab），逃生口 /dashboard-v2 觀察期保留。新版六區：總覽（品牌等級・重點行動卡・真曝光率儀表・五分數卡・趨勢圖・詞彙表・PDF×2・重新掃描）/ AI 曝光監測五分頁（監測總覽・監測題目〔題庫管理+執行掃描〕・競品比較・引用來源・AI 怎麼說你）/ 網站體檢六分頁（含 Org Schema 產生器與 llms.txt 工具）/ 內容機會（缺口+任務單+文章工具入口）/ 我的網站（host 分組+切換器）/ 帳號（左下個人區） |
 | 2026-08-13 | **Kuroma 三方對標 → 11 個新功能**：競品同題比較（觀察名單×既有回答比對，零額外掃描）、誰在影響 AI 的答案（來源影響力+七類分類）、AI 講錯你（事實監測）、AI 怎麼描述你（逐引擎原話）、內容任務單（一鍵複製交付）、品牌 AI 能見度等級（六級里程碑制）、全域網站切換器、統一徽章系統、指標詞彙表、重點行動卡、品牌資料完整度。共用掃描 service（修掉 aeo_audits 靜默寫入失敗的月級 bug、需 SQL 補 meta_desc_length/structured_answer 兩欄） |
 | 2026-08-13 | **檢測誠實三修**：頁型判斷（首頁不因缺麵包屑/FAQ 扣分）、站台層複查（首頁報缺自動去其他頁實查）、Meta 描述分語言判定（中 40–80 字/英 70–155 字元、修掉寫死 120–160 的舊 bug）；快取新鮮度提示（LiteSpeed 等五種外掛偵測）；E-E-A-T 三項校正（外連排除社群、聯絡認 LINE、作者訊號分頁型） |

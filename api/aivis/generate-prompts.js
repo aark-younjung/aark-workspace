@@ -33,14 +33,18 @@ import { createClient } from '@supabase/supabase-js'
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-haiku-4-5-20251001'
-const MAX_TOKENS = 1024
+// 2026-09-04 由 1024 提高：每條題目從純字串變成 {q, intent} 物件、又多一層競品題，
+// 21 條的輸出接近 1300 tokens，維持 1024 會被截斷、JSON 解析直接失敗。
+const MAX_TOKENS = 2048
 
-// 三層題庫數量（想改題量改這裡；同步影響每次掃描的額度花費，見 fetch.js / AIVisibilityDashboard.jsx）
-// 每次掃描花費 ≈ core×3 + 抽樣輪替×3 + brand×1（brand 只跑 1 次）。
-// 目前 6/6/2：每掃 ≈ 6×3 + 2×3 + 2×1 = 26 次額度（月 150 額度約 5–6 掃/月）。
+// 各層題庫數量（想改題量改這裡；同步影響每次掃描的額度花費，見 fetch.js / AIVisibilityDashboard.jsx）
+// 每次掃描花費 = core×3 + 抽樣輪替×3 + brand×1 + info×1 + competitor×1
+//   目前 6/6/2/5：6×3 + 2×3 + 2×1 + 5×1 = 31 次額度（月 150 額度約 4–5 掃/月）
+//   有設競品觀察名單時再 +2×1 = 33（2026-09-04 新增；沒設名單就不產、不花額度）
 const CORE_COUNT = 6      // 固定核心：品類問句、每次全跑、趨勢基準（2026-07-03 由 8 調降為 6 省成本）
 const ROTATING_COUNT = 6  // 輪替池：品類問句、每次抽樣、抓覆蓋盲點
 const BRAND_COUNT = 2     // 品牌詞：帶品牌名、另計、不進頭條分數
+const COMPETITOR_COUNT = 2  // 競品詞：只有用戶設了觀察名單才產（2026-09-04）。掃描只跑 1 次、不進頭條分數
 const INFO_COUNT = 5      // 資訊型：知識/how-to 問句、每次全掃、計分看「網域有沒有被引用」（Phase 2a、2026-07-13）
 
 const PRICE_INPUT_PER_TOKEN = 1 / 1_000_000
@@ -85,7 +89,7 @@ export default async function handler(req, res) {
     // 取品牌資料
     const { data: brand, error: brandErr } = await supabase
       .from('aivis_brands')
-      .select('id, user_id, name, domain, industry, description')
+      .select('id, user_id, name, domain, industry, description, competitors')
       .eq('id', brandId)
       .single()
 
@@ -111,16 +115,28 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'AI 曝光監測為 Pro 功能，請先升級或啟用 7 天免費試用' })
     }
 
-    // 組 meta prompt 請 Claude 生成四層題庫
-    const metaPrompt = buildMetaPrompt(brand, { core: CORE_COUNT, rotating: ROTATING_COUNT, brand: BRAND_COUNT, info: INFO_COUNT })
+    // 觀察名單（aivis_brands.competitors，用戶自設、最多 3 個）。沒設就不產競品題——
+    // 硬掰一個競品名字出來測，量到的東西沒有意義，還會讓用戶以為那是我們幫他挑的對手。
+    const competitors = Array.isArray(brand.competitors)
+      ? brand.competitors.map(name => String(name || '').trim()).filter(Boolean).slice(0, 3)
+      : []
+
+    // 組 meta prompt 請 Claude 生成題庫（有觀察名單時多產一層競品題）
+    const metaPrompt = buildMetaPrompt(brand, {
+      core: CORE_COUNT, rotating: ROTATING_COUNT, brand: BRAND_COUNT, info: INFO_COUNT,
+      competitor: competitors.length > 0 ? COMPETITOR_COUNT : 0,
+    }, competitors)
     const claudeRes = await callClaude(metaPrompt, ANTHROPIC_API_KEY)
     if (!claudeRes.ok) {
       return res.status(502).json({ error: 'Claude API error', detail: claudeRes.error })
     }
 
-    // 解析成 { core:[], rotating:[], brand:[], info:[] }
+    // 解析成 { core:[], rotating:[], brand:[], info:[], competitor:[] }，每條是 { text, intent }
     const tiered = parseTieredJson(claudeRes.text)
-    if (!tiered || (tiered.core.length + tiered.rotating.length + tiered.brand.length + tiered.info.length) === 0) {
+    const totalParsed = tiered
+      ? tiered.core.length + tiered.rotating.length + tiered.brand.length + tiered.info.length + tiered.competitor.length
+      : 0
+    if (!tiered || totalParsed === 0) {
       return res.status(502).json({
         error: 'Failed to parse Claude response as JSON',
         rawResponse: claudeRes.text,
@@ -140,18 +156,43 @@ export default async function handler(req, res) {
     // ⚠️ DB 有「每品牌最多 10 條啟用」硬限制。所以只有【核心】預設啟用（算進 10 條上限）；
     //    【輪替／品牌詞】放進「池子」但預設 is_active=false，不佔上限。
     //    掃描時前端照 tier 從池子抓（見 AIVisibilityDashboard runScan），不看 is_active，功能不受影響。
+    // tier 決定掃描行為、intent 決定語意分類（見 components/appshell/aivisData.js 的 INTENT_META）。
+    // 兩者正交：brand tier 一定是 brand intent，但 core tier 可能是 decision / category / painpoint。
     const base = { user_id: brand.user_id, brand_id: brand.id, generated_by: 'auto' }
+    const toRow = (tier, isActive, fallbackIntent) => item => ({
+      ...base,
+      text: item.text,
+      tier,
+      is_active: isActive,
+      // Claude 有標就用它標的；沒標（或標了無效值）就留 null，讀取端會用 inferPromptIntent 推測
+      intent: item.intent || fallbackIntent || null,
+    })
     const rows = [
-      ...tiered.core.map(text => ({ ...base, text, tier: 'core', is_active: true })),
-      ...tiered.rotating.map(text => ({ ...base, text, tier: 'rotating', is_active: false })),
-      ...tiered.brand.map(text => ({ ...base, text, tier: 'brand', is_active: false })),
-      ...tiered.info.map(text => ({ ...base, text, tier: 'info', is_active: false })),   // 資訊型：池子、每次全掃、看網域引用
+      ...tiered.core.map(toRow('core', true, null)),
+      ...tiered.rotating.map(toRow('rotating', false, null)),
+      ...tiered.brand.map(toRow('brand', false, 'brand')),
+      ...tiered.info.map(toRow('info', false, 'info')),               // 資訊型：池子、每次全掃、看網域引用
+      ...tiered.competitor.map(toRow('competitor', false, 'competitor')), // 競品詞：池子、每次全掃、只跑 1 次
     ]
 
-    const { data: inserted, error: insertErr } = await supabase
+    // intent 欄位是 2026-09-04 才加的。若部署順序跑在 SQL 前面（或回滾到舊 schema），
+    // 這裡會拿到 PGRST204 / "column ... does not exist" —— 那種情況下寧可少存一個標籤，
+    // 也不要讓整個「重新產生題庫」功能掛掉（舊題庫沒有 intent 也能靠推測運作）。
+    let { data: inserted, error: insertErr } = await supabase
       .from('aivis_prompts')
       .insert(rows)
-      .select('id, text, is_active, generated_by, tier')
+      .select('id, text, is_active, generated_by, tier, intent')
+
+    if (insertErr && /intent/i.test(insertErr.message || '')) {
+      console.warn('[generate-prompts] aivis_prompts.intent 欄位不存在，退回不帶 intent 寫入：', insertErr.message)
+      const fallbackRows = rows.map(({ intent, ...rest }) => rest)  // eslint-disable-line no-unused-vars
+      const retry = await supabase
+        .from('aivis_prompts')
+        .insert(fallbackRows)
+        .select('id, text, is_active, generated_by, tier')
+      inserted = retry.data
+      insertErr = retry.error
+    }
 
     if (insertErr) {
       return res.status(500).json({ error: 'Failed to insert prompts', detail: insertErr.message })
@@ -170,6 +211,7 @@ export default async function handler(req, res) {
         rotating: tiered.rotating.length,
         brand: tiered.brand.length,
         info: tiered.info.length,
+        competitor: tiered.competitor.length,
       },
       replaced_existing: replaceExisting,
       cost_usd: cost,
@@ -186,10 +228,23 @@ export default async function handler(req, res) {
 
 // ---------------------- 工具函式 ----------------------
 
-function buildMetaPrompt(brand, counts) {
+function buildMetaPrompt(brand, counts, competitors = []) {
   const industry = brand.industry || '（未指定）'
   const description = brand.description || '（未提供）'
   const domain = brand.domain || '（未提供）'
+
+  // 競品題只有在用戶設了觀察名單時才產（counts.competitor > 0）
+  const competitorSection = counts.competitor > 0
+    ? `
+- **competitor（競品詞，${counts.competitor} 條）**：**必須同時出現「${brand.name}」與下列其中一個競品名稱**：${competitors.join('、')}。
+  例如「${brand.name} 跟 ${competitors[0]} 哪個好？」「${competitors[0]} 和 ${brand.name} 差在哪？」。
+  這組量的是「客戶在比價時，AI 站在誰那邊」——商業價值最高的一類。`
+    : ''
+
+  const competitorJson = counts.competitor > 0
+    ? `,
+  "competitor": [{ "q": "${brand.name} 跟 ${competitors[0]} 哪個好？", "intent": "competitor" }]`
+    : ''
 
   return `你是品牌 SEO 與 AEO（Answer Engine Optimization）專家，熟悉台灣中小企業老闆會怎麼問 AI。
 
@@ -200,13 +255,13 @@ function buildMetaPrompt(brand, counts) {
 - 簡介：${description}
 
 【任務】
-請產出四組問題，分別放進 core / rotating / brand / info。這些問題會被送進 ChatGPT / Claude / Gemini，測試該品牌的 AI 能見度。
+請產出下列各組問題。這些問題會被送進 ChatGPT / Claude / Gemini，測試該品牌的 AI 能見度。
 
-【四組定義】
+【各組定義】
 - **core（固定核心，${counts.core} 條）**：該品牌目標客群「最常問、最具代表性」的品類問句。這組會被長期固定、每次都測，用來追蹤趨勢——所以要選最穩定、最核心的問法。**絕對不能出現品牌名稱。**
 - **rotating（輪替池，${counts.rotating} 條）**：同樣是品類問句，但要**更長尾、更多樣**——不同地區、不同預算、不同痛點、不同業種的變化題，用來擴大覆蓋、抓核心題測不到的盲點。**絕對不能出現品牌名稱**，且不要和 core 重複。
 - **brand（品牌詞，${counts.brand} 條）**：**必須包含品牌名稱「${brand.name}」**，例如「${brand.name} 評價如何？」「${brand.name} 有什麼服務？」。這組用來量「AI 認不認得這個品牌」，是獨立指標。
-- **info（資訊型，${counts.info} 條）**：**知識/how-to 問句，不是找推薦、也絕不含品牌名**。是這個產業的**潛在客人在購買前會問的資訊題**——AI 回答時，很可能會引用這個品牌部落格/衛教文章當來源。例如英文補教會問「如何快速提升英文口說？」「多益怎麼準備？」；醫美會問「電波拉皮術後要注意什麼？」「音波拉提可以維持多久？」。**要問「怎麼做/為什麼/多久/幾歲/如何選」這類，而不是「推薦哪家」。**
+- **info（資訊型，${counts.info} 條）**：**知識/how-to 問句，不是找推薦、也絕不含品牌名**。是這個產業的**潛在客人在購買前會問的資訊題**——AI 回答時，很可能會引用這個品牌部落格/衛教文章當來源。例如英文補教會問「如何快速提升英文口說？」「多益怎麼準備？」；醫美會問「電波拉皮術後要注意什麼？」「音波拉提可以維持多久？」。**要問「怎麼做/為什麼/多久/幾歲/如何選」這類，而不是「推薦哪家」。**${competitorSection}
 
 【core 與 rotating 的共同要求（品類問句）】
 1. 像真人在搜尋框打字的口吻，不是產業分析師寫的題目。
@@ -219,13 +274,25 @@ function buildMetaPrompt(brand, counts) {
 3. 用繁體中文 + 台灣口語（「找哪家」「值得推薦」「有沒有人推」），不要用「請問」「敬請」這種太正式的詞。
 4. 每條 25–55 字，貼近一句話搜尋的長度；結尾用「？」。
 
+【意圖標籤（intent）】
+每一條題目都要標一個 intent，只能用下列六個代號之一：
+- \`decision\`：推薦哪家、價格費用、評價、哪個比較好 —— 購買意圖最明確
+- \`category\`：描述服務或品類本身（常帶地區），沒有明顯比較或痛點語氣
+- \`painpoint\`：從具體困擾切入、不點名解決方案
+- \`info\`：知識、how-to、注意事項、要多久
+- \`brand\`：含「${brand.name}」
+- \`competitor\`：同時含「${brand.name}」與競品名稱
+
+**core 與 rotating 合計，intent 必須至少各出現 1 條 \`decision\`、\`category\`、\`painpoint\`**——
+題庫如果缺掉其中一類，客戶在購買旅程的那一段就是量不到的盲區。
+
 【輸出格式】
-**只回傳一段 JSON，不要任何前後說明文字、不要 markdown code fence：**
+**只回傳一段 JSON，不要任何前後說明文字、不要 markdown code fence。每條題目都是 { "q": 問題文字, "intent": 意圖代號 } 物件：**
 {
-  "core": ["問題...", "..."],
-  "rotating": ["問題...", "..."],
-  "brand": ["${brand.name} ...？", "..."],
-  "info": ["如何...？", "為什麼...？", "..."]
+  "core": [{ "q": "問題...？", "intent": "decision" }],
+  "rotating": [{ "q": "問題...？", "intent": "painpoint" }],
+  "brand": [{ "q": "${brand.name} ...？", "intent": "brand" }],
+  "info": [{ "q": "如何...？", "intent": "info" }]${competitorJson}
 }`
 }
 
@@ -264,9 +331,14 @@ async function callClaude(promptText, apiKey) {
   }
 }
 
-// 解析四層題庫 JSON → { core:[], rotating:[], brand:[], info:[] }
-// 相容舊格式：若回傳的是 { prompts:[...] }，整批視為 core（不至於解析失敗）。
-function parseTieredJson(text) {
+// 解析題庫 JSON → { core:[], rotating:[], brand:[], info:[], competitor:[] }
+// 每筆正規化成 { text, intent }。刻意同時吃三種形狀，因為 LLM 的輸出格式不能當成保證：
+//   1. { "core": [{ "q": "...", "intent": "decision" }] }  ← 2026-09-04 起的正式格式
+//   2. { "core": ["..."] }                                  ← 舊格式，intent 留 null 由讀取端推測
+//   3. { "prompts": ["..."] }                               ← 更舊的單層格式，整批當 core
+const VALID_INTENTS = ['brand', 'competitor', 'decision', 'category', 'painpoint', 'info']
+
+export function parseTieredJson(text) {
   // Claude 偶爾會包進 ```json ... ``` 或多寫前後說明，盡量寬鬆抓出 JSON
   let cleaned = text.trim()
   cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
@@ -279,13 +351,28 @@ function parseTieredJson(text) {
   try {
     const parsed = JSON.parse(jsonStr)
     const clean = arr => (Array.isArray(arr) ? arr : [])
-      .filter(p => typeof p === 'string' && p.trim().length > 0)
-      .map(p => p.trim())
+      .map(item => {
+        if (typeof item === 'string') return { text: item.trim(), intent: null }
+        if (item && typeof item === 'object') {
+          const text = String(item.q || item.text || '').trim()
+          const intent = VALID_INTENTS.includes(item.intent) ? item.intent : null
+          return { text, intent }
+        }
+        return { text: '', intent: null }
+      })
+      .filter(item => item.text.length > 0)
+
     // 舊格式相容
     if (Array.isArray(parsed.prompts) && !parsed.core) {
-      return { core: clean(parsed.prompts), rotating: [], brand: [], info: [] }
+      return { core: clean(parsed.prompts), rotating: [], brand: [], info: [], competitor: [] }
     }
-    return { core: clean(parsed.core), rotating: clean(parsed.rotating), brand: clean(parsed.brand), info: clean(parsed.info) }
+    return {
+      core: clean(parsed.core),
+      rotating: clean(parsed.rotating),
+      brand: clean(parsed.brand),
+      info: clean(parsed.info),
+      competitor: clean(parsed.competitor),
+    }
   } catch {
     return null
   }

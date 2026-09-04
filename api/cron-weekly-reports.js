@@ -539,10 +539,14 @@ async function processAutoScan({ supabase, SITE_URL }) {
         .sort(() => Math.random() - 0.5).slice(0, AUTOSCAN_ROTATING_SAMPLE)
       const brandTier = (prompts || []).filter(prompt => tierOf(prompt) === 'brand')
       const info = (prompts || []).filter(prompt => tierOf(prompt) === 'info')
+      // 競品詞（2026-09-04）：同 brand 規格，每條 1 次。自動掃描漏掉這層的話，
+      // 手動掃跟自動掃的分母會不一樣，趨勢圖會出現說不清楚的落差。
+      const competitor = (prompts || []).filter(prompt => tierOf(prompt) === 'competitor')
       const jobs = [
         ...core.map(prompt => ({ prompt_id: prompt.id, runs: AUTOSCAN_SCAN_RUNS })),
         ...rotating.map(prompt => ({ prompt_id: prompt.id, runs: AUTOSCAN_SCAN_RUNS })),
         ...brandTier.map(prompt => ({ prompt_id: prompt.id, runs: 1 })),
+        ...competitor.map(prompt => ({ prompt_id: prompt.id, runs: 1 })),
         ...info.map(prompt => ({ prompt_id: prompt.id, runs: 1 })),
       ].map(job => ({ ...job, brand_id: brand.id, user_id: brand.user_id, status: 'pending' }))
       if (jobs.length) {

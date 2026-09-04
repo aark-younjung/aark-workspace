@@ -689,6 +689,9 @@ export default function AIVisibilityDashboard() {
     const coreTargets = activePrompts.filter(p => (p.tier || 'core') === 'core')
     const brandTargets = prompts.filter(p => (p.tier || 'core') === 'brand')
     const infoTargets = prompts.filter(p => (p.tier || 'core') === 'info')   // 資訊型：每次全掃、每條 1 次（計分看網域引用）
+    // 競品詞（2026-09-04）：跟 brand 同規格——池子、每次全掃、每條 1 次、不灌入曝光率。
+    // ⚠️ 這份分流是 services/aivisScanService.js buildScanTargets 的複本（硬切後未收斂），改動要兩邊同步。
+    const competitorTargets = prompts.filter(p => (p.tier || 'core') === 'competitor')
     const rotatingPool = prompts.filter(p => (p.tier || 'core') === 'rotating')
     const sampledRotating = [...rotatingPool]
       .sort(() => Math.random() - 0.5)            // 洗牌後取前 N（每次掃描抽不同批）
@@ -698,6 +701,7 @@ export default function AIVisibilityDashboard() {
       ...sampledRotating.map(p => ({ p, runs: SCAN_RUNS })),
       ...brandTargets.map(p => ({ p, runs: 1 })),
       ...infoTargets.map(p => ({ p, runs: 1 })),
+      ...competitorTargets.map(p => ({ p, runs: 1 })),
     ]
 
     setScanning(true); setScanPhase(0); setScanTotal(scanTargets.length)

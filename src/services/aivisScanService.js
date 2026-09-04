@@ -9,8 +9,12 @@ export const SCAN_RUNS = 3                  // core / rotating 每條跑幾次�
 export const ROTATING_SAMPLE_PER_SCAN = 2   // 每次掃描從輪替池隨機抽幾條（抓盲點、防應試化）
 
 /**
- * 四層題庫分流：決定這次掃描實際要送哪些題（與經典版 runScan 同邏輯）
- * core：啟用中的全送（固定樣本、趨勢基準）／rotating：隨機抽 N 條／brand、info：全送、每條 1 次
+ * 題庫分流：決定這次掃描實際要送哪些題（與經典版 runScan 同邏輯）
+ * core：啟用中的全送（固定樣本、趨勢基準）／rotating：隨機抽 N 條／
+ * brand、info、competitor：全送、每條 1 次
+ *
+ * 2026-09-04 加入 competitor（競品詞）。它跟 brand 一樣不進頭條曝光率——
+ * 曝光率的分母是 core，見 aivisData.js 的 aggregateTier。
  */
 export function buildScanTargets(prompts = []) {
   const tierOf = prompt => prompt.tier || 'core'
@@ -19,11 +23,13 @@ export function buildScanTargets(prompts = []) {
   const sampledRotating = [...rotatingPool].sort(() => Math.random() - 0.5).slice(0, ROTATING_SAMPLE_PER_SCAN)
   const brandTargets = prompts.filter(prompt => tierOf(prompt) === 'brand')
   const infoTargets = prompts.filter(prompt => tierOf(prompt) === 'info')
+  const competitorTargets = prompts.filter(prompt => tierOf(prompt) === 'competitor')
   return [
     ...coreTargets.map(prompt => ({ prompt, runs: SCAN_RUNS })),
     ...sampledRotating.map(prompt => ({ prompt, runs: SCAN_RUNS })),
     ...brandTargets.map(prompt => ({ prompt, runs: 1 })),
     ...infoTargets.map(prompt => ({ prompt, runs: 1 })),
+    ...competitorTargets.map(prompt => ({ prompt, runs: 1 })),
   ]
 }
 
