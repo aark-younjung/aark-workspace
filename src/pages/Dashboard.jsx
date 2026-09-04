@@ -10,7 +10,7 @@ import { GlassCard } from '../components/v2'
 import { T } from '../styles/v2-tokens'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { analyzeAEO } from '../services/aeoAnalyzer'
-import { analyzeGEO } from '../services/geoAnalyzer'
+import { analyzeGEO, evaluateAiCrawlers } from '../services/geoAnalyzer'
 import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { analyzeContent } from '../services/contentAnalyzer'
 import { exportDashboardPDF } from '../services/pdfExport'
@@ -420,6 +420,7 @@ export default function Dashboard() {
           sitemap: geoResult.sitemap, open_graph: geoResult.open_graph,
           twitter_card: geoResult.twitter_card, json_ld_citation: geoResult.json_ld_citation,
           canonical: geoResult.canonical, https: geoResult.https,
+          lastmod_passed: !!geoResult.lastmod_passed, ai_snippet_passed: !!geoResult.ai_snippet_passed,
         }]),
         supabase.from('eeat_audits').insert([{
           website_id: id, score: eeatResult.score,
@@ -510,7 +511,9 @@ export default function Dashboard() {
   // 完整修復清單（含面向別 + 預估時間，給總覽 tab 修復清單預覽 + 優化工具 tab 共用）
   const getAllImprovements = () => {
     const tips = []
-    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', priority: 'P1', face: 'GEO', time: '30m', title: '建立 llms.txt 檔案', desc: 'AI 爬蟲無法識別你的服務內容。在根目錄建立 /llms.txt 說明你的品牌與服務特色，讓 ChatGPT、Claude、Perplexity 更容易引用你。' })
+    // 2026-09-04 從 P1 降為 P3、且不再宣稱能提升引用：Google 官方 AI optimization guide 明確表示
+    // llms.txt 對 Google 搜尋不幫助也不傷害，SE Ranking／OtterlyAI 的研究也沒測到主流 AI 讀它。
+    if (!geoAudit?.llms_txt) tips.push({ icon: '🤖', priority: 'P3', face: 'GEO', time: '30m', title: '建立 llms.txt 檔案（選配）', desc: '在根目錄放一份 /llms.txt 摘要你的品牌與服務。誠實提醒：Google 已公開表明這個檔案不影響 Google 搜尋與 AI Overviews，部分非 Google 的 AI 系統可能參考。成本低，但別期待它帶來引用。' })
     if (!aeoAudit?.json_ld) tips.push({ icon: '📋', priority: 'P1', face: 'AEO', time: '1h', title: '新增 JSON-LD 結構化資料', desc: '缺少結構化資料讓 Google 難以理解你的頁面。至少加入 WebSite 和 Organization schema，可以直接複製右側「修復碼產生器」的程式碼。' })
     if (!eeatAudit?.about_page) tips.push({ icon: '🏢', priority: 'P1', face: 'EEAT', time: '2h', title: '建立關於我們頁面', desc: '缺少品牌介紹頁面。建立 /about 頁面說明公司背景與核心服務，強化 Google 與 AI 對你品牌的「權威性」認知。' })
     if (!seoAudit?.h1_structure?.hasOnlyOneH1) tips.push({ icon: '🏷️', priority: 'P1', face: 'SEO', time: '30m', title: '修正 H1 標題結構', desc: `頁面目前有 ${seoAudit?.h1_structure?.h1Count ?? 0} 個 H1 標題。每個頁面應只有一個 H1，清楚說明頁面主題，幫助 Google 與 AI 理解內容核心。` })
@@ -593,6 +596,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
   // ── AI 爬蟲追蹤 ──────────────────────────────────────────────────────
   const AI_CRAWLERS = [
     { id: 'gptbot', name: 'GPTBot', company: 'OpenAI', emoji: '🟢' },
+    // OAI-SearchBot 才是餵 ChatGPT 搜尋引用的那一隻，2026-09-04 補上（先前完全沒查）
+    { id: 'oai-searchbot', name: 'OAI-SearchBot', company: 'OpenAI', emoji: '🟢' },
     { id: 'claudebot', name: 'ClaudeBot', company: 'Anthropic', emoji: '🟠' },
     { id: 'anthropic-ai', name: 'anthropic-ai', company: 'Anthropic', emoji: '🟠' },
     { id: 'perplexitybot', name: 'PerplexityBot', company: 'Perplexity AI', emoji: '🔵' },
@@ -644,31 +649,36 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
       addLog(`> 逐一解析 AI 爬蟲規則...`)
       await delay(300)
 
-      const text = robotsContent.toLowerCase()
+      // 2026-09-04：改用 geoAnalyzer 的共用解析器（依 RFC 9309、有單測）。
+      // 這裡原本自己做字串比對，跟 geoAnalyzer 舊版犯一模一樣的兩個錯：
+      //   (1) `Disallow: /wp-admin/` 本身就含有 `disallow: /` → 誤報整站封鎖
+      //   (2) 只找具名 User-agent、讀不到 `User-agent: *` 的通擋 → 整站被擋卻報「允許」
+      // 客戶最常盯著看的就是這個終端機動畫，在這裡說反話的代價最高。
+      const evaluation = evaluateAiCrawlers(robotsContent)
+      const verdictById = new Map(evaluation.crawlers.map(c => [c.id, c]))
       const robotsResults = {}
 
       for (const bot of AI_CRAWLERS) {
         await delay(180)
-        const idx = text.indexOf(`user-agent: ${bot.id}`)
-        if (idx === -1) {
+        const verdict = verdictById.get(bot.id)
+        if (!verdict || verdict.matchedBy === 'none') {
           robotsResults[bot.id] = 'not_mentioned'
           addLog(`  ${bot.name.padEnd(18)} 未設定（預設允許）`)
+        } else if (verdict.blocked) {
+          robotsResults[bot.id] = 'blocked'
+          const how = verdict.matchedBy === 'wildcard' ? '被 User-agent: * 通擋' : 'Disallow: /'
+          addLog(`  ${bot.name.padEnd(18)} ✗ 封鎖 (${how})`, 'error')
         } else {
-          const section = text.substring(idx, idx + 300)
-          if (section.includes('disallow: /') && !section.includes('disallow: \n') && !section.includes('disallow: \r')) {
-            robotsResults[bot.id] = 'blocked'
-            addLog(`  ${bot.name.padEnd(18)} ✗ 封鎖 (Disallow: /)`, 'error')
-          } else {
-            robotsResults[bot.id] = 'allowed'
-            addLog(`  ${bot.name.padEnd(18)} ✓ 明確允許`, 'success')
-          }
+          robotsResults[bot.id] = 'allowed'
+          addLog(`  ${bot.name.padEnd(18)} ✓ 可存取`, 'success')
         }
       }
 
       await delay(400)
       addLog(`> 檢查 AI 可見度信號...`)
       await delay(300)
-      addLog(`  llms.txt      ${geoAudit?.llms_txt ? '✓ 存在' : '✗ 未找到'}`, geoAudit?.llms_txt ? 'success' : 'error')
+      // llms.txt 已於 2026-09-04 降為不計分訊號（Google 官方表明對搜尋無效），不再用紅字呈現
+      addLog(`  llms.txt      ${geoAudit?.llms_txt ? '✓ 存在' : '— 未建立（選配）'}`, geoAudit?.llms_txt ? 'success' : 'warn')
       await delay(200)
       addLog(`  sitemap.xml   ${geoAudit?.sitemap ? '✓ 存在' : '✗ 未找到'}`, geoAudit?.sitemap ? 'success' : 'error')
       await delay(200)
@@ -946,7 +956,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
         {/* 被 AI 引用的關鍵條件 checklist */}
         {(seoAudit || aeoAudit || geoAudit || eeatAudit) && (() => {
           const conditions = [
-            { label: 'llms.txt 已建立', desc: '讓 AI 爬蟲識別你的品牌與服務', pass: !!geoAudit?.llms_txt },
+            { label: 'llms.txt 已建立', desc: '選配訊號，Google 搜尋不採計', pass: !!geoAudit?.llms_txt },
             { label: '結構化資料（JSON-LD）', desc: 'Schema.org 標記幫助 AI 理解頁面語意', pass: !!aeoAudit?.json_ld },
             { label: '明確的作者資訊', desc: 'E-E-A-T 信賴度基礎，AI 引用優先考量', pass: !!eeatAudit?.author_info },
             { label: 'FAQ / Q&A 結構', desc: 'AI 偏好能直接回答問題的頁面格式', pass: !!aeoAudit?.faq_schema },
@@ -1601,7 +1611,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                   <h4 className="text-sm font-semibold text-white/80 mb-3">AI 可見度信號</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
-                      { label: 'llms.txt', desc: '讓 AI 了解你的品牌與服務', passed: !!geoAudit?.llms_txt, icon: '📄', fix: '在根目錄建立 /llms.txt' },
+                      { label: 'llms.txt', desc: '選配：Google 不採計，部分非 Google 系統可能參考', passed: !!geoAudit?.llms_txt, icon: '📄', fix: '在根目錄建立 /llms.txt' },
                       { label: 'sitemap.xml', desc: '協助 AI 探索所有頁面', passed: !!geoAudit?.sitemap, icon: '🗺️', fix: '在網站根目錄放 sitemap.xml 並提交至 Google Search Console' },
                       { label: 'robots.txt', desc: '爬蟲規則文件', passed: crawlerResults.hasRobotsTxt, icon: '🤖', fix: '建立 /robots.txt 明確設定規則' },
                     ].map(item => (
@@ -1622,7 +1632,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 </div>
 
                 {/* Recommendations */}
-                {(Object.values(crawlerResults.robots).some(v => v === 'blocked') || !geoAudit?.llms_txt || !geoAudit?.sitemap) && (
+                {(Object.values(crawlerResults.robots).some(v => v === 'blocked') || !geoAudit?.sitemap) && (
                   <div className="p-5 rounded-xl border" style={{ background: `${T.warn}1a`, borderColor: `${T.warn}33` }}>
                     <h4 className="font-semibold text-amber-200 mb-3">⚠️ 優化建議</h4>
                     <ul className="space-y-2 text-sm text-amber-100/90">
@@ -1634,7 +1644,7 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                         })
                       }
                       {!geoAudit?.llms_txt && (
-                        <li>• 尚未建立 <strong className="text-white">llms.txt</strong>，AI 無法識別你的品牌服務，前往「優化工具」Tab 產生修復碼</li>
+                        <li>• 尚未建立 <strong className="text-white">llms.txt</strong>（選配，Google 搜尋不採計）——想補的話可到「優化工具」Tab 產生</li>
                       )}
                       {!geoAudit?.sitemap && (
                         <li>• 尚未偵測到 <strong className="text-white">sitemap.xml</strong>，AI 爬蟲可能無法完整索引你的頁面</li>
@@ -1644,7 +1654,8 @@ ${siteTitle} — ${bizInfo.description || siteDesc}
                 )}
 
                 {/* All Good */}
-                {!Object.values(crawlerResults.robots).some(v => v === 'blocked') && geoAudit?.llms_txt && geoAudit?.sitemap && (
+                {/* 2026-09-04：「全部沒問題」不再卡在 llms.txt —— 它已不是失分項，不該擋住這個正向回饋 */}
+                {!Object.values(crawlerResults.robots).some(v => v === 'blocked') && geoAudit?.sitemap && (
                   <div className="p-5 rounded-xl border text-center" style={{ background: `${T.pass}1a`, borderColor: `${T.pass}33` }}>
                     <span className="text-3xl">🎉</span>
                     <p className="font-semibold text-green-300 mt-2">太棒了！所有 AI 爬蟲都可以存取你的網站</p>

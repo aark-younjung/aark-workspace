@@ -12,17 +12,21 @@ import { fetchPageContent, parseHTML, analyzeSEO } from './seoAnalyzer'
 import { analyzeAEO } from './aeoAnalyzer'
 import { analyzeGEO } from './geoAnalyzer'
 import { analyzeEEAT } from './eeatAnalyzer'
+import { detectRenderMode } from '../lib/renderMode'
 
 /**
  * 跑完整單頁掃描（四大面向）並寫入 audit 表。
  * @param {(key:'seo'|'aeo'|'geo'|'eeat', result:object|null) => void} [onProgress]
  *        單一面向跑完就回報（失敗回報 null）。給等待畫面「先跑完先翻牌」用；不傳則行為與過去完全相同。
- * @returns {{ seo, aeo, geo, eeat }} 各分析結果（失敗的面向為 null；寫入用 allSettled、單面向失敗不擋全部）
+ * @returns {{ seo, aeo, geo, eeat, render }} 各分析結果（失敗的面向為 null；寫入用 allSettled、單面向失敗不擋全部）
+ *          render 是「AI 爬蟲讀到的是不是空殼」的判定，只回傳不寫 DB（顯示層用，見 lib/renderMode.js）
  */
 export async function runFullScan({ websiteId, url, onProgress }) {
   // 頁面抓一次、四個分析器共用 doc（省 proxy 流量；個別分析器仍可自行補抓站台層檔案）
   const { html } = await fetchPageContent(url)
   const doc = parseHTML(html)
+  // CSR / SPA 判定：純讀 doc、不打網路，放在分析器之前不影響任何既有流程
+  const render = detectRenderMode(doc)
 
   // 逐面向回報進度；仍等四個到齊才往下寫表（回報只是旁路，不改變流程）
   // callback 是呼叫端的 UI code——它壞掉不能拖垮跑了 30–60 秒的掃描，故獨立 try
@@ -64,6 +68,9 @@ export async function runFullScan({ websiteId, url, onProgress }) {
       sitemap: !!geo.sitemap, open_graph: !!geo.open_graph,
       twitter_card: !!geo.twitter_card, json_ld_citation: !!geo.json_ld_citation,
       canonical: !!geo.canonical, https: !!geo.https,
+      // 2026-09-04 升為計分項（SQL 已跑）。這兩欄漏掉的話分數存得下、細項卻讀不回來，
+      // 就是 2026-08-13 aeo_audits 缺欄位藏一個月的那種 bug。
+      lastmod_passed: !!geo.lastmod_passed, ai_snippet_passed: !!geo.ai_snippet_passed,
     }]),
     eeat && supabase.from('eeat_audits').insert([{
       website_id: websiteId, score: eeat.score,
@@ -85,5 +92,5 @@ export async function runFullScan({ websiteId, url, onProgress }) {
     }
   })
 
-  return { seo, aeo, geo, eeat }
+  return { seo, aeo, geo, eeat, render }
 }

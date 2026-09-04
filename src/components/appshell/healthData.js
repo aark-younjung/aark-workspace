@@ -36,15 +36,17 @@ const AEO_META = [
 ]
 
 const GEO_META = [
-  { id: 'llms_txt', name: 'llms.txt', icon: '🤖', priority: 'P1', description: '網站根目錄是否有 llms.txt，提供品牌與服務摘要。', recommendation: '在根目錄建立 llms.txt，描述品牌、服務與聯絡方式。' },
-  { id: 'robots_ai', name: 'AI 爬蟲開放性', icon: '🚦', priority: 'P1', description: 'robots.txt 是否封鎖 GPTBot、PerplexityBot、Google-Extended 等爬蟲。', recommendation: '確認 robots.txt 沒有封鎖需要放行的 AI 爬蟲。' },
+  // 2026-09-04：降為 P3 選配訊號，理由見 services/geoAnalyzer.js 的 checkLLMsTxt 註解
+  { id: 'llms_txt', name: 'llms.txt（選配）', icon: '🤖', priority: 'P3', description: '網站根目錄是否有 llms.txt。Google 已表明不影響 Google 搜尋與 AI Overviews，不計入 GEO 分數。', recommendation: '要補可在根目錄建立 llms.txt，但請排在其他 GEO 項目之後。' },
+  { id: 'robots_ai', name: 'AI 爬蟲開放性', icon: '🚦', priority: 'P1', description: 'robots.txt 是否封鎖 GPTBot、OAI-SearchBot、ClaudeBot、Google-Extended（計分）；PerplexityBot、CCBot 等一併偵測但不扣分。', recommendation: '確認沒有擋掉這四隻，並檢查 User-agent: * 是否有 Disallow: / 造成整站通擋。' },
   { id: 'sitemap', name: 'Sitemap.xml', icon: '🗺️', priority: 'P2', description: '站台層是否提供 sitemap.xml。', recommendation: '建立 sitemap.xml 並收錄重要頁面。' },
   { id: 'open_graph', name: 'Open Graph', icon: '🔗', priority: 'P2', description: '頁面是否提供完整 Open Graph 摘要。', recommendation: '替頁面補齊 Open Graph 標籤。' },
   { id: 'twitter_card', name: 'Twitter Card', icon: '🐦', priority: 'P3', description: '頁面是否提供 Twitter Card 標籤。', recommendation: '補上 twitter:card、twitter:title、twitter:image。' },
   { id: 'json_ld_citation', name: 'JSON-LD 引用信號', icon: '📜', priority: 'P2', description: 'JSON-LD 是否包含 author、publisher、datePublished 等引用信號。', recommendation: '在 JSON-LD 補上作者、發布者與發布日期。' },
   { id: 'canonical', name: 'Canonical 標籤', icon: '🔒', priority: 'P1', description: '是否指定正確引用來源 URL。', recommendation: '在每頁 head 設置 canonical URL。' },
   { id: 'https', name: 'HTTPS 安全連線', icon: '🔐', priority: 'P1', description: '頁面是否使用 HTTPS。', recommendation: '確保網站全站使用有效 HTTPS。' },
-  { id: 'lastmod_passed', name: '內容新鮮度（lastmod）', icon: '🕒', priority: 'P1', description: '頁面是否提供近期更新時間；此訊號目前不計入 GEO 主分數。', recommendation: '加入 dateModified 或 article:modified_time，並定期更新內容。' },
+  { id: 'lastmod_passed', name: '內容新鮮度（lastmod）', icon: '🕒', priority: 'P1', description: '頁面是否提供近期更新時間（距今 365 天內）。3 個月內的內容被 AI 引用的機率明顯較高，超過半年幾乎失去引用資格。2026-09-04 起計入 GEO 分數。', recommendation: '加入 dateModified 或 article:modified_time，並把長期沒動的頁面排進翻新清單。' },
+  { id: 'ai_snippet_passed', name: 'AI 摘要抑制指令', icon: '🚫', priority: 'P1', description: '頁面是否有 nosnippet、max-snippet:0、noindex 這類指令。Google 明確表示沒有 AI 專屬 opt-out——AI Overviews 與 AI Mode 的露出就是由這些一般 preview 指令控制的。', recommendation: '若不是刻意隱藏這一頁，移除 robots meta 裡的 nosnippet / max-snippet:0 / noindex。這常是 SEO 外掛預設值或開發時留下的。' },
 ]
 
 const EEAT_META = [

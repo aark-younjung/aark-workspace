@@ -24,7 +24,21 @@ const PROBE_RETRY_MS = 800 // 重試前的退避（原本失敗後立刻再打�
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
- * 1. llms.txt 檢測 (AI 爬蟲說明文件)
+ * 1. llms.txt 檢測（偵測並回報，但**不計入分數**）
+ *
+ * 2026-09-04 降級為不計分。原因是 primary source 站不住腳：
+ *   - Google 官方 AI optimization guide（2026-05-15 發布、06-15 澄清）明文指出
+ *     llms.txt 這類 AI 文字檔對 Google Search 不需要，不幫助也不傷害排名或能見度。
+ *   - SE Ranking 30 萬網域研究、OtterlyAI 的 server log 稽核都顯示主流 AI 搜尋
+ *     系統實務上沒有去讀這個檔案。
+ *
+ * 我們原本把它當 8 項等權檢查之一，等於整個 GEO 分數有 12.5% 押在一個沒有證據的訊號上。
+ * 品牌承諾是「寧可少講不誇大」（見 lib/renderMode.js 檔頭），這一項違背了它 ——
+ * 而且客戶只要 Google 一下就查得到官方說法，反噬的是整份報告的可信度。
+ *
+ * 保留偵測與 llms_txt 欄位（部分非 Google 系統仍可能參考，我們也有代管功能），
+ * 只是不再用它加減客戶的分數、也不再宣稱它會讓 AI 更容易引用你。
+ *
  */
 /**
  * 探測子資源（llms.txt / robots.txt / sitemap.xml）
@@ -59,45 +73,160 @@ async function checkLLMsTxt(baseUrl) {
 }
 
 /**
- * 2. robots.txt AI 開放性檢測 (是否允許 GPTBot、PerplexityBot、Google-Extended)
+ * 2. robots.txt AI 開放性檢測
+ *
+ * 2026-09-04 重寫。舊版用「找到 `user-agent: <bot>` 後取 200 字視窗、看裡面有沒有
+ * `disallow: /`」判斷，有兩個會直接誤導客戶的錯：
+ *
+ *   (1) 假陽性（說你擋了、其實沒擋）：`Disallow: /wp-admin/` 這個字串裡面就含有
+ *       `disallow: /`。只要站方擋了任何一個子目錄，我們就回報「你封鎖了 GPTBot」。
+ *       客戶會跑去改一個根本沒壞的設定，而且會開始懷疑報告其他部分。
+ *
+ *   (2) 假陰性（說你沒擋、其實整站都擋）：舊版只找具名的 `User-agent: <bot>` 區塊，
+ *       完全沒讀 `User-agent: *`。一個 `User-agent: *` + `Disallow: /` 的站（整站
+ *       拒絕爬蟲）在舊版判定為「通過」—— 但那正是我們最該抓出來的情況。
+ *
+ * 解析依 RFC 9309：具名 group 優先於萬用 group（具名存在時完全忽略 `*`）；
+ * 同一 group 內以最長前綴匹配決勝、同長度時 Allow 勝過 Disallow。
+ * 我們只問一個問題：這隻爬蟲能不能抓 `/`。因此只有能匹配到根路徑的規則
+ * （`/`、`/*`、`/$`）參與判定，`Disallow: /private/` 不算封鎖整站。
+ *
+ * 計分口徑刻意跟全站文案的三引擎對齊（ChatGPT / Claude / Gemini）：
+ * 只有這三家背後的爬蟲被擋才算不通過。PerplexityBot、CCBot 等仍然偵測並列在
+ * details 裡給客戶看全貌，但不扣分 —— 我們沒有在賣 Perplexity 的能見度，
+ * 就不該拿它扣客戶的分。
  */
+
+/**
+ * 偵測範圍（回報用）。userTriggered 的爬蟲依設計就不遵守 robots.txt，
+ * 擋不擋得到是另一回事，所以永遠不列入「被封鎖」。
+ */
+export const AI_CRAWLERS = [
+  { id: 'gptbot', owner: 'OpenAI', note: 'ChatGPT 檢索與訓練' },
+  { id: 'oai-searchbot', owner: 'OpenAI', note: 'ChatGPT 搜尋的引用來源' },
+  { id: 'chatgpt-user', owner: 'OpenAI', note: '使用者在 ChatGPT 內觸發的瀏覽', userTriggered: true },
+  { id: 'claudebot', owner: 'Anthropic', note: 'Claude 網頁檢索' },
+  { id: 'anthropic-ai', owner: 'Anthropic', note: 'Claude 訓練' },
+  { id: 'google-extended', owner: 'Google', note: 'Gemini 檢索與訓練' },
+  { id: 'perplexitybot', owner: 'Perplexity', note: 'Perplexity 檢索（不計分）' },
+  { id: 'bytespider', owner: 'ByteDance', note: '豆包／TikTok 系 AI（不計分）' },
+  { id: 'ccbot', owner: 'Common Crawl', note: '訓練語料（擋掉不影響 AI 搜尋引用，不計分）' },
+]
+
+/** 會影響分數的爬蟲＝我們對外宣稱監測的三個引擎背後的那幾隻 */
+export const SCORED_CRAWLERS = ['gptbot', 'oai-searchbot', 'claudebot', 'google-extended']
+
+/**
+ * 把 robots.txt 拆成 group：連續的 User-agent 行共用後面那組規則，
+ * 規則出現之後再遇到 User-agent 就是新的 group 開始。
+ * @returns {Array<{agents:string[], rules:Array<{allow:boolean, path:string}>}>}
+ */
+export function parseRobotsGroups(text) {
+  const groups = []
+  let current = null
+  let lastWasAgent = false
+
+  for (const rawLine of String(text || '').split(/\r?\n/)) {
+    const line = rawLine.split('#')[0].trim()  // 去掉行內註解
+    if (!line) continue
+    const colon = line.indexOf(':')
+    if (colon === -1) continue
+    const field = line.slice(0, colon).trim().toLowerCase()
+    const value = line.slice(colon + 1).trim()
+
+    if (field === 'user-agent') {
+      if (!current || !lastWasAgent) {
+        current = { agents: [], rules: [] }
+        groups.push(current)
+      }
+      current.agents.push(value.toLowerCase())
+      lastWasAgent = true
+      continue
+    }
+    if (field === 'allow' || field === 'disallow') {
+      if (!current) continue  // 規則出現在任何 User-agent 之前 → 沒有歸屬、忽略
+      current.rules.push({ allow: field === 'allow', path: value })
+      lastWasAgent = false
+    }
+  }
+  return groups
+}
+
+/** 這條規則管不管得到根路徑 `/`（子目錄規則管不到） */
+function rulePathHitsRoot(path) {
+  return path === '/' || path === '/*' || path === '/$'
+}
+
+/**
+ * 某隻爬蟲能不能抓根路徑。
+ * @returns {{blocked:boolean, matchedBy:'named'|'wildcard'|'none'}}
+ *          matchedBy 給 UI 講人話用：named＝站方指名擋你，wildcard＝被 `*` 通擋掃到
+ */
+export function rootAccessFor(groups, bot) {
+  const named = groups.find(g => g.agents.includes(bot))
+  const group = named || groups.find(g => g.agents.includes('*'))
+  if (!group) return { blocked: false, matchedBy: 'none' }
+
+  // `Disallow:`（空值）依規範等於「不限制」，不會匹配到任何路徑，交給 rulePathHitsRoot 濾掉
+  const rootRules = group.rules.filter(r => rulePathHitsRoot(r.path))
+  const hasAllow = rootRules.some(r => r.allow)
+  const hasDisallow = rootRules.some(r => !r.allow)
+  return {
+    blocked: hasDisallow && !hasAllow,  // 同長度 Allow 勝 Disallow
+    matchedBy: named ? 'named' : 'wildcard',
+  }
+}
+
+/**
+ * 純函式：吃 robots.txt 原文、吐出每隻 AI 爬蟲的通行狀態。
+ * 抽出來是為了可單測（見 geoAnalyzer.robots.test.js）——這段邏輯錯了會直接對客戶說錯話。
+ */
+export function evaluateAiCrawlers(robotsText) {
+  const groups = parseRobotsGroups(robotsText)
+  const crawlers = AI_CRAWLERS.map(crawler => {
+    const access = rootAccessFor(groups, crawler.id)
+    // 使用者觸發型爬蟲不遵守 robots.txt，寫了也擋不住 → 不算被封鎖
+    const blocked = crawler.userTriggered ? false : access.blocked
+    return { ...crawler, blocked, matchedBy: access.matchedBy }
+  })
+
+  const blocked = crawlers.filter(c => c.blocked).map(c => c.id)
+  const allowed = crawlers.filter(c => !c.blocked).map(c => c.id)
+  const scoredBlocked = blocked.filter(id => SCORED_CRAWLERS.includes(id))
+
+  return {
+    passed: scoredBlocked.length === 0,
+    blocked,
+    allowed,
+    scoredBlocked,
+    crawlers,
+    hasRobotsTxt: true,
+  }
+}
+
 async function checkRobotsAI(baseUrl) {
   const probe = await probeResource(baseUrl + '/robots.txt')
-  if (probe.unknown) return { passed: false, unknown: true, blocked: [], allowed: [], hasRobotsTxt: false }
-  if (!probe.found) return { passed: false, blocked: [], allowed: [], hasRobotsTxt: false }
-  try {
-    const data = probe.data
-    const text = (data.content || '').toLowerCase()
-    const aiBots = ['gptbot', 'perplexitybot', 'google-extended', 'claudebot', 'anthropic-ai']
-
-    // 解析 robots.txt：找出明確 Disallow 或 Allow 的 AI bots
-    const blocked = []
-    const allowed = []
-
-    aiBots.forEach(bot => {
-      // 簡單判斷：找到 User-agent: <bot> + Disallow: / 視為封鎖
-      const userAgentIdx = text.indexOf(`user-agent: ${bot}`)
-      if (userAgentIdx !== -1) {
-        const section = text.substring(userAgentIdx, userAgentIdx + 200)
-        if (section.includes('disallow: /') && !section.includes('disallow: \n')) {
-          blocked.push(bot)
-        } else {
-          allowed.push(bot)
-        }
-      }
-    })
-
-    // 沒有明確封鎖主要 AI bot 視為通過
-    const majorBots = ['gptbot', 'google-extended']
-    const majorBlocked = blocked.filter(b => majorBots.includes(b))
+  if (probe.unknown) return { passed: false, unknown: true, blocked: [], allowed: [], scoredBlocked: [], crawlers: [], hasRobotsTxt: false }
+  // 沒有 robots.txt ＝ 沒有任何限制 ＝ 所有爬蟲都能抓。
+  // 舊版這裡回 passed:false（沒檔案就扣分），但那跟事實相反：對 AI 爬蟲的開放性來說，
+  // 「沒有 robots.txt」是最開放的狀態。要提醒客戶建立 robots.txt 是 SEO 面向的事，
+  // 不該在「AI 爬蟲開放性」這一項扣分。
+  if (!probe.found) {
     return {
-      passed: majorBlocked.length === 0,
-      blocked,
-      allowed,
-      hasRobotsTxt: true
+      passed: true,
+      blocked: [],
+      allowed: AI_CRAWLERS.map(c => c.id),
+      scoredBlocked: [],
+      crawlers: AI_CRAWLERS.map(c => ({ ...c, blocked: false, matchedBy: 'none' })),
+      hasRobotsTxt: false,
     }
-  } catch {}
-  return { passed: false, blocked: [], allowed: [], hasRobotsTxt: false }
+  }
+  try {
+    return { ...evaluateAiCrawlers(probe.data.content || ''), hasRobotsTxt: true }
+  } catch {
+    // 解析炸掉 → 當作這次量不到，不扣分（同 probeResource 的 unknown 口徑）
+    return { passed: false, unknown: true, blocked: [], allowed: [], scoredBlocked: [], crawlers: [], hasRobotsTxt: true }
+  }
 }
 
 /**
@@ -206,6 +335,79 @@ function checkHttps(url) {
  *
  * 通過條件：找到任一來源、且距今 ≤ 365 天
  */
+/**
+ * 10. AI 摘要抑制指令檢測（2026-09-04 新增，偵測但暫不計分）
+ *
+ * 為什麼要查：Google 說得很明白——**沒有 AI 專屬的 opt-out 檔案**。
+ * 頁面會不會出現在 AI Overviews / AI Mode，是由一般的 preview 指令決定的：
+ * `nosnippet`、`max-snippet:0`、`data-nosnippet`、`noindex`。
+ * 這跟 robots.txt 擋第三方 AI 爬蟲是兩件完全不同的事，我們原本只查了後者。
+ *
+ * 實務上這是很常見的自傷：SEO 外掛的預設值、開發時留下的 noindex、
+ * 或是為了「防抄襲」加上 nosnippet —— 客戶完全不知道自己親手關掉了 AI 引用。
+ * 這一項不是要扣分羞辱誰，是要把「你以為的問題不在這裡」指出來。
+ *
+ * @param {string[]} metaContents  robots / googlebot meta 的 content 值
+ * @param {number} dataNosnippetCount  帶 data-nosnippet 屬性的元素數量
+ */
+export function evaluateSnippetDirectives(metaContents = [], dataNosnippetCount = 0) {
+  const tokens = metaContents
+    .filter(Boolean)
+    .flatMap(content => String(content).toLowerCase().split(','))
+    .map(token => token.trim())
+    .filter(Boolean)
+
+  const has = name => tokens.includes(name)
+  // max-snippet:0 等於完全不給摘要；負數（-1）代表不限制，是好事
+  const maxSnippetZero = tokens.some(token => {
+    const match = token.match(/^max-snippet\s*:\s*(-?\d+)$/)
+    return !!match && Number(match[1]) === 0
+  })
+
+  const noindex = has('noindex') || has('none')
+  const nosnippet = has('nosnippet') || has('none')
+  const blocksSnippet = nosnippet || maxSnippetZero
+
+  const directives = []
+  if (noindex) directives.push('noindex')
+  if (nosnippet) directives.push('nosnippet')
+  if (maxSnippetZero) directives.push('max-snippet:0')
+  if (dataNosnippetCount > 0) directives.push(`data-nosnippet ×${dataNosnippetCount}`)
+
+  return {
+    // 通過＝沒有任何會讓這一頁拿不到 AI 摘要的指令。
+    // data-nosnippet 只遮部分區塊、不影響整頁資格，因此不列入不通過。
+    passed: !blocksSnippet && !noindex,
+    noindex,
+    nosnippet,
+    maxSnippetZero,
+    blocksSnippet,
+    dataNosnippetCount,
+    directives,
+  }
+}
+
+/** 從 DOM 撈出上面那個純函式需要的兩個輸入 */
+function checkAiSnippetControls(doc) {
+  const metaContents = ['robots', 'googlebot']
+    .flatMap(name => Array.from(doc.querySelectorAll(`meta[name="${name}"]`)))
+    .map(meta => meta.getAttribute('content'))
+  const dataNosnippetCount = doc.querySelectorAll('[data-nosnippet]').length
+  return evaluateSnippetDirectives(metaContents, dataNosnippetCount)
+}
+
+/**
+ * 內容新鮮度分級。fresh / recent 是 AI 引用的甜蜜區，aging 以後要排進翻新清單。
+ * @returns {'fresh'|'recent'|'aging'|'stale'|'unknown'}
+ */
+export function freshnessTier(daysSince) {
+  if (daysSince === null || daysSince === undefined || daysSince < 0) return 'unknown'
+  if (daysSince <= 90) return 'fresh'     // 3 個月內 —— 被引用機率最高
+  if (daysSince <= 180) return 'recent'   // 半年內 —— 仍在合理範圍
+  if (daysSince <= 365) return 'aging'    // 一年內 —— 建議排入翻新
+  return 'stale'                          // 超過一年 —— 引用資格幾乎流失
+}
+
 function checkLastmod(doc) {
   const sources = []
 
@@ -258,6 +460,10 @@ function checkLastmod(doc) {
 
   return {
     passed: daysSince >= 0 && daysSince <= 365,
+    // 分級依 SE Ranking 130 萬筆引用研究：3 個月內的內容被 AI 引用的機率約 3 倍，
+    // 放到 6 個月以上則幾乎失去引用資格。單純的「有／沒有 lastmod」講不出這件事，
+    // 分級才能變成可執行的建議（哪幾頁該先翻新），也才是月費監測服務的理由。
+    freshness: freshnessTier(daysSince),
     hasLastmod: true,
     daysSince,
     latestDate: latest.value,
@@ -312,8 +518,17 @@ export async function analyzeGEO(url, providedDoc = null) {
   // 未來要正式計入時、加 SQL: ALTER TABLE geo_audits ADD COLUMN lastmod_passed BOOLEAN DEFAULT NULL;
   // 然後把 lastmod 加進 checks 陣列、分母改 /9、insert sites 加 lastmod_passed 欄位
   const lastmod = doc ? checkLastmod(doc) : { passed: false, hasLastmod: false }
+  // AI 摘要抑制指令（nosnippet / max-snippet:0 / noindex / data-nosnippet）。
+  // 同樣暫不計分：geo_audits 還沒有欄位可存，硬加進分母會讓分數存得下、細項卻讀不回來。
+  const aiSnippet = doc ? checkAiSnippetControls(doc) : { passed: true, directives: [], dataNosnippetCount: 0 }
 
-  const checks = [llmsTxt, robotsAI, sitemap, openGraph, twitterCard, jsonLdCitation, canonical, https]
+  // 計分項（2026-09-04 兩段調整，同一天完成）：
+  //   (1) llmsTxt 移出計分（理由見 checkLLMsTxt 上方註解）
+  //   (2) lastmod 與 aiSnippet 在 geo_audits 補上欄位後升為計分項
+  // 分母 8 → 7 → 9。llms.txt 那一步會讓多數網站分數上跳，新增的兩項則會讓
+  // 「內容很久沒更新」或「有 nosnippet／noindex」的網站往下掉。
+  // 趨勢圖上這一天是改版斷點，不是網站本身變好或變差。
+  const checks = [robotsAI, sitemap, openGraph, twitterCard, jsonLdCitation, canonical, https, lastmod, aiSnippet]
   // unknown（這次量不到）從分母剔除 —— 量不到就不該扣分。
   // 否則網路抖一下分數就掉，客戶連掃兩次拿到不同數字，整個產品的可信度就沒了。
   const measured = checks.filter(c => !c.unknown)
@@ -340,11 +555,15 @@ export async function analyzeGEO(url, providedDoc = null) {
       jsonLdCitation,
       canonical,
       https,
-      lastmod, // ← 新增、給 UI 顯示「LLMO 新訊號」用（暫不計分）
+      lastmod,   // 2026-09-04 起計分（geo_audits.lastmod_passed）
+      aiSnippet, // 2026-09-04 起計分（geo_audits.ai_snippet_passed）
     },
     // 給 UI 快速判斷用、不入 DB（geo_audits 表沒這欄）
     lastmod_passed: lastmod.passed,
     lastmod_days_since: lastmod.daysSince,
+    lastmod_freshness: lastmod.freshness || 'unknown',
+    ai_snippet_passed: aiSnippet.passed,
+    ai_snippet_directives: aiSnippet.directives,
     analyzed_at: new Date().toISOString()
   }
 

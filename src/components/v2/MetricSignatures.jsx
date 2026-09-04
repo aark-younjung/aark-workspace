@@ -126,10 +126,12 @@ export function GEOSignature({ audit, isPro }) {
   const TOPIC_MULT = [1.0, 0.85, 0.7, 0.45, 0.32]
 
   // 每家引擎對技術項目的敏感度不同
+  // 2026-09-04：llms_txt 從三家的 key 清單移除 —— 它已不計入 GEO 分數
+  //（Google 官方表明對搜尋無效），再拿它推估各引擎可見度就前後不一致了。
   const ENGINE_BASES = [
-    { name: 'Gemini',       keys: ['llms_txt', 'robots_ai', 'sitemap', 'open_graph', 'json_ld_citation', 'canonical', 'https'], multiplier: 1.0 },
-    { name: 'ChatGPT',      keys: ['llms_txt', 'robots_ai', 'sitemap', 'open_graph', 'twitter_card', 'json_ld_citation', 'https'], multiplier: 0.85 },
-    { name: 'Claude',       keys: ['llms_txt', 'robots_ai', 'json_ld_citation', 'canonical', 'https'], multiplier: 0.72 },
+    { name: 'Gemini',       keys: ['robots_ai', 'sitemap', 'open_graph', 'json_ld_citation', 'canonical', 'https'], multiplier: 1.0 },
+    { name: 'ChatGPT',      keys: ['robots_ai', 'sitemap', 'open_graph', 'twitter_card', 'json_ld_citation', 'https'], multiplier: 0.85 },
+    { name: 'Claude',       keys: ['robots_ai', 'json_ld_citation', 'canonical', 'https'], multiplier: 0.72 },
   ]
   const buildVals = (eng) => {
     if (!audit) {

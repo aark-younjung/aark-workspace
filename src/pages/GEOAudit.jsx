@@ -13,21 +13,26 @@ const GEO_ACCENT = T.geo
 const GEO_ACCENT2 = '#14b8a6'
 
 const GEO_CHECKS = [
+  // 2026-09-04 降為不計分：Google 官方 AI optimization guide 明確表示 llms.txt 對 Google 搜尋
+  // 不幫助也不傷害；SE Ranking 30 萬網域研究與 OtterlyAI 的 server log 稽核也沒測到主流 AI 讀它。
+  // 仍然偵測並顯示（部分非 Google 系統可能參考、我們也有代管功能），只是不再拿它加減客戶的分數。
   {
     id: 'llms_txt',
-    name: 'llms.txt',
-    description: '網站根目錄是否有 /llms.txt 檔案，讓 ChatGPT、Claude、Perplexity 等 AI 工具能識別你的品牌與服務內容',
+    name: 'llms.txt（選配）',
+    description: '網站根目錄是否有 /llms.txt。誠實說明：Google 已公開表明這個檔案不影響 Google 搜尋與 AI Overviews，部分非 Google 的 AI 系統可能參考。成本低，但不要期待它帶來引用',
     icon: '🤖',
-    priority: 'P1',
-    recommendation: '在根目錄建立 /llms.txt，用自然語言描述你的品牌、服務與聯絡方式',
+    priority: 'P3',
+    recommendation: '想補的話，在根目錄建立 /llms.txt 描述品牌、服務與聯絡方式。優先順序請排在其他 GEO 項目之後',
+    unscored: true,
+    unscoredReason: 'Google 官方表明不影響搜尋與 AI Overviews，因此不計入分數',
   },
   {
     id: 'robots_ai',
     name: 'AI 爬蟲開放性',
-    description: '檢測 robots.txt 是否封鎖 GPTBot、PerplexityBot、Google-Extended 等主要 AI 爬蟲',
+    description: '檢測 robots.txt 是否封鎖 AI 爬蟲。計分只看我們實際監測的三個引擎背後那幾隻：GPTBot、OAI-SearchBot（ChatGPT 搜尋引用來源）、ClaudeBot、Google-Extended；PerplexityBot、CCBot、Bytespider 等會一併偵測回報但不扣分',
     icon: '🚦',
     priority: 'P1',
-    recommendation: '確認 robots.txt 沒有 Disallow GPTBot 或 Google-Extended，允許 AI 爬蟲索引你的內容',
+    recommendation: '確認 robots.txt 沒有擋掉 GPTBot、OAI-SearchBot、ClaudeBot、Google-Extended。也要檢查 User-agent: * 那一組有沒有 Disallow: / —— 整站通擋會連 AI 爬蟲一起擋住',
   },
   {
     id: 'sitemap',
@@ -79,7 +84,8 @@ const GEO_CHECKS = [
   },
   // P3 LLMO 深化（2026-06-05）— content freshness 訊號
   // LLM 在 retrieve / cite 時偏好「新鮮」內容（dateModified ≤ 365 天）
-  // 暫不計入主分數、待 SQL ADD COLUMN lastmod_passed 後再升級為計分項
+  // 2026-09-04：分級門檻改依 SE Ranking 130 萬筆引用研究（3 個月內約 3 倍、超過半年幾乎失去資格），
+  // 見 services/geoAnalyzer.js 的 freshnessTier()。同日補上 geo_audits.lastmod_passed 欄位後升為計分項。
   {
     id: 'lastmod_passed',
     name: '內容新鮮度（lastmod）',
@@ -87,7 +93,16 @@ const GEO_CHECKS = [
     icon: '🕒',
     priority: 'P1',
     recommendation: '用 Yoast / Rank Math 自動輸出 article:modified_time，或在 JSON-LD 加 dateModified。長期沒更新的頁面建議定期翻新內文（補新案例 / 新數據 / 新年度），LLM 比較願意引用',
-    isNewSignal: true, // 標記為「新增訊號、暫不計分」
+  },
+  // AI 摘要抑制指令（2026-09-04 起計分，geo_audits.ai_snippet_passed）。
+  // 偵測邏輯與單測在 services/geoAnalyzer.js 的 evaluateSnippetDirectives。
+  {
+    id: 'ai_snippet_passed',
+    name: 'AI 摘要抑制指令',
+    description: '頁面有沒有 nosnippet、max-snippet:0、noindex 這類指令。Google 明確說沒有 AI 專屬的 opt-out —— AI Overviews 與 AI Mode 的露出就是由這些一般 preview 指令控制的，跟 robots.txt 擋爬蟲是兩件事',
+    icon: '🚫',
+    priority: 'P1',
+    recommendation: '如果不是刻意要隱藏這一頁，移除 robots meta 裡的 nosnippet / max-snippet:0 / noindex。這類設定常常是 SEO 外掛預設值或開發時留下的，客戶通常不知道自己關掉了 AI 引用',
   },
 ]
 
@@ -146,6 +161,8 @@ export default function GEOAudit() {
         json_ld_citation: result.json_ld_citation,
         canonical: result.canonical,
         https: result.https,
+        lastmod_passed: !!result.lastmod_passed,
+        ai_snippet_passed: !!result.ai_snippet_passed,
       }])
       fetchData()
     } catch (error) {
@@ -156,14 +173,23 @@ export default function GEOAudit() {
     }
   }
 
-  // 分數計算：isNewSignal 標記的訊號暫不計入分母（lastmod 等新訊號、待 schema migration 後再升級）
-  const scoredChecks = GEO_CHECKS.filter(c => !c.isNewSignal)
+  // 分數計算：unscored 標記的訊號不計入分母。
+  // 目前有兩種 unscored：llms.txt（證據不足、刻意不計分）與 lastmod（待 schema migration）。
+  // 這個 fallback 分母要跟 services/geoAnalyzer.js 的 checks 陣列保持一致，改動要兩邊同步。
+  const scoredChecks = GEO_CHECKS.filter(c => !c.unscored)
   const passedCount = scoredChecks.filter(check => getCheckStatus(check.id) === 'pass').length
   const totalCount = scoredChecks.length
   const score = geoAudit ? geoAudit.score : Math.round((passedCount / totalCount) * 100)
 
+  // dbBacked === false 的訊號不顯示。
+  // 這頁的狀態一律讀自 geo_audits 那一列，欄位不存在時 geoAudit[id] 是 undefined，
+  // 而 IssueBoard 只認得 passed / 不 passed 兩種狀態 —— 那一項就會對每個客戶永遠亮紅燈。
+  //（lastmod_passed 從 2026-06-05 到 2026-09-04 補欄位為止，一直是這個狀況。）
+  // 目前所有訊號都有欄位撐著；這個過濾器留給下一個「先做偵測、後補欄位」的訊號當護欄。
+  const visibleChecks = GEO_CHECKS.filter(c => c.dbBacked !== false)
+
   // 把 GEO_CHECKS 與 audit 結果合併成 IssueBoard 需要的形狀（passed + detail）
-  const checks = GEO_CHECKS.map(c => ({
+  const checks = visibleChecks.map(c => ({
     ...c,
     passed: getCheckStatus(c.id) === 'pass',
     detail: c.description,

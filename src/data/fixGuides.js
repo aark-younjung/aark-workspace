@@ -647,7 +647,7 @@ add_action('wp_head', function () {
   // ─── GEO ────────────────────────────────────────────────────
   llms_txt: {
     freeForAll: true,   // 我們本來就有 /api/llms-txt 代管功能對外免費，gate 沒意義
-    summary: '在網站根目錄建立 llms.txt，讓 AI 爬蟲快速了解你的網站內容',
+    summary: '在網站根目錄建立 llms.txt。誠實提醒：Google 已公開表明它不影響 Google 搜尋與 AI Overviews，部分非 Google 的 AI 系統可能參考——成本低，但請排在其他 GEO 項目之後再做',
     platforms: {
       wordpress: {
         // 2026-06-09：拆成兩種做法、tab 切換
