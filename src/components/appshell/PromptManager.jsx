@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { runAivisScan, PROMPT_CAP, SCAN_RUNS, ROTATING_SAMPLE_PER_SCAN } from '../../services/aivisScanService'
 import { logError } from '../../lib/errorLog'
@@ -68,6 +69,7 @@ function IntentCoverage({ brand, prompts }) {
 }
 
 export default function PromptManager({ brand, prompts, userId, onPromptsChange }) {
+  const { websiteId } = useParams()              // 掃描完成後導去「監測總覽」用
   const [editing, setEditing] = useState(null)   // { id, text }
   const [busyId, setBusyId] = useState(null)
   const [notice, setNotice] = useState(null)     // { kind: 'ok'|'warn', msg }
@@ -150,8 +152,17 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
         prompts,
         onProgress: (done, total) => setScan({ running: true, done, total }),
       })
-      flash('ok', `✅ 掃描完成：${result.runs} 個回答、${result.mentioned} 次提及（${result.rate}%）——3 秒後重新載入`)
-      setTimeout(() => window.location.reload(), 3000)
+      // 掃完直接帶到「監測總覽」看結果（2026-09-05）。
+      // 舊版是 reload 同一個「監測題目」分頁——畫面上題目清單長得一模一樣，
+      // 用戶會以為按鈕沒反應（結果其實在別的分頁）。
+      // 這裡刻意用整頁導轉而不是 SPA 的 navigate：AppVisibility 只在 websiteId 變動時
+      // 重抓資料，同頁換 tab 不會 refetch，SPA 導過去會看到掃描前的舊數字——
+      // 那比「沒反應」更糟。整頁載入才保證看到的是剛寫進 DB 的結果。
+      flash('ok', `✅ 掃描完成：${result.runs} 個回答、${result.mentioned} 次提及（${result.rate}%）——正在帶你去看結果`)
+      setTimeout(() => {
+        if (websiteId) window.location.href = `/app/${websiteId}/visibility/overview`
+        else window.location.reload()   // 拿不到 id 時退回舊行為，至少資料是新的
+      }, 1200)
     } catch (error) {
       logError({ source: 'aivis_scan', message: error.message, userId, brandId: brand.id })
       setScan({ running: false, done: 0, total: 0 })
