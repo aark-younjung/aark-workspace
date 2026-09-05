@@ -14,6 +14,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { hasSeenRepeatModal, markRepeatModalSeen } from '../lib/anonSession'
 import { pageLabel } from '../lib/sitemap'
+import { renderModeNotice } from '../lib/renderMode'
+import { waybackNotice } from '../services/waybackFreshness'
 
 // 逐項檢測定義：label = 中文標籤，read = 從結果物件判斷該項有沒有過
 // SEO 每項是 { passed } 物件；AEO/GEO/EEAT 每項是布林值 → 用各自 read()
@@ -100,6 +102,11 @@ export default function AnonDiagnosis({ result, repeatCount = 0, sitemapPages = 
   }, [showModal, closeModal])
 
   const scores = { seo: result.seo, aeo: result.aeo, geo: result.geo, eeat: result.eeat }
+  // CSR / 內容過少提示（見 lib/renderMode.js）。ok 等級回 null → 什麼都不顯示。
+  const renderNote = renderModeNotice(result.render)
+  // Archive.org 佐證（2026-09-05）：只在「網站標示最近更新、但存檔顯示內容沒變」時才回東西，
+  // 其他情況一律 null。這是用戶自己絕對看不到的落差，也是這張卡最有說服力的一條。
+  const waybackNote = waybackNotice(result.wayback)
 
   return (
     <div ref={ref} className="mt-6 rounded-2xl border p-5 sm:p-6"
@@ -113,6 +120,44 @@ export default function AnonDiagnosis({ result, repeatCount = 0, sitemapPages = 
           免費・免註冊
         </span>
       </div>
+
+      {/* 渲染方式警示（2026-08-28）：這一頁的內容如果是 JS 產生的，AI 爬蟲讀到的是空殼 ——
+          不先講清楚，下面的低分會被誤讀成「我內容不夠」，用戶就會把力氣花在補 meta 標籤這種沒用的事上。
+          分兩級：warn（確定/幾乎空白）跳框，note（內容偏少）只給一行小字，不嚇人。 */}
+      {renderNote && (
+        renderNote.tone === 'warn' ? (
+          <div className="mb-5 rounded-xl px-4 py-3.5 flex items-start gap-3"
+            style={{ background: 'rgba(251,191,36,0.09)', border: '1px solid rgba(251,191,36,0.38)' }}>
+            <span className="text-lg leading-none mt-0.5" aria-hidden="true">⚠️</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-white text-sm font-semibold mb-1.5">{renderNote.title}</div>
+              {renderNote.lines.map((line, i) => (
+                <p key={i} className="text-xs leading-relaxed mb-1 last:mb-0" style={{ color: 'rgba(255,255,255,0.68)' }}>{line}</p>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-5 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            <span style={{ color: 'rgba(255,255,255,0.7)' }}>{renderNote.title}</span>——{renderNote.lines[0]}
+          </div>
+        )
+      )}
+
+      {/* Archive.org 佐證（2026-09-05）：網站宣稱的更新時間可以造假（SEO 外掛常常每次載入就寫成當下），
+          這裡拿第三方存檔的內容雜湊比對，點出「宣稱很新、實際沒動」的落差。
+          刻意只在有落差時才顯示——沒落差時多講一句都是雜訊。 */}
+      {waybackNote && (
+        <div className="mb-5 rounded-xl px-4 py-3.5 flex items-start gap-3"
+          style={{ background: 'rgba(251,191,36,0.09)', border: '1px solid rgba(251,191,36,0.38)' }}>
+          <span className="text-lg leading-none mt-0.5" aria-hidden="true">🕰️</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-white text-sm font-semibold mb-1.5">{waybackNote.title}</div>
+            {waybackNote.lines.map((line, i) => (
+              <p key={i} className="text-xs leading-relaxed mb-1 last:mb-0" style={{ color: 'rgba(255,255,255,0.68)' }}>{line}</p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 檢測範圍說明（2026-07-27）：明講「只掃這一頁」，不讓人以為是全站 —— 避免「我明明有 FAQ，你卻說沒有」的誤會 */}
       <div className="mb-5 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>

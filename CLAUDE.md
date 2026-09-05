@@ -84,6 +84,7 @@ aark-workspace/
 │   ├── services/
 │   │   ├── seoAnalyzer.js        # SEO 分析：Meta、H1、Alt、Mobile、Speed
 │   │   ├── aeoAnalyzer.js        # AEO 分析：JSON-LD、FAQ Schema、OG、Canonical 等
+│   │   ├── waybackFreshness.js   # Archive.org CDX 佐證：用內容雜湊判斷「實際多久沒動」，抓「宣稱新、實際舊」的落差（不計分）
 │   │   ├── geoAnalyzer.js        # GEO 分析：robots AI 爬蟲開放性（RFC 9309 解析、共用純函式）、Sitemap、OG、JSON-LD 引用、lastmod 新鮮度、AI 摘要抑制指令等 9 項計分；llms.txt 偵測不計分
 │   │   ├── eeatAnalyzer.js       # E-E-A-T：作者、About、Contact、隱私、Schema
 │   │   └── pdfExport.js          # PDF 報告匯出

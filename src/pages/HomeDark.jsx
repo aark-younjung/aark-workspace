@@ -10,6 +10,7 @@ import AarkMark from '../components/v2/AarkMark'
 import WeeklyAITrendsCard from '../components/v2/WeeklyAITrendsCard'
 import EarlybirdBanner from '../components/EarlybirdBanner'
 import AnonDiagnosis from '../components/AnonDiagnosis'
+import { detectRenderMode } from '../lib/renderMode'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
@@ -505,6 +506,9 @@ export default function HomeDark() {
       // fetchPageContent 回傳 { html, sslFallback, uaFallback, antiBotBlocked } — 旗標供下方 analyzers 用
       const { html } = await fetchPageContent(cleanUrl)
       const doc = parseHTML(html)
+      // CSR / SPA 判定：這一頁的內容是不是要跑完 JS 才長出來（AI 爬蟲多半讀不到）。
+      // 純讀 doc、不打網路，先算好給下面的未登入結果卡用。
+      const renderMode = detectRenderMode(doc)
 
       const [seoResult, aeoResult, geoResult, eeatResult] = await Promise.all([
         (async () => {
@@ -552,6 +556,10 @@ export default function HomeDark() {
           eeat: eeatResult?.score ?? null,
           // 完整逐項檢測結果（給 AnonDiagnosis 渲染「完整診斷」用；不寫 DB）
           data: { seo: seoResult, aeo: aeoResult, geo: geoResult, eeat: eeatResult },
+          // 渲染方式判定（見 lib/renderMode.js）：CSR 站的低分要先解釋清楚，否則會被誤讀成「我內容不夠」
+          render: renderMode,
+          // Archive.org 佐證（2026-09-05）：宣稱的更新時間 vs 存檔看到的實際變動
+          wayback: geoResult?.wayback_verdict ?? null,
         }
         setAnonResult(anon)
         setAnonScanCount(bumpAnonScanCount())   // 回訪次數 → 決定要不要顯示「保存紀錄」軟提示（不是牆）

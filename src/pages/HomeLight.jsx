@@ -12,6 +12,7 @@ import { analyzeEEAT } from '../services/eeatAnalyzer'
 import { runFullScan } from '../services/scanService'
 import { logError } from '../lib/errorLog'
 import { classifyScanError } from '../lib/scanError'
+import { detectRenderMode, renderModeNotice } from '../lib/renderMode'
 import HomeLightEarlybird from '../components/homelight/EarlybirdBanner'
 import HomeLightShowcase from '../components/homelight/ShowcaseTeaser'
 import HomeLightFaq from '../components/homelight/FaqSection'
@@ -85,6 +86,8 @@ export default function HomeLight() {
 
   const doneCount = ASPECTS.filter(a => phases[a.key]).length
   const summary = anonResult ? summarize(anonResult) : null
+  // CSR / 內容過少提示（見 lib/renderMode.js）。ok 等級回 null → 不顯示。
+  const renderNote = anonResult ? renderModeNotice(anonResult.render) : null
 
   // 單一面向回報：分析器 resolve（或失敗）就翻開它那張卡，不等其他三個
   const markPhase = (key, result) =>
@@ -151,6 +154,8 @@ export default function HomeLight() {
       setStatus('正在分析網站…約需 30 秒')
       const { html } = await fetchPageContent(cleanUrl)
       const doc = parseHTML(html)
+      // CSR / SPA 判定：內容是不是要跑完 JS 才長出來（AI 爬蟲多半讀不到）。純讀 doc、不打網路。
+      const renderMode = detectRenderMode(doc)
       // 各自回報（成功或失敗都翻牌）；Promise.all 仍等四個到齊才組最終結果
       const flip = (key, promise) => promise.then(
         r => { markPhase(key, r); return r },
@@ -166,6 +171,8 @@ export default function HomeLight() {
         url: cleanUrl, name: new URL(cleanUrl).hostname,
         seo: seo?.score ?? null, aeo: aeo?.score ?? null,
         geo: geo?.score ?? null, eeat: eeat?.score ?? null,
+        render: renderMode,   // 顯示層用（見 lib/renderMode.js）；不進 anon_scan_events
+        wayback: geo?.wayback_verdict ?? null,   // Archive.org 佐證（2026-09-05）；同樣只給顯示層
       }
       setAnonResult(anon)
       bumpAnonScanCount()
@@ -359,6 +366,14 @@ export default function HomeLight() {
             </div>
             {anonResult ? (
               <div className="hl-done">
+                {/* 渲染方式警示（2026-08-28）：JS 才長內容的站，AI 爬蟲讀到的是空殼——
+                    不先講清楚，四個低分會被誤讀成「我內容不夠」。warn 跳框、note 只給一行小字。 */}
+                {renderNote && (
+                  <div className={`hl-render is-${renderNote.tone}`}>
+                    <b>{renderNote.tone === 'warn' ? '⚠️ ' : ''}{renderNote.title}</b>
+                    {renderNote.lines.map((line, i) => <p key={i}>{line}</p>)}
+                  </div>
+                )}
                 {/* 判語：代理商要的是「一句可以轉述給客戶的話」，四個裸數字給不出來 */}
                 {summary && (
                   <p className="hl-verdict">

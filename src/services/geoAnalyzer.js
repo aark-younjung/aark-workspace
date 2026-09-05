@@ -1,7 +1,11 @@
 /**
  * GEO (Generative Engine Optimization) 分析服務
- * 檢測 8 項生成式 AI 引用優化技術指標
+ * 計分 9 項生成式 AI 引用優化技術指標；另有 llms.txt 與 Archive.org 佐證兩項偵測但不計分
  */
+
+// 副檔名不能省：Vite 解析得了，但 node --test 的 ESM loader 需要完整路徑，
+// 而這支檔案有單元測試會直接被 node 載入（2026-09-05 踩到）。
+import { checkWaybackFreshness, waybackVerdict } from './waybackFreshness.js'
 
 // Vercel Serverless API endpoint
 const API_BASE = '/api/fetch-url'
@@ -485,6 +489,11 @@ export async function analyzeGEO(url, providedDoc = null) {
 
   const baseUrl = new URL(cleanUrl).origin
 
+  // Wayback 佐證（2026-09-05）：查的是 archive.org、跟目標主機無關，
+  // 所以不受下面那段「錯開序列」的節流限制——提前發車，讓它跟三個探測的等待時間重疊，
+  // 幾乎不會拉長整趟掃描。失敗或逾時都回 unknown，不影響任何評分。
+  const waybackPromise = checkWaybackFreshness(cleanUrl)
+
   // 三個子資源探測：錯開序列跑，不平行（原因見檔頭 PROBE_GAP_MS 註解）
   const llmsTxt = await checkLLMsTxt(baseUrl)
   await sleep(PROBE_GAP_MS)
@@ -522,6 +531,12 @@ export async function analyzeGEO(url, providedDoc = null) {
   // 同樣暫不計分：geo_audits 還沒有欄位可存，硬加進分母會讓分數存得下、細項卻讀不回來。
   const aiSnippet = doc ? checkAiSnippetControls(doc) : { passed: true, directives: [], dataNosnippetCount: 0 }
 
+  // 用 Archive.org 的存檔佐證「網站宣稱的更新時間」是不是真的。
+  // 刻意不計分：archive.org 對台灣中小企業網站的收錄很不平均（實測 a-ark.com.tw 有 2019 年起的快照，
+  // 但 aark-workspace.vercel.app 一份都沒有）——拿收錄狀況扣客戶的分完全站不住腳。
+  const wayback = await waybackPromise
+  const waybackCheck = waybackVerdict({ claimedDaysSince: lastmod.daysSince, wayback })
+
   // 計分項（2026-09-04 兩段調整，同一天完成）：
   //   (1) llmsTxt 移出計分（理由見 checkLLMsTxt 上方註解）
   //   (2) lastmod 與 aiSnippet 在 geo_audits 補上欄位後升為計分項
@@ -556,12 +571,14 @@ export async function analyzeGEO(url, providedDoc = null) {
       canonical,
       https,
       lastmod,   // 2026-09-04 起計分（geo_audits.lastmod_passed）
+      wayback,   // 2026-09-05 Archive.org 佐證，不計分（收錄不平均）
       aiSnippet, // 2026-09-04 起計分（geo_audits.ai_snippet_passed）
     },
     // 給 UI 快速判斷用、不入 DB（geo_audits 表沒這欄）
     lastmod_passed: lastmod.passed,
     lastmod_days_since: lastmod.daysSince,
     lastmod_freshness: lastmod.freshness || 'unknown',
+    wayback_verdict: waybackCheck,   // { kind, message } —— 顯示層用、不寫 DB
     ai_snippet_passed: aiSnippet.passed,
     ai_snippet_directives: aiSnippet.directives,
     analyzed_at: new Date().toISOString()
