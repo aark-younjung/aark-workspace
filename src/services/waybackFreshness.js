@@ -22,7 +22,7 @@
  *      回報的是「至少從 X 起沒變」的下限，不是精確日期。
  */
 
-const API_BASE = '/api/fetch-url'
+import { FETCH_API_BASE as API_BASE } from '../lib/apiBase.js'
 const CDX_ENDPOINT = 'https://web.archive.org/cdx/search/cdx'
 // 往回看幾筆快照。100 筆約 6KB，對熱門站約可回溯數年；撞到視窗邊界時回報下限而不是猜。
 const WINDOW_LIMIT = 100

@@ -6,6 +6,160 @@
 
 ---
 
+### 2026-09-11（llms.txt 文案排序對齊計分現況）
+
+起因：評估 claudeseoskill.com 那個 skill 要不要裝（結論：不裝，功能是已裝的 seo 套件 v2.2.5 的子集），
+順手回頭查我們自己有沒有踩到 Google 官方否定 llms.txt 的那個雷。
+
+計分端沒事 —— 2026-09-04 就已把 llms.txt 降為不計分（geoAnalyzer.js 檔頭有完整 primary source，
+GEOAudit.jsx 前台標「選配 / P3 / unscored」）。但**行銷文案的排序沒跟著改**，四個地方仍把 llms.txt
+列在賣點第一順位。自己內部標成不計分、對外卻擺門面，懂行的人一眼看出矛盾 —— 反噬的是整份報告的可信度
+（跟當初降級它的理由是同一個）。
+
+這次只動排序、不刪功能（代管與修復碼產生器都保留，部分非 Google 系統仍可能參考）：
+
+- `src/pages/lp/lpContent.js` — 「llms.txt、Schema、sitemap 一次掃完」→「Schema、sitemap、AI 爬蟲權限一次掃完」
+- `src/pages/Pricing.jsx` ×2 — 修復碼產生器與 FAQ 的三項排序改為 JSON-LD / FAQ Schema / llms.txt
+- `src/components/homelight/FaqSection.jsx` — 同上排序
+- `src/components/v2/LLMOChecklistModal.jsx` ×2 — robots.txt / Schema / llms.txt
+
+另外查證了一件事，結論是「不用做」：原本打算幫 aivis 加「引用來源」問句，查下去發現
+**來源歸因早就整套做完了** —— fetch.js 三個引擎（Claude citations / Gemini groundingChunks /
+OpenAI url_citation）都已正規化成 `{uri, title}` 落庫，aivisData.js `buildSourceInfluence()`
+做網域彙整 + 七類分類（own/social/news/forum/wiki/gov_edu/general）+ 分引擎名次，
+AppVisibility.jsx 與 PDF 報告都有在用。Ahrefs 研究點名的三個高相關渠道
+（YouTube→social、Reddit→forum、Wikipedia→wiki）全在分類清單內。無事可做。
+
+真正還在的缺口（未動，待決策）：**GEO 靜態掃描的 9 項計分全是頁面層 meta**
+（爬蟲開放性 / sitemap / OG / Twitter Card / JSON-LD / canonical / HTTPS / lastmod / AI 摘要抑制），
+沒有任何品牌提及類信號 —— 而 Ahrefs 75,000 品牌研究說品牌提及與 AI 引用的相關性是反向連結的 3 倍。
+付費的 aivis 有來源歸因、免費的 GEO 分數沒有。要補需要第三方搜尋 API，成本與範圍待評估。
+**Twitter Card 已於同日一併處理（見下）。**
+
+#### Twitter Card 降為不計分（GEO 分母 9 → 8）
+
+理由與 llms.txt 那次同構：twitter:card 這組標籤管的是「社群平台貼連結時的預覽卡片」，
+不是 AI 檢索訊號；沒有主流引擎的官方文件把它列為引用依據，Google 的 AI optimization guide
+從頭到尾沒提過它。而且 Open Graph 已涵蓋同一批欄位（title/description/image）——
+等於把同一個弱訊號在分母裡數第二次。原本 9 項等權 = 11% 的 GEO 分數押在這上面。
+
+保留偵測、保留 `twitter_card` 欄位、保留修復指南（對社群分享本身仍然有用），只是不再加減分數：
+
+- `src/services/geoAnalyzer.js` — `checks` 陣列移除 `twitterCard`（分母 9→8）、checkTwitterCard 上方補完整理由、檔頭「9 項」改「8 項」
+- `src/pages/GEOAudit.jsx` — 加 `unscored: true` + `unscoredReason`，改名「Twitter Card（選配）」、描述誠實化；順手修正上方那段已過期的註解（lastmod 早已升為計分項，不再是 unscored）
+- `src/components/appshell/healthData.js` — GEO_META 同步改名與描述
+- `src/components/v2/MetricSignatures.jsx` — 從 ChatGPT 的 key 清單移除，否則圖上會留下「補了社群卡 → ChatGPT 可見度更高」這個站不住腳的因果
+
+已確認無副作用：`booleanChecks()`（healthData.js）、AnonDiagnosis、embed/items.js、pdfExport、
+cron-weekly-reports 這些地方都只是 pass/fail 顯示清單、不自行算分，GEO 分數一律讀 DB 的
+`geo_audits.score`（由 geoAnalyzer 算）。測試只有 geoAnalyzer.robots.test.js，沒綁分母。
+
+⚠️ 趨勢圖上 2026-09-11 是改版斷點：有補社群卡的網站分數小幅下修、沒補的小幅上修，
+不是網站本身變好或變差。與 09-04 那次同性質。
+
+#### 順手修掉的既有壞掉測試（不是這次改動造成的）
+
+驗證時發現 `node --test` 整組跑不起來：`ERR_MODULE_NOT_FOUND ../lib/apiBase`。
+`waybackFreshness.js:25` 與 `geoAnalyzer.js:11` 的 import 都省了 `.js` 副檔名 ——
+正是 geoAnalyzer 檔頭 2026-09-05 自己寫下的那個坑（「Vite 解析得了，但 node --test 的
+ESM loader 需要完整路徑」），註解留著、實際 import 卻又犯了一次。兩支都補上 `.js`。
+Vite 兩種寫法都吃，對 production 沒影響。
+
+修完後 geoAnalyzer.robots 17/17、全部四組測試 55/55 通過（也等於驗證了這次改動的語法）。
+
+接著掃了全庫：`src/` + `api/` 共 446 個相對 import 省略副檔名 —— 但那是全庫慣例、Vite 吃得下，
+只有「node --test 走得到的相依圖」才會炸。從 10 個 test 檔往下走完整相依圖（22 個檔案），
+補完上面兩支之後 **0 個漏網**。不需要全庫大改。
+
+#### 根因：package.json 根本沒有 test script
+
+10 組測試、119 個案例，但 `scripts` 只有 dev/build/lint/preview，也沒有 CI（無 .github/workflows）——
+除非有人手打完整的 `node --test <十個檔案>` 否則永遠不會跑，這才是壞掉的 import 能一直躺著的原因。
+
+加上 `"test": "node --test"`（Node 24 的自動探索，會自動排除 node_modules，
+還比手列檔名多抓到 1 個案例）。現在 `npm test` → **119/119 通過**。
+
+#### 接著查的三件事（repo 現況盤點）
+
+**(1) demo-animation/ 誤刪已還原。** 工作區整個資料夾不見了、HEAD 裡還在（未 commit 的 D）。
+`git checkout -- demo-animation/` 救回 7 個檔案 / 17.6 MB，含 let-ai-see-you 的 mp4、60fps mp4、gif
+與三支 ai-radar-53s 的 html。要是這個刪除被 commit 出去就沒了。
+
+**(2) Repo 是 public，RLS 實測結果：沒有外洩。**
+`aark-younjung/aark-workspace`、`private: false`、default branch main、pushed_at 停在 09-04。
+用那把公開的 anon key、未登入狀態打 PostgREST 逐表探測 28 張表：
+
+- 22 張敏感表（profiles / websites / aivis_* / scan_leads / email_subscriptions /
+  aivis_newebpay_* / *_logs …）一律回 0 筆 → RLS 有在擋。
+- `announcements` 回 1 筆 = 刻意的公開公告。
+- `seo_audits` 364 / `aeo_audits` 353 / `geo_audits` 353 / `eeat_audits` 359 筆**全表可讀**——
+  這是刻意的：HomeShowcaseSection.jsx:45-47 與 Showcase.jsx 就是用 anon client 未登入讀它們。
+  欄位只有分數、布林檢查項、created_at、website_id（不透明 UUID），**沒有網址、沒有 user_id、
+  沒有 PII**，而 websites 表本身鎖住 → 拿到也 join 不出是誰。可接受。
+- `.gitignore` 有擋 .env*，版控內只有 .env.example，SERVICE_ROLE_KEY 沒有任何實際值進版控。
+  src/lib/supabase.js:4 硬寫的那把是 **anon** key（role:anon），前端 bundle 本來就帶著，非外洩。
+
+⚠️ 但發現一個產品面問題：`websites?is_approved=eq.true` 對未登入回 **0 筆**，
+表示首頁 Showcase 區塊與 /showcase 排行榜對登出訪客是空的（Pricing 把「公開排行榜」列為免費版功能）。
+兩種可能：admin 從來沒核准過任何一站，或那張表的 anon policy 根本沒開。
+AdminShowcase.jsx 有完整的核准/拒絕流程，進後台看一眼「已核准」計數就能分辨。**待確認。**
+
+**(3) 建立 CI：`.github/workflows/ci.yml`。**
+public repo → Actions 免費額度無上限。ubuntu-latest + Node 24 + npm ci，跑 `npm test` 與 `npm run build`；
+`npm run lint` 設 `continue-on-error: true` —— 目前有 2931 個 error（多半 no-empty / no-unused-vars，
+散在 src/pages、src/components 的既有程式碼），現在就擋會讓 CI 永遠紅燈、失去意義，等清乾淨再拿掉。
+
+⚠️ 順帶發現：**本機 `vite build` 壞了**。transform 完成（962 modules）之後直接 exit 127、
+沒有任何錯誤訊息；vite.config.js 乾淨（只有 react + tailwindcss 兩個 plugin），
+原生二進位檔齊全（@tailwindcss/oxide-win32-x64-msvc、lightningcss-win32-x64-msvc、rolldown 都在）。
+`dist/` 最後成功是 2026-06-23 —— 本機已經三個月沒 build 成功過，Vercel 那邊部署正常。
+CI 的 build step 跑在 ubuntu，第一次推上去就能判定這是本機環境問題還是程式問題。
+
+---
+
+### 2026-09-08（文章分析搬進 app-shell + 入口 IA 修正）
+
+用戶回報兩件事，其實是同一個問題的兩面：「新版介面找不到文章分析的連結」，以及「內容機會裡點進去，結果導回舊版儀表板」。
+
+**一、為什麼找不到**
+
+三個入口，沒有一個叫「文章分析」：
+- 「內容機會」頁最底部的兩張工具卡叫「單篇文章體檢」「批次文章掃描」
+- 「總覽」的第五張分數卡叫「內容品質」，長得跟旁邊四張一樣，看起來是分數不是工具
+- 只有公開頁 header/footer 叫「文章分析」，但進了 /app 之後 SiteHeader 就不見了
+
+**命名不一致是主因**：用戶記得的名字是公開頁的「文章分析」，app 內查無此詞。
+
+⚠️ **而且工具卡擺在提前 return 的後面**——AppGap 在「尚未連結 aivis 品牌」時會走空狀態分支直接 return，工具卡根本不會被渲染。但文章分析只分析頁面內容、**完全不需要 aivis**，沒理由被 aivis 的設定狀態擋住。這是比「藏太深」更嚴重的一層。
+
+修法：工具卡搬進 `head`（每種狀態都會渲染）、放到頁面上方、改名為「文章分析（單篇／批次）」；總覽那張卡加一個「文章分析」小標，明示它點進去是開工具不是看詳情。
+
+**左側選單刻意仍不加入口**（AppShell.jsx:67 的既有決定），用戶選擇先只做上面這些看夠不夠。
+
+**二、為什麼會掉回舊版**
+
+`/content-audit/:id` 用的是 `PageBg + SiteHeader + Footer` 的深色公開站版型。從亮色 app-shell 點進去會整個掉出新版介面、連左側選單都不見。四大體檢頁在 2026-08-14 硬切時已經做過這個搬遷（`/geo-audit/:id` → `/app/:id/health/geo`），文章分析當時漏掉。
+
+新增 `components/appshell/AppContent.jsx`（亮色，範本照抄 AppHealth），路由 `/app/:websiteId/content`，`/content-audit/:id` 改成 `LegacyRedirect` 不破壞深連結。
+
+⚠️ **只搬綁定網站的模式**。`/content-audit`（不帶 id）的 ad-hoc 任意網址分析**留在公開深色版**——那是公開頁 header/footer 連過來的獲客入口、未登入就能用，搬進 app-shell 等於把入口關進登入牆。
+
+**三、順帶處理的**
+
+- `CONTENT_CHECKS` 與 `dbRowToResult` 抽到 `src/data/contentChecks.js`。原本想直接從頁面檔匯出（AppHealth 有從 pages/GEOAudit 匯入的前例），但 eslint 的 `react-refresh/only-export-components` 擋下來——那個規則是對的：**同一份判定標準複製成兩份遲早會不一致**，抽成共用模組才是正解。
+- 深色版靠 `ScoreHero` 顯示的 7 日趨勢迷你圖，亮色殼沒有那個元件。與其默默砍掉，改用一行「歷次分數（舊 → 新）：72 → 75 → 78」照實列出。
+- `ContentSignature`（內容品質 5 維度）是深色卡，暫時沿用並包在 `.as-health-embed`，同 AppHealth 對 OrgSchemaGenerator 的處理。
+
+**已知待處理**
+
+- `/app/:id/content` 不對應任何左側選單項，停在這頁時沒有任何導覽項被標亮。
+- `BulkScan.jsx`（1926 行）還是深色版。從它的「單篇」分頁點過去會轉址到亮色版，體驗混合。第二階段處理——不跟第一階段綁在一起，那會變成一次動兩千多行又沒有本機 build 可驗。
+
+**驗證**：六個改動檔案過 esbuild 語法檢查、eslint 無新增問題（AppOverview 那兩個 irregular whitespace 是既有的）、全專案 118/118 測試通過。**元件層沒有單測**（此專案只測純函式模組），實際畫面要上線後點。
+
+
+---
+
 ### 2026-09-05（掃描完成導到結果頁 + Archive.org 內容新鮮度佐證）
 
 **一、掃完停在原地，用戶以為沒反應**

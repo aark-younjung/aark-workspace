@@ -43,7 +43,7 @@
 |------|------|----------|
 | SEO 分析 | `/seo-audit/:id` | Meta 標題/描述、H1 結構、Alt 覆蓋率、行動版相容、Core Web Vitals |
 | AEO 分析 | `/aeo-audit/:id` | JSON-LD、FAQ Schema、Canonical、麵包屑、Open Graph、問句標題、結構化答案 |
-| GEO 分析 | `/geo-audit/:id` | **計分 9 項**：AI 爬蟲開放（GPTBot / OAI-SearchBot / ClaudeBot / Google-Extended）、Sitemap、OG、Twitter Card、JSON-LD 引用、Canonical、HTTPS、內容新鮮度 lastmod、AI 摘要抑制指令（nosnippet / max-snippet:0 / noindex）。**偵測但不計分**：llms.txt（Google 官方表明不影響 Google 搜尋） |
+| GEO 分析 | `/geo-audit/:id` | **計分 8 項**：AI 爬蟲開放（GPTBot / OAI-SearchBot / ClaudeBot / Google-Extended）、Sitemap、OG、JSON-LD 引用、Canonical、HTTPS、內容新鮮度 lastmod、AI 摘要抑制指令（nosnippet / max-snippet:0 / noindex）。**偵測但不計分**：llms.txt（Google 官方表明不影響 Google 搜尋）、Twitter Card（社群預覽用標籤，無證據影響 AI 引用，且與 OG 重疊） |
 | E-E-A-T 分析 | `/eeat-audit/:id` | 作者資訊、關於我們、聯絡方式、隱私權政策、Organization Schema、社群連結 |
 | 文章內容分析 | `/content-audit` | 15 項 SEO/AEO 檢測（H1/字數/Title/Meta/Schema/可讀性等），ad-hoc URL 即時分析 |
 
@@ -318,6 +318,8 @@ ANTHROPIC_API_KEY=...
 
 | 日期 | 更新內容 |
 |------|----------|
+| 2026-09-11 | **GEO 誠實性修正（第二輪）+ 工程健康**：Twitter Card 從計分項降為選配 —— twitter:card 管的是社群平台貼連結時的預覽卡片，沒有主流 AI 引擎把它列為引用依據，且 Open Graph 已涵蓋同一批欄位（title/description/image），等於同一個弱訊號在分母裡數第二次，**GEO 分母 9 → 8**（有補社群卡的網站小幅下修、沒補的小幅上修，趨勢圖上是改版斷點）；同步從 MetricSignatures 的 ChatGPT 推估清單移除，避免留下「補社群卡 → ChatGPT 可見度更高」這個站不住腳的因果。Sitemap 偵測改三段式（robots.txt 的 `Sitemap:` 宣告 → /sitemap.xml → /sitemap_index.xml），修掉 Rank Math 站被誤判為沒有網站地圖。行銷文案把 llms.txt 從賣點第一順位往後移（4 處）—— 內部標成不計分、對外卻擺門面會自打嘴巴。工程面：補上 `waybackFreshness.js` / `geoAnalyzer.js` 漏掉的 `.js` 副檔名（node ESM loader 需要完整路徑，害整組測試跑不起來）、`package.json` 補 `test` script、新增 `.github/workflows/ci.yml`（測試 119/119 + build；lint 暫不擋） |
+| 2026-09-08 | **文章分析搬進新版介面**：`/content-audit/:id`（深色公開站版型）搬成 app-shell 亮色版 `/app/:id/content`，舊網址轉址不破壞深連結；`/content-audit`（不帶 id 的 ad-hoc 分析）維持公開深色版當獲客入口。**入口 IA 修正**：工具卡從「內容機會」頁最底搬到上方並放進必渲染區（原本擺在提前 return 之後，沒設定 aivis 的用戶根本看不到），名稱統一為「文章分析（單篇／批次）」對齊公開頁；總覽的「內容品質」卡加工具標示 |
 | 2026-09-05 | **掃描完成導到結果頁**（原本 reload 同一個「監測題目」分頁，看起來像沒反應）＋ **Archive.org 內容新鮮度佐證**：用第三方存檔的內容雜湊判斷「內容實際上多久沒動」，點出「網站標示最近更新、但內容其實沒變」的落差（SEO 外掛常把 modified_time 寫成當下）。只在有落差時提示、**不計分**（Archive.org 對台灣中小企業網站收錄不平均），走既有 `/api/fetch-url` 代理不新增 function |
 | 2026-09-04 | **題庫意圖覆蓋率 + 競品題層**：題庫新增 `intent` 語意分類（品牌／競品／決策／品類／痛點／資訊六類，與掃描用的 `tier` 正交），題庫管理頁顯示「覆蓋幾類、哪一類是盲區、該做什麼」；舊題庫沒有標籤時用文字推測並照實標示為推測。新增 `competitor` 題層——同時含自家與競品名的問句（「A 跟 B 哪個好」），客戶比價時 AI 站在誰那邊過去完全沒測；只有設了競品觀察名單才產，規格同品牌詞（每條掃 1 次、不灌入曝光率）。題庫產生器輸出改為帶 intent 標籤的物件、解析器同時相容三種歷史格式 |
 | 2026-09-04 | **GEO 誠實性修正**：llms.txt 從計分項降為選配（Google 官方 AI optimization guide 明文表示不影響 Google 搜尋與 AI Overviews，SE Ranking 30 萬網域研究亦同）——GEO 分母 8→7，沒有 llms.txt 的網站分數會上跳一階，趨勢圖上是改版斷點不是網站變好；robots.txt 解析器依 RFC 9309 重寫並抽成共用純函式（修掉兩個誤判：`Disallow: /wp-admin/` 被當成整站封鎖、`User-agent: *` 通擋讀不到），補上 OAI-SearchBot 與 Bytespider 偵測，沒有 robots.txt 改判為通過；新增內容新鮮度分級 freshnessTier 與 AI 摘要抑制指令偵測（nosnippet / max-snippet:0 / noindex——Google 明確表示沒有 AI 專屬 opt-out，露出由這些一般 preview 指令控制），補 `geo_audits` 兩欄後兩者升為計分項，**GEO 分母 8 → 7 → 9**；順帶修掉「內容新鮮度」因欄位不存在而對每個客戶永遠亮紅燈的假紅燈 |

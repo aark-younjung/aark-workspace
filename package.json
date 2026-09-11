@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:embed": "vite build --config vite.embed.config.js",
     "lint": "eslint .",
+    "test": "node --test",
     "preview": "vite preview",
     "vercel-build": "vite build"
   },

@@ -1,0 +1,47 @@
+# CI —— 2026-09-11 建立
+#
+# 起因：repo 有 10 組測試、119 個案例，但 package.json 一直沒有 test script、也沒有 CI，
+# 等於沒有任何東西會去跑它們。結果是 waybackFreshness.js 與 geoAnalyzer.js 的 import
+# 漏了 .js 副檔名（node 的 ESM loader 需要完整路徑），整組測試跑不起來卻沒人發現。
+#
+# 這個 workflow 的唯一目的：讓「測試壞掉」這件事有人喊。
+name: CI
+
+on:
+  push:
+    branches: [main, 'redesign/**', 'design/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      # npm ci 照 package-lock.json 裝，跟本機「剛好裝到什麼版本」脫鉤
+      - run: npm ci
+
+      # 主要關卡：node --test 自動探索（會自動排除 node_modules）
+      # 2026-09-11 本機實測 119/119 通過
+      - name: 單元測試
+        run: npm test
+
+      # build 也顧著 —— Vercel 是照 main 部署的，這裡先擋下語法/相依性問題。
+      # 註：2026-09-11 這台 Windows 開發機的 vite build 會在 transform 之後 exit 127
+      #（無錯誤訊息、原生二進位檔齊全），但 Vercel 的 Linux 環境部署正常。
+      # 這一步跑在 ubuntu 上，正好可以判定那是本機環境問題還是程式問題。
+      - name: Production build
+        run: npm run build
+
+      # lint 目前有 2931 個 error（多半是 no-empty / no-unused-vars，散在 src/pages 與
+      # src/components 的既有程式碼）。現在就擋會讓 CI 永遠紅燈、失去意義，
+      # 所以先設成不擋 build、只留紀錄。等哪天清乾淨了，把 continue-on-error 拿掉即可。
+      - name: Lint（暫不擋，僅記錄）
+        run: npm run lint
+        continue-on-error: true
