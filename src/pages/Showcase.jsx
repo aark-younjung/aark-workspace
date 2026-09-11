@@ -166,7 +166,10 @@ export default function Showcase() {
       const [wRes, sRes, aRes, gRes] = await Promise.all([
         // 只撈 admin 已核准的 websites（is_approved=true），未審核 / 已拒絕的不上排行榜，
         // 避免有人刷奇怪測試 URL / 競品 / 不雅內容傷品牌；SAMPLE_SITES 是前端硬寫不受此影響。
-        supabase.from('websites').select('id, name, url, created_at').eq('is_approved', true).order('created_at', { ascending: true }),
+        // 2026-09-11 補兩個旗標：用戶在「帳號」頁關掉公開展示（is_public_optout）、
+        // 或 admin 標為測試站（is_test_site）的，一律不上榜 —— 前者是介面上對用戶做的承諾，
+        // 原本只看 is_approved 等於沒有兌現。用 not.is.true 而非 eq.false，讓 NULL 也算通過。
+        supabase.from('websites').select('id, name, url, created_at').eq('is_approved', true).not('is_public_optout', 'is', true).not('is_test_site', 'is', true).order('created_at', { ascending: true }),
         supabase.from('seo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
         supabase.from('aeo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
         supabase.from('geo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),

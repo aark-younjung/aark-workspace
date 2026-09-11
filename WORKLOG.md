@@ -101,8 +101,63 @@ Vite 兩種寫法都吃，對 production 沒影響。
 
 ⚠️ 但發現一個產品面問題：`websites?is_approved=eq.true` 對未登入回 **0 筆**，
 表示首頁 Showcase 區塊與 /showcase 排行榜對登出訪客是空的（Pricing 把「公開排行榜」列為免費版功能）。
-兩種可能：admin 從來沒核准過任何一站，或那張表的 anon policy 根本沒開。
-AdminShowcase.jsx 有完整的核准/拒絕流程，進後台看一眼「已核准」計數就能分辨。**待確認。**
+續查（同日）：
+
+- `is_approved` 欄位**確實存在** —— 打 `websites?is_approved=eq.true` 回 200 空陣列，
+  對照組用不存在的欄位回 400 `42703`，證明偵測有效。所以 2026-05-13 那支
+  showcase-approval.sql 是跑過的，連同「既有 websites 全部視為已核准」的 backfill。
+- 從可讀的 `geo_audits` 嵌套讀 `websites(id, is_approved)`，每一列都回 `websites: null`
+  —— audit 列有 website_id 外鍵，但 anon 讀不到母表。
+
+結論：**公開排行榜現在對所有訪客都是空的**（/showcase 與首頁 Showcase 區塊都用 anon client，
+看到的就是我探測到的東西）。成因兩種可能，從外部無法分辨：(a) 目前真的 0 站被核准，
+(b) `websites` 根本沒有給 anon 的 SELECT policy。考慮到 05-13 的 backfill 把當時所有站設為
+已核准，(b) 的機率高一些 —— 可能是後來某次 RLS 收緊時一併拿掉了。
+
+30 秒可分辨（Supabase SQL Editor，唯讀）：
+
+```sql
+select count(*) filter (where is_approved) as approved, count(*) as total from websites;
+select policyname, cmd, roles, qual from pg_policies where tablename = 'websites';
+```
+
+若 approved > 0 但沒有 anon 的 SELECT policy，補這一條即可：
+
+```sql
+create policy "public_read_approved_websites" on websites
+  for select to anon using (is_approved = true);
+```
+
+**已由用戶執行（2026-09-11）**，並實測確認：
+
+- `pg_policies` 顯示 `websites` 原有 7 條 policy，**SELECT 只有兩條、兩條都要 `is_admin()`**
+  —— 沒有任何一條允許 anon 讀已核准網站。成因確定是 (b)。
+- `select count(*) filter (where is_approved)` → **approved 13 / total 210**。
+  13 站早就核准了，只是誰都看不到（admin 除外）。排行榜靜靜空了不知道多久。
+- 補上 policy 後 anon 實測回 13 筆；不加過濾也只回 13（不是 210）、明查 `is_approved=false` 回 0
+  → 限縮正確，沒有誤放。
+
+⚠️ 順帶發現一個**尚未修的缺口**：Account.jsx 給用戶「不公開展示」開關（`is_public_optout`）、
+admin 有 `is_test_site` 排除測試站，但三個公開查詢（Showcase.jsx:169、HomeShowcaseSection.jsx:44、
+ShowcaseTeaser.jsx:33）**只過濾 `is_approved`，兩個旗標都沒看**。
+目前實測 13 站裡 optout / test_site / client_alias 都是 0 筆 → **沒有實際受害者**，
+但第一個按下「不公開」的用戶就會中 —— 那是介面上對用戶做出的承諾。
+
+建議一次修在 RLS（防禦縱深，前端三處就算漏改也擋得住）：
+
+```sql
+alter policy "public_read_approved_websites" on websites
+  using (is_approved = true
+         and is_public_optout is not true
+         and is_test_site is not true);
+```
+
+另註：anon 目前 `select=*` 讀得到那 13 列的全部欄位（user_id、org_schema_data、client_alias…）。
+實測 client_alias / agency_managed_by 全為 null、rejection_reason 對已核准列也是 null，
+user_id 是不透明 UUID 且 profiles 鎖著 join 不出來 → 風險低。
+可以用 column-level grant 收緊（只放 id/name/url/created_at/is_approved），
+但 `/geo-audit-legacy/:id` 這條未受保護的舊路由對 websites 做 `select('*')`，
+收緊後對未登入訪客會從「回空」變成「回 400 權限錯誤」—— 要收的話得一併處理那條路由。
 
 **(3) 建立 CI：`.github/workflows/ci.yml`。**
 public repo → Actions 免費額度無上限。ubuntu-latest + Node 24 + npm ci，跑 `npm test` 與 `npm run build`；

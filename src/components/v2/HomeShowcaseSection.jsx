@@ -40,8 +40,8 @@ export default function HomeShowcaseSection() {
     async function load() {
       try {
         const [wRes, sRes, aRes, gRes] = await Promise.all([
-          // 只撈 admin 核准的 websites（同 Showcase.jsx 邏輯）
-          supabase.from('websites').select('id, name, url').eq('is_approved', true).order('created_at', { ascending: true }).limit(200),
+          // 只撈 admin 核准、且用戶沒關掉公開展示、也不是測試站的 websites（同 Showcase.jsx 邏輯）
+          supabase.from('websites').select('id, name, url').eq('is_approved', true).not('is_public_optout', 'is', true).not('is_test_site', 'is', true).order('created_at', { ascending: true }).limit(200),
           supabase.from('seo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
           supabase.from('aeo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
           supabase.from('geo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),

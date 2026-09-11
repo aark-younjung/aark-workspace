@@ -30,7 +30,8 @@ export default function HomeLightShowcase() {
     async function load() {
       try {
         const [wRes, sRes, aRes, gRes] = await Promise.all([
-          supabase.from('websites').select('id, name, url').eq('is_approved', true).order('created_at', { ascending: true }).limit(200),
+          // 核准 + 沒關掉公開展示 + 非測試站（同 Showcase.jsx 邏輯）
+          supabase.from('websites').select('id, name, url').eq('is_approved', true).not('is_public_optout', 'is', true).not('is_test_site', 'is', true).order('created_at', { ascending: true }).limit(200),
           supabase.from('seo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
           supabase.from('aeo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
           supabase.from('geo_audits').select('website_id, score, created_at').order('created_at', { ascending: true }),
