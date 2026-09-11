@@ -128,9 +128,11 @@ export function GEOSignature({ audit, isPro }) {
   // 每家引擎對技術項目的敏感度不同
   // 2026-09-04：llms_txt 從三家的 key 清單移除 —— 它已不計入 GEO 分數
   //（Google 官方表明對搜尋無效），再拿它推估各引擎可見度就前後不一致了。
+  // 2026-09-11：twitter_card 從 ChatGPT 的清單移除，同一個理由 —— 它已不計入 GEO 分數，
+  // 留著會讓「補了社群卡就推估 ChatGPT 可見度更高」這個站不住腳的因果關係留在圖上。
   const ENGINE_BASES = [
     { name: 'Gemini',       keys: ['robots_ai', 'sitemap', 'open_graph', 'json_ld_citation', 'canonical', 'https'], multiplier: 1.0 },
-    { name: 'ChatGPT',      keys: ['robots_ai', 'sitemap', 'open_graph', 'twitter_card', 'json_ld_citation', 'https'], multiplier: 0.85 },
+    { name: 'ChatGPT',      keys: ['robots_ai', 'sitemap', 'open_graph', 'json_ld_citation', 'https'], multiplier: 0.85 },
     { name: 'Claude',       keys: ['robots_ai', 'json_ld_citation', 'canonical', 'https'], multiplier: 0.72 },
   ]
   const buildVals = (eng) => {

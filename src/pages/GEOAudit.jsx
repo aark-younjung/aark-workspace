@@ -52,11 +52,13 @@ const GEO_CHECKS = [
   },
   {
     id: 'twitter_card',
-    name: 'Twitter Card',
-    description: '是否有 twitter:card、twitter:title、twitter:image 標籤，強化 AI 摘要中的社群信號',
+    name: 'Twitter Card（選配）',
+    description: '是否有 twitter:card、twitter:title、twitter:image 標籤。誠實說明：這組標籤管的是社群平台貼連結時的預覽卡片，沒有主流 AI 引擎把它列為引用依據；Open Graph 已涵蓋同一批欄位。對社群分享有用，但不要期待它帶來 AI 引用',
     icon: '🐦',
     priority: 'P3',
-    recommendation: '添加 Twitter Card 標籤（twitter:card, twitter:title, twitter:image）',
+    recommendation: '想補的話，添加 twitter:card、twitter:title、twitter:image。優先順序請排在其他 GEO 項目之後',
+    unscored: true,
+    unscoredReason: '社群預覽用標籤，無證據顯示影響 AI 引用，且與 Open Graph 重疊，因此不計入分數',
   },
   {
     id: 'json_ld_citation',
@@ -174,7 +176,8 @@ export default function GEOAudit() {
   }
 
   // 分數計算：unscored 標記的訊號不計入分母。
-  // 目前有兩種 unscored：llms.txt（證據不足、刻意不計分）與 lastmod（待 schema migration）。
+  // 目前有兩種 unscored，都是「證據不足、刻意不計分」：llms.txt（2026-09-04）與
+  // Twitter Card（2026-09-11）。lastmod 已於 2026-09-04 補完欄位、升為計分項。
   // 這個 fallback 分母要跟 services/geoAnalyzer.js 的 checks 陣列保持一致，改動要兩邊同步。
   const scoredChecks = GEO_CHECKS.filter(c => !c.unscored)
   const passedCount = scoredChecks.filter(check => getCheckStatus(check.id) === 'pass').length

@@ -1,6 +1,6 @@
 /**
  * GEO (Generative Engine Optimization) 分析服務
- * 計分 9 項生成式 AI 引用優化技術指標；另有 llms.txt 與 Archive.org 佐證兩項偵測但不計分
+ * 計分 8 項生成式 AI 引用優化技術指標；另有 llms.txt、Twitter Card 與 Archive.org 佐證三項偵測但不計分
  */
 
 // 副檔名不能省：Vite 解析得了，但 node --test 的 ESM loader 需要完整路徑，
@@ -8,7 +8,7 @@
 import { checkWaybackFreshness, waybackVerdict } from './waybackFreshness.js'
 
 // Vercel Serverless API endpoint
-const API_BASE = '/api/fetch-url'
+import { FETCH_API_BASE as API_BASE } from '../lib/apiBase.js'
 
 /**
  * 子資源探測的節流參數（2026-08-27）
@@ -226,7 +226,8 @@ async function checkRobotsAI(baseUrl) {
     }
   }
   try {
-    return { ...evaluateAiCrawlers(probe.data.content || ''), hasRobotsTxt: true }
+    const robotsText = probe.data.content || ''
+    return { ...evaluateAiCrawlers(robotsText), hasRobotsTxt: true, robotsText }
   } catch {
     // 解析炸掉 → 當作這次量不到，不扣分（同 probeResource 的 unknown 口徑）
     return { passed: false, unknown: true, blocked: [], allowed: [], scoredBlocked: [], crawlers: [], hasRobotsTxt: true }
@@ -236,10 +237,49 @@ async function checkRobotsAI(baseUrl) {
 /**
  * 3. Sitemap 檢測 (幫助 AI 爬蟲探索頁面)
  */
-async function checkSitemap(baseUrl) {
-  const r = await probeResource(baseUrl + '/sitemap.xml')
-  if (r.unknown) return { passed: false, unknown: true }
-  return { passed: !!r.found }
+/**
+ * 從 robots.txt 撈出 `Sitemap:` 指令。那是網站地圖位置的權威來源，
+ * 只認同源的網址（別站宣告的地圖不能算這個站有）。
+ */
+function sitemapUrlsFromRobots(robotsText, baseUrl) {
+  if (!robotsText) return []
+  let origin
+  try { origin = new URL(baseUrl).origin } catch { return [] }
+  const out = []
+  for (const line of String(robotsText).split(/\r?\n/)) {
+    const m = /^\s*sitemap\s*:\s*(\S+)/i.exec(line)
+    if (!m) continue
+    try {
+      const u = new URL(m[1], origin)
+      if (u.origin === origin && !out.includes(u.toString())) out.push(u.toString())
+    } catch { /* 壞掉的那一行跳過就好 */ }
+  }
+  return out
+}
+
+/**
+ * 網站地圖檢查。
+ *
+ * 2026-09-11：原本只探 /sitemap.xml，但 WordPress 的 Rank Math 與 Yoast 預設是
+ * /sitemap_index.xml，而且不一定有轉址 —— 那些站會被誤判成「沒有網站地圖」。
+ * 改成三段：robots.txt 宣告的位置 → /sitemap.xml → /sitemap_index.xml，先找到的算。
+ * 全部都探不到（網路層問題）才回 unknown，維持「量不到就不扣分」的口徑。
+ */
+async function checkSitemap(baseUrl, robotsText = '') {
+  const candidates = [
+    ...sitemapUrlsFromRobots(robotsText, baseUrl),
+    baseUrl + '/sitemap.xml',
+    baseUrl + '/sitemap_index.xml',
+  ].filter((u, i, a) => a.indexOf(u) === i)
+
+  let sawUnknown = false
+  for (const url of candidates) {
+    const r = await probeResource(url)
+    if (r.found) return { passed: true, url }
+    if (r.unknown) sawUnknown = true
+  }
+  if (sawUnknown) return { passed: false, unknown: true }
+  return { passed: false, checked: candidates }
 }
 
 /**
@@ -261,7 +301,18 @@ function checkOpenGraph(doc) {
 }
 
 /**
- * 5. Twitter Card 標籤檢測 (AI 摘要中的社群信號)
+ * 5. Twitter Card 標籤檢測（偵測並回報，但**不計入分數**）
+ *
+ * 2026-09-11 降級為不計分，理由與 llms.txt 那次同構：證據強度撐不起一個計分席位。
+ *   - twitter:card 這組標籤的用途是「社群平台貼連結時的預覽卡片」，不是 AI 檢索訊號；
+ *     沒有任何主流引擎的官方文件把它列為引用或排序依據。
+ *   - Google 的 AI optimization guide 講的是 SEO 基本盤（可爬取、內容品質、結構化資料），
+ *     社群預覽卡從頭到尾沒被提到。
+ *   - 真要談摘要用的中繼資料，Open Graph 已經涵蓋同一批欄位（title/description/image），
+ *     Twitter Card 等於把同一個弱訊號在分母裡數第二次。
+ *
+ * 它原本是 9 項等權檢查之一 = 有 11% 的 GEO 分數押在這上面。保留偵測與 twitter_card 欄位
+ * （對社群分享本身仍然有用，修復指南也繼續給），只是不再拿它加減客戶的 GEO 分數。
  */
 function checkTwitterCard(doc) {
   const twitterCard = doc.querySelector('meta[name="twitter:card"]')
@@ -499,7 +550,7 @@ export async function analyzeGEO(url, providedDoc = null) {
   await sleep(PROBE_GAP_MS)
   const robotsAI = await checkRobotsAI(baseUrl)
   await sleep(PROBE_GAP_MS)
-  const sitemap = await checkSitemap(baseUrl)
+  const sitemap = await checkSitemap(baseUrl, robotsAI.robotsText || '')
 
   // 優先用呼叫端已經抓好的 doc（HomeDark 掃描時本來就抓過一次頁面）。
   // 2026-07-21：舊版一律自己再抓一次 —— (1) 多一趟沒必要的請求
@@ -543,7 +594,10 @@ export async function analyzeGEO(url, providedDoc = null) {
   // 分母 8 → 7 → 9。llms.txt 那一步會讓多數網站分數上跳，新增的兩項則會讓
   // 「內容很久沒更新」或「有 nosnippet／noindex」的網站往下掉。
   // 趨勢圖上這一天是改版斷點，不是網站本身變好或變差。
-  const checks = [robotsAI, sitemap, openGraph, twitterCard, jsonLdCitation, canonical, https, lastmod, aiSnippet]
+  //
+  // 2026-09-11：twitterCard 移出計分（理由見 checkTwitterCard 上方註解）。分母 9 → 8。
+  // 這一步對「有補社群卡」的網站是小幅下修、對沒補的是小幅上修，趨勢圖上同樣是改版斷點。
+  const checks = [robotsAI, sitemap, openGraph, jsonLdCitation, canonical, https, lastmod, aiSnippet]
   // unknown（這次量不到）從分母剔除 —— 量不到就不該扣分。
   // 否則網路抖一下分數就掉，客戶連掃兩次拿到不同數字，整個產品的可信度就沒了。
   const measured = checks.filter(c => !c.unknown)
