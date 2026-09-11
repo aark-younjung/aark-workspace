@@ -143,7 +143,7 @@ ShowcaseTeaser.jsx:33）**只過濾 `is_approved`，兩個旗標都沒看**。
 目前實測 13 站裡 optout / test_site / client_alias 都是 0 筆 → **沒有實際受害者**，
 但第一個按下「不公開」的用戶就會中 —— 那是介面上對用戶做出的承諾。
 
-建議一次修在 RLS（防禦縱深，前端三處就算漏改也擋得住）：
+一次修在 RLS（防禦縱深，前端三處就算漏改也擋得住）——**已由用戶執行完成**：
 
 ```sql
 alter policy "public_read_approved_websites" on websites
@@ -151,6 +151,22 @@ alter policy "public_read_approved_websites" on websites
          and is_public_optout is not true
          and is_test_site is not true);
 ```
+
+`pg_policies` 確認 qual 已是
+`((is_approved = true) AND (is_public_optout IS NOT TRUE) AND (is_test_site IS NOT TRUE))`，
+roles 為 `{anon, authenticated}`（authenticated 也要給，否則登入用戶看不到別人的站、
+排行榜對付費用戶是半殘的）。
+
+alter 後 anon 實測：不加過濾 13 筆、明查 `is_approved=false` 0 筆、
+前端實際查法（三個條件全帶）13 筆 —— 沒有誤殺也沒有漏放。
+
+⚠️ 注意這個驗證的極限：目前 13 站裡 optout / test_site 都是 0 筆，
+所以「policy 有沒有真的擋住 optout 的站」從外部測不出來，
+只能靠 pg_policies 的 qual 字串確認。等第一個用戶按下開關時才會有真實樣本。
+
+為什麼這層是必要的（不是只有前端過濾就好）：anon key 就寫在公開 repo 的
+src/lib/supabase.js:4，任何人都能繞過前端直接打 REST API —— 前端過濾對他們等於不存在。
+用戶按下「不公開展示」之後，真正能兌現那個承諾的只有 RLS。
 
 另註：anon 目前 `select=*` 讀得到那 13 列的全部欄位（user_id、org_schema_data、client_alias…）。
 實測 client_alias / agency_managed_by 全為 null、rejection_reason 對已核准列也是 null，
