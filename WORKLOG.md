@@ -170,6 +170,25 @@ public repo → Actions 免費額度無上限。ubuntu-latest + Node 24 + npm ci
 `dist/` 最後成功是 2026-06-23 —— 本機已經三個月沒 build 成功過，Vercel 那邊部署正常。
 CI 的 build step 跑在 ubuntu，第一次推上去就能判定這是本機環境問題還是程式問題。
 
+**更正 + 結果（同日稍晚）**：
+
+1. 這個 exit 127 **不是新發現** —— 本檔 2026-08-19 與 2026-08-25 兩筆已經記過，
+   還寫了成因（rolldown 原生套件缺、`@esbuild` 整包不在、`@rollup` 只剩 pluginutils），
+   當時也用 `git stash` 驗證過是既有問題。上面那段把它當新發現，是重複發現。
+   不過這次確實補上新證據：以前只能靠「Vercel 部署成功」間接推論，
+   現在有**同一個 commit 在 ubuntu 上 build 成功**的直接證據
+   （CI run #1 全綠，https://github.com/aark-younjung/aark-workspace/actions/runs/34573887161）。
+
+2. **CI 實際跑的是 87 個測試，不是本機那 119 個。**
+   `aivisReport.test.js` 與 `reportVerdict.test.js` 兩支尚未進版控，CI 看不到。
+   已追蹤的 8 個測試檔共 87 案例、全過。要讓 CI 守備範圍跟本機一致，
+   得把那兩支（以及 reportVerdict.js 本體）加進版控 —— 後者本來就是
+   pdfExport.js 的相依，見上面那份未追蹤相依清單。
+
+3. 讀 CI 結果的陷阱：`Lint（暫不擋）` 那個 step 顯示 `conclusion: success`，
+   但 `continue-on-error: true` 會把失敗的 step 回報成 success（真實結果在 `outcome`）。
+   本機量到 2931 個 error，所以它幾乎肯定是紅的，只是被刻意放行 —— 別被那個綠勾誤導。
+
 ---
 
 ### 2026-09-08（文章分析搬進 app-shell + 入口 IA 修正）
