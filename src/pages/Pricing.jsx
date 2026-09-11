@@ -18,7 +18,7 @@ const FEATURES_FREE = [
   'SEO / AEO / GEO / E-E-A-T 5 大面向分數',
   '通過 / 不通過項目清單',
   'AI 優化建議（3 條優先處理項目）',
-  '基礎修復碼產生器（llms.txt / JSON-LD / FAQ Schema 通用模板）',
+  '基礎修復碼產生器（JSON-LD / FAQ Schema / llms.txt 通用模板）',
   '文章內容分析（基本版）',
   '競品比較（2 個網站）',
   '公開排行榜',
@@ -64,7 +64,7 @@ const FAQ_ITEMS = [
     tag: '產品差異焦慮',
     tagColor: '#7c3aed',
     q: '免費版和 Pro 版最大的差別是什麼？',
-    a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」+「持續監測」。包含逐項修復建議、修復碼產生器（可直接複製 llms.txt / JSON-LD / FAQ Schema）、歷史趨勢圖、平台別修復指南，以及每月 150 次 AI 曝光監測（aivis）— 直接呼叫 ChatGPT / Claude / Gemini 看你的品牌是否還在 AI 推薦名單裡。',
+    a: '免費版讓你看到「哪裡有問題」，Pro 版告訴你「怎麼修」+「持續監測」。包含逐項修復建議、修復碼產生器（可直接複製 JSON-LD / FAQ Schema / llms.txt）、歷史趨勢圖、平台別修復指南，以及每月 150 次 AI 曝光監測（aivis）— 直接呼叫 ChatGPT / Claude / Gemini 看你的品牌是否還在 AI 推薦名單裡。',
   },
   {
     tag: '競品焦慮',

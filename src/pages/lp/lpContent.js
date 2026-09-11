@@ -25,7 +25,7 @@ export const LP_VARIANTS = {
     sub: '多數 AI 建站工具產出的內容靠 JavaScript 渲染——你看到的很漂亮，GPTBot 抓到的可能是空白頁。30 秒驗證。',
     bullets: [
       '檢查 AI 爬蟲讀不讀得到你的內容',
-      'llms.txt、Schema、sitemap 一次掃完',
+      'Schema、sitemap、AI 爬蟲權限一次掃完',
       '每一個紅燈，附對應的修復指南',
     ],
     cta: '免費檢測我的網站',

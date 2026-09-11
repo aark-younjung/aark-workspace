@@ -108,7 +108,7 @@ export default function LLMOChecklistModal({ open, onClose, data, baselineScores
           <h3 className="text-2xl font-bold text-white mb-1">產生 LLMO 6 週執行清單</h3>
           <p className="text-sm text-white/55 leading-relaxed">
             把抽象的 LLMO 概念轉成可交付客戶的「6 週逐週執行清單」、
-            含 robots.txt / llms.txt / Schema 模板 + 驗收標準。代理商交付物。
+            含 robots.txt / Schema / llms.txt 模板 + 驗收標準。代理商交付物。
           </p>
         </div>
 
@@ -225,7 +225,7 @@ export default function LLMOChecklistModal({ open, onClose, data, baselineScores
         {/* 小提醒 */}
         <p className="mt-5 pt-4 border-t border-white/8 text-sm text-white/40 leading-relaxed">
           💡 PDF 含 10 頁：封面 + 序章 + Week 1-6 逐週清單 + 附錄 A 工具 + 附錄 B 常見錯覺。
-          含 robots.txt / llms.txt / Schema 完整可複製模板。產出大小約 500-800 KB。
+          含 robots.txt / Schema / llms.txt 完整可複製模板。產出大小約 500-800 KB。
         </p>
       </div>
     </div>
