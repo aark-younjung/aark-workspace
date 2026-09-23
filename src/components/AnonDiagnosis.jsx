@@ -40,7 +40,7 @@ const DIMS = [
     ],
   },
   {
-    key: 'geo', label: 'GEO', desc: '生成式 AI 推薦', color: '#10b981', read: readBool,
+    key: 'geo', label: 'GEO', desc: 'AI 可讀性體質', color: '#10b981', read: readBool,
     items: [
       ['llms_txt', 'llms.txt 指引檔'], ['robots_ai', 'robots 允許 AI 爬取'], ['sitemap', 'Sitemap'],
       ['open_graph', 'Open Graph'], ['twitter_card', 'Twitter Card'], ['json_ld_citation', 'JSON-LD 引用訊號'],

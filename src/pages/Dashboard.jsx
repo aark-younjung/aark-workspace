@@ -348,7 +348,7 @@ export default function Dashboard() {
   const scoreData = [
     { name: 'SEO', value: seoScore, color: '#3b82f6', icon: '🔍', desc: '讓 Google 搜尋找到你', detail: '搜尋引擎最佳化（SEO）讓你的網站在 Google、Bing 等搜尋結果中排名更高，帶來更多自然流量。' },
     { name: 'AEO', value: aeoScore, color: '#8b5cf6', icon: '🤖', desc: '讓 AI 直接回答關於你', detail: 'AI 引擎最佳化（AEO）讓 ChatGPT、Siri、Google AI 等助理在回答問題時，能直接引用你的內容或推薦你的品牌。' },
-    { name: 'GEO', value: geoScore, color: '#10b981', icon: '🌐', desc: '讓 AI 生成式搜尋引用你', detail: '生成式引擎最佳化（GEO）讓 ChatGPT、Claude、Perplexity、Gemini 等 AI 在生成答案時，能主動提及並連結你的品牌。' },
+    { name: 'GEO', value: geoScore, color: '#10b981', icon: '🌐', desc: '被 AI 引用的技術條件', detail: 'GEO 檢查的是技術地基：AI 爬蟲讀不讀得到你、引用你時抓不抓得對標題與摘要。分數高不等於 AI 會推薦你——那要實際去問 ChatGPT / Claude / Gemini 才知道。' },
     { name: 'E-E-A-T', value: eeatScore, color: '#f59e0b', icon: '🏆', desc: '建立品牌專業度與可信度', detail: '經驗、專業、權威、信任（E-E-A-T）是 Google 評估網站可信度的核心標準，影響你在 AI 時代被推薦的機率。' },
     { name: '內容品質', value: contentScore, color: '#ec4899', icon: '📝', desc: '文章結構與 AI 引用適合度', detail: '檢測頁面標題結構、字數深度、Meta 標籤、FAQ Schema、作者資訊等 15 項指標，評估內容被 AI 引用的機率。', loading: contentLoading },
   ]

@@ -46,7 +46,7 @@ const FAQ_ITEMS = [
       },
       {
         q: 'SEO、AEO、GEO、LLMO、E-E-A-T 到底差在哪？我需要哪個？',
-        a: 'LLMO 是大傘、其他 4 個是傘下的子訊號層：①SEO 解 Google 排名（地基，沒這個 AI 也找不到你）；②AEO 解答案引擎引用（Google Featured Snippets、語音助理）；③GEO 解生成式 AI 推薦（ChatGPT、Claude、Gemini 長篇答案）；④E-E-A-T 解可信度（AI 判斷你值不值得引用的訊號）；⑤aivis 解結果驗證（實際追蹤你被跨 LLM 引用的次數）。5 個訊號不是替代關係、是疊加關係。方舟 AI 雷達一次幫你看完全部 — 從 Meta tag 到 llms.txt、從作者 bio 到 ChatGPT 引用率。'
+        a: 'LLMO 是大傘、其他 4 個是傘下的子訊號層：①SEO 解 Google 排名（地基，沒這個 AI 也找不到你）；②AEO 解答案引擎引用（Google Featured Snippets、語音助理）；③GEO 解生成式 AI 的技術可讀性（ChatGPT、Claude、Gemini 讀不讀得到你、引用時抓不抓得對）；④E-E-A-T 解可信度（AI 判斷你值不值得引用的訊號）；⑤aivis 解結果驗證（實際追蹤你被跨 LLM 引用的次數）。5 個訊號不是替代關係、是疊加關係。方舟 AI 雷達一次幫你看完全部 — 從 Meta tag 到 llms.txt、從作者 bio 到 ChatGPT 引用率。'
       },
     ]
   },
