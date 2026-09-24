@@ -11,14 +11,29 @@ import { buildIntentCoverage } from './aivisData'
  * 四層題庫用「人話」呈現（Codex IA：內部術語不當導覽），啟停／編輯／新增／執行掃描全搬。
  * 額度攔截交後端執法、錯誤誠實透傳（含額度不足訊息）；掃描完成整頁重載吃 DB 最新。
  */
+// 池子層在掃描時實際會發生什麼（標籤要照實寫）。
+// 2026-09-23：原本這四層也顯示「已停用」開關，但 is_active 對非核心層完全沒作用——
+// 掃描端（aivisScanService.buildScanTargets / api/aivis/fetch.js）只對 tier==='core' 讀 is_active，
+// 池子題照掃。按鈕寫「已停用」但東西照掃，會讓人白按一輪、也會讓人懷疑數字。
+const POOL_SCAN_NOTE = {
+  rotating: { label: '池中・每次抽用', title: `在題庫池裡，每次掃描隨機抽 ${ROTATING_SAMPLE_PER_SCAN} 條——不需要也不能手動啟停` },
+  brand: { label: '池中・每次都掃', title: '在題庫池裡，每次掃描全部跑過一次——不需要也不能手動啟停' },
+  info: { label: '池中・每次都掃', title: '在題庫池裡，每次掃描全部跑過一次——不需要也不能手動啟停' },
+  competitor: { label: '池中・每次都掃', title: '在題庫池裡，每次掃描全部跑過一次——不需要也不能手動啟停' },
+}
+
+// 小字說明裡各帶一次內部代號（core / rotating / brand / info / competitor）：
+// 人話標題仍是主角（2026-09-23 的 IA 決定：內部術語不當導覽），但程式碼、WORKLOG、API 與
+// 經典版介面全都用代號在講話，介面是唯一的例外 —— 對照時會有摩擦。放在小字裡一次，
+// 不佔版面也不增加客戶的認知負擔。
 const TIER_META = [
-  { tier: 'core', title: '客戶找服務時的問題', sub: `固定基準題——頭條曝光率與趨勢線只看這層（啟用上限 ${PROMPT_CAP} 條、每條掃 ${SCAN_RUNS} 次取平均）`, addable: true },
-  { tier: 'rotating', title: '長尾輪替題', sub: `輪替池——每次掃描隨機抽 ${ROTATING_SAMPLE_PER_SCAN} 條、抓核心題測不到的盲點`, addable: false },
-  { tier: 'brand', title: 'AI 認不認得你', sub: '含品牌名的題——另計「品牌認知率」、刻意不灌入曝光率', addable: false },
-  { tier: 'info', title: '知識題（內容引用）', sub: '不含品牌名的知識問句——看 AI 引用來源有沒有你的網域，餵「內容機會」', addable: true },
+  { tier: 'core', title: '客戶找服務時的問題', sub: `固定基準題（core）——頭條曝光率與趨勢線只看這層（啟用上限 ${PROMPT_CAP} 條、每條掃 ${SCAN_RUNS} 次取平均）`, addable: true },
+  { tier: 'rotating', title: '長尾輪替題', sub: `輪替池（rotating）——每次掃描隨機抽 ${ROTATING_SAMPLE_PER_SCAN} 條、抓核心題測不到的盲點`, addable: false },
+  { tier: 'brand', title: 'AI 認不認得你', sub: '含品牌名的題（brand）——另計「品牌認知率」、刻意不灌入曝光率', addable: false },
+  { tier: 'info', title: '知識題（內容引用）', sub: '不含品牌名的知識問句（info）——看 AI 引用來源有沒有你的網域，餵「內容機會」', addable: true },
   // 2026-09-04：客戶在比價時問「A 跟 B 哪個好」，AI 的答案直接影響成交——過去完全沒測。
   // 只有設了競品觀察名單才會被自動產生器建立（沒名單就硬掰對手，量到的東西沒有意義）。
-  { tier: 'competitor', title: '比價時 AI 站在誰那邊', sub: '同時含你與競品名的題——需要先設好「競品比較」的觀察名單；每條掃 1 次、不灌入曝光率', addable: false },
+  { tier: 'competitor', title: '比價時 AI 站在誰那邊', sub: '同時含你與競品名的題（competitor）——需要先設好「競品比較」的觀察名單；每條掃 1 次、不灌入曝光率', addable: false },
 ]
 
 /**
@@ -207,7 +222,7 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
             ) : (
               <ul>
                 {list.map(prompt => (
-                  <li key={prompt.id} className={prompt.is_active ? '' : 'off'}>
+                  <li key={prompt.id} className={meta.tier === 'core' && !prompt.is_active ? 'off' : ''}>
                     {editing?.id === prompt.id ? (
                       <div className="edit">
                         <input
@@ -225,10 +240,17 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
                         {prompt.generated_by === 'user' && <span className="ug">自訂</span>}
                         <span className="ops">
                           <button type="button" className="op" onClick={() => setEditing({ id: prompt.id, text: prompt.text })}>編輯</button>
-                          {/* 啟停開關：文字明示狀態（不只靠顏色） */}
-                          <button type="button" className={`op sw${prompt.is_active ? ' on' : ''}`} onClick={() => toggle(prompt)} aria-pressed={prompt.is_active}>
-                            {prompt.is_active ? '啟用中' : '已停用'}
-                          </button>
+                          {/* 只有核心層有啟停（受上限保護、真的會影響掃不掃）。
+                              池子層 is_active 對掃描沒有作用，所以不給開關、改成講清楚實際行為的靜態標籤。 */}
+                          {meta.tier === 'core' ? (
+                            <button type="button" className={`op sw${prompt.is_active ? ' on' : ''}`} onClick={() => toggle(prompt)} aria-pressed={prompt.is_active}>
+                              {prompt.is_active ? '啟用中' : '已停用'}
+                            </button>
+                          ) : (
+                            <span className="op pool" title={POOL_SCAN_NOTE[meta.tier]?.title}>
+                              {POOL_SCAN_NOTE[meta.tier]?.label || '池中'}
+                            </span>
+                          )}
                         </span>
                       </>
                     )}

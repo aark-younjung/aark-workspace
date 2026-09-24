@@ -51,8 +51,22 @@ function latestScanResponses(responses) {
   if (!responses.length) return []
   const valid = responses.filter(response => Number.isFinite(new Date(response.created_at).getTime()))
   if (!valid.length) return []
-  const latest = Math.max(...valid.map(response => new Date(response.created_at).getTime()))
-  return valid.filter(response => latest - new Date(response.created_at).getTime() <= LATEST_SCAN_WINDOW_MS)
+  // 2026-09-24 修：原本拿「全部回應裡最新的那一筆」當基準，再往前抓 5 分鐘。
+  // 但一次掃描是 15 題、31 次 API 呼叫、每次都帶網路搜尋，整輪遠超過 5 分鐘 ——
+  // 最早跑的那幾題會掉出視窗，引用矩陣就安靜地少顯示幾列（實案：啟用 6 條核心題、矩陣只出現 2 條）。
+  // 掃描越完整漏得越多，而且不會報錯。
+  // 改成「每條題目各自取自己最近一次」：5 分鐘視窗的原意是把同一題的 3 次重跑收在一起，
+  // 那本來就該以該題自己的最後一筆為基準，與別題跑多久無關。
+  const latestByPrompt = new Map()
+  for (const response of valid) {
+    const time = new Date(response.created_at).getTime()
+    const current = latestByPrompt.get(response.prompt_id)
+    if (current == null || time > current) latestByPrompt.set(response.prompt_id, time)
+  }
+  return valid.filter(response => {
+    const latest = latestByPrompt.get(response.prompt_id)
+    return latest != null && latest - new Date(response.created_at).getTime() <= LATEST_SCAN_WINDOW_MS
+  })
 }
 
 function aggregateTier({ responses, tierOf, tier, mentionByResponseId }) {

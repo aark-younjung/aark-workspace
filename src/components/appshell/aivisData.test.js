@@ -94,6 +94,31 @@ test('引用矩陣只列最新五分鐘批次的 core 題與三引擎真實狀�
   }])
 })
 
+test('長掃描不會漏題：每條核心題各自取自己最近一次，與別題跑多久無關', () => {
+  // 迴歸測試（2026-09-24）：一次掃描 15 題、31 次帶搜尋的 API 呼叫，整輪遠超過 5 分鐘。
+  // 舊版拿「全部回應中最新的一筆」當基準往前抓 5 分鐘，先跑完的題目會掉出視窗、
+  // 在引用矩陣上安靜消失（實案：啟用 6 條、矩陣只剩 2 條）。
+  const prompts2 = [
+    { id: 'core-1', text: '台北有哪些推薦的代書？', tier: 'core', is_active: true },
+    { id: 'core-2', text: '新北有哪些推薦的代書？', tier: 'core', is_active: true },
+  ]
+  const model = buildVisibilityModel({
+    brand: { name: '方舟代書', domain: 'aark.tw' },
+    prompts: prompts2,
+    responses: [
+      // core-1 在掃描一開始就跑完，比最後一筆早了 20 分鐘
+      response('a', 'core-1', '2026-08-08T02:00:00Z', { chatgpt: { mentioned: true } }),
+      // core-2 是整輪的最後一題
+      response('b', 'core-2', '2026-08-08T02:20:00Z', { chatgpt: { mentioned: false } }),
+    ],
+    mentions: [], rangeDays: 7, now: new Date('2026-08-08T08:00:00Z'),
+  })
+
+  assert.equal(model.matrix.length, 2, '兩條核心題都要出現在矩陣上')
+  assert.equal(model.matrix.find(item => item.promptId === 'core-1').engines.chatgpt, true)
+  assert.equal(model.matrix.find(item => item.promptId === 'core-2').engines.chatgpt, false)
+})
+
 test('內容引用率沿用 info 題最新批次來源，以正規化網域判定是否在名單', () => {
   const model = buildVisibilityModel({
     brand: { name: '方舟代書', domain: 'https://www.aark.tw/service' }, prompts,

@@ -374,8 +374,22 @@ export default function AppVisibility() {
           {model.exposure.delta != null && <span className={`delta${model.exposure.delta < 0 ? ' down' : ''}`}>{model.exposure.delta > 0 ? '↑' : model.exposure.delta < 0 ? '↓' : '—'} {Math.abs(model.exposure.delta)}</span>}
           <p>{model.exposure.total ? `${model.exposure.total} 個核心題引擎回答中，${model.exposure.mentioned} 個提到你的品牌` : '完成核心品類題掃描後，這裡才會顯示真實曝光率。'}</p>
           <TrendLine data={model.trend} />
+          {/* 分引擎曝光率（2026-09-24 從 10.5px 的灰色註腳升為主要區塊）
+              理由：上面那個合併百分比是三家平均，資訊量比分項少 —— 使用者看到「3%」只會覺得低，
+              看到「Gemini 11% / Claude 0%」才會問出對的問題：為什麼差這麼多。
+              而「不同引擎的取材結構不同」正是實際去問 AI 才量得到、靜態掃描工具做不到的那一半。
+              依數值排序：固定順序看不出差距，排序後「誰看得到你、誰完全看不到」會自己跳出來。 */}
           <div className="as-vis-engine-rates">
-            {model.perEngine.map(engine => <span key={engine.key}><span translate="no">{ENGINE_META[engine.key].label}</span> <b className="num">{metricValue(engine.rate)}</b></span>)}
+            {[...model.perEngine]
+              .sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1))
+              .map(engine => (
+                <div className="eng" key={engine.key}>
+                  <span className="lab" translate="no" style={{ color: ENGINE_META[engine.key].color }}>
+                    {ENGINE_META[engine.key].label}
+                  </span>
+                  <b className="num">{metricValue(engine.rate)}</b>
+                </div>
+              ))}
           </div>
         </div>
         <div className="as-card as-vis-kpi">
