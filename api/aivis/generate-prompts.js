@@ -47,6 +47,11 @@ const BRAND_COUNT = 2     // 品牌詞：帶品牌名、另計、不進頭條分
 const COMPETITOR_COUNT = 2  // 競品詞：只有用戶設了觀察名單才產（2026-09-04）。掃描只跑 1 次、不進頭條分數
 const INFO_COUNT = 5      // 資訊型：知識/how-to 問句、每次全掃、計分看「網域有沒有被引用」（Phase 2a、2026-07-13）
 
+// 核心層啟用上限 —— DB 有 plpgsql trigger 在擋，這裡先算一次是為了在超出時給出
+// 「該怎麼辦」的訊息，而不是把資料庫的原始錯誤丟給使用者。
+// 改動須連同 services/aivisScanService.js 的 PROMPT_CAP 與 DB trigger 一起。
+const PROMPT_CAP = 10
+
 const PRICE_INPUT_PER_TOKEN = 1 / 1_000_000
 const PRICE_OUTPUT_PER_TOKEN = 5 / 1_000_000
 
@@ -59,6 +64,11 @@ export default async function handler(req, res) {
   const brandId = req.query.brand_id || req.body?.brand_id
   // 預設替換 auto prompts（語意 = 重新產生），避免撞核心啟用上限
   const replaceExisting = (req.query.replace_existing ?? req.body?.replace_existing) !== 'false'
+  // 連「人工題」一起換掉（預設 false）。人工題＝使用者編輯過、generated_by 被標成 'user' 的題，
+  // 重生刻意不覆蓋它們以保護手動修改 —— 但它們會一直佔著核心層的啟用上限，
+  // 累積到滿之後重生就永遠失敗。這個參數是那條死路的出口，由前端問過使用者才帶上來。
+  const replaceUser = (req.query.replace_user ?? req.body?.replace_user) === 'true'
+     || (req.query.replace_user ?? req.body?.replace_user) === true
 
   if (!brandId) {
     return res.status(400).json({ error: 'brand_id is required' })
@@ -152,6 +162,58 @@ export default async function handler(req, res) {
         .eq('generated_by', 'auto')
     }
 
+    // ── 上限預檢（2026-09-24）──
+    // 上面只停用 auto 題。使用者編輯過的題會被標成 generated_by='user'，重生刻意不覆蓋它們
+    // （保護手動修改），但它們會一直佔著核心層的啟用上限 —— 累積到 PROMPT_CAP 之後，
+    // 新的核心題再也寫不進去，重生永遠失敗。
+    // 舊行為是直接讓 DB trigger 擋下、把原始錯誤往前端丟：「每個品牌最多 10 條啟用中的
+    // prompts（目前已 10 條）」。那句話沒告訴使用者「所以我該做什麼」，而唯一的解法
+    // （手動去停用幾條）也不在那個畫面上。客戶只會看到一條死路。
+    // 改成：先算清楚還剩幾個位子，不夠就回可讀的 409 並附上數字；
+    // 前端問過使用者之後，可以帶 replace_user=true 回來，連人工題一起換掉。
+    const activeResult = await supabase
+      .from('aivis_prompts')
+      .select('id, tier, generated_by')
+      .eq('brand_id', brand.id)
+      .eq('is_active', true)
+    if (activeResult.error) {
+      return res.status(500).json({ error: 'Failed to check prompt cap', detail: activeResult.error.message })
+    }
+    // 上限算的是核心層（與 PromptManager / AIVisibilityDashboard 的 coreActiveCount 同義）。
+    // tier 可能是 null（2026-09-04 前的舊資料），一律當 core 看待 —— 與讀取端一致。
+    const activeCore = (activeResult.data || []).filter(row => (row.tier || 'core') === 'core')
+    const userAuthored = activeCore.filter(row => row.generated_by === 'user')
+    const room = PROMPT_CAP - activeCore.length
+
+    if (tiered.core.length > room) {
+      if (!replaceUser) {
+        return res.status(409).json({
+          error: 'prompt_cap_would_exceed',
+          detail: `核心題啟用上限 ${PROMPT_CAP} 條，目前已啟用 ${activeCore.length} 條`
+            + `（其中 ${userAuthored.length} 條是你手動編輯過的，重生預設不會動它們），`
+            + `只剩 ${Math.max(0, room)} 個位子，但這次要寫入 ${tiered.core.length} 條新核心題。`,
+          cap: PROMPT_CAP,
+          active_core: activeCore.length,
+          user_authored: userAuthored.length,
+          need: tiered.core.length,
+          room: Math.max(0, room),
+          hint: userAuthored.length > 0
+            ? '可以帶 replace_user=true 連手動編輯過的題一起停用（不會刪除，之後仍可開回來），或自己先去停用幾條再重生。'
+            : '請先停用幾條核心題再重生。',
+        })
+      }
+      // 使用者同意了 —— 連人工題一起停用。是停用不是刪除，題目與歷史回答都留著，隨時可以開回來。
+      const { error: deactErr } = await supabase
+        .from('aivis_prompts')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('brand_id', brand.id)
+        .eq('is_active', true)
+        .in('id', activeCore.map(row => row.id))
+      if (deactErr) {
+        return res.status(500).json({ error: 'Failed to free prompt slots', detail: deactErr.message })
+      }
+    }
+
     // 批次寫入新 prompts，各自帶 tier（三層分流的資料來源）
     // ⚠️ DB 有 plpgsql trigger 限制「每品牌啟用中的題數」（上限見 aivisScanService.js 的 PROMPT_CAP）。
     //    所以只有【核心】預設啟用（算進上限）；
@@ -196,6 +258,17 @@ export default async function handler(req, res) {
     }
 
     if (insertErr) {
+      // 上限預檢照的是「核心層」的定義（與前端一致）。萬一 DB trigger 算的是別種口徑
+      // （例如全部層一起算），預檢會放行、然後在這裡被擋 —— 那時也要給人話，不要把
+      // 資料庫的原始訊息丟出去。
+      if (/啟用中|prompt.*cap|最多\s*\d+\s*條/i.test(insertErr.message || '')) {
+        return res.status(409).json({
+          error: 'prompt_cap_would_exceed',
+          detail: `資料庫擋下了這次寫入：${insertErr.message}`,
+          cap: PROMPT_CAP,
+          hint: '請先停用幾條題目再重生；或帶 replace_user=true 讓系統連手動編輯過的題一起停用。',
+        })
+      }
       return res.status(500).json({ error: 'Failed to insert prompts', detail: insertErr.message })
     }
 

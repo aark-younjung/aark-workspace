@@ -13,7 +13,7 @@ import { fetchPageContent } from '../services/seoAnalyzer'
  *
  * 資料來源：
  *   aivis_brands     — 品牌資料（Phase 1）
- *   aivis_prompts    — 每個品牌的監測 prompts（最多 10 條啟用）
+ *   aivis_prompts    — 每個品牌的監測 prompts（核心層最多 PROMPT_CAP 條啟用）
  *   aivis_responses  — Claude 對 prompt 的單次回應（含 cost_usd、brand_mentioned）
  *   aivis_mentions   — 萃取出的品牌提及（含 position、context）
  *
@@ -55,7 +55,7 @@ const T = {
 // aivis 主題色：青綠（與 HomeDark 紅色主題區隔）
 const AIVIS_TEAL = '#18c590'
 const AIVIS_TEAL_DEEP = '#0d7a58'
-const PROMPT_CAP = 10           // 固定核心（core）啟用上限 — 趨勢基準不需太多題
+const PROMPT_CAP = 10           // 固定核心（core）啟用上限 — 改動須連同 aivisScanService.js 與 DB trigger 一起（見該檔註解）
 const SCAN_RUNS = 3             // core / rotating 每條跑幾次取平均（brand 後端強制 1 次）
 // 三層題庫（core / rotating / brand）— 與 api/aivis/generate-prompts.js 的分層對齊
 const ROTATING_SAMPLE_PER_SCAN = 2   // 每次掃描從「啟用中的輪替池」隨機抽幾條（抓覆蓋盲點、防應試化）
@@ -312,7 +312,7 @@ export default function AIVisibilityDashboard() {
   const atSoftLimit = userMonthQueries >= AIVIS_QUOTA_PER_MONTH                      // ≥150 月內含已用完
   const atHardCap = userMonthQueries >= AIVIS_HARD_CAP                               // ≥1000 完全擋住
   // 本次掃描預計花幾次額度 = 核心×3 ＋ 抽樣輪替×3 ＋ 品牌詞×1 ＋ 資訊型×1（四層題庫分流）
-  // 輪替／品牌詞／資訊型都是「池子」（is_active=false、不佔 10 條啟用上限），計數與掃描都照 tier 從全部 prompts 抓
+  // 輪替／品牌詞／資訊型都是「池子」（is_active=false、不佔核心啟用上限），計數與掃描都照 tier 從全部 prompts 抓
   const activeBrandCount = useMemo(
     () => prompts.filter(p => (p.tier || 'core') === 'brand').length, [prompts])
   const activeRotatingCount = useMemo(
@@ -624,7 +624,7 @@ export default function AIVisibilityDashboard() {
     }
   }
 
-  // tier='core'：品類題，佔 10 條啟用上限、is_active=true
+  // tier='core'：品類題，佔核心啟用上限、is_active=true
   // tier='info'：資訊型知識問句，進「池子」（is_active=false、不佔上限），計分看網域引用
   async function addPrompt(tier = 'core') {
     const isInfo = tier === 'info'
@@ -643,17 +643,44 @@ export default function AIVisibilityDashboard() {
     setEditingId(data.id); setEditText('')
   }
 
-  async function regeneratePrompts() {
-    setToast({ kind: 'ai', msg: '✨ Claude 正在分析品牌、重新產生 5 條 prompt…' })
+  // replaceUser=true 代表使用者已經在確認框按過「確定」，同意連手動編輯過的題一起停用。
+  async function regeneratePrompts(replaceUser = false) {
+    setToast({ kind: 'ai', msg: '✨ Claude 正在分析品牌、重新產生題庫…' })
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
       if (!token) throw new Error('請先登入')
-      const r = await fetch(`/api/aivis/generate-prompts?brand_id=${id}`, {
+      const url = `/api/aivis/generate-prompts?brand_id=${id}${replaceUser ? '&replace_user=true' : ''}`
+      const r = await fetch(url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
       const json = await r.json()
+
+      // 核心題啟用上限擋下來了（2026-09-24）。
+      // 編輯過的題會被標成人工題、重生刻意不覆蓋它們，但它們會一直佔著上限 ——
+      // 滿了之後重生永遠失敗。舊版只丟一句「已滿 10 條」，使用者不知道該做什麼，
+      // 而唯一的解法（手動停用幾條）也不在這個畫面上。改成問一次，同意就自動讓位。
+      if (r.status === 409 && json?.error === 'prompt_cap_would_exceed') {
+        setToast(null)
+        const ok = window.confirm(
+          `${json.detail}
+
+`
+          + (json.user_authored > 0
+            ? `要連那 ${json.user_authored} 條手動編輯過的題一起停用嗎？
+`
+              + '（是停用不是刪除 —— 題目和歷史回答都留著，之後隨時可以開回來）'
+            : '要先停用目前啟用中的核心題，再寫入新題嗎？')
+        )
+        if (!ok) {
+          setToast({ kind: 'warn', msg: '已取消。你也可以自己到題庫裡停用幾條再重生。' })
+          setTimeout(() => setToast(null), 5000)
+          return
+        }
+        return regeneratePrompts(true)
+      }
+
       // error + detail 都帶出來（detail 才是真正的 DB 錯誤原因，之前被藏住了）
       if (!r.ok || !json.success) throw new Error([json.error, json.detail].filter(Boolean).join(' — ') || '產生失敗')
       setToast({ kind: 'success', msg: `✅ 已重新產生 ${json.generated_count} 條 prompt` })
@@ -953,14 +980,14 @@ export default function AIVisibilityDashboard() {
         {/* ── Prompts 管理（全寬） ── */}
         <div style={{ marginBottom: 32 }}>
           {isLoading ? <PromptsSkeleton /> :
-            prompts.length === 0 ? <PromptsEmpty onGenerate={regeneratePrompts} /> :
+            prompts.length === 0 ? <PromptsEmpty onGenerate={() => regeneratePrompts()} /> :
               <PromptsPanel
                 prompts={prompts} editingId={editingId} editText={editText}
                 setEditText={setEditText} onToggle={togglePrompt}
                 onStartEdit={startEdit} onSave={saveEdit}
                 onCancelEdit={() => setEditingId(null)}
                 onAdd={() => addPrompt('core')} onAddInfo={() => addPrompt('info')}
-                onRegenerate={regeneratePrompts}
+                onRegenerate={() => regeneratePrompts()}
                 activeCount={activeCount} atCap={atCap}
               />
           }
@@ -1451,7 +1478,7 @@ function PromptsPanel({
             opacity: on ? 1 : 0.55, transition: 'all .2s',
           }}>
             {inPool ? (
-              <span title="輪替／品牌詞：放在池子裡，掃描時自動抽用（不佔 10 條啟用上限）"
+              <span title="輪替／品牌詞：放在池子裡，掃描時自動抽用（不佔核心啟用上限）"
                 style={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🌀</span>
             ) : (
             <button onClick={() => onToggle(p)} style={{
@@ -1527,7 +1554,7 @@ function PromptsPanel({
         })}
 
         <AddPromptButton atCap={atCap} onAdd={onAdd} />
-        {/* 資訊型題：進池子、永遠不佔 10 條啟用上限 → 沒有 atCap 限制。計分看網域引用（不進主分數）*/}
+        {/* 資訊型題：進池子、永遠不佔核心啟用上限 → 沒有 atCap 限制。計分看網域引用（不進主分數）*/}
         <button onClick={onAddInfo}
           title="資訊型知識問句（例：術後要注意什麼？）— 進池子、不佔啟用上限。計分看「AI 這題有沒有引用你的網域」"
           style={{
