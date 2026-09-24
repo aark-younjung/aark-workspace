@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { runAivisScan, PROMPT_CAP, SCAN_RUNS, ROTATING_SAMPLE_PER_SCAN } from '../../services/aivisScanService'
+import { runAivisScan, regenerateAivisPrompts, capConfirmText, PROMPT_CAP, SCAN_RUNS, ROTATING_SAMPLE_PER_SCAN } from '../../services/aivisScanService'
 import { logError } from '../../lib/errorLog'
 import Badge from './Badge'
 import { buildIntentCoverage } from './aivisData'
@@ -89,6 +89,7 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
   const [busyId, setBusyId] = useState(null)
   const [notice, setNotice] = useState(null)     // { kind: 'ok'|'warn', msg }
   const [scan, setScan] = useState({ running: false, done: 0, total: 0 })
+  const [regen, setRegen] = useState(false)
 
   const [autoScan, setAutoScan] = useState(Boolean(brand?.auto_scan))
   const coreActiveCount = prompts.filter(prompt => (prompt.tier || 'core') === 'core' && prompt.is_active).length
@@ -158,6 +159,39 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
     setEditing({ id: data.id, text: '' })
   }
 
+  // 重新產生題庫（2026-09-24 從經典版搬過來，新版終於不用跳出去）
+  // 撞到核心題啟用上限時，後端回 409 帶數字，這裡問過使用者才帶 replace_user 重試。
+  async function handleRegenerate(replaceUser = false) {
+    if (regen) return
+    setRegen(true)
+    try {
+      const result = await regenerateAivisPrompts({ supabase, brandId: brand.id, replaceUser })
+      if (result.kind === 'cap') {
+        setRegen(false)
+        if (!window.confirm(capConfirmText(result.info))) {
+          flash('warn', '已取消。你也可以自己在下面把幾條核心題停用，再重生一次。')
+          return
+        }
+        return handleRegenerate(true)
+      }
+      if (result.kind === 'error') { flash('warn', `產生失敗：${result.message}`); return }
+      // 重生會同時停用一批舊題、寫入一批新題 —— 不是單筆異動，樂觀更新沒有意義，
+      // 直接把整份題庫重抓回來換掉（查法與 AppVisibility 載入時一致）。
+      const { data: fresh, error: reloadErr } = await supabase
+        .from('aivis_prompts').select('*').eq('brand_id', brand.id).order('created_at')
+      if (reloadErr) {
+        flash('warn', `已產生 ${result.generated} 條，但重新載入題庫失敗：${reloadErr.message}。請重新整理頁面。`, 6000)
+        return
+      }
+      onPromptsChange(() => fresh || [])
+      flash('ok', `已重新產生 ${result.generated} 條題目`)
+    } catch (error) {
+      flash('warn', `產生失敗：${error.message}`)
+    } finally {
+      setRegen(false)
+    }
+  }
+
   // 執行掃描：分流編排在共用 service；額度不足等錯誤由後端回覆、這裡誠實透傳
   async function handleScan() {
     if (scan.running) return
@@ -189,9 +223,15 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
     <section className="as-card as-pm">
       <div className="as-vis-section-head">
         <div><h3>監測題目</h3><span className="sub">共 {prompts.length} 條 · 核心啟用 {coreActiveCount}/{PROMPT_CAP}</span></div>
-        <button type="button" className="as-cta" onClick={handleScan} disabled={scan.running} aria-live="polite">
-          {scan.running ? `掃描中… ${scan.done}/${scan.total} 題` : '▶ 執行掃描'}
-        </button>
+        <div className="as-pm-actions">
+          {/* 重生是破壞性動作（會停用一批舊題），所以用次要樣式 —— 主按鈕留給執行掃描 */}
+          <button type="button" className="as-vis-line-button" onClick={() => handleRegenerate()} disabled={regen || scan.running}>
+            {regen ? '產生中…' : '✨ 重新產生題庫'}
+          </button>
+          <button type="button" className="as-cta" onClick={handleScan} disabled={scan.running || regen} aria-live="polite">
+            {scan.running ? `掃描中… ${scan.done}/${scan.total} 題` : '▶ 執行掃描'}
+          </button>
+        </div>
       </div>
 
       {/* 每週自動掃描：opt-in（花的是用戶自己的額度、必須明示同意）；文字明示狀態不只靠顏色 */}
@@ -264,7 +304,8 @@ export default function PromptManager({ brand, prompts, userId, onPromptsChange 
 
       <p className="foot">
         每次掃描 ≈ 核心題 ×{SCAN_RUNS} ＋ 輪替抽 {ROTATING_SAMPLE_PER_SCAN} 題 ×{SCAN_RUNS} ＋ 品牌題/知識題各 ×1 次額度。
-        額度不足時掃描會中止並顯示原因；自動重生題庫請至 <a href={`/ai-visibility/${brand.id}`}>經典版品牌管理</a>。
+        額度不足時掃描會中止並顯示原因。「重新產生題庫」會請 Claude 依你的品牌設定重出一份，
+        舊的自動題會被停用（不刪除），手動編輯過的題預設保留。
       </p>
     </section>
   )

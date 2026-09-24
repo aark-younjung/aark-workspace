@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { regenerateAivisPrompts, capConfirmText } from '../services/aivisScanService'
 import { useAuth } from '../context/AuthContext'
 import HeartbeatTrend from '../components/HeartbeatTrend'
 // Phase 1 來源待辦清單：重用掃描用的抓網頁 helper（含 SSL/UA/anti-bot 容錯），不另開 API function
@@ -647,32 +648,15 @@ export default function AIVisibilityDashboard() {
   async function regeneratePrompts(replaceUser = false) {
     setToast({ kind: 'ai', msg: '✨ Claude 正在分析品牌、重新產生題庫…' })
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-      if (!token) throw new Error('請先登入')
-      const url = `/api/aivis/generate-prompts?brand_id=${id}${replaceUser ? '&replace_user=true' : ''}`
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const json = await r.json()
+      const result = await regenerateAivisPrompts({ supabase, brandId: id, replaceUser })
 
       // 核心題啟用上限擋下來了（2026-09-24）。
       // 編輯過的題會被標成人工題、重生刻意不覆蓋它們，但它們會一直佔著上限 ——
       // 滿了之後重生永遠失敗。舊版只丟一句「已滿 10 條」，使用者不知道該做什麼，
       // 而唯一的解法（手動停用幾條）也不在這個畫面上。改成問一次，同意就自動讓位。
-      if (r.status === 409 && json?.error === 'prompt_cap_would_exceed') {
+      if (result.kind === 'cap') {
         setToast(null)
-        const ok = window.confirm(
-          `${json.detail}
-
-`
-          + (json.user_authored > 0
-            ? `要連那 ${json.user_authored} 條手動編輯過的題一起停用嗎？
-`
-              + '（是停用不是刪除 —— 題目和歷史回答都留著，之後隨時可以開回來）'
-            : '要先停用目前啟用中的核心題，再寫入新題嗎？')
-        )
+        const ok = window.confirm(capConfirmText(result.info))
         if (!ok) {
           setToast({ kind: 'warn', msg: '已取消。你也可以自己到題庫裡停用幾條再重生。' })
           setTimeout(() => setToast(null), 5000)
@@ -680,10 +664,8 @@ export default function AIVisibilityDashboard() {
         }
         return regeneratePrompts(true)
       }
-
-      // error + detail 都帶出來（detail 才是真正的 DB 錯誤原因，之前被藏住了）
-      if (!r.ok || !json.success) throw new Error([json.error, json.detail].filter(Boolean).join(' — ') || '產生失敗')
-      setToast({ kind: 'success', msg: `✅ 已重新產生 ${json.generated_count} 條 prompt` })
+      if (result.kind === 'error') throw new Error(result.message)
+      setToast({ kind: 'success', msg: `✅ 已重新產生 ${result.generated} 條 prompt` })
       setTimeout(() => setToast(null), 3500)
       loadAll()
     } catch (err) {

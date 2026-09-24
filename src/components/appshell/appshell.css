@@ -789,3 +789,12 @@ html.dark-theme .appshell textarea::placeholder{
 
 /* 儲存成功：綠色，與 .err 的紅色對稱，讓兩種結果一樣顯眼 */
 .appshell .as-vis-bs .ok{margin-top:8px;font-size:13px;color:#0f7a54;}
+
+/* 監測題目頁首的兩顆按鈕（2026-09-24「重新產生題庫」從經典版搬進來後才需要）。
+   主按鈕是「執行掃描」，重生用次要樣式 —— 它會停用一批舊題，不該跟主動作搶視線。
+   手機寬度下讓它們各佔一行，不要擠成兩個窄按鈕。 */
+.appshell .as-pm-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+@media (max-width:480px){
+  .appshell .as-pm-actions{width:100%;}
+  .appshell .as-pm-actions > *{flex:1 1 100%;text-align:center;}
+}
