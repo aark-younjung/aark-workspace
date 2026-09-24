@@ -447,6 +447,16 @@ html.dark-theme .appshell textarea::placeholder{
 .appshell .as-pm-notice{font-size:13.5px;line-height:1.6;padding:10px 14px;border-radius:12px;margin-bottom:12px;}
 .appshell .as-pm-notice.ok{background:rgba(5,150,105,.07);border:1px solid rgba(5,150,105,.25);color:#047857;}
 .appshell .as-pm-notice.warn{background:#fffaf0;border:1px solid #f0d9ae;color:#8a6d3b;}
+/* 「內容品質」分數卡上的工具標籤（2026-09-08）：這張卡點進去是開文章分析工具，
+   不像旁邊四張是看詳情。用一個小標區隔，不然它只會被當成一個數字 */
+.appshell .as-sc .tool{font-size:10px;font-weight:800;color:#ec4899;border:1px solid rgba(236,72,153,.35);
+  background:rgba(236,72,153,.08);padding:1px 6px;border-radius:99px;margin-left:6px;white-space:nowrap;}
+/* 文章分析的歷次分數（2026-09-08）：亮色殼沒有深色版 ScoreHero 的迷你趨勢圖，
+   改用一行文字列出，資訊不遺失也不必為此搬一個深色元件進來 */
+.appshell .as-content-trend{font-size:13px;color:var(--ink-2);margin-bottom:12px;}
+.appshell .as-content-trend b{font-weight:800;color:var(--ink);}
+/* 箭頭是純視覺分隔，語意上不需要被讀出來 */
+.appshell .as-content-trend i{font-style:normal;color:var(--ink-3);}
 /* 題庫意圖覆蓋率（2026-09-04）：這把尺量得夠不夠全 —— 六類意圖各有幾條、缺哪一類 */
 .appshell .as-pm-coverage{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:18px;}
 /* 標題列：標題＋覆蓋分數＋一句話說明，窄螢幕自動換行 */
@@ -490,6 +500,10 @@ html.dark-theme .appshell textarea::placeholder{
   border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);cursor:pointer;}
 .appshell .as-pm-tier .op:hover,.appshell .as-pm-auto .op:hover{border-color:var(--ink-3);}
 .appshell .as-pm-tier .op.sw.on,.appshell .as-pm-auto .op.sw.on{background:rgba(5,150,105,.08);color:#059669;border-color:rgba(5,150,105,.3);}
+/* 池子層的狀態標籤（2026-09-23）：非核心層的 is_active 對掃描沒作用，所以不給開關、
+   改成不可點的靜態標籤。刻意做得比按鈕淡、沒有邊框，一眼看得出「這不是可以按的東西」。 */
+.appshell .as-pm-tier .op.pool{background:transparent;border-color:transparent;color:var(--ink-3);
+  font-weight:600;cursor:default;white-space:nowrap;}
 .appshell .as-pm-tier .op:focus-visible,.appshell .as-pm-auto .op:focus-visible{outline:3px solid rgba(130,152,255,.55);outline-offset:2px;}
 /* 行內編輯：輸入框＋儲存/取消 */
 .appshell .as-pm-tier .edit{display:flex;gap:8px;flex:1;flex-wrap:wrap;}
@@ -735,3 +749,31 @@ html.dark-theme .appshell textarea::placeholder{
   .appshell .as-sitecard,.appshell .as-addsite,.appshell .as-nav,.appshell .as-seg button,.appshell .as-action{transition:none;}
   .appshell .as-sitecard:hover,.appshell .as-action:hover,.appshell .as-gap-tool:hover{transform:none;}
 }
+
+
+/* ───────── 品牌設定表單（2026-09-24 新增）─────────
+   沿用競品編輯器（.as-vis-comp-editor）的外框、label 與 input 樣式，
+   只補它沒有的三件事：產業 chip 的「未選／已選」兩態、多行描述框、儲存成功提示。
+   註：.chip 在競品編輯器裡一律是橘色（因為那些 chip 全都是「已加入」的項目），
+   直接沿用會讓 16 個產業看起來每一個都被選中 —— 所以這裡覆寫成中性色，只有 .on 才上色。 */
+
+/* 區塊開頭的說明文字：講「填了會影響什麼」，不是裝飾 */
+.appshell .as-vis-bs .note{font-size:12.5px;color:var(--ink-3);margin:0 0 14px;line-height:1.6;}
+
+/* 產業別＝單選。未選：中性灰底、可點；hover 時給出「這是按鈕」的回饋 */
+.appshell .as-vis-bs .chip{background:var(--surface);color:var(--ink-2);border:1px solid var(--line-2);
+  padding:5px 12px;font-weight:600;cursor:pointer;}
+.appshell .as-vis-bs .chip:hover{border-color:var(--accent-2);color:var(--accent-2);}
+/* 已選的那一個才上橘 —— 使用者要能一眼看出目前選的是哪個產業 */
+.appshell .as-vis-bs .chip.on{background:var(--accent-soft);color:var(--accent-2);
+  border-color:rgba(255,110,52,.45);font-weight:700;}
+.appshell .as-vis-bs .chip:focus-visible{outline:3px solid rgba(130,152,255,.45);outline-offset:1px;}
+
+/* 品牌描述是整段文字：外觀比照 input，但允許換行與使用者自行拉高 */
+.appshell .as-vis-bs textarea{flex:1;min-width:220px;font-family:var(--font);font-size:14.5px;
+  padding:9px 12px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface);
+  color:var(--ink);line-height:1.7;resize:vertical;}
+.appshell .as-vis-bs textarea:focus-visible{outline:3px solid rgba(130,152,255,.45);outline-offset:1px;}
+
+/* 儲存成功：綠色，與 .err 的紅色對稱，讓兩種結果一樣顯眼 */
+.appshell .as-vis-bs .ok{margin-top:8px;font-size:13px;color:#0f7a54;}

@@ -31,6 +31,7 @@ export const INDUSTRIES = [
   { slug: 'pet',              name: '寵物',     emoji: '🐶', keywords: ['寵物', '動物', '飼料', '美容', '醫療'] },
   { slug: 'media',            name: '媒體娛樂', emoji: '🎬', keywords: ['媒體', '娛樂', '影視', '音樂', '內容'] },
   { slug: 'consumer-goods',   name: '民生消費', emoji: '🛍️', keywords: ['日用品', '家用品', '個人護理', '清潔'] },
+  { slug: 'marketing-agency', name: '行銷／廣告', emoji: '📣', keywords: ['行銷', '廣告', '代操', 'SEO', '網頁設計', '公關', '數位行銷'] },
   { slug: 'other',            name: '其他',     emoji: '📦', keywords: [] },
 ]
 

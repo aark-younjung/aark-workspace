@@ -126,6 +126,28 @@ export default function AppGap() {
     <>
       <div className="as-ctx"><SiteSwitcher websiteId={websiteId} currentTitle={title} /></div>
       <div className="as-phead"><h2>內容機會</h2><span className="sub">AI 回答你領域的知識題時，引用名單裡有沒有你</span></div>
+
+      {/* 文章分析入口（2026-09-08 從頁面最底搬到這裡，並放進 head）。
+          兩個原因：
+          (1) 原本擺在最底、還在「範圍誠實聲明」那段灰字之後，實際上找不到——
+              產品負責人自己都找不到，客戶更不可能。
+          (2) 更嚴重的是它擺在提前 return 的後面：沒連結 aivis 品牌的用戶會走空狀態分支，
+              工具卡根本不會被渲染。但文章分析只分析頁面內容、**完全不需要 aivis**，
+              沒理由被 aivis 的設定狀態擋住。放進 head 就每種狀態都看得到。
+          名稱對齊公開頁的「文章分析」——app 內叫「單篇文章體檢」而公開頁叫「文章分析」，
+          是找不到的主因之一。 */}
+      <section className="as-gap-tools" aria-label="文章分析工具">
+        <Link className="as-card as-gap-tool" to={`/app/${websiteId}/content`}>
+          <b>📝 文章分析（單篇）</b>
+          <span>15 項內容檢測（結構／字數／AEO 格式／可讀性），逐篇看要補什麼。</span>
+          <span className="go">開啟 →</span>
+        </Link>
+        <Link className="as-card as-gap-tool" to={`/bulk-scan/${websiteId}`}>
+          <b>📚 文章分析（批次）</b>
+          <span>從 sitemap 自動找出文章、批次體檢，一次看全站內容的健康度。</span>
+          <span className="go">開啟 →</span>
+        </Link>
+      </section>
     </>
   )
 
@@ -148,7 +170,7 @@ export default function AppGap() {
       <div className="as-empty">
         <div className="e-t">品牌還沒設定網域</div>
         <div className="e-d">要判斷「AI 引用的來源是不是你的網站」，需要知道你的網域。到品牌管理補上網域後，重新掃描即可。</div>
-        <Link className="as-cta" to={`/ai-visibility/${state.brand.id}`}>管理品牌 →</Link>
+        <Link className="as-cta" to={`/app/${websiteId}/visibility/settings`}>管理品牌 →</Link>
       </div>
     </>
   )
@@ -160,7 +182,7 @@ export default function AppGap() {
       <div className="as-empty">
         <div className="e-t">還沒有資訊題掃描資料</div>
         <div className="e-d">資訊題（不含品牌名的知識問句）會隨每次 aivis 掃描一起跑。執行一次掃描後，這裡會顯示 AI 引用了誰、你在不在名單。</div>
-        <Link className="as-cta" to={`/ai-visibility/${state.brand.id}`}>去掃描 →</Link>
+        <Link className="as-cta" to={`/app/${websiteId}/visibility/prompts`}>去掃描 →</Link>
       </div>
     </>
   )
@@ -230,19 +252,6 @@ export default function AppGap() {
         📍 以上僅涵蓋 aivis 已掃描的 {citation.total} 題資訊題（近 90 天最新一次掃描）。AI 的引用會隨時間變動；不代表你的內容在所有知識題的表現。
       </div>
 
-      {/* 內容工具入口（2026-08-13 IA 定案：文章工具收編進「內容機會」；工具本體沿用現有頁、不重建） */}
-      <section className="as-gap-tools" aria-label="內容工具">
-        <Link className="as-card as-gap-tool" to={`/content-audit/${websiteId}`}>
-          <b>📝 單篇文章體檢</b>
-          <span>15 項內容檢測（結構／字數／AEO 格式／可讀性），逐篇看要補什麼。</span>
-          <span className="go">開啟 →</span>
-        </Link>
-        <Link className="as-card as-gap-tool" to={`/bulk-scan/${websiteId}`}>
-          <b>📚 批次文章掃描</b>
-          <span>從 sitemap 自動找出文章、批次體檢，一次看全站內容的健康度。</span>
-          <span className="go">開啟 →</span>
-        </Link>
-      </section>
     </>
   )
 }

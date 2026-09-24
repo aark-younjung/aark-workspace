@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { hostLabel } from '../../lib/url'
+import { INDUSTRIES, INDUSTRIES_BY_SLUG } from '../../lib/industries'
 import { aivisQuotaFor } from '../../lib/limits'
 import { buildVisibilityModel, buildCompetitorComparison, buildSourceInfluence, buildFactCheck, buildBrandVoice, SOURCE_CATEGORY_LABEL, ENGINE_KEYS, ENGINE_META } from './aivisData'
 import SiteSwitcher from './SiteSwitcher'
@@ -17,6 +18,10 @@ const VIS_TABS = [
   { key: 'competitors', label: '競品比較' },
   { key: 'sources', label: '引用來源' },
   { key: 'voice', label: 'AI 怎麼說你' },
+  // 2026-09-24 新增：品牌基本資料（網域／產業／描述）以前只有「建立品牌」時能填，
+  // 建完就再也改不了 —— 完整度檢查表的「去補」按鈕只能把人送去經典版，而那頁也沒有這些欄位，
+  // 等於一條斷頭路。搬進來之後才真的補得到。
+  { key: 'settings', label: '品牌設定' },
 ]
 
 // 觀察名單防呆：名單項「長得像網址」就警告——AI 回答寫的是品牌名、幾乎不寫網址，
@@ -234,6 +239,52 @@ export default function AppVisibility() {
     rangeDays,
   }), [state.brand?.name, state.prompts, state.responses, rangeDays])
 
+  // 品牌基本資料表單（2026-09-24）。brand 是非同步載入的 → 用 useEffect 在資料到齊時灌一次初值。
+  // 寫回時 industry（單一中文字串、legacy）與 industries（slug 陣列、新主欄位）要同時更新，
+  // 規則跟「建立品牌」那支一致（見 pages/AIVisibility.jsx），否則題庫生成器讀到的產業會是舊的。
+  const [brandForm, setBrandForm] = useState(null)
+  const [brandSave, setBrandSave] = useState({ busy: false, error: '', done: false })
+
+  useEffect(() => {
+    if (!state.brand) return
+    setBrandForm({
+      name: state.brand.name || '',
+      domain: state.brand.domain || '',
+      industries: Array.isArray(state.brand.industries) ? state.brand.industries : [],
+      description: state.brand.description || '',
+    })
+    // 只在「換了一個品牌」時重灌表單。若把整個 state.brand 放進相依陣列，
+    // 儲存後 setState 會再觸發一次、把使用者正在打的字蓋回去。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.brand?.id])
+
+  async function saveBrandSettings(event) {
+    event.preventDefault()
+    if (!brandForm || !state.brand) return
+    const name = brandForm.name.trim()
+    if (!name) {
+      setBrandSave({ busy: false, error: '品牌名稱是必填的', done: false })
+      return
+    }
+    setBrandSave({ busy: true, error: '', done: false })
+    const primaryName = brandForm.industries[0] ? INDUSTRIES_BY_SLUG[brandForm.industries[0]]?.name : null
+    const patch = {
+      name,
+      domain: brandForm.domain.trim() || null,
+      industry: primaryName || null,
+      industries: brandForm.industries.length > 0 ? brandForm.industries : null,
+      description: brandForm.description.trim() || null,
+    }
+    const { error } = await supabase.from('aivis_brands').update(patch).eq('id', state.brand.id)
+    if (error) {
+      // 誠實透傳（欄位不存在 / RLS 沒開放 update 都會走到這裡），不默默失敗
+      setBrandSave({ busy: false, error: error.message, done: false })
+      return
+    }
+    setState(current => ({ ...current, brand: { ...current.brand, ...patch } }))
+    setBrandSave({ busy: false, error: '', done: true })
+  }
+
   // 競品觀察名單編輯器（chips 式：逐筆加入、可單獨刪除，最多 3 個）
   // 2026-08-13 修：原本單一逗號分隔輸入，按 Enter 會直接送出表單、只存到一筆 → 改逐筆 chip
   const [compEditor, setCompEditor] = useState({ open: false, names: [], draft: '', busy: false, error: '' })
@@ -299,7 +350,7 @@ export default function AppVisibility() {
         <div className="as-seg" aria-label="監測期間">
           {RANGE_OPTIONS.map(option => <button key={option.days} className={rangeDays === option.days ? 'on' : ''} type="button" onClick={() => setRangeDays(option.days)} aria-pressed={rangeDays === option.days}>{option.label}</button>)}
         </div>
-        <Link className="as-cta as-vis-rescan" to={`/ai-visibility/${state.brand.id}`}>管理／重新掃描</Link>
+        <Link className="as-cta as-vis-rescan" to={`/app/${websiteId}/visibility/prompts`}>管理／重新掃描</Link>
       </div>
 
       {/* 分頁導覽：沿用網站體檢同款樣式與深連結模式 */}
@@ -413,7 +464,7 @@ export default function AppVisibility() {
                     缺「{item.label}」<em>（{item.why}）</em>
                     {item.key === 'competitors'
                       ? <Link to={`/app/${websiteId}/visibility/competitors`} className="as-vis-anchor">去設定 →</Link>
-                      : <Link to={`/ai-visibility/${state.brand.id}`} className="as-vis-anchor">去補 →</Link>}
+                      : <Link to={`/app/${websiteId}/visibility/settings`} className="as-vis-anchor">去補 →</Link>}
                   </span>
                 ))}
               </div>
@@ -626,6 +677,83 @@ export default function AppVisibility() {
       </>)}
 
       {selectedTab === 'sources' && <BrandMentions brand={state.brand} />}
+
+      {/* 品牌設定（2026-09-24）：題庫生成器把「產業 + 簡介」直接餵給 Claude，
+          這兩欄空著＝題目是憑空猜的。每一欄都寫清楚「填了會影響什麼」，不寫「請填寫」。 */}
+      {selectedTab === 'settings' && brandForm && (
+        <section className="as-card as-vis-bs" id="vis-settings">
+          <div className="as-vis-section-head">
+            <div><h3>品牌設定</h3></div>
+          </div>
+          <p className="note">
+            這幾欄會直接影響題庫自動生成的準度，以及「AI 引用的是不是你」的判定。
+          </p>
+
+          <form className="as-vis-comp-editor" onSubmit={saveBrandSettings}>
+            <label htmlFor="bs-name">品牌名稱（AI 回答裡要比對的字串，寫 AI 會寫出來的那個名字）</label>
+            <div className="row">
+              <input
+                id="bs-name"
+                type="text"
+                value={brandForm.name}
+                onChange={event => setBrandForm(current => ({ ...current, name: event.target.value }))}
+              />
+            </div>
+
+            <label htmlFor="bs-domain">品牌網域（判定「AI 引用的是不是你」要用；填 example.com 就好）</label>
+            <div className="row">
+              <input
+                id="bs-domain"
+                type="text"
+                value={brandForm.domain}
+                onChange={event => setBrandForm(current => ({ ...current, domain: event.target.value }))}
+                placeholder="example.com"
+              />
+            </div>
+
+            <label>產業別（決定題庫往哪個方向出題，單選）</label>
+            <div className="chips">
+              {INDUSTRIES.map(industry => {
+                const active = brandForm.industries[0] === industry.slug
+                return (
+                  <button
+                    type="button"
+                    key={industry.slug}
+                    className={`chip${active ? ' on' : ''}`}
+                    aria-pressed={active}
+                    onClick={() => setBrandForm(current => ({
+                      ...current,
+                      // 再點一次同一個＝取消選取（跟建立品牌那支的行為一致）
+                      industries: current.industries[0] === industry.slug ? [] : [industry.slug],
+                    }))}
+                  >{industry.emoji} {industry.name}</button>
+                )
+              })}
+            </div>
+
+            <label htmlFor="bs-desc">
+              品牌描述（題庫生成器會整段讀。寫你賣什麼、賣給誰、在哪裡——越具體，題目越像真的客人會問的）
+            </label>
+            <div className="row">
+              <textarea
+                id="bs-desc"
+                rows={5}
+                value={brandForm.description}
+                onChange={event => setBrandForm(current => ({ ...current, description: event.target.value }))}
+              />
+            </div>
+
+            {brandSave.error && <p className="err">儲存失敗：{brandSave.error}</p>}
+            {brandSave.done && <p className="ok">已儲存。改了產業或描述之後，重新產生題庫才會套用到新題目。</p>}
+
+            <div className="row">
+              <button type="submit" className="as-cta" disabled={brandSave.busy}>
+                {brandSave.busy ? '儲存中…' : '儲存'}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
     </>
   )
 }

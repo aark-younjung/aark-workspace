@@ -57,7 +57,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
 
   const brandId = req.query.brand_id || req.body?.brand_id
-  // 預設替換 auto prompts（語意 = 重新產生），避免撞 10 條上限
+  // 預設替換 auto prompts（語意 = 重新產生），避免撞核心啟用上限
   const replaceExisting = (req.query.replace_existing ?? req.body?.replace_existing) !== 'false'
 
   if (!brandId) {
@@ -153,7 +153,8 @@ export default async function handler(req, res) {
     }
 
     // 批次寫入新 prompts，各自帶 tier（三層分流的資料來源）
-    // ⚠️ DB 有「每品牌最多 10 條啟用」硬限制。所以只有【核心】預設啟用（算進 10 條上限）；
+    // ⚠️ DB 有 plpgsql trigger 限制「每品牌啟用中的題數」（上限見 aivisScanService.js 的 PROMPT_CAP）。
+    //    所以只有【核心】預設啟用（算進上限）；
     //    【輪替／品牌詞】放進「池子」但預設 is_active=false，不佔上限。
     //    掃描時前端照 tier 從池子抓（見 AIVisibilityDashboard runScan），不看 is_active，功能不受影響。
     // tier 決定掃描行為、intent 決定語意分類（見 components/appshell/aivisData.js 的 INTENT_META）。
@@ -270,9 +271,24 @@ function buildMetaPrompt(brand, counts, competitors = []) {
    - **預算型**：帶具體預算，例：「預算 10 萬以內想做 ___，有推薦的公司嗎？」
    - **痛點型**：從具體商業痛點切入、不點名解決方案，例：「IG 一直沒人追蹤，有沒有公司可以幫忙？」
    - **業種型**：從客戶行業切入，例：「餐廳老闆想做行銷該找什麼公司？」
-   - **比較/列表型**：「台灣有哪些...」或「___ 哪一家比較好」（最像分析師，整體最多 2 條）
+   - **比較/列表型**：「台灣有哪些...」或「___ 哪一家比較好」
+
+**【最重要的一條：每一題都要問得出「公司名字」】**
+這個題庫是拿來量「AI 有沒有講出這個品牌」的。如果一條題目的答案是一套判斷方法、
+一份挑選指南、或一個產業分類，那它連競品的名字都不會出現 —— 那條題目量到的是 0，
+但那個 0 不代表品牌沒有能見度，只代表這題問錯了。這種題目必須避免。
+
+所以：
+- **禁止**「應該找哪一類公司」「該怎麼挑選」「要注意什麼」這種問方法的句型（那是 info 組的事）。
+- 每一條 core 與 rotating 都要讓 AI 自然地列出**具體公司／品牌名稱**。情境可以鋪陳，
+  但句子要落在「有推薦嗎？」「有哪幾家？」「請列出名單」這類明確要名字的收尾。
+- 痛點型與預算型一樣要收在要名單的問法上，例：
+  「IG 一直沒人追蹤，台南有哪幾家公司可以幫忙代操？」（✅ 要名單）
+  而不是「IG 一直沒人追蹤該怎麼辦？」（❌ 問方法，不會有公司名）
 3. 用繁體中文 + 台灣口語（「找哪家」「值得推薦」「有沒有人推」），不要用「請問」「敬請」這種太正式的詞。
-4. 每條 25–55 字，貼近一句話搜尋的長度；結尾用「？」。
+4. 每條 25–70 字，貼近真人打字的長度；結尾用「？」。
+   （2026-09-24 由 55 放寬到 70：情境型題目要先鋪陳處境、又要收在「有哪幾家？」的問法上，
+   55 字經常寫不完，逼出來的結果就是砍掉要名單的收尾、變成問方法的題目。）
 
 【意圖標籤（intent）】
 每一條題目都要標一個 intent，只能用下列六個代號之一：
