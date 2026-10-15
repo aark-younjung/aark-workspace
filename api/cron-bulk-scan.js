@@ -785,15 +785,107 @@ function analyzeArticleHtml(html, url) {
     word_count: wordCount,
     has_canonical: hasCanonical,
     // 給用戶「這個 URL 在 WP 後台哪裡編輯」的具體指引（如 /shop/ vs /product/ vs /locations.kml 不同）
-    wp_admin_hint: detectWpAdminHint(url, pageType),
+    wp_admin_hint: detectWpAdminHint(url, pageType, html),
     problems: tagFixOwners(filteredProblems),  // 每個 problem 標 fix_owner（給 agency 區分權限）
   }
 }
 
-// 根據 URL pattern 推 WordPress 後台編輯路徑提示
+// 從 <body class> 讀 WordPress 自己標的頁面身分（2026-10-15）
+// 舊版只靠網址猜：/products/ai-radar/（一般頁面、有 Product schema、站上根本沒裝 WooCommerce）被說成
+// 「WooCommerce 商品頁」；/case_cat/short-video/（自訂分類彙整頁）被說成一般頁面、叫人去頁面列表找。
+// WP 的 body_class() 會直接寫出 page-id-N／single-post postid-N／tax-{taxonomy} term-N 等，比猜網址準，
+// 而且有 ID 就能給「直接開編輯頁」的連結。非 WP 站沒有這些 class → 回 null，交給下面的網址規則。
+function detectWpEntity(html) {
+  const m = (html || '').match(/<body\b[^>]*\bclass\s*=\s*["']([^"']*)["']/i)
+  if (!m) return null
+  const list = m[1].split(/\s+/).filter(Boolean)
+  const has = c => list.includes(c)
+  const num = re => { for (const c of list) { const x = c.match(re); if (x) return Number(x[1]) } return null }
+  const isWoo = has('woocommerce') || has('woocommerce-page')
+
+  if (has('single-product')) return { kind: 'product', id: num(/^postid-(\d+)$/) }
+  const pageId = num(/^page-id-(\d+)$/)
+  if (has('page') && pageId) return { kind: 'page', id: pageId, isFront: has('home'), isWoo }
+  if (has('single-post')) return { kind: 'post', id: num(/^postid-(\d+)$/) }
+  // 自訂文章類型單篇：single single-{post_type} postid-N（排除 single-format-*）
+  const cpt = list.map(c => c.match(/^single-(?!format-)(.+)$/)).find(Boolean)
+  if (has('single') && cpt) return { kind: 'cpt', postType: cpt[1], id: num(/^postid-(\d+)$/) }
+
+  // 分類／標籤／自訂分類彙整頁
+  if (has('category')) return { kind: 'term', taxonomy: 'category', id: num(/^category-(\d+)$/) }
+  if (has('tag')) return { kind: 'term', taxonomy: 'post_tag', id: num(/^tag-(\d+)$/) }
+  const tax = list.map(c => c.match(/^tax-(.+)$/)).find(Boolean)
+  if (tax) return { kind: 'term', taxonomy: tax[1], id: num(/^term-(\d+)$/) }
+  return null
+}
+
+// 依 WP 頁面身分組後台指引；有 ID 就給直接開編輯頁的連結（不用再搜 slug）
+function hintFromWpEntity(entity, url) {
+  if (!entity) return null
+  let origin = ''
+  try { origin = new URL(url).origin } catch { return null }
+  const { kind, id } = entity
+  // 「改了沒生效」最常見的原因：在 Rank Math 編輯摘要視窗改完、關掉視窗卻沒按「更新」（2026-10-15 實例）
+  const rankMathSteps = [
+    '進到編輯畫面 → 滑到下方 Rank Math 區塊 → 點「編輯摘要」改標題／描述',
+    '⚠️ 關掉摘要視窗後，一定要再按右上（或右側）的「更新」才會存檔；只關視窗不會存',
+    '   • SEO Title：中文 15–30 字（英文 30–60 字元）',
+    '   • Description：中文 40–80 字（英文 70–155 字元）',
+    '改完可在前台網址後加 ?v=任意數字 重新整理，確認 <title> 已變（避開快取）',
+  ]
+
+  if (kind === 'term') {
+    const label = {
+      category: '文章分類', post_tag: '文章標籤', product_cat: 'WooCommerce 商品分類', product_tag: 'WooCommerce 商品標籤',
+    }[entity.taxonomy] || `自訂分類「${entity.taxonomy}」`
+    return {
+      where: `${label}的彙整頁${id ? `（分類 ID ${id}）` : ''}`,
+      plugin: 'Rank Math SEO',
+      steps: [
+        id ? '🔥 最快：點「直接開這個分類的 WP 編輯畫面」連結（需先登入 WP 後台）' : '🔥 最快：登入 WP 後開這個前台網址 → 上方黑色工具列點「編輯分類」',
+        `備案：WordPress 後台左側選單 → 找這個分類所屬的內容類型 → 「${label}」列表 → 編輯`,
+        '⚠️ 分類編輯頁有兩組欄位，別搞混：',
+        '  📝 上方「說明」= 訪客在分類頁看得到的前言文字 → finding 說「內容過少」改這裡',
+        '  🏷️ 下方「Rank Math」區塊 = 只給 Google 的標題與描述 → finding 說「標題／描述」改這裡',
+        ...rankMathSteps,
+      ],
+      direct_admin_url: id ? `${origin}/wp-admin/term.php?taxonomy=${encodeURIComponent(entity.taxonomy)}&tag_ID=${id}` : null,
+      direct_admin_label: '🔥 直接開這個分類的 WP 編輯畫面',
+      help_link: '/help/rank-math',
+      help_link_label: '📖 看 Rank Math 完整速查表',
+    }
+  }
+
+  const where = {
+    page: entity.isFront ? `網站首頁（WordPress 靜態頁面，ID ${id}）` : `WordPress 頁面（Page，ID ${id}）`,
+    post: `WordPress 文章（Post，ID ${id}）`,
+    product: `WooCommerce 商品（ID ${id}）`,
+    cpt: `自訂內容類型「${entity.postType}」（ID ${id}）`,
+  }[kind]
+  const listPath = { page: '頁面 → 全部頁面', post: '文章 → 全部文章', product: '商品 → 全部商品', cpt: `左側選單「${entity.postType}」列表` }[kind]
+  const extra = kind === 'product'
+    ? ['⚠️ 商品編輯頁的「商品說明／商品簡述」是訪客看得到的介紹（內容過少改這裡）；下方 Rank Math 區塊才是給 Google 的標題與描述']
+    : []
+  return {
+    where,
+    plugin: 'Rank Math SEO',
+    steps: [
+      id ? '🔥 最快：點「直接開這頁的 WP 編輯畫面」連結（需先登入 WP 後台）' : '🔥 最快：登入 WP 後開這個前台網址 → 上方黑色工具列點「編輯」',
+      `備案：WordPress 後台 → ${listPath} → 搜尋這頁標題`,
+      ...extra,
+      ...rankMathSteps,
+    ],
+    direct_admin_url: id ? `${origin}/wp-admin/post.php?post=${id}&action=edit` : null,
+    direct_admin_label: '🔥 直接開這頁的 WP 編輯畫面',
+    help_link: '/help/rank-math',
+    help_link_label: '📖 看 Rank Math 完整速查表',
+  }
+}
+
+// 根據頁面身分推 WordPress 後台編輯路徑提示
 // 用戶常常找不到「這個 URL 對應的編輯位置」（特別是 /shop/、/locations.kml 這種非普通 page）
-// 回傳結構：{ where: string, plugin?: string, steps: string[], note?: string }
-function detectWpAdminHint(url, pageType) {
+// 回傳結構：{ where: string, plugin?: string, steps: string[], note?: string, direct_admin_url?: string }
+function detectWpAdminHint(url, pageType, html) {
   let pathname = ''
   try { pathname = new URL(url).pathname.toLowerCase() } catch { return null }
 
@@ -824,6 +916,10 @@ function detectWpAdminHint(url, pageType) {
       note: '一般中小品牌沒在用 KML（給 Google My Business 整合用）、可以關掉',
     }
   }
+
+  // 1.5 WordPress 自己標的頁面身分（body class）優先；讀不到才走下面的網址規則
+  const entityHint = hintFromWpEntity(detectWpEntity(html), url)
+  if (entityHint) return entityHint
 
   // 2. WooCommerce 商店列表頁 /shop/ — 其實是 WP page、只是被 WooCommerce 用來當商店首頁
   if (pathname === '/shop/' || pathname === '/shop' || pathname.startsWith('/product-category/')) {
@@ -891,7 +987,10 @@ function detectWpAdminHint(url, pageType) {
   }
 
   // 3. 個別商品頁 /product/xxx/
-  if (pathname.startsWith('/product/') || pathname.match(/\/[^/]+\/$/) && pageType === 'product') {
+  // 2026-10-15：拿掉「有 Product schema 就當 WooCommerce 商品」——SaaS／服務頁也常標 Product schema
+  // （a-ark /products/ai-radar/ 是一般頁面、站上沒裝 WooCommerce），會把人指去不存在的商品後台。
+  // WP 站已由上面 body class 判斷，這裡只剩非 WP 站的網址備案。
+  if (pathname.startsWith('/product/')) {
     const slug = pathname.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
     const decodedSlug = (() => { try { return decodeURIComponent(slug) } catch { return slug } })()
     // WP 後台商品搜尋 URL（2026-06-05 加）— 用戶按下去直達商品列表搜尋結果

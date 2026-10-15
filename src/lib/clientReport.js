@@ -112,6 +112,10 @@ export function buildClientReport({ websiteUrl, websiteName, results, agencyName
       const firstHint = findings[0]?.wp_admin_hint
       if (firstHint?.where) {
         lines.push(`**位置**：${firstHint.where}`)
+        // 步驟裡的「點下方按鈕」在 markdown 報告沒有按鈕可點 → 把連結本身印出來（2026-10-15）
+        if (firstHint.direct_admin_url) {
+          lines.push(`**編輯連結**（需先登入 WP 後台）：${firstHint.direct_admin_url}`)
+        }
         if (firstHint.steps && firstHint.steps.length > 0) {
           lines.push('**操作步驟**：')
           firstHint.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`))

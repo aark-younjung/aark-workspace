@@ -6,6 +6,22 @@
 
 ---
 
+### 2026-10-15g（批次掃描「WP 後台位置」改讀 body class，修頁面類型誤判）
+
+**起因**：用戶照建議改了 `/products/ai-radar/` 的 SEO 標題，重掃還是一樣。查證（Novamira 唯讀）：這頁是一般 **page（ID 1605）**，Rank Math `rank_math_title` 仍是舊值——用戶沒改到／沒按「更新」，不是雷達抓錯（加參數繞快取 `x-litespeed-cache: miss` 仍是舊標題）。但同時發現雷達把這頁說成「**WooCommerce 商品頁**」，而**站上根本沒裝 WooCommerce**——照指引去「商品」後台會找不到，等於把人指去錯的地方。
+
+**根因**：[cron-bulk-scan.js](api/cron-bulk-scan.js) `detectWpAdminHint` 只靠網址猜，條件 3 是「網址 `/product/` 開頭 **或** 有 Product schema」→ SaaS／服務頁常標 Product schema 就被當 WooCommerce 商品。另外 `/case_cat/short-video/`（自訂分類彙整頁）落到「一般頁面」分支、叫人去頁面列表找（10-15 外部 AI 審查第 2 點）。
+
+**改了什麼**
+1. 新增 `detectWpEntity(html)`：讀 `<body class>`——WordPress 的 `body_class()` 直接標出 `page-id-N`（含 `home` = 靜態首頁）、`single-post postid-N`、`single-product`、`single-{cpt}`、`category-N`、`tag-N`、`tax-{taxonomy} term-N`。
+2. 新增 `hintFromWpEntity`：依身分給位置與步驟，**有 ID 就給直接開編輯頁的連結**（`post.php?post=N&action=edit`、`term.php?taxonomy=X&tag_ID=N`），不用再搜 slug。分類頁說明「上方說明 vs 下方 Rank Math」兩組欄位。所有類型都加一步：**關掉 Rank Math 摘要視窗後要再按「更新」才會存**（本次實例）。
+3. `detectWpAdminHint` 在 XML 判斷後先走 body class；讀不到（非 WP 站）才回到原本網址規則。條件 3 拿掉「有 Product schema 就當 WooCommerce」，只剩 `/product/` 網址備案。
+4. [clientReport.js](src/lib/clientReport.js)：給客戶的 markdown 報告多印「編輯連結」（步驟說「點連結」但報告裡沒按鈕）。注意：同檔 `renderFindingMarkdown` 是**沒被呼叫的死碼**，實際輸出在 `buildClientReport` 的 byUrl 迴圈。
+
+**驗證**：a-ark 5 個真實頁面——首頁（靜態頁 ID 2）、AI 雷達（Page 1605）、短影片分類（case_cat，ID 32）、報價文章（Post 2531）、關於我們（Page 80）全部正確且連結正確；合成 Woo 商品／商品分類／文章分類／自訂文章類型 portfolio 正確；非 WP 站有 Product schema 不再被說成 WooCommerce；非 WP 的 `/product/` 網址仍走舊備案。報告輸出實測含編輯連結。`npm test` 120／120、`vite build` 通過；eslint 與改前同（皆既有）。
+
+---
+
 ### 2026-10-15f（批次文章掃描搬進 app-shell 亮色版）
 
 **目標**：首頁內容分析（10-15e）上線後，頁內「批次掃描」分頁仍連 `/bulk-scan/:id` 深色舊頁、會跳出新版介面。
