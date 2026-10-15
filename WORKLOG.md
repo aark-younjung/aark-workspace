@@ -6,6 +6,25 @@
 
 ---
 
+### 2026-10-15j（描述「差一點」時建議補一句、不整段換掉；摘要濾掉標籤字與站內導覽句）
+
+**起因**：潔德美名片作品頁原描述 36 字（「潔德美：清潔公司名片設計。正面列出五項服務範圍，背面姓名區做成吊牌造型。」），內容具體、只差 4 字就合格，系統卻建議整段換成內文摘要「Case Study 潔德美有限公司的名片設計。標誌本身的設計見 潔德美Logo。 清潔公司的服務範圍…」——比原本還差，還標「改後」。
+
+**根因（三個）**
+1. `short_meta_desc` 只要內文摘要比原描述長，就建議整段取代，不管原描述差多少。
+2. `extractBodyExcerpt` 把作品頁頂的標籤 `<p class="aark-eyebrow">Case Study</p>`（剛好 10 字元、過了 `< 10` 的門檻）當內文。
+3. 站內導覽句「標誌本身的設計見 <a>潔德美Logo</a>。」連結字佔比低，沒被「整段都是連結」的規則擋下。
+
+**改了什麼**（[cron-bulk-scan.js](api/cron-bulk-scan.js)）
+- 原描述 ≥ 下限 75%（中文 30 字）→ 不給替換文字，note 說「只差 N 字就合格，建議在原描述後面補一句（服務特色、適合對象或成果），不需要整段換掉」。差更多才給內文摘要，且帶 `from_excerpt: true`，note 改為「只當參考素材，可挑重點和原描述合併改寫」。
+- 摘要跳過 class 含 eyebrow／kicker／label／badge／caption／breadcrumb／meta 的段落；刪掉「…見／參考／請看 <連結>」導覽句。
+- 段落接合：前一段以中文全形句尾結束就不插空格。
+- [BulkScan.jsx](src/pages/BulkScan.jsx)：`from_excerpt` 時標「內文摘要（參考）」而非「改後」；[clientReport.js](src/lib/clientReport.js) 同步標示。
+
+**驗證**（真實潔德美名片頁，描述還原成掃描當時的 36 字）：不給替換、提示補一句；改成 12 字 → 給摘要並標參考；拿掉描述 → 摘要為「潔德美有限公司的名片設計。清潔公司的服務範圍差很多：商業、居家、石材、水塔、裝潢。…」（不再含 Case Study 與導覽句）。回歸：`/case_cat/short-video/` 缺描述時仍抓到分類說明。`npm test` 120／120、`vite build` 通過；eslint 同為 13 個既有問題。註：該頁描述目前已被改成 67 字新版，用戶看到的是舊掃描。
+
+---
+
 ### 2026-10-15i（批次掃描不再把網址有 /products/ 一律當商品頁）
 
 **症狀**：`/products/ai-radar/`（線上工具介紹頁，已有 WebApplication schema）被報「商品頁缺 Product schema」，還建議貼 Product + Offer（price 0、InStock）；同層 `/products/line-chatbot/`、`/line-booking/`、`/meal-system/`（客製系統服務頁，已有 Service schema）同樣誤判。站上沒裝 WooCommerce。

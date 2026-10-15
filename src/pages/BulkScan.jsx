@@ -1653,7 +1653,7 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
 // suggestion 結構：{ kind, current?, current_len?, suggested?, suggested_len?, code_snippet?, note? }
 function SuggestionBlock({ suggestion }) {
   const { current, current_len, suggested, suggested_len, code_snippet, note, still_too_short,
-    auto_truncated, dropped_text, dropped_ratio, max_len } = suggestion
+    auto_truncated, dropped_text, dropped_ratio, max_len, from_excerpt } = suggestion
   // 截掉超過三成 → 賣點很可能一起不見，提醒自己改寫（2026-10-15）
   const heavyTruncation = auto_truncated && dropped_text && dropped_ratio >= 0.3
   // 追蹤剛剛複製的是哪一個按鈕（'text' = 改後純文字 / 'code' = HTML tag），這樣每顆按鈕的 ✅ 提示獨立
@@ -1720,7 +1720,8 @@ function SuggestionBlock({ suggestion }) {
           <div>
             <span style={{ color: 'var(--bs-green, #86efac)', fontSize: 14 }}>
               {/* 過長類的建議只是機械截短（只會刪、不會濃縮），標清楚別讓人當成推薦的最終版 */}
-              {auto_truncated ? '自動截短版' : '改後'} {suggested_len ? `(${suggested_len} 字)` : ''}
+              {/* 內文摘要只是參考素材（2026-10-15），別標「改後」讓人以為是推薦的最終版 */}
+              {auto_truncated ? '自動截短版' : from_excerpt ? '內文摘要（參考）' : '改後'} {suggested_len ? `(${suggested_len} 字)` : ''}
               {/* 自動建議仍低於下限時、顯示橘色「仍嫌短」警告 chip — 提醒用戶需手動再延伸 */}
               {still_too_short && (
                 <span style={{

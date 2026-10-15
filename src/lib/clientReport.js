@@ -129,7 +129,9 @@ export function buildClientReport({ websiteUrl, websiteName, results, agencyName
           // 過長類的建議只是機械截短，報告裡也標清楚，別讓客戶當成推薦版直接貼（2026-10-15）
           lines.push(f.suggestion.auto_truncated
             ? `  → 自動截短版（只刪不濃縮，建議改寫）：${f.suggestion.suggested}`
-            : `  → 建議：${f.suggestion.suggested}`)
+            : f.suggestion.from_excerpt
+              ? `  → 內文摘要（參考素材，可挑重點合併改寫）：${f.suggestion.suggested}`
+              : `  → 建議：${f.suggestion.suggested}`)
         }
       }
       lines.push('')

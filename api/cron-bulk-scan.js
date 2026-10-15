@@ -618,20 +618,28 @@ function analyzeArticleHtml(html, url) {
     })
   }
   else if (descV.verdict === 'short') {
-    // 短描述：建議用內文摘要取代或補長
-    const replacement = bodyExcerpt && [...bodyExcerpt].length > descV.chars ? bodyExcerpt : null
+    // 短描述：差一點點 → 建議原描述補一句；差很多 → 給內文摘要當參考素材
+    // 2026-10-15：舊版只要摘要比較長就建議「整段換掉」。實例：潔德美名片頁原描述 36 字、內容具體（五項服務、吊牌造型），
+    // 只差 4 字，卻建議換成「Case Study 潔德美有限公司的名片設計。標誌本身的設計見 潔德美Logo。…」——比原本還差。
+    const gap = descV.min - descV.chars
+    const nearMin = descV.chars >= Math.ceil(descV.min * 0.75)
+    const replacement = !nearMin && bodyExcerpt && [...bodyExcerpt].length > descV.chars ? bodyExcerpt : null
+    const descUnit = descV.isCJK ? '字' : '字元'
     problems.push({
       id: 'short_meta_desc',
       severity: 'medium',
-      label: `Meta 描述只有 ${descV.chars} ${descV.isCJK ? '字' : '字元'}、建議 ${descRange}（Rank Math「Description」欄位）`,
+      label: `Meta 描述只有 ${descV.chars} ${descUnit}、建議 ${descRange}（Rank Math「Description」欄位）`,
       suggestion: {
         kind: 'text',
         current: metaDesc, current_len: descV.chars,
         suggested: replacement, suggested_len: replacement ? [...replacement].length : null,
+        from_excerpt: !!replacement,   // 前端據此標「內文摘要（參考）」而不是「改後」
         code_snippet: replacement ? metaDescCode(replacement) : null,
-        note: replacement
-          ? '系統從內文抓的較長版本、可取代或合併。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）'
-          : `建議擴充到 ${descRange}、含主關鍵字 + 賣點。${bodyExcerpt ? '' : noExcerptNote}改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）`,
+        note: nearMin
+          ? `只差 ${gap} ${descUnit}就合格。原本的描述內容明確，建議直接在後面補一句（例如服務特色、適合對象或成果），不需要整段換掉。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）`
+          : replacement
+            ? '上面是系統從內文抓的摘要，只當參考素材：可以挑重點和原描述合併改寫，不一定要整段照貼。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）'
+            : `建議擴充到 ${descRange}、含主關鍵字 + 賣點。${bodyExcerpt ? '' : noExcerptNote}改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）`,
       },
     })
   }
@@ -1198,16 +1206,21 @@ function extractBodyExcerpt(html, maxLen = 155) {
     .replace(/<(section|aside|form)\b[^>]*\b(?:class|id)\s*=\s*["'][^"']*(?:cta|newsletter|subscribe|banner|promo)[^"']*["'][^>]*>[\s\S]*?<\/\1>/gi, '')
   const paragraphs = cleaned.match(/<p\b[^>]*>([\s\S]*?)<\/p>/gi) || []
   let text = ''
-  for (const p of paragraphs) {
-    const openTag = p.match(/^<p\b[^>]*>/i)[0]
+  for (const raw of paragraphs) {
+    const openTag = raw.match(/^<p\b[^>]*>/i)[0]
     if (/\bclass\s*=\s*["'][^"']*(?:cta|btn|button)[^"']*["']/i.test(openTag)) continue
+    // 2026-10-15：標籤類小字不是內文（實例：作品頁頂的 <p class="aark-eyebrow">Case Study</p> 被抓進描述建議）
+    if (/\bclass\s*=\s*["'][^"']*(?:eyebrow|kicker|label|badge|caption|breadcrumb|meta)[^"']*["']/i.test(openTag)) continue
+    // 站內導覽句「…見 <連結>」對搜尋結果的描述沒意義，刪掉那一句（實例：「標誌本身的設計見 潔德美Logo。」）
+    const p = raw.replace(/[^。！？<>]*(?:見|參考|請看)\s*<a\b[^>]*>[\s\S]*?<\/a>[^。！？<]*[。！？]?/g, '')
     const inner = decodeEntities(p.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
       .replace(/\s*[↗→»›]+$/, '')   // 按鈕常見的尾端箭頭
     if (inner.length < 10) continue
     const linkChars = (p.match(/<a\b[^>]*>[\s\S]*?<\/a>/gi) || [])
       .map(a => a.replace(/<[^>]+>/g, '')).join('').replace(/\s+/g, '').length
     if (linkChars >= inner.replace(/\s+/g, '').length * 0.6) continue   // 整段幾乎都是連結 = 按鈕／導覽
-    text += (text ? ' ' : '') + inner
+    // 中文全形句尾後直接接下一段，不插空格（「設計。 清潔」→「設計。清潔」）
+    text += (text && !/[。！？」』]$/.test(text) ? ' ' : '') + inner
     if (text.length >= maxLen + 50) break
   }
   if (!text) return null
