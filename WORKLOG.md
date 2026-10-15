@@ -6,6 +6,20 @@
 
 ---
 
+### 2026-10-15b（綁定網站的「文章分析」改名「首頁內容分析」＋修內容機會頁 404）
+
+**改名理由**：綁定網站的模式分析的是 `websites.url`（登記網址，通常是首頁），不能挑文章。叫「文章分析」讓人以為能選一篇，而「作者／發布日期／Article schema」這幾項在首頁本來就難拿分，分數看起來偏低又說不出為什麼。公開版 `/content-audit`（可貼任意網址）與批次掃描**維持「文章分析」**——那兩個真的能分析文章。
+
+**順手修的線上 bug**：[AppGap.jsx](src/components/appshell/AppGap.jsx)「內容機會」頁的單篇卡片連 `/app/:id/content`，但這條路由在 2026-09-24（b9e8604）隨卡片上線時沒一起 commit（AppContent 搬遷整批還在工作目錄），**線上點了是 404 已三週**。改指 `/content-audit/:id`：現在直接開舊頁；之後 AppContent 搬遷上線，App.jsx 會把它轉址到 `/app/:id/content`，兩種狀態都通。
+
+**改了哪些（上線）**：AppGap 卡片名稱／說明／連結；[ArticleAnalysisTabs.jsx](src/components/v2/ArticleAnalysisTabs.jsx) 有 websiteId 時單篇分頁顯示「🏠 首頁內容分析／分析這個網站的首頁」（原本寫「貼入單一文章網址分析」，跟實際行為相反）；ContentAudit 綁定模式的 subChip。
+
+**只改工作目錄、未 commit（隨 AppContent 搬遷一起上）**：[AppContent.jsx](src/components/appshell/AppContent.jsx) 標題／副標／分頁名、[AppOverview.jsx](src/components/appshell/AppOverview.jsx) 內容品質卡的工具小標。
+
+**限制**：`websites` 是「一頁一筆」，少數用戶登記的是內頁網址，那種情況「首頁」不精確。用戶拍板用「首頁內容分析」；若要精準可改成依網址路徑判斷顯示「首頁／頁面內容分析」。
+
+---
+
 ### 2026-10-15（批次掃描 Meta 長度改用中文標準，修掉中文站誤報）
 
 **起因**：批次掃描把 a-ark.com.tw `/case_cat/short-video/` 報成「SEO Title 只有 19 字、建議 30-60」。外部 AI 審查指出 30-60 是英文標準，查下去屬實，而且比它講的更嚴重。

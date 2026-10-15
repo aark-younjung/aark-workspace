@@ -332,7 +332,7 @@ function DetailMode({ websiteId }) {
               <>
                 <ScoreHero
                   face="內容品質"
-                  subChip="文章分析"
+                  subChip="首頁內容分析"
                   tagline={website?.url}
                   score={result?.score ?? 0}
                   passedCount={passedCount}

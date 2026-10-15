@@ -14,9 +14,10 @@ import { T } from '../../styles/v2-tokens'
 export default function ArticleAnalysisTabs({ active, websiteId }) {
   const tabs = [
     {
+      // 綁定網站時分析的是登記網址（首頁），不是貼網址——標籤照實寫（2026-10-15）
       id: 'single',
-      label: '📄 單篇模式',
-      sub: '貼入單一文章網址分析',
+      label: websiteId ? '🏠 首頁內容分析' : '📄 單篇模式',
+      sub: websiteId ? '分析這個網站的首頁' : '貼入單一文章網址分析',
       to: websiteId ? `/content-audit/${websiteId}` : '/content-audit',
       enabled: true,
     },
