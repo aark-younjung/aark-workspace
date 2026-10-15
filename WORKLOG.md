@@ -6,6 +6,26 @@
 
 ---
 
+### 2026-10-15e（首頁內容分析上線新版亮色頁：AppContent 搬遷收尾）
+
+**起因**：用戶回報「點內容品質還是舊版面」。總覽的內容品質卡在線上連 `/content-audit/:id`（深色舊頁）。亮色版 [AppContent.jsx](src/components/appshell/AppContent.jsx) 2026-09-08 就寫好，但整批一直沒 commit（只有 AppGap 的連結在 09-24 先上線，造成 10-15b 修的那個 404）。
+
+**為什麼當時沒上**（推測，查到的實際問題）：AppContent 把「內容品質拆解」卡（v2 深色元件 `ContentSignature`）包在 `.as-health-embed` 裡，但這個 class **沒有任何樣式定義**，也沒重定義 `--t-text` 系列 → 字是白色、底色／分隔線／進度條底軌是白色半透明，在亮色頁上整張卡幾乎看不見。
+
+**改了什麼**
+1. [MetricSignatures.jsx](src/components/v2/MetricSignatures.jsx) `ContentSignature`：寫死的 `rgba(255,255,255,…)` 改成 CSS 變數（`--t-sig-bg／line／line-soft／track`），**fallback 就是原本的深色值**，公開深色頁不變。
+2. [appshell.css](src/components/appshell/appshell.css) 新增 `.as-content-signature`：重定義 `--t-text` 系列與上述變數為亮色。**刻意不動 `.as-health-embed`**——網站體檢頁的 OrgSchemaGenerator／LlmsTxtSection 也用它，有自己的深色區塊，一起翻可能出事。
+3. AppContent 的外框改用 `.as-content-signature`。
+4. 上線搬遷整批：[App.jsx](src/App.jsx)（`/app/:id/content` 路由；`/content-audit/:id` 改 LegacyRedirect 轉址）、AppContent.jsx、[contentChecks.js](src/data/contentChecks.js)（檢測定義與 DB 轉換抽出共用）、[ContentAudit.jsx](src/pages/ContentAudit.jsx)（只剩公開 ad-hoc 模式）、[AppOverview.jsx](src/components/appshell/AppOverview.jsx)（卡片連新路由＋「首頁內容分析」小標）。[AppGap.jsx](src/components/appshell/AppGap.jsx) 連結改回 `/app/:id/content`。
+
+**上線前比對**：ContentAudit 公開模式與線上版逐行比對，只有 `CHECKS`→`CONTENT_CHECKS` 改名；`CONTENT_CHECKS` 定義、`dbRowToResult`、寫入 `content_audits` 的欄位與線上版完全一致。
+
+**驗證**：Vite dev server 用真元件＋真 appshell.css＋a-ark 首頁真實分析結果組出頁面主體截圖——IssueBoard 與內容品質拆解卡皆為亮色、文字與進度條底軌清楚。
+
+**未處理**：分頁裡的「批次掃描」仍連 `/bulk-scan/:id`（深色舊頁，1,900 行），點了會跳出新版介面，待另排。
+
+---
+
 ### 2026-10-15d（AEO「JSON-LD 結構化資料」項也改用共用節點展開）
 
 接續 10-15c。[aeoAnalyzer.js](src/services/aeoAnalyzer.js) `checkJsonLd` 不做類型比對，上一輪依任務範圍沒動，用戶拍板一起修。它有三個問題：

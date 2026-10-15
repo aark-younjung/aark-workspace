@@ -340,9 +340,12 @@ export default function AppOverview() {
               </Link>
             )
           })}
-          {/* 內容品質＝第 5 分數（轉址前檢查：經典版有、新版不能少）；工具本體沿用現有頁 */}
-          <Link className="as-card as-sc" to={`/content-audit/${websiteId}`}>
-            <div className="top"><span className="nm">內容品質</span><span className="arrow">→</span></div>
+          {/* 內容品質＝第 5 分數（轉址前檢查：經典版有、新版不能少）。
+              2026-09-08：其他四張卡點進去是「看詳情」，這張點進去是「開工具」——
+              加一個「文章分析」小標明示，否則它長得跟旁邊四張一樣、只會被當成一個分數。
+              連結也從深色的 /content-audit/:id 改成 app-shell 版 /app/:id/content。 */}
+          <Link className="as-card as-sc" to={`/app/${websiteId}/content`}>
+            <div className="top"><span className="nm">內容品質</span><span className="tool">首頁內容分析</span><span className="arrow">→</span></div>
             <span className="n num" style={{ color: '#ec4899' }}>{contentScore == null ? '–' : contentScore}</span>
             <div className="bar"><i style={{ width: `${contentScore ?? 0}%`, background: '#ec4899' }} /></div>
           </Link>

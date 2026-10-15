@@ -413,8 +413,10 @@ export function ContentSignature({ result }) {
   return (
     <div>
       <SectionLabel>內容品質拆解</SectionLabel>
+      {/* 底色／分隔線／進度條底軌走 CSS 變數，fallback 即原本的深色值（深色頁不變）；
+          亮色 app-shell 在 .as-content-signature 重新定義（2026-10-15，否則白色半透明在亮底上全部消失） */}
       <div style={{
-        background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)',
+        background: 'var(--t-sig-bg, rgba(255,255,255,.02))', border: '1px solid var(--t-sig-line, rgba(255,255,255,.07))',
         borderRadius: 10, padding: '14px 18px',
       }}>
         {dims.map((d, i) => {
@@ -422,7 +424,7 @@ export function ContentSignature({ result }) {
           return (
             <div key={i} style={{
               padding: '10px 0',
-              borderBottom: i === dims.length - 1 ? 'none' : '1px solid rgba(255,255,255,.04)',
+              borderBottom: i === dims.length - 1 ? 'none' : '1px solid var(--t-sig-line-soft, rgba(255,255,255,.04))',
             }}>
               <div style={{
                 display: 'flex', justifyContent: 'space-between',
@@ -436,7 +438,7 @@ export function ContentSignature({ result }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                 <div style={{
                   flex: 1, height: 3,
-                  background: 'rgba(255,255,255,.05)', borderRadius: 2,
+                  background: 'var(--t-sig-track, rgba(255,255,255,.05))', borderRadius: 2,
                 }}>
                   <div style={{
                     height: '100%', width: `${d.score}%`, background: col,

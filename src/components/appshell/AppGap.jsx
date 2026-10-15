@@ -137,10 +137,9 @@ export default function AppGap() {
           名稱對齊公開頁的「文章分析」——app 內叫「單篇文章體檢」而公開頁叫「文章分析」，
           是找不到的主因之一。 */}
       {/* 2026-10-15：單篇改名「首頁內容分析」——綁定網站的模式分析的是登記網址（首頁），不是任選一篇文章，
-          叫「文章分析」會讓人以為能挑文章。連結改指 /content-audit/:id：原本的 /app/:id/content 路由
-          還沒上線（AppContent 搬遷未 commit），點了是 404；之後搬遷上線時 /content-audit/:id 會轉址過去，兩種狀態都能用。 */}
+          叫「文章分析」會讓人以為能挑文章。同日 AppContent（亮色版）上線，連結指回 /app/:id/content。 */}
       <section className="as-gap-tools" aria-label="內容分析工具">
-        <Link className="as-card as-gap-tool" to={`/content-audit/${websiteId}`}>
+        <Link className="as-card as-gap-tool" to={`/app/${websiteId}/content`}>
           <b>🏠 首頁內容分析</b>
           <span>15 項內容檢測（結構／字數／AEO 格式／可讀性），看首頁的內容還要補什麼。</span>
           <span className="go">開啟 →</span>

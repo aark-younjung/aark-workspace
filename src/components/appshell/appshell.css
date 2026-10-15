@@ -297,6 +297,15 @@ html.dark-theme .appshell textarea::placeholder{
   --t-text:var(--ink); --t-text-mid:var(--ink-2); --t-text-low:var(--ink-3);
   --t-card-border:var(--line-2);
 }
+/* 首頁內容分析的「內容品質拆解」卡（ContentSignature，v2 深色元件）：同上，用變數翻成亮色。
+   2026-10-15：原本包在 .as-health-embed 裡，那個 class 沒定義任何樣式、也沒重定義 --t-text →
+   字是白的、底色／分隔線／進度條底軌是白色半透明，在亮底上整張卡幾乎看不見。
+   只套在這張卡，不動 .as-health-embed（網站體檢頁其他嵌入元件有自己的深色區塊，一起翻會出事）。 */
+.appshell .as-content-signature{
+  --t-text:var(--ink); --t-text-mid:var(--ink-2); --t-text-low:var(--ink-3);
+  --t-sig-bg:var(--surface); --t-sig-line:var(--line-2); --t-sig-line-soft:var(--line); --t-sig-track:var(--surface-3);
+  margin-top:18px;
+}
 .appshell .as-health-board .v2-issue-board{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;}
 .appshell .as-health-board .v2-issue-board>div{background:var(--surface)!important;border-radius:var(--r-lg)!important;
   box-shadow:var(--sh-sm)!important;}

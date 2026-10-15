@@ -50,6 +50,7 @@ import AppOverview from './components/appshell/AppOverview'
 import AppSites from './components/appshell/AppSites'
 import AppHealth from './components/appshell/AppHealth'
 import AppGap from './components/appshell/AppGap'
+import AppContent from './components/appshell/AppContent'
 import AppVisibility from './components/appshell/AppVisibility'
 
 const DARK_CIRCLES = [65, 130, 197, 266, 337, 410, 485, 562, 641, 722, 805, 890, 977, 1066, 1157]
@@ -141,8 +142,9 @@ function AppInner() {
         <Route path="/crawl-check" element={<CrawlCheck />} />
         <Route path="/schema-check" element={<SchemaCheck />} />
         <Route path="/content-audit" element={<ContentAudit />} />
-        {/* 從 Dashboard 第 5 張卡點進來的 DB-backed 模式（綁定 website_id，吃 cached + 趨勢） */}
-        <Route path="/content-audit/:id" element={<ContentAudit />} />
+        {/* 2026-09-08：綁定網站的模式已搬進 app-shell（亮色）。這裡轉址、不破壞既有深連結，
+            手法同 2026-08-14 四大體檢頁硬切。/content-audit（不帶 id）維持公開深色版不動。 */}
+        <Route path="/content-audit/:id" element={<LegacyRedirect pattern="/app/:id/content" />} />
         <Route path="/bulk-scan/:id" element={<BulkScan />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
@@ -176,6 +178,7 @@ function AppInner() {
           <Route path="health" element={<AppHealth />} />
           <Route path="health/:healthTab" element={<AppHealth />} />
           <Route path="gap" element={<AppGap />} />
+          <Route path="content" element={<AppContent />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
