@@ -45,15 +45,15 @@ const SECTION_GENERAL = {
     {
       name: 'SEO Title',
       what: '出現在 Google 搜尋結果第一行（藍色大字）+ 瀏覽器分頁標題',
-      fill_what: '30-60 字（Chinese chars 也算 1 字）、含主關鍵字 + 品牌名',
+      fill_what: '中文 15–30 字（英文 30–60 字元）、含主關鍵字 + 品牌名。中文字比英文寬，Google 大約 30 個中文字就截斷',
       example_good: '「Audi A4 CarPlay 升級｜原廠介面無損改裝｜金鉑先生」(31 字)',
       example_bad: '❌「Audi」(4 字、太短) ・❌「Audi A4 CarPlay 升級｜原廠介面無損改裝｜金鉑先生車用品｜台南汽車影音改裝｜台南汽車音響店推薦」(過長被 Google 截斷)',
-      tip: 'Rank Math 預設用 `%title% %sep% %sitename%` 模板自動拼。如果你 hardcode 一堆「| 台南汽車影音 | 台南汽車音響」會超過 60 字、被 Google 截掉',
+      tip: 'Rank Math 預設用 `%title% %sep% %sitename%` 模板自動拼。如果你 hardcode 一堆「| 台南汽車影音 | 台南汽車音響」會超過約 30 個中文字、被 Google 截掉',
     },
     {
       name: 'Description',
       what: '出現在 Google 搜尋結果標題下方的灰色摘要',
-      fill_what: '70-155 字、用主動句、含主關鍵字 + 賣點 / 服務承諾',
+      fill_what: '中文 40–80 字（英文 70–155 字元）、用主動句、含主關鍵字 + 賣點 / 服務承諾',
       example_good: '「金鉑先生提供 Audi A4 CarPlay 原廠介面升級、專業安裝 + 一年保固。可預約免費音響健檢、台南實體店面服務。」(56 字)',
       example_bad: '❌ 留空（Google 會自動抓內文、品質不可控）・❌ 寫一句話「我們很厲害」(太空、沒 keyword)',
       tip: 'Description 不影響搜尋排名、但影響「點擊率」— 用戶看到才願意點進來。寫得像 sales copy 比技術描述好',

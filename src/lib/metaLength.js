@@ -17,8 +17,10 @@ function cjkRatio(text) {
   return cjk / chars.length
 }
 
+// 2026-10-15：中文標題上限 40 → 30。Google 標題顯示寬度約 600px，中文字約 20px 寬 → 實際約 30 字就截斷，
+// 40 字的上限會讓「已被截斷」的標題還判合格。改這裡會連動所有體檢（SEO／AEO／文章分析／批次掃描）的計分。
 const RANGES = {
-  cjk:   { title: [15, 40], desc: [40, 80] },   // 中文：字寬、Google 早截斷
+  cjk:   { title: [15, 30], desc: [40, 80] },   // 中文：字寬、Google 早截斷
   latin: { title: [30, 60], desc: [70, 155] },  // 英文
 }
 

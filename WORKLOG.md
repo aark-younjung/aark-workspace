@@ -6,6 +6,37 @@
 
 ---
 
+### 2026-10-15（批次掃描 Meta 長度改用中文標準，修掉中文站誤報）
+
+**起因**：批次掃描把 a-ark.com.tw `/case_cat/short-video/` 報成「SEO Title 只有 19 字、建議 30-60」。外部 AI 審查指出 30-60 是英文標準，查下去屬實，而且比它講的更嚴重。
+
+**根因**：系統早在 2026-07-27 就做了中英文分開的門檻 [metaLength.js](src/lib/metaLength.js)（中文標題 15–40 字、描述 40–80 字；英文 30–60／70–155 字元），單篇體檢（SEO／AEO／文章分析）都有接，**只有批次掃描漏接**，還寫死英文門檻：標題 <20 報短、>70 報長、建議 30–60；描述 <50 報短、>200 報長、建議 70–155。結果是：
+- 中文 15–19 字的合格標題被誤報「過短」
+- 叫客戶把描述寫到 70–155 個中文字，Google 約 80 字就截斷，**照建議改反而變差**
+- 自動產生的描述摘要也是截 155 字，系統自己的建議就超過中文上限
+
+**改了什麼**
+1. [api/cron-bulk-scan.js](api/cron-bulk-scan.js)：標題／描述的短長判定改呼叫 `metaLengthVerdict`（直接 import `../src/lib/metaLength.js`，純函式無依賴，不多算一支 Vercel function）。label 與說明文字依語言顯示「字」或「字元」與對應範圍；空描述沒有語言可判，依序看標題 → 內文摘要。中文摘要再截到 80 字。
+2. 同檔 `smartTruncate`：舊版 window 多取 10 字、尾巴再加「…」，截出來的建議本身會超過上限、又被判「過長」。改成保證回傳 ≤ maxLen。
+3. 同檔依頁面類型的 Rank Math 指南（分類／商品／文章／頁面 4 組）、[BulkScan.jsx](src/pages/BulkScan.jsx) 問題標籤與修法提示、[fixGuides.js](src/data/fixGuides.js)、[contentChecks.js](src/data/contentChecks.js)（文章分析判定早就用中文標準，標籤卻寫 30–60）、[HelpRankMath.jsx](src/pages/HelpRankMath.jsx)（「好範例」描述 56 字，照舊規則反而會被判太短）：門檻文字全部改成「中文 X 字（英文 Y 字元）」。
+
+**驗證**：抽出 `analyzeArticleHtml` 跑 6 個案例——實際分類頁（現已無問題）、中文 19 字標題（不再誤報）、中文 6 字、中文 55 字標題 + 120 字描述（建議截到 40／80 且不超限）、中文缺描述、英文短標題（照用英文門檻）。全部符合預期。`vite build` 通過；eslint 錯誤數與改前相同（皆既有問題）。
+
+**注意**
+- 已存在 DB 的舊批次掃描結果 label 是當時寫入的，不會自動變；重新掃描後才會更新。
+- 本機 `vite build` 在中文路徑下會因 Node 24 `fs.rmSync` 崩潰（0xC0000409），用 `--outDir C:\tmp\...` 繞過。與本次改動無關。
+
+**同日第二輪：中文標題上限收緊 + 描述摘要不再硬湊**
+
+1. **中文標題上限 40 → 30**（[metaLength.js](src/lib/metaLength.js)，用戶拍板）。Google 標題約 600px 寬、中文字約 20px → 約 30 字就截斷；原檔註解本來就寫「~30 個中文字截斷」卻設 40。⚠️ 連動所有體檢計分：中文標題 31–40 字的頁面，SEO／文章分析的標題項會從通過變不通過。所有寫死「15–40」的提示文字一併改（BulkScan、fixGuides、contentChecks、HelpRankMath、SEOAudit、cron-bulk-scan 共 20 處）。
+2. **描述摘要避開樣板與按鈕**（`extractBodyExcerpt`）。實例：a-ark `/case_cat/short-video/` 掃描當時沒有分類說明，舊版抓到頁尾 CTA 區塊「告訴我們你的產業與需求…」，還把按鈕「取得網站規劃與報價 ↗」接在後面當描述建議。改成：拿掉 class／id 含 cta／newsletter／subscribe／banner／promo 的 `<section|aside|form>`；跳過 class 含 cta／btn／button 的 `<p>`、以及連結文字佔 ≥60% 的段落；去掉尾端箭頭。跨頁重複段落比對標 `ponytail:`，等單頁規則擋不住再做。
+3. **摘要品質把關**：摘要達不到描述下限（中文 40 字）就不當建議，也不拿去填 OG／schema；改成照實說「這頁抓不到／只抓到 N 字可摘要的說明文字，系統不硬湊」，請用戶自己寫，並建議在頁面標題下方加一段說明文字。
+4. **`smartTruncate` 在標題分隔符（｜ |）前切**：原註解宣稱會這樣做但沒實作，截出來會是「…｜…」半截。
+
+**驗證**：重現掃描當時的頁面狀態（拿掉分類說明與描述）→ 不再給 CTA 文字，改給「請自己寫」；有分類說明時抓到的是說明（68 字）不是 CTA；只有 15 字說明 → 不給建議；35 字中文標題 → 判過長、建議在分隔符前切成 28 字。`npm test` 120／120 通過、`vite build` 通過。
+
+---
+
 ### 2026-09-11（llms.txt 文案排序對齊計分現況）
 
 起因：評估 claudeseoskill.com 那個 skill 要不要裝（結論：不裝，功能是已裝的 seo 套件 v2.2.5 的子集），

@@ -8,7 +8,7 @@ export const FIX_GUIDES = {
 
   // ─── SEO ────────────────────────────────────────────────────
   meta_title: {
-    summary: 'WordPress 用 Rank Math／Yoast 的「SEO 標題」欄位（Shopify／Wix 在 SEO 設定）填 30–60 字、前半段放關鍵字；自架站在 <head> 放 <title>。',
+    summary: 'WordPress 用 Rank Math／Yoast 的「SEO 標題」欄位（Shopify／Wix 在 SEO 設定）填中文 15–30 字（英文 30–60 字元）、前半段放關鍵字；自架站在 <head> 放 <title>。',
     platforms: {
       wordpress: {
         steps: [
@@ -16,7 +16,7 @@ export const FIX_GUIDES = {
           '進入後台 → 頁面/文章編輯畫面',
           '滾動到頁面最下方，找到 Yoast SEO 或 Rank Math 區塊',
           '點「SEO 標題」欄位，填入：主題關鍵字 | 品牌名稱',
-          '長度控制在 30–60 字，點擊「更新」儲存',
+          '長度控制在中文 15–30 字（英文 30–60 字元），點擊「更新」儲存',
         ],
         code: null,
       },
@@ -26,7 +26,7 @@ export const FIX_GUIDES = {
           '打開要修改的頁面',
           '滾動到最下方「搜尋引擎列表預覽」',
           '點「編輯網站 SEO」',
-          '在「頁面標題」欄位輸入 30–60 字的標題，儲存',
+          '在「頁面標題」欄位輸入中文 15–30 字（英文 30–60 字元）的標題，儲存',
         ],
         code: null,
       },
@@ -34,7 +34,7 @@ export const FIX_GUIDES = {
         steps: [
           '進入 Wix 編輯器，點選左側「SEO」',
           '選擇「基本 SEO」→「標題標籤」',
-          '填入：主題關鍵字 | 品牌名稱（30–60 字）',
+          '填入：主題關鍵字 | 品牌名稱（中文 15–30 字／英文 30–60 字元）',
           '點「發布」儲存變更',
         ],
         code: null,
@@ -52,14 +52,14 @@ export const FIX_GUIDES = {
   },
 
   meta_desc: {
-    summary: 'WordPress 用 Rank Math／Yoast 的「Meta 描述」欄位（Shopify／Wix 在 SEO 設定）填 70–155 字、帶關鍵字並加行動呼籲；自架站在 <head> 加 <meta name="description">。',
+    summary: 'WordPress 用 Rank Math／Yoast 的「Meta 描述」欄位（Shopify／Wix 在 SEO 設定）填中文 40–80 字（英文 70–155 字元）、帶關鍵字並加行動呼籲；自架站在 <head> 加 <meta name="description">。',
     platforms: {
       wordpress: {
         steps: [
           '安裝「Yoast SEO」或「Rank Math」外掛',
           '進入頁面/文章編輯畫面，找到 SEO 外掛區塊',
           '點「Meta 描述」欄位',
-          '寫入 70–155 字的描述，例如：「[品牌] 提供… 立即免費試用」',
+          '寫入中文 40–80 字（英文 70–155 字元）的描述，例如：「[品牌] 提供… 立即免費試用」',
           '儲存頁面',
         ],
         code: null,
@@ -68,7 +68,7 @@ export const FIX_GUIDES = {
         steps: [
           '後台 → 線上商店 → 頁面 → 打開頁面',
           '點下方「編輯網站 SEO」',
-          '在「描述」欄位填入 70–155 字',
+          '在「描述」欄位填入中文 40–80 字（英文 70–155 字元）',
           '儲存',
         ],
         code: null,
@@ -77,7 +77,7 @@ export const FIX_GUIDES = {
         steps: [
           'Wix 編輯器 → SEO → 基本 SEO',
           '找「描述標籤」欄位',
-          '填入 70–155 字的描述',
+          '填入中文 40–80 字（英文 70–155 字元）的描述',
           '發布',
         ],
         code: null,
@@ -88,7 +88,7 @@ export const FIX_GUIDES = {
           '加入 meta description 標籤（見下方）',
           '上傳到主機',
         ],
-        code: `<meta name="description" content="你的服務描述，自然帶入關鍵字，結尾加上行動呼籲，長度 70–155 字。">`,
+        code: `<meta name="description" content="你的服務描述，自然帶入關鍵字，結尾加上行動呼籲，中文約 40–80 字。">`,
       },
     },
   },

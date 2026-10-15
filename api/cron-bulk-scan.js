@@ -19,6 +19,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+// 2026-10-15：Meta 長度門檻改用與單篇體檢同一支（中英文分開判）。
+// 舊版這裡寫死英文門檻（title <20 / 30-60、desc <50 / 70-155），中文站會誤報「19 字太短」，
+// 還叫客戶把描述寫到 155 個中文字（Google 約 80 字就截斷）。純函式、無依賴，不會多算一支 function。
+import { metaLengthVerdict } from '../src/lib/metaLength.js'
 
 // 並發數從 8 降到 3（2026-06-05）— Hostinger / 共享主機 + mod_security 被 8 並發打就全部 timeout，
 // 改 3 並發給主機喘息、實際完成率從 ~10% 拉到 95%+。慢 2.7x 但能跑完比快但失敗好。
@@ -493,6 +497,10 @@ function analyzeArticleHtml(html, url) {
   const hasMetaTitle = metaTitleLen > 0
   // Stage 2: 抽品牌名（給 title / desc 建議用）— og:site_name 優先、否則從 title 末段倒推
   const brandName = extractBrandName(html, metaTitle)
+  // 長度門檻依語言切換（中文標題 15–30 字、描述 40–80 字；英文 30–60 / 70–155 字元），規格見 src/lib/metaLength.js
+  const unit = v => (v.isCJK ? '字' : '字元')
+  const rangeText = v => `${v.min}–${v.max} ${unit(v)}`
+  const titleV = metaLengthVerdict(metaTitle, 'title')
   if (!hasMetaTitle) {
     problems.push({
       id: 'missing_meta_title',
@@ -505,31 +513,32 @@ function analyzeArticleHtml(html, url) {
       } : null,
     })
   }
-  else if (metaTitleLen < 20) {
+  else if (titleV.verdict === 'short') {
     // 短標題建議：如果有品牌名、補成「{current}｜{brand}」；如果連品牌都沒有、純粹提示
-    // 重要：補完品牌名後可能還是 < 30 字、要主動告訴用戶仍需手動延伸（不能讓用戶以為「照建議改了就解決」）
+    // 重要：補完品牌名後可能還是低於下限、要主動告訴用戶仍需手動延伸（不能讓用戶以為「照建議改了就解決」）
     // ⚠️ 注意：以下所有「SEO 標題」都指 <title> tag、即 Rank Math 的「SEO Title」欄位、不是 WP 文章/商品標題
     const containsBrand = brandName && metaTitle.includes(brandName)
     const suggested = brandName && !containsBrand ? `${metaTitle}｜${brandName}` : null
-    const suggestedLen = suggested ? suggested.length : null
-    const stillTooShort = suggestedLen != null && suggestedLen < 30
+    const suggestedV = suggested ? metaLengthVerdict(suggested, 'title') : null
+    const suggestedLen = suggestedV ? suggestedV.chars : null
+    const stillTooShort = suggestedV != null && suggestedV.verdict === 'short'
     let note
     if (suggested && !stillTooShort) {
-      note = `偵測到品牌「${brandName}」，建議在 SEO Title 後加「｜${brandName}」拉到 ${suggestedLen} 字。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
+      note = `偵測到品牌「${brandName}」，建議在 SEO Title 後加「｜${brandName}」拉到 ${suggestedLen} ${unit(titleV)}。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
     } else if (suggested && stillTooShort) {
-      // 補完品牌名仍 < 30 字、要明確告訴用戶這不夠、需要手動延伸主關鍵字 / 描述
-      const need = 30 - suggestedLen
-      note = `自動補品牌名只拉到 ${suggestedLen} 字、還差 ${need} 字才到建議下限 30。請手動延伸：在 SEO Title 前段加主關鍵字描述（例如「2025 最新 」「實測 」「指南：」等定語）、或加副標再接品牌。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
+      // 補完品牌名仍低於下限、要明確告訴用戶這不夠、需要手動延伸主關鍵字 / 描述
+      const need = titleV.min - suggestedLen
+      note = `自動補品牌名只拉到 ${suggestedLen} ${unit(titleV)}、還差 ${need} ${unit(titleV)}才到建議下限 ${titleV.min}。請手動延伸：在 SEO Title 前段加主關鍵字或服務描述、或加副標再接品牌。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
     } else {
-      note = '建議補主關鍵字 + 品牌名拉到 30-60 字（系統未偵測到品牌名、需手動補）。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）'
+      note = `建議補主關鍵字 + 品牌名拉到 ${rangeText(titleV)}（系統未偵測到品牌名、需手動補）。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
     }
     problems.push({
       id: 'short_meta_title',
       severity: 'medium',
-      label: `SEO Title 只有 ${metaTitleLen} 字、建議 30-60（Rank Math「SEO Title」欄位）`,
+      label: `SEO Title 只有 ${titleV.chars} ${titleV.isCJK ? '字' : '字元'}、建議 ${rangeText(titleV)}（Rank Math「SEO Title」欄位）`,
       suggestion: {
         kind: 'text',
-        current: metaTitle, current_len: metaTitleLen,
+        current: metaTitle, current_len: titleV.chars,
         suggested, suggested_len: suggestedLen,
         code_snippet: suggested ? `<title>${suggested}</title>` : null,
         still_too_short: stillTooShort,   // 前端可用這個 flag 顯示警告 chip
@@ -537,19 +546,19 @@ function analyzeArticleHtml(html, url) {
       },
     })
   }
-  else if (metaTitleLen > 70) {
+  else if (titleV.verdict === 'long') {
     // 過長截斷：智能在分隔符切，保留品牌名
-    const truncated = smartTruncate(metaTitle, 60)
+    const truncated = smartTruncate(metaTitle, titleV.max)
     problems.push({
       id: 'long_meta_title',
       severity: 'low',
-      label: `SEO Title 過長（${metaTitleLen} 字、建議 30-60，Rank Math「SEO Title」欄位）`,
+      label: `SEO Title 過長（${titleV.chars} ${titleV.isCJK ? '字' : '字元'}、建議 ${rangeText(titleV)}，Rank Math「SEO Title」欄位）`,
       suggestion: {
         kind: 'text',
-        current: metaTitle, current_len: metaTitleLen,
-        suggested: truncated, suggested_len: truncated.length,
+        current: metaTitle, current_len: titleV.chars,
+        suggested: truncated, suggested_len: [...truncated].length,
         code_snippet: `<title>${truncated}</title>`,
-        note: 'Google SERP 顯示上限約 60 字、超過會被「...」截掉。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）',
+        note: `Google 搜尋結果顯示寬度有限，超過約 ${titleV.max} ${titleV.isCJK ? '個中文字' : '字元'}會被「...」截掉。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`,
       },
     })
   }
@@ -560,7 +569,21 @@ function analyzeArticleHtml(html, url) {
   const metaDescLen = metaDesc.length
   const hasMetaDesc = metaDescLen > 0
   // Stage 2: 抽內文摘要、給缺 / 短 desc 建議
-  const bodyExcerpt = extractBodyExcerpt(html, 155)
+  const rawExcerpt = extractBodyExcerpt(html, 155)
+  // 描述門檻的語言：有描述看描述本身；沒有就看標題、再沒有看內文摘要（空描述沒有語言可判）
+  const descV = metaLengthVerdict(metaDesc || metaTitle || rawExcerpt || '', 'desc')
+  const descRange = descV.chars ? rangeText(descV) : '中文 40–80 字／英文 70–155 字元'
+  // 中文摘要要再截到中文上限（約 80 字），否則建議的描述本身就會被 Google 截斷
+  const cappedExcerpt = rawExcerpt && descV.chars ? smartTruncate(rawExcerpt, descV.max) : rawExcerpt
+  // 品質把關：摘要本身達不到描述下限就不拿來當建議（也不拿去填 OG／schema），
+  // 改成照實告訴用戶「這頁沒有足夠的說明文字」。分類頁、作品集頁常常只有標題＋卡片。
+  const excerptChars = cappedExcerpt ? [...cappedExcerpt].length : 0
+  const excerptTooThin = !!cappedExcerpt && metaLengthVerdict(cappedExcerpt, 'desc').verdict === 'short'
+  const bodyExcerpt = excerptTooThin ? null : cappedExcerpt
+  const noExcerptNote = (excerptTooThin
+    ? `這頁可摘要的說明文字太少（只抓到 ${excerptChars} 字），系統不硬湊建議。`
+    : '這頁抓不到可摘要的說明文字（可能只有標題與卡片列表），系統不硬湊建議。')
+    + `請自己寫一段 ${descRange}的描述，說清楚這頁有什麼、適合誰；也建議在頁面標題下方加一段同樣內容的說明文字，訪客與 AI 都看得到。`
   // ⚠️ Meta 描述 = <meta name="description"> tag = Rank Math「Description」欄位（不是 WP 文章內文 / 商品說明）
   if (!hasMetaDesc) {
     problems.push({
@@ -569,45 +592,45 @@ function analyzeArticleHtml(html, url) {
       label: '缺 Meta 描述（Rank Math「Description」欄位空白）',
       suggestion: bodyExcerpt ? {
         kind: 'text',
-        suggested: bodyExcerpt, suggested_len: bodyExcerpt.length,
+        suggested: bodyExcerpt, suggested_len: [...bodyExcerpt].length,
         code_snippet: metaDescCode(bodyExcerpt),
         note: '系統從文章內文自動抓的開頭摘要、可直接複製或微調後使用。貼到 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
       } : {
         kind: 'text',
-        note: '文章內文太短抓不到摘要、請手動寫 70-155 字描述。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
+        note: `${noExcerptNote}改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）`,
       },
     })
   }
-  else if (metaDescLen < 50) {
+  else if (descV.verdict === 'short') {
     // 短描述：建議用內文摘要取代或補長
-    const replacement = bodyExcerpt && bodyExcerpt.length > metaDescLen ? bodyExcerpt : null
+    const replacement = bodyExcerpt && [...bodyExcerpt].length > descV.chars ? bodyExcerpt : null
     problems.push({
       id: 'short_meta_desc',
       severity: 'medium',
-      label: `Meta 描述只有 ${metaDescLen} 字、建議 70-155（Rank Math「Description」欄位）`,
+      label: `Meta 描述只有 ${descV.chars} ${descV.isCJK ? '字' : '字元'}、建議 ${descRange}（Rank Math「Description」欄位）`,
       suggestion: {
         kind: 'text',
-        current: metaDesc, current_len: metaDescLen,
-        suggested: replacement, suggested_len: replacement ? replacement.length : null,
+        current: metaDesc, current_len: descV.chars,
+        suggested: replacement, suggested_len: replacement ? [...replacement].length : null,
         code_snippet: replacement ? metaDescCode(replacement) : null,
         note: replacement
           ? '系統從內文抓的較長版本、可取代或合併。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）'
-          : '建議擴充到 70-155 字、含主關鍵字 + 賣點。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
+          : `建議擴充到 ${descRange}、含主關鍵字 + 賣點。${bodyExcerpt ? '' : noExcerptNote}改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）`,
       },
     })
   }
-  else if (metaDescLen > 200) {
-    const truncated = smartTruncate(metaDesc, 155)
+  else if (descV.verdict === 'long') {
+    const truncated = smartTruncate(metaDesc, descV.max)
     problems.push({
       id: 'long_meta_desc',
       severity: 'low',
-      label: `Meta 描述過長（${metaDescLen} 字、建議 70-155，Rank Math「Description」欄位）`,
+      label: `Meta 描述過長（${descV.chars} ${descV.isCJK ? '字' : '字元'}、建議 ${descRange}，Rank Math「Description」欄位）`,
       suggestion: {
         kind: 'text',
-        current: metaDesc, current_len: metaDescLen,
-        suggested: truncated, suggested_len: truncated.length,
+        current: metaDesc, current_len: descV.chars,
+        suggested: truncated, suggested_len: [...truncated].length,
         code_snippet: metaDescCode(truncated),
-        note: 'Google SERP 描述顯示上限約 155 字、超過會被截掉。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
+        note: `Google 搜尋結果的描述約顯示 ${descV.max} ${descV.isCJK ? '個中文字' : '字元'}、超過會被截掉。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）`,
       },
     })
   }
@@ -840,8 +863,8 @@ function detectWpAdminHint(url, pageType) {
           '若 finding 說「標題太短」「描述過長」→ 改 Rank Math meta box（meta tag 層）',
           '若 finding 說「內容過少」（thin_content）→ 改上面的「內容描述」（寫給訪客看的）',
           '📝 Rank Math meta box 常用欄位：',
-          '   • SEO Title：30-60 字、含分類名 + 品牌（如「特斯拉螢幕升級｜金鉑先生」）',
-          '   • Description：70-155 字、介紹這個分類賣什麼',
+          '   • SEO Title：中文 15–30 字（英文 30–60 字元）、含分類名 + 品牌（如「特斯拉螢幕升級｜金鉑先生」）',
+          '   • Description：中文 40–80 字（英文 70–155 字元）、介紹這個分類賣什麼',
         ],
         direct_admin_url: adminSearchUrl,
         direct_admin_label: `🔥 在 WP 後台搜尋「${leafSlug}」分類`,
@@ -891,8 +914,8 @@ function detectWpAdminHint(url, pageType) {
         '若 finding 說「標題太短」「描述過長」→ 改 Rank Math meta box',
         '若 finding 說「內容過少」→ 改上面的「商品說明」',
         '📝 Rank Math meta box 常用欄位（教學）：',
-        '   • SEO Title：30-60 字、格式「商品名｜品牌」（如「Audi A4 CarPlay 升級｜金鉑先生」）',
-        '   • Description：70-155 字、含車型 / 適用範圍 / 服務承諾',
+        '   • SEO Title：中文 15–30 字（英文 30–60 字元）、格式「商品名｜品牌」（如「Audi A4 CarPlay 升級｜金鉑先生」）',
+        '   • Description：中文 40–80 字（英文 70–155 字元）、含車型 / 適用範圍 / 服務承諾',
         '   • Focus Keyword：用車型 + 升級項（如「Audi A4 CarPlay」）',
         '   • Schema 分頁：選「Product」(WooCommerce 自動帶價格、庫存)',
         '   • OG Image：上傳 1200x630 商品主圖（不傳的話用商品 featured image 代替）',
@@ -934,8 +957,8 @@ function detectWpAdminHint(url, pageType) {
         '若 finding 說「標題太短」「描述過長」→ 改 Rank Math meta box',
         '若 finding 說「內容過少」→ 加長上面的文章內容',
         '📝 Rank Math meta box 內常用欄位（教學）：',
-        '   • SEO Title：30-60 字、含品牌名（如 "X 是什麼？完整指南｜你的品牌"）— Google 搜尋結果第一行',
-        '   • Description：70-155 字、用主動句、含主關鍵字 — Google 搜尋結果摘要',
+        '   • SEO Title：中文 15–30 字（英文 30–60 字元）、含品牌名（如 "X 是什麼？完整指南｜你的品牌"）— Google 搜尋結果第一行',
+        '   • Description：中文 40–80 字（英文 70–155 字元）、用主動句、含主關鍵字 — Google 搜尋結果摘要',
         '   • Focus Keyword：1 個主關鍵字（如「Audi 隱藏功能」）、Rank Math 用它算 SEO 分數',
         '   • Schema 分頁：Article 類型一般選「Article」(部落格)、別用 NewsArticle 除非真是新聞稿',
         '   • Robots Meta：預設 Index 就好、別亂打勾 NoIndex（會讓 Google 不收錄）',
@@ -957,8 +980,8 @@ function detectWpAdminHint(url, pageType) {
       '備案 B：在 WP 後台網址列直接打：你的網域/wp-admin/edit.php?post_type=page&s=' + slug,
       '進到編輯頁後 → 滑到下方 Rank Math 區塊',
       '📝 Rank Math meta box 內常用欄位（教學）：',
-      '   • SEO Title：30-60 字、簡潔含品牌',
-      '   • Description：70-155 字、像「為什麼選你」的一句廣告詞',
+      '   • SEO Title：中文 15–30 字（英文 30–60 字元）、簡潔含品牌',
+      '   • Description：中文 40–80 字（英文 70–155 字元）、像「為什麼選你」的一句廣告詞',
       '   • Robots Meta：預設、別動',
       '   • Schema：頁面通常選「WebPage」或「None」',
     ],
@@ -1045,16 +1068,28 @@ function extractBodyExcerpt(html, maxLen = 155) {
   }
   if (!section) section = html
   // 抽 <p> 內文（跳過 nav/footer/script/style）
+  // 2026-10-15：再避開「每頁都一樣的樣板」與按鈕文字。實例：a-ark 分類頁沒有說明文字，
+  // 舊版抓到頁尾 CTA「告訴我們你的產業與需求…」連按鈕「取得網站規劃與報價 ↗」一起當成描述建議。
+  //   - 拿掉 CTA／訂閱／橫幅類的 <section>／<aside>／<form>（class 或 id 含 cta、newsletter、subscribe、banner、promo）
+  //   - 跳過按鈕列段落：<p> 的 class 含 cta／btn／button，或段落文字幾乎都是連結文字
+  // ponytail: 只做單頁規則。「多頁重複的段落」要拿整個 job 的頁面交叉比對，等單頁規則擋不住再做
   const cleaned = section
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<nav[\s\S]*?<\/nav>/gi, '')
     .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+    .replace(/<(section|aside|form)\b[^>]*\b(?:class|id)\s*=\s*["'][^"']*(?:cta|newsletter|subscribe|banner|promo)[^"']*["'][^>]*>[\s\S]*?<\/\1>/gi, '')
   const paragraphs = cleaned.match(/<p\b[^>]*>([\s\S]*?)<\/p>/gi) || []
   let text = ''
   for (const p of paragraphs) {
+    const openTag = p.match(/^<p\b[^>]*>/i)[0]
+    if (/\bclass\s*=\s*["'][^"']*(?:cta|btn|button)[^"']*["']/i.test(openTag)) continue
     const inner = decodeEntities(p.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
+      .replace(/\s*[↗→»›]+$/, '')   // 按鈕常見的尾端箭頭
     if (inner.length < 10) continue
+    const linkChars = (p.match(/<a\b[^>]*>[\s\S]*?<\/a>/gi) || [])
+      .map(a => a.replace(/<[^>]+>/g, '')).join('').replace(/\s+/g, '').length
+    if (linkChars >= inner.replace(/\s+/g, '').length * 0.6) continue   // 整段幾乎都是連結 = 按鈕／導覽
     text += (text ? ' ' : '') + inner
     if (text.length >= maxLen + 50) break
   }
@@ -1063,9 +1098,11 @@ function extractBodyExcerpt(html, maxLen = 155) {
 }
 
 // 智能截斷：優先在句尾（。！？.!?）切，其次空白，最後硬切 + 加 …
+// 保證回傳長度 ≤ maxLen（含「…」）——舊版 window 多取 10 字、尾巴再加「…」，
+// 建議的截短版本本身就會超過上限、又被判成「過長」（2026-10-15 修）
 function smartTruncate(text, maxLen) {
   if (text.length <= maxLen) return text
-  const window = text.slice(0, maxLen + 10)
+  const window = text.slice(0, maxLen)
   // 先找句尾
   const sentEnd = window.search(/[。！？.!?]\s*$/m)
   if (sentEnd > maxLen * 0.6) return text.slice(0, sentEnd + 1).trim()
@@ -1074,10 +1111,13 @@ function smartTruncate(text, maxLen) {
     const idx = window.lastIndexOf(lastSent[lastSent.length - 1])
     if (idx > maxLen * 0.6) return text.slice(0, idx + 1).trim()
   }
+  // 標題常見的分隔符（｜ |）：在最後一個分隔符前切，不留半截詞與「…」
+  const sep = Math.max(window.lastIndexOf('｜'), window.lastIndexOf('|'))
+  if (sep > maxLen * 0.5) return text.slice(0, sep).trim()
   // 找空白
   const space = window.lastIndexOf(' ', maxLen)
   if (space > maxLen * 0.6) return text.slice(0, space).trim() + '…'
-  return text.slice(0, maxLen).trim() + '…'
+  return text.slice(0, maxLen - 1).trim() + '…'
 }
 
 // 把 description 文字包成完整 meta tag code 供用戶複製

@@ -27,8 +27,8 @@ const NOT_CHECKED = { passed: true, detail: '此次未檢測（爬蟲被擋導�
 const SEO_CHECKS = [
   {
     id: 'meta_title', name: 'Meta 標題', icon: '🏷️',
-    description: '頁面標題是搜尋結果的第一印象，中文約 15–40 字、英文 30–60 字，包含主要關鍵字',
-    recommendation: 'WordPress 用 Rank Math／Yoast 的「SEO 標題」欄位、Shopify／Wix 在 SEO 設定填「頁面主題 | 品牌名稱」（中文約 15–40 字、英文 30–60 字），關鍵字放前半段；自架站在 <head> 放 <title>。',
+    description: '頁面標題是搜尋結果的第一印象，中文約 15–30 字、英文 30–60 字，包含主要關鍵字',
+    recommendation: 'WordPress 用 Rank Math／Yoast 的「SEO 標題」欄位、Shopify／Wix 在 SEO 設定填「頁面主題 | 品牌名稱」（中文約 15–30 字、英文 30–60 字），關鍵字放前半段；自架站在 <head> 放 <title>。',
     priority: 'P1',
     getValue: (audit) => {
       if (isPartialAudit(audit)) return NOT_CHECKED

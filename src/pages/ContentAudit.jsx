@@ -58,19 +58,19 @@ const CHECKS = [
   },
   {
     id: 'title', category: 'Meta 標籤', icon: '🏷️',
-    label: 'Meta 標題（30–60 字）', priority: 'P1',
+    label: 'Meta 標題（中文 15–30 字）', priority: 'P1',
     desc: '搜尋結果的第一印象，長度符合規範才不會被截斷',
     get: r => r.meta.hasTitleOptimal,
     detail: r => r.meta.title ? `「${r.meta.title.slice(0, 35)}${r.meta.title.length > 35 ? '...' : ''}」（${r.meta.titleLength} 字）` : '未設置 Meta 標題',
-    fix: '設置 <title> 標籤，長度 30–60 字，將主要關鍵字放在前半段',
+    fix: '設置 <title> 標籤，長度中文 15–30 字（英文 30–60 字元），將主要關鍵字放在前半段',
   },
   {
     id: 'desc', category: 'Meta 標籤', icon: '📄',
-    label: 'Meta 描述（70–155 字）', priority: 'P1',
+    label: 'Meta 描述（中文 40–80 字）', priority: 'P1',
     desc: '搜尋結果摘要，好的描述能提升點擊率',
     get: r => r.meta.hasDescOptimal,
     detail: r => r.meta.description ? `${r.meta.descLength} 字` : '未設置 Meta 描述',
-    fix: '在 <head> 加入 <meta name="description" content="..."，70–155 字，自然帶入關鍵字並加入行動呼籲',
+    fix: '在 <head> 加入 <meta name="description" content="..."，中文 40–80 字（英文 70–155 字元），自然帶入關鍵字並加入行動呼籲',
   },
   {
     id: 'ogimage', category: 'Meta 標籤', icon: '🖼️',
