@@ -6,6 +6,19 @@
 
 ---
 
+### 2026-10-15d（AEO「JSON-LD 結構化資料」項也改用共用節點展開）
+
+接續 10-15c。[aeoAnalyzer.js](src/services/aeoAnalyzer.js) `checkJsonLd` 不做類型比對，上一輪依任務範圍沒動，用戶拍板一起修。它有三個問題：
+1. 最外層是 JSON 陣列（`[{...},{...}]`）→ 判成「沒有結構化資料」（**誤判失敗**）
+2. 空的 `{"@graph":[]}` → 判通過（**誤判通過**）
+3. `@graph` 包起來的頁面（Rank Math／Yoast）`schemaType` 永遠是 null → 嵌入元件（[embed/items.js](src/embed/items.js)）的「偵測到 X」對 WordPress 站從來沒顯示過
+
+改成 `collectJsonLdNodes` + `typesOf`：至少一個帶 `@type` 的節點才通過；`schemaType` 改為不重複類型的前 3 個（超過加「等 N 種」）。
+
+**驗證**（瀏覽器跑真模組）：報價文章頁、關於我們頁 ✓（aboutus 顯示「Corporation、Organization、WebSite 等 6 種」）；最外層陣列 ✓；空 @graph ✗；單一物件 ✓；壞 JSON ✗；沒 JSON-LD ✗。`npm test` 120／120、`vite build` 通過；eslint 少一個既有錯誤（舊的 `catch (e)`），剩 1 個既有。
+
+---
+
 ### 2026-10-15c（內容品質／AEO 的 Schema 誤判：改用共用的 @graph 展開）
 
 **症狀**：單篇分析 `a-ark.com.tw/tainan-website-quote-3-year-cost/` 顯示「未找到 Article／BlogPosting Schema」「未找到 FAQPage Schema」，但原始碼兩個都有（BlogPosting 含 author、FAQPage 5 題），全包在 Rank Math 的同一個 `{ "@graph": [...] }` 裡。

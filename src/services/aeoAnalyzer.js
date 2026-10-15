@@ -11,27 +11,15 @@ import { collectJsonLdNodes, typesOf } from './eeatAnalyzer' // JSON-LD 節點�
 /**
  * 1. JSON-LD 結構化資料檢測 (schema.org，特別是 FAQ/HowTo)
  */
+// 2026-10-15：改用共用節點展開。舊版最外層是 JSON 陣列（[{...},{...}]）會判成「沒有結構化資料」；
+// @graph 包起來的頁面（Rank Math／Yoast）schemaType 永遠是 null，嵌入元件顯示不出「偵測到 X」；
+// 空的 @graph（{"@graph":[]}）反而被判通過。現在以「至少一個帶 @type 的節點」為準。
 function checkJsonLd(doc) {
-  const scripts = doc.querySelectorAll('script[type="application/ld+json"]')
-  let hasValidSchema = false
-  let schemaType = null
-
-  scripts.forEach(script => {
-    try {
-      const data = JSON.parse(script.textContent)
-      if (data['@type']) {
-        hasValidSchema = true
-        schemaType = data['@type']
-      }
-      if (Array.isArray(data['@graph'])) {
-        hasValidSchema = true
-      }
-    } catch (e) {
-      // Invalid JSON-LD
-    }
-  })
-
-  return { passed: hasValidSchema, schemaType }
+  const types = [...new Set(collectJsonLdNodes(doc).flatMap(typesOf))]
+  const schemaType = types.length
+    ? types.slice(0, 3).join('、') + (types.length > 3 ? ` 等 ${types.length} 種` : '')
+    : null
+  return { passed: types.length > 0, schemaType }
 }
 
 /**
