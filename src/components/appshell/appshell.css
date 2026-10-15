@@ -306,6 +306,39 @@ html.dark-theme .appshell textarea::placeholder{
   --t-sig-bg:var(--surface); --t-sig-line:var(--line-2); --t-sig-line-soft:var(--line); --t-sig-track:var(--surface-3);
   margin-top:18px;
 }
+
+/* 批次文章掃描（BulkScan，v2 深色頁）嵌進 app-shell（2026-10-15）。
+   同一支元件深色／亮色兩用：BulkScan.jsx 裡的顏色全部走 CSS 變數、fallback 是原本的深色值，
+   這裡在 .as-bulk 底下重定義成亮色。三類：
+   (1) v2 token（--t-text 系列、卡片底／框）  (2) 深色頁專用的淺色字（--bs-green 等，亮底上太淡 → 換深色同色系）
+   (3) 白色半透明表面／分隔線（--bs-wNN → 深藍半透明）與黑色半透明小底框（--bs-insetN → 淡灰）
+   程式碼框、「給客戶報告」彈窗、負責人說明浮框是刻意保留的深色區塊（className="bs-dark"），
+   在裡面把所有變數重設為 initial → var() 回到 fallback 的深色值，避免深字配深底。 */
+.appshell .as-bulk{
+  --t-text:var(--ink); --t-text-mid:var(--ink-2); --t-text-low:var(--ink-3);
+  --t-card-bg:var(--surface); --t-card-border:var(--line-2); --t-card-border-hover:rgba(236,72,153,.45);
+  --bs-green:#047857; --bs-green2:#047857; --bs-red:#b91c1c; --bs-amber:#b45309; --bs-amber2:#b45309;
+  --bs-violet:#6d28d9; --bs-violet2:#7e22ce; --bs-pink:#be185d; --bs-orange:#c2410c;
+  --bs-blue:#1d4ed8; --bs-blue2:#1e40af; --bs-teal:#0f766e;
+  --bs-w02:rgba(0,0,62,.02); --bs-w04:rgba(0,0,62,.05); --bs-w05:rgba(0,0,62,.06); --bs-w06:rgba(0,0,62,.07);
+  --bs-w07:rgba(0,0,62,.10); --bs-w08:rgba(0,0,62,.10); --bs-w10:rgba(0,0,62,.14); --bs-w15:rgba(0,0,62,.18);
+  --bs-inset2:rgba(0,0,62,.04); --bs-inset25:rgba(0,0,62,.05); --bs-inset4:rgba(255,255,255,0);
+  /* ScoreHero（v2 共用分數卡）*/
+  --t-hero-bg:var(--surface); --t-hero-chip:var(--surface-2); --t-hero-empty:var(--surface-2); --t-hero-ring:var(--surface-3);
+  /* 程式碼框：原本半透明黑在深色頁看起來近黑，疊在亮底上變灰、淺綠字對比不足 → 改不透明深底。
+     刻意不放進 .bs-dark 的重設清單：底色就設在孤島元素自己身上，重設了會回到半透明黑 */
+  --bs-code-bg:#0f2230;
+}
+.appshell .as-bulk .bs-dark{
+  --t-text:initial; --t-text-mid:initial; --t-text-low:initial;
+  --t-card-bg:initial; --t-card-border:initial; --t-card-border-hover:initial;
+  --bs-green:initial; --bs-green2:initial; --bs-red:initial; --bs-amber:initial; --bs-amber2:initial;
+  --bs-violet:initial; --bs-violet2:initial; --bs-pink:initial; --bs-orange:initial;
+  --bs-blue:initial; --bs-blue2:initial; --bs-teal:initial;
+  --bs-w02:initial; --bs-w04:initial; --bs-w05:initial; --bs-w06:initial;
+  --bs-w07:initial; --bs-w08:initial; --bs-w10:initial; --bs-w15:initial;
+  --bs-inset2:initial; --bs-inset25:initial; --bs-inset4:initial;
+}
 .appshell .as-health-board .v2-issue-board{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;}
 .appshell .as-health-board .v2-issue-board>div{background:var(--surface)!important;border-radius:var(--r-lg)!important;
   box-shadow:var(--sh-sm)!important;}

@@ -29,8 +29,12 @@ const POLL_INTERVAL_MS = 5000  // 每 5 秒輪詢進度
 // 主色 — 跟 /content-audit 同色（內容品質粉紅 #ec4899），統一「文章分析」家族視覺
 const PAGE_ACCENT = '#ec4899'
 
-export default function BulkScan() {
-  const { id: websiteId } = useParams()
+// inShell：2026-10-15 搬進亮色 app-shell（/app/:websiteId/bulk）。同一支元件兩用——
+// 嵌入時拿掉深色外框（PageWrap 的背景／SiteHeader／Footer）與舊 tab，配色靠 appshell.css 的 .as-bulk 重定義變數。
+export default function BulkScan({ inShell = false }) {
+  const params = useParams()
+  const websiteId = params.websiteId || params.id
+  const Wrap = inShell ? ShellWrap : PageWrap
   const { user, isPro, isTrial } = useAuth()
   const [website, setWebsite] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -189,34 +193,50 @@ export default function BulkScan() {
     } catch (e) { setError(e.message) }
   }
 
-  if (loading) return <PageWrap>載入中...</PageWrap>
+  if (loading) return inShell ? <div className="as-loading" aria-live="polite">載入中…</div> : <PageWrap>載入中...</PageWrap>
 
   // 不再 hard-lock Pro — Free 可以跑「試掃 3 篇」sample。Pro 守衛留在 backend handleStart
   const isProUser = isPro || isTrial
 
   return (
-    <PageWrap>
-      {/* 文章分析統一 tab — 跟 /content-audit 用同一個元件，視覺一致 */}
-      <ArticleAnalysisTabs active="bulk" websiteId={websiteId} />
+    <Wrap>
+      {inShell ? (
+        <>
+          {/* app-shell 版頁首：與首頁內容分析（AppContent）同一組分頁，兩頁互切 */}
+          <div className="as-phead">
+            <h2>批次文章掃描</h2>
+            <span className="sub">{website?.url}</span>
+          </div>
+          <nav className="as-health-tabs" aria-label="內容分析模式">
+            <Link className="as-health-tab" to={`/app/${websiteId}/content`}>首頁分析</Link>
+            <span className="as-health-tab on" aria-current="page">批次掃描</span>
+          </nav>
+        </>
+      ) : (
+        <>
+          {/* 文章分析統一 tab — 跟 /content-audit 用同一個元件，視覺一致 */}
+          <ArticleAnalysisTabs active="bulk" websiteId={websiteId} />
 
-      {/* Hero — 網站資訊 + 主動作按鈕 */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-          <Link to={`/dashboard/${websiteId}`} style={{ color: T.textMid, fontSize: 14, textDecoration: 'none' }}>← 回 Dashboard</Link>
-        </div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: T.text, marginBottom: 4 }}>批次文章掃描</h1>
-        <p style={{ fontSize: 14, color: T.textMid }}>{website?.url}</p>
-      </div>
+          {/* Hero — 網站資訊 + 主動作按鈕 */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+              <Link to={`/dashboard/${websiteId}`} style={{ color: T.textMid, fontSize: 14, textDecoration: 'none' }}>← 回 Dashboard</Link>
+            </div>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: T.text, marginBottom: 4 }}>批次文章掃描</h1>
+            <p style={{ fontSize: 14, color: T.textMid }}>{website?.url}</p>
+          </div>
+        </>
+      )}
 
       {error && (
-        <div style={{ padding: 14, background: 'rgba(239,68,68,0.1)', border: `1px solid ${T.fail}55`, borderRadius: 8, color: '#fca5a5', fontSize: 14, marginBottom: 16 }}>
+        <div style={{ padding: 14, background: 'rgba(239,68,68,0.1)', border: `1px solid ${T.fail}55`, borderRadius: 8, color: 'var(--bs-red, #fca5a5)', fontSize: 14, marginBottom: 16 }}>
           ⚠️ {error}
         </div>
       )}
 
       {/* 沒 sitemap、走首頁連結後備路線的告知（2026-06-12）— 黃色 info、不是錯誤 */}
       {discoveryNote && (
-        <div style={{ padding: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 8, color: '#fcd34d', fontSize: 14, marginBottom: 16 }}>
+        <div style={{ padding: 14, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: 8, color: 'var(--bs-amber, #fcd34d)', fontSize: 14, marginBottom: 16 }}>
           💡 {discoveryNote}
         </div>
       )}
@@ -235,7 +255,7 @@ export default function BulkScan() {
               預估時長 25-30 分鐘，過程中可關閉視窗，掃完回來看結果。
             </p>
             {job?.status === 'failed' && job?.error_message && (
-              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 14, color: '#fca5a5' }}>
+              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 14, color: 'var(--bs-red, #fca5a5)' }}>
                 上次失敗：{job.error_message}
               </div>
             )}
@@ -253,7 +273,7 @@ export default function BulkScan() {
               </h3>
               <span style={{
                 fontSize: 14, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
-                background: 'rgba(168,85,247,0.25)', color: '#e9d5ff', letterSpacing: '.05em',
+                background: 'rgba(168,85,247,0.25)', color: 'var(--bs-violet2, #e9d5ff)', letterSpacing: '.05em',
               }}>免費</span>
             </div>
             <p style={{ fontSize: 14, color: T.textMid, lineHeight: 1.7, marginBottom: 14 }}>
@@ -266,7 +286,7 @@ export default function BulkScan() {
               <li>🛠 每個問題對應的修法步驟 — 不論你用 WordPress / Shopify / Wix / 自架 HTML</li>
             </ul>
             {job?.status === 'failed' && job?.error_message && (
-              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 14, color: '#fca5a5' }}>
+              <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', borderLeft: `3px solid ${T.fail}`, borderRadius: 4, marginBottom: 16, fontSize: 14, color: 'var(--bs-red, #fca5a5)' }}>
                 上次失敗：{job.error_message}
               </div>
             )}
@@ -315,7 +335,7 @@ export default function BulkScan() {
       {job?.status === 'done' && results && (
         <ResultsView job={job} results={results} onRescan={handleStart} starting={starting} websiteId={websiteId} userId={user?.id} website={website} />
       )}
-    </PageWrap>
+    </Wrap>
   )
 }
 
@@ -324,7 +344,7 @@ export default function BulkScan() {
 function ProgressBar({ scanned, failed, total }) {
   const pct = total > 0 ? Math.round(((scanned + failed) / total) * 100) : 0
   return (
-    <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, overflow: 'hidden', height: 14 }}>
+    <div style={{ background: 'var(--bs-w05, rgba(255,255,255,0.05))', borderRadius: 8, overflow: 'hidden', height: 14 }}>
       <div style={{
         width: `${pct}%`, height: '100%',
         background: `linear-gradient(90deg, ${PAGE_ACCENT}, #f472b6)`,
@@ -442,7 +462,7 @@ function SampleUpsellBanner({ discoveredCount, scanned, locked }) {
       marginBottom: 24,
       borderRadius: 14,
       padding: '22px 24px',
-      background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(139,92,246,0.10) 50%, rgba(0,0,0,0.4))',
+      background: 'linear-gradient(135deg, rgba(168,85,247,0.18), rgba(139,92,246,0.10) 50%, var(--bs-inset4, rgba(0,0,0,0.4)))',
       border: '1px solid rgba(168,85,247,0.5)',
       boxShadow: '0 8px 32px rgba(168,85,247,0.15)',
     }}>
@@ -450,7 +470,7 @@ function SampleUpsellBanner({ discoveredCount, scanned, locked }) {
         <div style={{ fontSize: 36 }}>🔒</div>
         <div style={{ flex: 1, minWidth: 240 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 4 }}>
-            你網站總共 <span style={{ color: '#c4b5fd' }}>{discoveredCount}</span> 篇文章 — 還有 <span style={{ color: '#fbbf24' }}>{locked}</span> 篇待解鎖
+            你網站總共 <span style={{ color: 'var(--bs-violet, #c4b5fd)' }}>{discoveredCount}</span> 篇文章 — 還有 <span style={{ color: 'var(--bs-amber2, #fbbf24)' }}>{locked}</span> 篇待解鎖
           </div>
           <div style={{ fontSize: 14, color: T.textMid, lineHeight: 1.6 }}>
             目前你看到的是 <strong style={{ color: T.text }}>{scanned} 篇樣本</strong>的分析結果。升級 Pro 可一次掃描全部 {discoveredCount > 200 ? '200' : discoveredCount} 篇（{discoveredCount > 200 ? '上限' : '完整'}），找出每篇的具體問題 + 完整修法。
@@ -472,7 +492,7 @@ function SampleUpsellBanner({ discoveredCount, scanned, locked }) {
 function ProblemBreakdown({ sortedProblems, totalScanned }) {
   return (
     <div style={{
-      background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
+      background: 'var(--t-card-bg, rgba(1,8,14,.6))', border: `1px solid ${T.cardBorder}`,
       borderRadius: T.rL, padding: 24,
     }}>
       <div style={{
@@ -487,7 +507,7 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
         </p>
       ) : (
         <div style={{
-          background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)',
+          background: 'var(--bs-w02, rgba(255,255,255,.02))', border: '1px solid var(--bs-w07, rgba(255,255,255,.07))',
           borderRadius: 10, padding: '14px 18px',
         }}>
           {sortedProblems.map((p, i) => {
@@ -498,7 +518,7 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
             return (
               <div key={p.id} style={{
                 padding: '10px 0',
-                borderBottom: i === sortedProblems.length - 1 ? 'none' : '1px solid rgba(255,255,255,.04)',
+                borderBottom: i === sortedProblems.length - 1 ? 'none' : '1px solid var(--bs-w04, rgba(255,255,255,.04))',
               }}>
                 <div style={{
                   display: 'flex', justifyContent: 'space-between',
@@ -507,12 +527,13 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
                   <span style={{ fontSize: 14.5, color: T.text }}>{p.label}</span>
                   <span style={{
                     fontSize: 14, color: T.text, fontFamily: T.mono, fontWeight: 700,
+                    whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 12,   // 長標籤時「1 篇」不被擠成直排
                   }}>{p.count} 篇</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                   <div style={{
                     flex: 1, height: 3,
-                    background: 'rgba(255,255,255,.05)', borderRadius: 2,
+                    background: 'var(--bs-w05, rgba(255,255,255,.05))', borderRadius: 2,
                   }}>
                     <div style={{
                       height: '100%', width: `${pct}%`, background: col,
@@ -546,7 +567,7 @@ function UrlRow({ result, websiteId, userId }) {
   return (
     <div style={{
       padding: '6px 10px',
-      background: isDone && probs.length === 0 ? 'rgba(16,185,129,0.04)' : 'rgba(255,255,255,0.02)',
+      background: isDone && probs.length === 0 ? 'rgba(16,185,129,0.04)' : 'var(--bs-w02, rgba(255,255,255,0.02))',
       borderRadius: 4,
     }}>
       <div style={{
@@ -586,7 +607,7 @@ function UrlRow({ result, websiteId, userId }) {
               <li key={i} style={{
                 paddingBottom: 8,
                 marginBottom: 8,
-                borderBottom: i === probs.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.04)',
+                borderBottom: i === probs.length - 1 ? 'none' : '1px solid var(--bs-w04, rgba(255,255,255,0.04))',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <span>{SEVERITY_ICON[p.severity] || '⚪'}</span>
@@ -627,7 +648,7 @@ function UrlRow({ result, websiteId, userId }) {
                     borderLeft: '2px solid rgba(236,72,153,0.4)',
                     borderRadius: 4,
                   }}>
-                    <strong style={{ color: '#f9a8d4' }}>💡 怎麼修：</strong>{tip}
+                    <strong style={{ color: 'var(--bs-pink, #f9a8d4)' }}>💡 怎麼修：</strong>{tip}
                   </div>
                 )}
                 {/* B5: 我已修好按鈕 — 寫 fix_event 進 DB、給 +5 XP（gamification 累計、可能觸發升等 / 徽章解鎖）*/}
@@ -695,7 +716,7 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
         }}
       >
         <span style={{ flex: 1, textAlign: 'left' }}>
-          <strong style={{ color: '#fca5a5', fontSize: 14 }}>🔴 偵測到主題級重複問題</strong>
+          <strong style={{ color: 'var(--bs-red, #fca5a5)', fontSize: 14 }}>🔴 偵測到主題級重複問題</strong>
           <span style={{ marginLeft: 8, color: T.textMid, fontSize: 14 }}>
             {affectedCount} 個 H1 受影響、來源相同
           </span>
@@ -707,14 +728,14 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
         <div style={{ marginTop: 8, fontSize: 14, color: T.textMid, lineHeight: 1.65 }}>
           {/* 1. 症狀 */}
           <div style={{ marginBottom: 8 }}>
-            <strong style={{ color: '#fca5a5' }}>📝 症狀說明：</strong>
+            <strong style={{ color: 'var(--bs-red, #fca5a5)' }}>📝 症狀說明：</strong>
             <div style={{ marginTop: 2 }}>{guide.symptom_human}</div>
           </div>
 
           {/* 2. 怎麼確認 */}
           {guide.how_to_verify && (
             <div style={{ marginBottom: 8 }}>
-              <strong style={{ color: '#86efac' }}>🔍 怎麼確認真的有這個問題：</strong>
+              <strong style={{ color: 'var(--bs-green, #86efac)' }}>🔍 怎麼確認真的有這個問題：</strong>
               <ol style={{ margin: '4px 0 0 16px', padding: 0 }}>
                 {guide.how_to_verify.map((s, i) => <li key={i} style={{ marginBottom: 2 }}>{s}</li>)}
               </ol>
@@ -724,10 +745,10 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
           {/* 3. 三種修法 */}
           {guide.fix_options && (
             <div style={{ marginBottom: 8 }}>
-              <strong style={{ color: '#fcd34d' }}>🛠️ 三種修法（由簡到難）：</strong>
+              <strong style={{ color: 'var(--bs-amber, #fcd34d)' }}>🛠️ 三種修法（由簡到難）：</strong>
               <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {guide.fix_options.map((opt, i) => (
-                  <div key={i} style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.25)', borderRadius: 4 }}>
+                  <div key={i} style={{ padding: '6px 10px', background: 'var(--bs-inset25, rgba(0,0,0,0.25))', borderRadius: 4 }}>
                     <div style={{ fontWeight: 700, color: T.text, marginBottom: 2 }}>
                       {opt.option}
                       {opt.effort && <span style={{ marginLeft: 8, color: T.textLow, fontSize: 14, fontWeight: 400 }}>({opt.effort})</span>}
@@ -743,7 +764,7 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
           {guide.ticket_for_tech && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <strong style={{ color: '#c4b5fd' }}>💬 給工程師 / 客服的訊息（直接複製貼到 LINE / Email）：</strong>
+                <strong style={{ color: 'var(--bs-violet, #c4b5fd)' }}>💬 給工程師 / 客服的訊息（直接複製貼到 LINE / Email）：</strong>
                 <button
                   onClick={() => {
                     navigator.clipboard?.writeText(guide.ticket_for_tech).catch(() => {})
@@ -753,15 +774,15 @@ function SharedFixGuideBanner({ guide, affectedCount }) {
                   style={{
                     padding: '2px 8px', fontSize: 14, fontWeight: 700,
                     background: ticketCopied ? 'rgba(34,197,94,0.2)' : 'rgba(139,92,246,0.15)',
-                    color: ticketCopied ? '#86efac' : '#c4b5fd',
+                    color: ticketCopied ? 'var(--bs-green, #86efac)' : 'var(--bs-violet, #c4b5fd)',
                     border: `1px solid ${ticketCopied ? 'rgba(34,197,94,0.5)' : 'rgba(139,92,246,0.4)'}`,
                     borderRadius: 4, cursor: 'pointer', fontFamily: T.font,
                   }}
                 >{ticketCopied ? '✅ 已複製' : '📋 複製訊息'}</button>
               </div>
-              <div style={{
+              <div className="bs-dark" style={{
                 padding: '6px 10px',
-                background: 'rgba(0,0,0,0.35)',
+                background: 'var(--bs-code-bg, rgba(0,0,0,0.35))',
                 borderRadius: 4,
                 fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
                 fontSize: 14.5,
@@ -785,18 +806,18 @@ function H1DetailCard({ detail, hideGuide }) {
   const showInlineGuide = !hideGuide && fix_guide
   // 不同建議動作對應不同顏色：保留=綠、改 h2=藍、改 p=粉、刪除=橘
   const actionStyle = {
-    keep:          { label: '✅ 保留',         color: '#86efac', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.35)' },
-    change_to_h2:  { label: '🔵 改成 <h2>',    color: '#93c5fd', bg: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.35)' },
-    change_to_p:   { label: '🔴 改成 <p>',     color: '#fca5a5', bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)' },
-    delete:        { label: '❌ 直接刪整行',    color: '#fdba74', bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)' },
-  }[suggested_action] || { label: suggested_action, color: T.textMid, bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)' }
+    keep:          { label: '✅ 保留',         color: 'var(--bs-green, #86efac)', bg: 'rgba(16,185,129,0.10)', border: 'rgba(16,185,129,0.35)' },
+    change_to_h2:  { label: '🔵 改成 <h2>',    color: 'var(--bs-blue, #93c5fd)', bg: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.35)' },
+    change_to_p:   { label: '🔴 改成 <p>',     color: 'var(--bs-red, #fca5a5)', bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)' },
+    delete:        { label: '❌ 直接刪整行',    color: 'var(--bs-orange, #fdba74)', bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)' },
+  }[suggested_action] || { label: suggested_action, color: T.textMid, bg: 'var(--bs-w04, rgba(255,255,255,0.04))', border: 'var(--bs-w10, rgba(255,255,255,0.1))' }
 
   // kind chip 顏色：empty 橘灰、sentence 粉、short 中性
   const kindChip = {
-    empty:    { text: '空 H1',           bg: 'rgba(249,115,22,0.15)', color: '#fdba74' },
-    sentence: { text: `句子型 ${full_length} 字`, bg: 'rgba(236,72,153,0.15)', color: '#f9a8d4' },
-    short:    { text: `短標題 ${full_length} 字`,  bg: 'rgba(255,255,255,0.06)', color: T.textMid },
-  }[kind] || { text: kind, bg: 'rgba(255,255,255,0.06)', color: T.textMid }
+    empty:    { text: '空 H1',           bg: 'rgba(249,115,22,0.15)', color: 'var(--bs-orange, #fdba74)' },
+    sentence: { text: `句子型 ${full_length} 字`, bg: 'rgba(236,72,153,0.15)', color: 'var(--bs-pink, #f9a8d4)' },
+    short:    { text: `短標題 ${full_length} 字`,  bg: 'var(--bs-w06, rgba(255,255,255,0.06))', color: T.textMid },
+  }[kind] || { text: kind, bg: 'var(--bs-w06, rgba(255,255,255,0.06))', color: T.textMid }
 
   return (
     <div style={{
@@ -818,7 +839,7 @@ function H1DetailCard({ detail, hideGuide }) {
           <span style={{
             fontSize: 14, padding: '1px 6px', borderRadius: 3,
             background: cross_container_duplicate ? 'rgba(239,68,68,0.20)' : 'rgba(251,191,36,0.18)',
-            color: cross_container_duplicate ? '#fca5a5' : '#fcd34d',
+            color: cross_container_duplicate ? 'var(--bs-red, #fca5a5)' : 'var(--bs-amber, #fcd34d)',
             fontWeight: 700,
           }}>{cross_container_duplicate ? '🔴 主題級重複' : '🔁 內容重複'}</span>
         )}
@@ -828,7 +849,7 @@ function H1DetailCard({ detail, hideGuide }) {
       {kind !== 'empty' && (
         <div style={{
           padding: '4px 8px',
-          background: 'rgba(0,0,0,0.25)',
+          background: 'var(--bs-inset25, rgba(0,0,0,0.25))',
           borderRadius: 3,
           fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
           color: T.textMid,
@@ -851,7 +872,7 @@ function H1DetailCard({ detail, hideGuide }) {
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between',
               background: 'transparent', border: 'none', cursor: 'pointer',
-              color: '#fca5a5', fontSize: 14, fontWeight: 700, fontFamily: T.font,
+              color: 'var(--bs-red, #fca5a5)', fontSize: 14, fontWeight: 700, fontFamily: T.font,
             }}
           >
             <span>🔧 如何處理（找什麼、改什麼、怎麼跟工程師講）</span>
@@ -862,14 +883,14 @@ function H1DetailCard({ detail, hideGuide }) {
             <div style={{ marginTop: 8, fontSize: 14, color: T.textMid, lineHeight: 1.65 }}>
               {/* 1. 症狀 */}
               <div style={{ marginBottom: 8 }}>
-                <strong style={{ color: '#fca5a5' }}>📝 症狀說明：</strong>
+                <strong style={{ color: 'var(--bs-red, #fca5a5)' }}>📝 症狀說明：</strong>
                 <div style={{ marginTop: 2 }}>{fix_guide.symptom_human}</div>
               </div>
 
               {/* 2. 怎麼確認 */}
               {fix_guide.how_to_verify && (
                 <div style={{ marginBottom: 8 }}>
-                  <strong style={{ color: '#86efac' }}>🔍 怎麼確認真的有這個問題：</strong>
+                  <strong style={{ color: 'var(--bs-green, #86efac)' }}>🔍 怎麼確認真的有這個問題：</strong>
                   <ol style={{ margin: '4px 0 0 16px', padding: 0 }}>
                     {fix_guide.how_to_verify.map((s, i) => <li key={i} style={{ marginBottom: 2 }}>{s}</li>)}
                   </ol>
@@ -879,10 +900,10 @@ function H1DetailCard({ detail, hideGuide }) {
               {/* 3. 三種修法 */}
               {fix_guide.fix_options && (
                 <div style={{ marginBottom: 8 }}>
-                  <strong style={{ color: '#fcd34d' }}>🛠️ 三種修法（由簡到難）：</strong>
+                  <strong style={{ color: 'var(--bs-amber, #fcd34d)' }}>🛠️ 三種修法（由簡到難）：</strong>
                   <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {fix_guide.fix_options.map((opt, i) => (
-                      <div key={i} style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.25)', borderRadius: 4 }}>
+                      <div key={i} style={{ padding: '6px 10px', background: 'var(--bs-inset25, rgba(0,0,0,0.25))', borderRadius: 4 }}>
                         <div style={{ fontWeight: 700, color: T.text, marginBottom: 2 }}>
                           {opt.option}
                           {opt.effort && <span style={{ marginLeft: 8, color: T.textLow, fontSize: 14, fontWeight: 400 }}>({opt.effort})</span>}
@@ -898,7 +919,7 @@ function H1DetailCard({ detail, hideGuide }) {
               {fix_guide.ticket_for_tech && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <strong style={{ color: '#c4b5fd' }}>💬 給工程師 / 客服的訊息（直接複製貼到 LINE / Email）：</strong>
+                    <strong style={{ color: 'var(--bs-violet, #c4b5fd)' }}>💬 給工程師 / 客服的訊息（直接複製貼到 LINE / Email）：</strong>
                     <button
                       onClick={() => {
                         navigator.clipboard?.writeText(fix_guide.ticket_for_tech).catch(() => {})
@@ -908,15 +929,15 @@ function H1DetailCard({ detail, hideGuide }) {
                       style={{
                         padding: '2px 8px', fontSize: 14, fontWeight: 700,
                         background: ticketCopied ? 'rgba(34,197,94,0.2)' : 'rgba(139,92,246,0.15)',
-                        color: ticketCopied ? '#86efac' : '#c4b5fd',
+                        color: ticketCopied ? 'var(--bs-green, #86efac)' : 'var(--bs-violet, #c4b5fd)',
                         border: `1px solid ${ticketCopied ? 'rgba(34,197,94,0.5)' : 'rgba(139,92,246,0.4)'}`,
                         borderRadius: 4, cursor: 'pointer', fontFamily: T.font,
                       }}
                     >{ticketCopied ? '✅ 已複製' : '📋 複製訊息'}</button>
                   </div>
-                  <div style={{
+                  <div className="bs-dark" style={{
                     padding: '6px 10px',
-                    background: 'rgba(0,0,0,0.35)',
+                    background: 'var(--bs-code-bg, rgba(0,0,0,0.35))',
                     borderRadius: 4,
                     fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
                     fontSize: 14.5,
@@ -934,7 +955,7 @@ function H1DetailCard({ detail, hideGuide }) {
                     🔬 工程師專用：技術細節（父容器 class）
                   </summary>
                   <div style={{ marginTop: 4, fontSize: 14, color: T.textLow, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
-                    parent class: <code style={{ color: '#a7f3d0' }}>{parent_class.length > 100 ? parent_class.slice(0, 100) + '…' : parent_class}</code>
+                    parent class: <code style={{ color: 'var(--bs-green2, #a7f3d0)' }}>{parent_class.length > 100 ? parent_class.slice(0, 100) + '…' : parent_class}</code>
                   </div>
                 </details>
               )}
@@ -953,7 +974,7 @@ function H1DetailCard({ detail, hideGuide }) {
             marginTop: 2, fontSize: 14, color: T.textLow,
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
           }}>
-            <code style={{ color: '#a7f3d0' }}>{parent_class.length > 100 ? parent_class.slice(0, 100) + '…' : parent_class}</code>
+            <code style={{ color: 'var(--bs-green2, #a7f3d0)' }}>{parent_class.length > 100 ? parent_class.slice(0, 100) + '…' : parent_class}</code>
           </div>
         </details>
       )}
@@ -996,7 +1017,7 @@ function ClientReportButton({ website, results, job }) {
           fontSize: 14,
           fontWeight: 700,
           background: 'linear-gradient(135deg, rgba(139,92,246,0.18), rgba(124,58,237,0.10))',
-          color: '#c4b5fd',
+          color: 'var(--bs-violet, #c4b5fd)',
           border: '1px solid rgba(139,92,246,0.4)',
           borderRadius: 8,
           cursor: 'pointer',
@@ -1016,7 +1037,7 @@ function ClientReportButton({ website, results, job }) {
             padding: 24,
           }}
         >
-          <div
+          <div className="bs-dark"
             onClick={e => e.stopPropagation()}
             style={{
               width: '100%', maxWidth: 760,
@@ -1043,12 +1064,12 @@ function ClientReportButton({ website, results, job }) {
               已自動分類「客戶要 WP 後台處理」「需寫內容」「我們已用 SEO 外掛處理」三段、不需技術背景就能看。
             </p>
             {/* Preview */}
-            <div style={{
+            <div className="bs-dark" style={{
               flex: 1,
               overflowY: 'auto',
               padding: '12px 14px',
-              background: 'rgba(0,0,0,0.4)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--bs-inset4, rgba(0,0,0,0.4))',
+              border: '1px solid var(--bs-w08, rgba(255,255,255,0.08))',
               borderRadius: 8,
               fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
               fontSize: 14.5,
@@ -1065,7 +1086,7 @@ function ClientReportButton({ website, results, job }) {
                 style={{
                   padding: '10px 16px',
                   fontSize: 14, fontWeight: 700,
-                  background: 'rgba(255,255,255,0.05)',
+                  background: 'var(--bs-w05, rgba(255,255,255,0.05))',
                   color: T.text,
                   border: `1px solid ${T.cardBorder}`,
                   borderRadius: 8,
@@ -1102,17 +1123,17 @@ function ClientReportButton({ website, results, job }) {
 const FIX_OWNER_META = {
   seo_plugin: {
     label: '🛠️ SEO 外掛可解',
-    bg: 'rgba(16,185,129,0.15)', color: '#86efac', border: 'rgba(16,185,129,0.4)',
+    bg: 'rgba(16,185,129,0.15)', color: 'var(--bs-green, #86efac)', border: 'rgba(16,185,129,0.4)',
     title: '你 / 客戶的 Rank Math 或 Yoast 帳號就能改、不用動 WP 後台',
   },
   wp_admin: {
     label: '🔑 需 WP 後台',
-    bg: 'rgba(251,191,36,0.15)', color: '#fcd34d', border: 'rgba(251,191,36,0.4)',
+    bg: 'rgba(251,191,36,0.15)', color: 'var(--bs-amber, #fcd34d)', border: 'rgba(251,191,36,0.4)',
     title: '需要 WP 編輯器改文章 / 商品 / 頁面內容 — 如果你是 agency 沒 admin 權、得請客戶處理或要授權',
   },
   content_writer: {
     label: '✍️ 需要寫內容',
-    bg: 'rgba(236,72,153,0.15)', color: '#f9a8d4', border: 'rgba(236,72,153,0.4)',
+    bg: 'rgba(236,72,153,0.15)', color: 'var(--bs-pink, #f9a8d4)', border: 'rgba(236,72,153,0.4)',
     title: '不是設定問題、是要實際撰寫文字（字數不夠等）— 通常請客戶或文案人員處理',
   },
 }
@@ -1139,7 +1160,7 @@ function FixOwnerChip({ owner }) {
       </button>
       {/* 點開後的浮動說明小框 — absolutely positioned 避免擠壓行內排版 */}
       {open && (
-        <span
+        <span className="bs-dark"
           onClick={(e) => e.stopPropagation()}
           style={{
             position: 'absolute',
@@ -1241,12 +1262,12 @@ function CommonMisunderstandingsPanel() {
               <summary style={{ cursor: 'pointer', color: T.text, fontWeight: 600, padding: '4px 0' }}>
                 {i + 1}. {c.symptom}
               </summary>
-              <div style={{ marginLeft: 16, padding: '6px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14, whiteSpace: 'pre-line' }}>
+              <div style={{ marginLeft: 16, padding: '6px 10px', background: 'var(--bs-inset2, rgba(0,0,0,0.2))', borderRadius: 4, fontSize: 14, whiteSpace: 'pre-line' }}>
                 <div style={{ marginBottom: 4, color: T.textMid }}>
-                  <strong style={{ color: '#c4b5fd' }}>原因：</strong>{c.cause}
+                  <strong style={{ color: 'var(--bs-violet, #c4b5fd)' }}>原因：</strong>{c.cause}
                 </div>
                 <div style={{ color: T.textMid }}>
-                  <strong style={{ color: '#86efac' }}>怎麼驗證：</strong>{c.verify}
+                  <strong style={{ color: 'var(--bs-green, #86efac)' }}>怎麼驗證：</strong>{c.verify}
                 </div>
               </div>
             </details>
@@ -1280,7 +1301,7 @@ function WpAdminHintBanner({ hint }) {
       >
         <span style={{ fontSize: 14 }}>🗺️</span>
         <span style={{ flex: 1 }}>
-          <strong style={{ color: '#93c5fd' }}>WP 後台位置：</strong>{hint.where}
+          <strong style={{ color: 'var(--bs-blue, #93c5fd)' }}>WP 後台位置：</strong>{hint.where}
           {hint.plugin && <span style={{ color: T.textLow }}> · 需要 {hint.plugin}</span>}
         </span>
         <span style={{ color: T.textLow, fontSize: 14 }}>{open ? '▾ 收起步驟' : '▸ 展開步驟'}</span>
@@ -1301,7 +1322,7 @@ function WpAdminHintBanner({ hint }) {
                 fontSize: 14,
                 fontWeight: 700,
                 background: 'rgba(59,130,246,0.25)',
-                color: '#dbeafe',
+                color: 'var(--bs-blue2, #dbeafe)',
                 border: '1px solid rgba(59,130,246,0.6)',
                 borderRadius: 6,
                 textDecoration: 'none',
@@ -1326,7 +1347,7 @@ function WpAdminHintBanner({ hint }) {
                 fontSize: 14,
                 fontWeight: 700,
                 background: 'rgba(139,92,246,0.15)',
-                color: '#c4b5fd',
+                color: 'var(--bs-violet, #c4b5fd)',
                 border: '1px solid rgba(139,92,246,0.4)',
                 borderRadius: 6,
                 textDecoration: 'none',
@@ -1341,7 +1362,7 @@ function WpAdminHintBanner({ hint }) {
               border: '1px solid rgba(251,191,36,0.25)',
               borderRadius: 4,
               fontSize: 14,
-              color: '#fcd34d',
+              color: 'var(--bs-amber, #fcd34d)',
             }}>💡 {hint.note}</div>
           )}
         </div>
@@ -1366,7 +1387,7 @@ function FullResultsList({ results, websiteId, userId }) {
             padding: '6px 14px',
             fontSize: 14,
             fontWeight: 600,
-            background: 'rgba(255,255,255,0.05)',
+            background: 'var(--bs-w05, rgba(255,255,255,0.05))',
             color: T.textMid,
             border: `1px solid ${T.cardBorder}`,
             borderRadius: 6,
@@ -1386,7 +1407,7 @@ function FullResultsList({ results, websiteId, userId }) {
           </div>
         </GlassCard>
       ) : (
-        <p style={{ fontSize: 14, color: T.textLow, marginBottom: 20, padding: '12px 14px', background: 'rgba(255,255,255,0.02)', border: `1px dashed ${T.cardBorder}`, borderRadius: 8 }}>
+        <p style={{ fontSize: 14, color: T.textLow, marginBottom: 20, padding: '12px 14px', background: 'var(--bs-w02, rgba(255,255,255,0.02))', border: `1px dashed ${T.cardBorder}`, borderRadius: 8 }}>
           💡 先聚焦上面的 Top 20、修完按「重新掃描」會顯示下一輪 Top 20。要看全部 {total} 篇按右上「展開」
         </p>
       )}
@@ -1432,7 +1453,7 @@ function RescanHintBanner({ websiteId, userId, finishedAt, onRescan, starting, i
     }}>
       <span style={{ fontSize: 22 }}>🎉</span>
       <div style={{ flex: 1, minWidth: 240, fontSize: 14, color: T.text, lineHeight: 1.6 }}>
-        你已經修了 <strong style={{ color: '#86efac' }}>{recentFixCount} 個 finding</strong>！
+        你已經修了 <strong style={{ color: 'var(--bs-green, #86efac)' }}>{recentFixCount} 個 finding</strong>！
         <strong style={{ color: T.text }}>重新掃描</strong>確認效果、並看下一輪 Top 20 該修什麼。
       </div>
       <button
@@ -1542,10 +1563,10 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
             background: isFixed
               ? 'rgba(34,197,94,0.18)'
               : isFixing
-                ? 'rgba(255,255,255,0.08)'
+                ? 'var(--bs-w08, rgba(255,255,255,0.08))'
                 : 'linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,191,36,0.08))',
-            color: isFixed ? '#86efac' : isFixing ? T.textMid : '#fcd34d',
-            border: `1px solid ${isFixed ? 'rgba(34,197,94,0.5)' : isFixing ? 'rgba(255,255,255,0.15)' : 'rgba(251,191,36,0.45)'}`,
+            color: isFixed ? 'var(--bs-green, #86efac)' : isFixing ? T.textMid : 'var(--bs-amber, #fcd34d)',
+            border: `1px solid ${isFixed ? 'rgba(34,197,94,0.5)' : isFixing ? 'var(--bs-w15, rgba(255,255,255,0.15))' : 'rgba(251,191,36,0.45)'}`,
             borderRadius: 6,
             cursor: (isFixed || isFixing) ? 'default' : 'pointer',
             fontFamily: T.font,
@@ -1576,7 +1597,7 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
             left: 110, top: 0,
             fontSize: 16,
             fontWeight: 900,
-            color: '#86efac',
+            color: 'var(--bs-green, #86efac)',
             textShadow: '0 0 12px rgba(34,197,94,0.8)',
             pointerEvents: 'none',
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
@@ -1660,7 +1681,7 @@ function SuggestionBlock({ suggestion }) {
         style={{
           padding: '1px 6px', fontSize: 14.5, fontWeight: 600,
           background: copiedFlag ? 'rgba(16,185,129,0.25)' : 'rgba(16,185,129,0.12)',
-          color: copiedFlag ? '#86efac' : '#a7f3d0',
+          color: copiedFlag ? 'var(--bs-green, #86efac)' : 'var(--bs-green2, #a7f3d0)',
           border: `1px solid ${copiedFlag ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.35)'}`,
           borderRadius: 3, cursor: 'pointer', fontFamily: T.font,
           marginLeft: 6, verticalAlign: 'middle',
@@ -1694,7 +1715,7 @@ function SuggestionBlock({ suggestion }) {
             }}>{current}</div>
           </div>
           <div>
-            <span style={{ color: '#86efac', fontSize: 14 }}>
+            <span style={{ color: 'var(--bs-green, #86efac)', fontSize: 14 }}>
               改後 {suggested_len ? `(${suggested_len} 字)` : ''}
               {/* 自動建議仍低於下限時、顯示橘色「仍嫌短」警告 chip — 提醒用戶需手動再延伸 */}
               {still_too_short && (
@@ -1703,7 +1724,7 @@ function SuggestionBlock({ suggestion }) {
                   padding: '1px 6px',
                   fontSize: 14,
                   background: 'rgba(251,191,36,0.18)',
-                  color: '#fcd34d',
+                  color: 'var(--bs-amber, #fcd34d)',
                   border: '1px solid rgba(251,191,36,0.4)',
                   borderRadius: 999,
                   fontWeight: 700,
@@ -1727,7 +1748,7 @@ function SuggestionBlock({ suggestion }) {
       {/* 純建議（無 current 對照、例如 missing_meta_desc / missing_canonical） */}
       {!current && suggested && (
         <div style={{ marginBottom: 6 }}>
-          <span style={{ color: '#86efac', fontSize: 14 }}>
+          <span style={{ color: 'var(--bs-green, #86efac)', fontSize: 14 }}>
             建議內容 {suggested_len ? `(${suggested_len} 字)` : ''}
             <MiniCopyBtn value={suggested} copiedFlag={copiedKey === 'text'} />
           </span>
@@ -1752,7 +1773,7 @@ function SuggestionBlock({ suggestion }) {
               style={{
                 padding: '2px 8px', fontSize: 14, fontWeight: 600,
                 background: copiedKey === 'code' ? 'rgba(16,185,129,0.25)' : 'rgba(20,184,166,0.18)',
-                color: copiedKey === 'code' ? '#86efac' : '#5eead4',
+                color: copiedKey === 'code' ? 'var(--bs-green, #86efac)' : 'var(--bs-teal, #5eead4)',
                 border: `1px solid ${copiedKey === 'code' ? 'rgba(16,185,129,0.5)' : 'rgba(20,184,166,0.5)'}`,
                 borderRadius: 3,
                 cursor: 'pointer',
@@ -1762,10 +1783,10 @@ function SuggestionBlock({ suggestion }) {
               {copiedKey === 'code' ? '✅ 已複製' : '📋 複製整段 HTML'}
             </button>
           </div>
-          <div style={{
+          <div className="bs-dark" style={{
             padding: '6px 10px', borderRadius: 3,
-            background: 'rgba(0,0,0,0.35)',
-            color: '#a7f3d0',
+            background: 'var(--bs-code-bg, rgba(0,0,0,0.35))',
+            color: 'var(--bs-green2, #a7f3d0)',
             fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
             fontSize: 14.5,
             // 多行模板（OG / Schema）保留換行 + 縮排；單行短 tag 也能正常顯示
@@ -1783,7 +1804,7 @@ function SuggestionBlock({ suggestion }) {
           padding: '4px 8px',
           background: 'rgba(251,191,36,0.10)',
           borderRadius: 3,
-          color: '#fcd34d',
+          color: 'var(--bs-amber, #fcd34d)',
           fontSize: 14,
           lineHeight: 1.55,
         }}>
@@ -1797,6 +1818,11 @@ function SuggestionBlock({ suggestion }) {
 }
 
 // 共用暗色背景（與 ContentAudit / SEOAudit / HomeDark 同款青綠雙漸層 + 雜訊）
+// app-shell 版外框：只套 .as-bulk（配色變數在 appshell.css），背景／頁首／側欄由 AppShell 提供
+function ShellWrap({ children }) {
+  return <div className="as-bulk">{children}</div>
+}
+
 function PageWrap({ children }) {
   return (
     <div className="min-h-screen relative overflow-hidden" style={{ background: '#000' }}>
@@ -1837,12 +1863,12 @@ const primaryButtonStyle = {
 }
 const secondaryButtonStyle = {
   padding: '10px 20px', fontSize: 14, fontWeight: 600,
-  background: 'rgba(255,255,255,0.05)', color: T.text,
+  background: 'var(--bs-w05, rgba(255,255,255,0.05))', color: T.text,
   border: `1px solid ${T.cardBorder}`, borderRadius: 8, cursor: 'pointer', fontFamily: T.font,
 }
 const cancelButtonStyle = {
   padding: '6px 14px', fontSize: 14,
-  background: 'rgba(239,68,68,0.1)', color: '#fca5a5',
+  background: 'rgba(239,68,68,0.1)', color: 'var(--bs-red, #fca5a5)',
   border: `1px solid ${T.fail}55`, borderRadius: 6, cursor: 'pointer', fontFamily: T.font,
 }
 const proButtonStyle = {

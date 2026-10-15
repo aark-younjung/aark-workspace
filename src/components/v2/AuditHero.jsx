@@ -101,9 +101,11 @@ export function ScoreHero({
   const deltaColor = trendDelta > 0 ? T.pass : trendDelta < 0 ? T.fail : T.textMid
   const deltaSign = trendDelta > 0 ? '+' : ''
 
+  // 底色／chip／空狀態／圓環底軌走 CSS 變數，fallback 即原本深色值（深色體檢頁不變）；
+  // 亮色 app-shell 的批次掃描在 .as-bulk 重定義（2026-10-15，否則深灰半透明底在亮色頁變一塊灰、字看不清）
   return (
     <div style={{
-      background: 'rgba(1,8,14,.6)', border: `1px solid ${T.cardBorder}`,
+      background: 'var(--t-hero-bg, rgba(1,8,14,.6))', border: `1px solid ${T.cardBorder}`,
       borderRadius: T.rL, padding: 24,
       display: 'flex', flexDirection: 'column', gap: 18,
     }}>
@@ -118,7 +120,7 @@ export function ScoreHero({
           {subChip && (
             <span style={{
               fontSize: 14, fontWeight: 600, color: T.textMid, letterSpacing: '.04em',
-              background: 'rgba(255,255,255,.04)', border: `1px solid ${T.cardBorder}`,
+              background: 'var(--t-hero-chip, rgba(255,255,255,.04))', border: `1px solid ${T.cardBorder}`,
               padding: '3px 8px', borderRadius: 5,
             }}>{subChip}</span>
           )}
@@ -161,7 +163,7 @@ export function ScoreHero({
           </div>
         </div>
         <div style={{
-          background: failedCount > 0 ? T.fail + '14' : 'rgba(255,255,255,.03)',
+          background: failedCount > 0 ? T.fail + '14' : 'var(--t-hero-empty, rgba(255,255,255,.03))',
           border: `1px solid ${failedCount > 0 ? T.fail + '33' : T.cardBorder}`,
           borderRadius: 12, padding: '12px 14px',
         }}>
@@ -195,7 +197,8 @@ function ScoreCircle({ score, color }) {
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
         <circle cx={size / 2} cy={size / 2} r={radius}
-          fill="none" stroke="rgba(255,255,255,.08)" strokeWidth={stroke} />
+          fill="none" strokeWidth={stroke}
+          style={{ stroke: 'var(--t-hero-ring, rgba(255,255,255,.08))' }} />
         <circle cx={size / 2} cy={size / 2} r={radius}
           fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={circumference}

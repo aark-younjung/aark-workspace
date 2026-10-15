@@ -145,7 +145,8 @@ function AppInner() {
         {/* 2026-09-08：綁定網站的模式已搬進 app-shell（亮色）。這裡轉址、不破壞既有深連結，
             手法同 2026-08-14 四大體檢頁硬切。/content-audit（不帶 id）維持公開深色版不動。 */}
         <Route path="/content-audit/:id" element={<LegacyRedirect pattern="/app/:id/content" />} />
-        <Route path="/bulk-scan/:id" element={<BulkScan />} />
+        {/* 2026-10-15：批次掃描搬進 app-shell（亮色），舊網址轉址、不破壞既有深連結（手法同 /content-audit/:id） */}
+        <Route path="/bulk-scan/:id" element={<LegacyRedirect pattern="/app/:id/bulk" />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/websites" element={<AdminWebsites />} />
@@ -179,6 +180,7 @@ function AppInner() {
           <Route path="health/:healthTab" element={<AppHealth />} />
           <Route path="gap" element={<AppGap />} />
           <Route path="content" element={<AppContent />} />
+          <Route path="bulk" element={<BulkScan inShell />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

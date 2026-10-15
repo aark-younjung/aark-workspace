@@ -144,7 +144,7 @@ export default function AppGap() {
           <span>15 項內容檢測（結構／字數／AEO 格式／可讀性），看首頁的內容還要補什麼。</span>
           <span className="go">開啟 →</span>
         </Link>
-        <Link className="as-card as-gap-tool" to={`/bulk-scan/${websiteId}`}>
+        <Link className="as-card as-gap-tool" to={`/app/${websiteId}/bulk`}>
           <b>📚 文章分析（批次）</b>
           <span>從 sitemap 自動找出文章、批次體檢，一次看全站內容的健康度。</span>
           <span className="go">開啟 →</span>

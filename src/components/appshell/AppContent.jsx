@@ -161,7 +161,7 @@ export default function AppContent() {
         <span className="as-health-tab on" aria-current="page">
           首頁分析{result?.score != null && <span className="b num">{result.score}</span>}
         </span>
-        <Link className="as-health-tab" to={`/bulk-scan/${websiteId}`}>批次掃描</Link>
+        <Link className="as-health-tab" to={`/app/${websiteId}/bulk`}>批次掃描</Link>
       </nav>
 
       {/* 歷次分數：原本深色版靠 ScoreHero 的迷你趨勢圖呈現，亮色殼沒有那個元件——

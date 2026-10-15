@@ -6,6 +6,24 @@
 
 ---
 
+### 2026-10-15f（批次文章掃描搬進 app-shell 亮色版）
+
+**目標**：首頁內容分析（10-15e）上線後，頁內「批次掃描」分頁仍連 `/bulk-scan/:id` 深色舊頁、會跳出新版介面。
+
+**做法：不重寫，同一支元件兩用**。[BulkScan.jsx](src/pages/BulkScan.jsx)（1,900 行）的顏色 119 處走 `T.*`（本來就是 CSS 變數），寫死的只有幾十處，所以照 10-15e 的手法：
+- `BulkScan({ inShell })`：嵌入時用 `ShellWrap`（只套 `.as-bulk`）取代 `PageWrap`（深色背景／SiteHeader／Footer），頁首換成與 AppContent 同組的 `as-health-tabs`（首頁分析／批次掃描互切）。`websiteId` 同時吃 `:websiteId`（新路由）與 `:id`。
+- [App.jsx](src/App.jsx)：新增 `/app/:websiteId/bulk`；`/bulk-scan/:id` 改 LegacyRedirect。AppContent／AppGap 的連結直指新路由（DashboardV2、ArticleAnalysisTabs 等其餘舊連結靠轉址）。
+- **寫死顏色改 CSS 變數、fallback = 原值**（深色頁零變化）：深色頁專用淺色字 56 處（`#86efac` 等 12 色 → `--bs-green` 等）、白色半透明 18 處（→ `--bs-wNN`）、黑色半透明小底框 7 處（→ `--bs-insetN`）。全部逐一確認是文字色／表面色才換。
+- **深色孤島**：程式碼框 ×3、「給客戶報告」彈窗＋其中預覽框、負責人說明浮框，標 `className="bs-dark"`。[appshell.css](src/components/appshell/appshell.css) 在 `.as-bulk .bs-dark` 把所有變數設成 `initial` → `var()` 回到 fallback 深色值，避免「T.text 變深字＋深色底」。程式碼框原本半透明黑，疊在亮底上變灰、淺綠字對比不足 → `--bs-code-bg` 不透明深底（刻意不放進重設清單，因為底色設在孤島元素自己身上）。
+- [AuditHero.jsx](src/components/v2/AuditHero.jsx) `ScoreHero`（5 個深色體檢頁共用）：卡底 `rgba(1,8,14,.6)` 在亮底變一塊灰、字看不清 → 底色／chip／空狀態／圓環底軌改 `--t-hero-*` 變數（fallback 原值），`.as-bulk` 定義亮色。圓環底軌原是 SVG `stroke` 屬性（屬性不吃 `var()`），改寫在 `style`。
+- 問題分佈拆解的「1 篇」長標籤時被擠成直排 → `whiteSpace:nowrap`。
+
+**驗證**（Vite dev server，走真的 App 路由開 `/app/w1/bulk`：假登入 session、攔截 Supabase REST 與 `/api/bulk-scan`，結果用真的 `analyzeArticleHtml` 跑 a-ark 6 個真實頁面＋1 個合成問題頁產生）：完成狀態（分數卡、問題拆解、最需要修清單、展開後的建議框／程式碼框／修法提示）、說明浮框、給客戶報告彈窗、未掃描（開始按鈕）、掃描中（進度條）逐一截圖，皆正常、無 console 錯誤。新變數只定義在 appshell.css（確認無與 themes.js 衝突）。`npm test` 120／120、`vite build` 通過；eslint 與改前同為 8 個既有問題。
+
+**留著沒刪**：`PageWrap` 深色路徑現在沒有路由會走到（`/bulk-scan/:id` 已轉址），保留作回退；確認穩定後可刪。
+
+---
+
 ### 2026-10-15e（首頁內容分析上線新版亮色頁：AppContent 搬遷收尾）
 
 **起因**：用戶回報「點內容品質還是舊版面」。總覽的內容品質卡在線上連 `/content-audit/:id`（深色舊頁）。亮色版 [AppContent.jsx](src/components/appshell/AppContent.jsx) 2026-09-08 就寫好，但整批一直沒 commit（只有 AppGap 的連結在 09-24 先上線，造成 10-15b 修的那個 404）。
