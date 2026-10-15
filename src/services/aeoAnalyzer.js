@@ -6,6 +6,7 @@
 import { fetchPageContent, parseHTML } from './seoAnalyzer'
 import { metaLengthVerdict } from '../lib/metaLength' // 分語言（中/英）Meta 長度門檻，與 SEO / 顯示層同一支
 import { isHomepage } from '../lib/pageAudit'         // 頁型判斷：首頁不因缺麵包屑/FAQ 被扣分
+import { collectJsonLdNodes, typesOf } from './eeatAnalyzer' // JSON-LD 節點展開（@graph／陣列 @type）共用一支
 
 /**
  * 1. JSON-LD 結構化資料檢測 (schema.org，特別是 FAQ/HowTo)
@@ -47,20 +48,9 @@ function checkJsonLd(doc) {
  */
 function checkFaqSchema(doc) {
   // === (a) 結構化 FAQ schema ===
-  const scripts = doc.querySelectorAll('script[type="application/ld+json"]')
-  let hasFaqSchema = false
-
-  scripts.forEach(script => {
-    try {
-      const data = JSON.parse(script.textContent)
-      const types = Array.isArray(data['@graph'])
-        ? data['@graph'].map(i => i['@type'])
-        : [data['@type']]
-      if (types.some(t => t === 'FAQPage' || t === 'QAPage')) {
-        hasFaqSchema = true
-      }
-    } catch (e) {}
-  })
+  // 用共用的節點展開（2026-10-15）：舊版 @type 是陣列（如 ["WebPage","FAQPage"]）或最外層是 JSON 陣列時會漏判
+  const hasFaqSchema = collectJsonLdNodes(doc)
+    .some(n => typesOf(n).some(t => t === 'FAQPage' || t === 'QAPage'))
 
   // === (b) 視覺 FAQ 偵測（heuristic）===
   // Signal 1：找標題類似「常見問題」「FAQ」「Q&A」「Frequently Asked Questions」
@@ -119,20 +109,8 @@ function checkCanonical(doc) {
  * 4. 麵包屑導航檢測 (BreadcrumbList schema)
  */
 function checkBreadcrumbs(doc) {
-  const scripts = doc.querySelectorAll('script[type="application/ld+json"]')
-  let hasSchema = false
-  scripts.forEach(script => {
-    try {
-      const data = JSON.parse(script.textContent)
-      if (
-        data['@type'] === 'BreadcrumbList' ||
-        (Array.isArray(data['@graph']) &&
-          data['@graph'].some(i => i['@type'] === 'BreadcrumbList'))
-      ) {
-        hasSchema = true
-      }
-    } catch {}
-  })
+  // 同 checkFaqSchema：改用共用節點展開，@type 陣列／最外層 JSON 陣列都判得到（2026-10-15）
+  const hasSchema = collectJsonLdNodes(doc).some(n => typesOf(n).includes('BreadcrumbList'))
 
   const navElements = doc.querySelectorAll('nav')
   let hasNavBreadcrumb = false

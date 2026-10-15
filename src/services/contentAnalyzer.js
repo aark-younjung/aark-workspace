@@ -14,6 +14,7 @@
  */
 
 import { metaLengthVerdict } from '../lib/metaLength'
+import { collectJsonLdNodes, typesOf } from './eeatAnalyzer'
 
 const API_BASE = '/api/fetch-url'
 
@@ -98,23 +99,15 @@ function checkMetaTags(doc) {
 
 // ── 4. AEO 友善度 ─────────────────────────────────────────────
 function checkAEO(doc) {
-  // FAQ Schema
-  const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')]
-  let hasFaqSchema = false
-  let hasArticleSchema = false
-  let hasAuthorInSchema = false
-  scripts.forEach(s => {
-    try {
-      const json = JSON.parse(s.textContent)
-      const types = Array.isArray(json) ? json.map(j => j['@type']) : [json['@type']]
-      if (types.some(t => t === 'FAQPage')) hasFaqSchema = true
-      if (types.some(t => ['Article', 'BlogPosting', 'NewsArticle'].includes(t))) {
-        hasArticleSchema = true
-        const item = Array.isArray(json) ? json.find(j => ['Article','BlogPosting','NewsArticle'].includes(j['@type'])) : json
-        if (item?.author) hasAuthorInSchema = true
-      }
-    } catch {}
-  })
+  // FAQ / Article Schema
+  // 要展開 @graph：Rank Math / Yoast 把所有節點包在一個 { "@graph": [...] } 裡，最外層沒有 @type。
+  // 舊版只看最外層 → 所有 WordPress 站的 Article 與 FAQ 都被誤判「未找到」（2026-10-15 修）
+  const nodes = collectJsonLdNodes(doc)
+  const ARTICLE_TYPES = ['Article', 'BlogPosting', 'NewsArticle']
+  const articles = nodes.filter(n => typesOf(n).some(t => ARTICLE_TYPES.includes(t)))
+  const hasFaqSchema = nodes.some(n => typesOf(n).includes('FAQPage'))
+  const hasArticleSchema = articles.length > 0
+  const hasAuthorInSchema = articles.some(n => !!n.author)
 
   // 直接回答段落：首段是否在 100 字內直接給出答案
   const firstP = doc.querySelector('article p, main p, .content p, #content p, p')

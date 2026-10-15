@@ -22,7 +22,8 @@ const SOCIAL_DOMAINS = [
  * 只拿到最外層那顆（@type=undefined），@graph 內的節點全看不到 → Organization/作者/日期
  * 在大量 WP 網站被誤判成「沒有」、E-E-A-T 分數被系統性壓低。這裡遞迴展開 @graph 修掉它。
  */
-function collectJsonLdNodes(doc) {
+// export 給 contentAnalyzer / aeoAnalyzer 共用（2026-10-15）——別複製一份，@graph 展開規則只維護這裡
+export function collectJsonLdNodes(doc) {
   const nodes = []
   const push = (o) => {
     if (!o || typeof o !== 'object') return
@@ -37,7 +38,7 @@ function collectJsonLdNodes(doc) {
 }
 
 // 節點的 @type 可能是字串或陣列（如 ["LegalService","Organization"]）→ 一律轉成陣列比對
-const typesOf = (node) => [].concat(node?.['@type'] || [])
+export const typesOf = (node) => [].concat(node?.['@type'] || [])
 
 /**
  * 1. 作者資訊 - 頁面是否有可識別的作者（2026-08-13 校正：分頁型）

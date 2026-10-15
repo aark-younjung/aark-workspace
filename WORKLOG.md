@@ -6,6 +6,25 @@
 
 ---
 
+### 2026-10-15c（內容品質／AEO 的 Schema 誤判：改用共用的 @graph 展開）
+
+**症狀**：單篇分析 `a-ark.com.tw/tainan-website-quote-3-year-cost/` 顯示「未找到 Article／BlogPosting Schema」「未找到 FAQPage Schema」，但原始碼兩個都有（BlogPosting 含 author、FAQPage 5 題），全包在 Rank Math 的同一個 `{ "@graph": [...] }` 裡。
+
+**根因**：[contentAnalyzer.js](src/services/contentAnalyzer.js) `checkAEO()` 只讀 JSON-LD 最外層 `@type`，`@graph` 包起來的最外層沒有 `@type` → Rank Math／Yoast 這類 WordPress 外掛輸出的站，**Article 與 FAQ 兩項系統性被扣分**。[eeatAnalyzer.js](src/services/eeatAnalyzer.js) 2026-07-27 就為同一問題寫了 `collectJsonLdNodes()`（遞迴展開 @graph、最外層陣列）與 `typesOf()`（@type 字串／陣列一律轉陣列），只是沒共用。
+
+**改了什麼**
+1. eeatAnalyzer 把 `collectJsonLdNodes`、`typesOf` 改成 export（不複製）。
+2. contentAnalyzer `checkAEO()` 改用它們：Article／BlogPosting／NewsArticle 任一節點 → hasArticleSchema；其中任一有 `author` → hasAuthorInSchema；任一節點含 FAQPage → hasFaqSchema。回傳欄位不變，contentChecks.js 不用動。
+3. [aeoAnalyzer.js](src/services/aeoAnalyzer.js) **確認有問題、一起改**：`checkFaqSchema` 與 `checkBreadcrumbs` 用 `t === 'FAQPage'`／`=== 'BreadcrumbList'` 比對，`@type` 是陣列就漏判；最外層是 JSON 陣列也判不到。**實證**：那篇報價文章的 FAQ 節點實際是 `"@type": ["WebPage","FAQPage"]`——舊版 AEO 的 FAQ 項在這頁一定判失敗，不是理論風險。兩處改用共用函式。`checkJsonLd` 沒有做類型比對，依任務範圍不動（但它有「最外層是 JSON 陣列就判成沒 schema」的同類問題，待決定）。
+
+**驗證**（Vite dev server 載入真模組、在瀏覽器跑，`/api/fetch-url` 以真實 HTML 攔截回應）
+- 報價文章頁：Article ✓（含作者）、FAQ ✓，文章分析分數 95；AEO FAQ ✓。麵包屑 ✗ 正確（這頁 JSON-LD 本來就沒有 BreadcrumbList）。
+- 反例 `/aboutus/`（只有 WebPage）：Article ✗、FAQ ✗，維持「未找到」；AEO 麵包屑 ✓（有 BreadcrumbList）。
+- 合成案例：`@type` 陣列（`["WebPage","FAQPage"]`、`["BreadcrumbList"]`）、最外層 JSON 陣列（BlogPosting + author、FAQPage）都判得到；完全沒 schema 的頁面全部 ✗。
+- `npm test` 120／120、`vite build` 通過；三支檔案 eslint 錯誤 10 → 6（被換掉的舊碼帶走 4 個，剩下皆既有）。
+
+---
+
 ### 2026-10-15b（綁定網站的「文章分析」改名「首頁內容分析」＋修內容機會頁 404）
 
 **改名理由**：綁定網站的模式分析的是 `websites.url`（登記網址，通常是首頁），不能挑文章。叫「文章分析」讓人以為能選一篇，而「作者／發布日期／Article schema」這幾項在首頁本來就難拿分，分數看起來偏低又說不出為什麼。公開版 `/content-audit`（可貼任意網址）與批次掃描**維持「文章分析」**——那兩個真的能分析文章。
