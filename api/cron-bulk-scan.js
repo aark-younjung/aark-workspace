@@ -264,9 +264,13 @@ async function scanSingleUrl({ url }) {
 }
 
 // 偵測頁面類型 — 用 schema + URL 兩種訊號交叉判斷
-// 'product' / 'article' / 'service' / 'local-business' / 'homepage' / 'unknown'
+// 'product' / 'article' / 'service' / 'software' / 'local-business' / 'homepage' / 'legal' / 'functional' / 'unknown'
+// （'software'：SoftwareApplication／WebApplication／MobileApplication，不報缺 Product、也不報缺 Article）
 // 為了避免「商品頁被報缺 Article schema」這種誤判
-function detectPageType(schemaTypes, url) {
+// schemaTypes 由 extractSchemaTypes 產生：已展開 @graph 與陣列型 @type（如 ["Corporation","Organization"]）
+// html 用來讀 WooCommerce 的 body class（single-product）
+const SOFTWARE_TYPES = ['SoftwareApplication', 'WebApplication', 'MobileApplication']
+function detectPageType(schemaTypes, url, html) {
   const urlLower = (url || '').toLowerCase()
 
   // 法律/功能頁面 — 不適用 SEO 標題優化規則（短標題本來就 OK）
@@ -276,19 +280,30 @@ function detectPageType(schemaTypes, url) {
   if (/\/(隱私|服務條款|退款|免責)/i.test(urlLower)) return 'legal'
   if (/\/(cart|checkout|my-account|account|wishlist|lost-password)\/?/i.test(urlLower)) return 'functional'
 
-  // URL pattern matching（最強訊號）
-  if (/\/(product|products|shop|store|item|goods)\//i.test(urlLower)) return 'product'
-  if (/\/(blog|article|news|post|posts)\//i.test(urlLower)) return 'article'
-  // 首頁判斷：URL 路徑空或只有 /
+  // 首頁判斷：URL 路徑空或只有 /（放在 schema 前：首頁常掛 Service／WebApplication，仍應標成首頁）
   try {
     const u = new URL(url)
     if (u.pathname === '/' || u.pathname === '') return 'homepage'
   } catch { /* invalid url */ }
 
+  // 頁面自己宣告的內容類型優先於網址（2026-10-15）
+  // 舊版網址規則排最前面，/products/ 一律當商品 → 一般公司站的「產品／服務介紹」頁被報「缺 Product schema」、
+  // 還建議貼 Product + Offer（price 0、InStock）。實例：a-ark /products/ai-radar/（已有 WebApplication）、
+  // /products/line-chatbot/ 等（已有 Service），站上根本沒裝 WooCommerce。
+  if (schemaTypes.some(t => SOFTWARE_TYPES.includes(t))) return 'software'
+  if (schemaTypes.includes('Service')) return 'service'
+
+  // WooCommerce 單一商品頁：body class 是 WP 自己標的，最準
+  if (detectWpEntity(html)?.kind === 'product') return 'product'
+
+  // URL pattern：只認單數 /product/、/shop/ 底下的個別頁（WooCommerce 預設結構）。
+  // 複數 /products/ 在一般公司站多半是產品／服務介紹，不直接判成商品；真的商品頁會由上面 body class 或下面 Product schema 判到。
+  if (/\/(product|shop)\/[^/]+\/?$/i.test(urlLower)) return 'product'
+  if (/\/(blog|article|news|post|posts)\//i.test(urlLower)) return 'article'
+
   // Schema-based fallback（URL 沒線索時）
   if (schemaTypes.includes('Product') || schemaTypes.includes('ProductGroup')) return 'product'
   if (schemaTypes.includes('Article') || schemaTypes.includes('BlogPosting') || schemaTypes.includes('NewsArticle')) return 'article'
-  if (schemaTypes.includes('Service')) return 'service'
   // LocalBusiness 在「沒其他內容類 schema」時才當主要類型
   // （很多店家在所有頁面都掛 LocalBusiness、不能當判斷依據）
   const hasContentSchema = schemaTypes.some(t => ['Product', 'Article', 'BlogPosting', 'NewsArticle', 'Service', 'Event', 'Course', 'JobPosting', 'Recipe'].includes(t))
@@ -688,7 +703,7 @@ function analyzeArticleHtml(html, url) {
   const schemaTypes = extractSchemaTypes(html)
   const hasArticleSchema = schemaTypes.includes('Article') || schemaTypes.includes('NewsArticle') || schemaTypes.includes('BlogPosting')
   const hasProductSchema = schemaTypes.includes('Product') || schemaTypes.includes('ProductGroup')
-  const pageType = detectPageType(schemaTypes, url)
+  const pageType = detectPageType(schemaTypes, url, html)
 
   // Stage 3: 抓發佈日（給 Article schema 用）
   const datePublished = extractDatePublished(html)
@@ -783,7 +798,7 @@ function analyzeArticleHtml(html, url) {
     schema_types: schemaTypes,
     has_article_schema: hasArticleSchema,
     has_product_schema: hasProductSchema,
-    page_type: pageType,    // article / product / service / local-business / homepage / legal / functional / unknown
+    page_type: pageType,    // article / product / service / software / local-business / homepage / legal / functional / unknown
     word_count: wordCount,
     has_canonical: hasCanonical,
     // 給用戶「這個 URL 在 WP 後台哪裡編輯」的具體指引（如 /shop/ vs /product/ vs /locations.kml 不同）
@@ -992,7 +1007,8 @@ function detectWpAdminHint(url, pageType, html) {
   // 2026-10-15：拿掉「有 Product schema 就當 WooCommerce 商品」——SaaS／服務頁也常標 Product schema
   // （a-ark /products/ai-radar/ 是一般頁面、站上沒裝 WooCommerce），會把人指去不存在的商品後台。
   // WP 站已由上面 body class 判斷，這裡只剩非 WP 站的網址備案。
-  if (pathname.startsWith('/product/')) {
+  // 頁面已宣告 Service／SoftwareApplication 類 → 是服務／工具介紹頁，走下面一般頁面指引，不指去商品後台
+  if (pathname.startsWith('/product/') && pageType !== 'software' && pageType !== 'service') {
     const slug = pathname.replace(/\/$/, '').split('/').filter(Boolean).pop() || ''
     const decodedSlug = (() => { try { return decodeURIComponent(slug) } catch { return slug } })()
     // WP 後台商品搜尋 URL（2026-06-05 加）— 用戶按下去直達商品列表搜尋結果

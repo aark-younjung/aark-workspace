@@ -6,6 +6,23 @@
 
 ---
 
+### 2026-10-15i（批次掃描不再把網址有 /products/ 一律當商品頁）
+
+**症狀**：`/products/ai-radar/`（線上工具介紹頁，已有 WebApplication schema）被報「商品頁缺 Product schema」，還建議貼 Product + Offer（price 0、InStock）；同層 `/products/line-chatbot/`、`/line-booking/`、`/meal-system/`（客製系統服務頁，已有 Service schema）同樣誤判。站上沒裝 WooCommerce。
+
+**根因**：[cron-bulk-scan.js](api/cron-bulk-scan.js) `detectPageType()` 的網址規則 `/(product|products|shop|store|item|goods)/` 排在 schema 判斷之前；`/products/` 在一般公司站多半是產品／服務介紹，不是電商商品。
+
+**改了什麼**
+1. 頁面自己宣告的內容類型優先於網址：SoftwareApplication／WebApplication／MobileApplication → 新類型 **'software'**；Service → 'service'。兩者不報缺 Product、不報缺 Article、不套文章字數門檻。
+2. 網址規則收緊：只有 WooCommerce body class `single-product`（沿用 10-15g 的 `detectWpEntity`），或單數 `/product/`、`/shop/` 底下的個別頁才算 'product'。複數 `/products/`、`/store/`、`/item/`、`/goods/` 不再直接判商品；真的商品頁會由 body class 或 Product schema 判到。
+3. `@type` 陣列：`extractSchemaTypes`／`collectTypes` 原本就展開陣列與 `@graph`，不需改；以測試案例確認。
+4. `detectWpAdminHint`：WP 站已由 body class 判斷（四頁皆為 page）；非 WP 站的 `/product/` 網址備案加上「pageType 不是 software／service」才指去商品後台。
+5. 首頁判斷移到 schema 之前（首頁常掛 Service／WebApplication，仍標首頁）；原 schema fallback 裡的 Service 判斷已提前、刪除重複行。
+
+**驗證**：a-ark 四頁真實抓取——ai-radar → software、其餘三頁 → service，皆無缺 Product／缺 Article，後台位置為 WordPress 頁面。合成：WooCommerce 單數 `/product/` 無 Product schema → 仍報 `no_product_schema`；非 WP `/product/` 無 schema → 仍報；`/products/` 無內容類 schema → unknown 不報；`/products/` 有 Product schema → product；`@graph` 內 `["Service","Thing"]` → service；`["MobileApplication"]` → software；首頁掛 Service → homepage。`npm test` 120／120、`vite build` 通過；eslint 同為 4 個既有問題。
+
+---
+
 ### 2026-10-15h（過長標題／描述的建議標成「自動截短版」，截掉太多就提醒自己改寫）
 
 **起因**：`/products/ai-radar/` 116 字描述，系統建議在句號切成 59 字——長度合格，但後半段賣點（分項分數、最該修三件事、免註冊）全被刪掉，畫面卻標「改後」，看起來像推薦的最終版，客戶很可能直接貼。截短只會刪、不會濃縮。
