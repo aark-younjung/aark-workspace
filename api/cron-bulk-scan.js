@@ -557,6 +557,7 @@ function analyzeArticleHtml(html, url) {
         kind: 'text',
         current: metaTitle, current_len: titleV.chars,
         suggested: truncated, suggested_len: [...truncated].length,
+        ...truncationInfo(metaTitle, truncated, titleV.max),
         code_snippet: `<title>${truncated}</title>`,
         note: `Google 搜尋結果顯示寬度有限，超過約 ${titleV.max} ${titleV.isCJK ? '個中文字' : '字元'}會被「...」截掉。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`,
       },
@@ -629,6 +630,7 @@ function analyzeArticleHtml(html, url) {
         kind: 'text',
         current: metaDesc, current_len: descV.chars,
         suggested: truncated, suggested_len: [...truncated].length,
+        ...truncationInfo(metaDesc, truncated, descV.max),
         code_snippet: metaDescCode(truncated),
         note: `Google 搜尋結果的描述約顯示 ${descV.max} ${descV.isCJK ? '個中文字' : '字元'}、超過會被截掉。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）`,
       },
@@ -1197,6 +1199,20 @@ function extractBodyExcerpt(html, maxLen = 155) {
 }
 
 // 智能截斷：優先在句尾（。！？.!?）切，其次空白，最後硬切 + 加 …
+// 自動截短的說明資訊（2026-10-15）：截短只會刪、不會濃縮。實例：116 字描述在句號切成 59 字，
+// 長度合格但後半段賣點（分項分數、最該修三件事、免註冊）全被刪掉，畫面卻標「改後」像是推薦版。
+// 回傳被截掉的文字與比例，前端據此標「自動截短版」、截掉太多時提醒自己改寫。
+function truncationInfo(original, truncated, maxLen) {
+  const kept = truncated.replace(/…$/, '')
+  const dropped = original.startsWith(kept) ? original.slice(kept.length).trim() : ''
+  return {
+    auto_truncated: true,
+    max_len: maxLen,
+    dropped_text: dropped || null,
+    dropped_ratio: dropped ? Math.round(([...dropped].length / [...original].length) * 100) / 100 : 0,
+  }
+}
+
 // 保證回傳長度 ≤ maxLen（含「…」）——舊版 window 多取 10 字、尾巴再加「…」，
 // 建議的截短版本本身就會超過上限、又被判成「過長」（2026-10-15 修）
 function smartTruncate(text, maxLen) {

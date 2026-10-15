@@ -126,7 +126,10 @@ export function buildClientReport({ websiteUrl, websiteName, results, agencyName
       for (const f of findings) {
         lines.push(`- ${f.label || f.id}`)
         if (f.suggestion?.suggested) {
-          lines.push(`  → 建議：${f.suggestion.suggested}`)
+          // 過長類的建議只是機械截短，報告裡也標清楚，別讓客戶當成推薦版直接貼（2026-10-15）
+          lines.push(f.suggestion.auto_truncated
+            ? `  → 自動截短版（只刪不濃縮，建議改寫）：${f.suggestion.suggested}`
+            : `  → 建議：${f.suggestion.suggested}`)
         }
       }
       lines.push('')

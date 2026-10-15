@@ -1652,7 +1652,10 @@ function FixDoneButton({ isFixed, isFixing, showPop, onClick }) {
 // Stage 2: meta_title / meta_desc / canonical 等 finding 的建議區塊
 // suggestion 結構：{ kind, current?, current_len?, suggested?, suggested_len?, code_snippet?, note? }
 function SuggestionBlock({ suggestion }) {
-  const { current, current_len, suggested, suggested_len, code_snippet, note, still_too_short } = suggestion
+  const { current, current_len, suggested, suggested_len, code_snippet, note, still_too_short,
+    auto_truncated, dropped_text, dropped_ratio, max_len } = suggestion
+  // 截掉超過三成 → 賣點很可能一起不見，提醒自己改寫（2026-10-15）
+  const heavyTruncation = auto_truncated && dropped_text && dropped_ratio >= 0.3
   // 追蹤剛剛複製的是哪一個按鈕（'text' = 改後純文字 / 'code' = HTML tag），這樣每顆按鈕的 ✅ 提示獨立
   const [copiedKey, setCopiedKey] = useState(null)
 
@@ -1716,7 +1719,8 @@ function SuggestionBlock({ suggestion }) {
           </div>
           <div>
             <span style={{ color: 'var(--bs-green, #86efac)', fontSize: 14 }}>
-              改後 {suggested_len ? `(${suggested_len} 字)` : ''}
+              {/* 過長類的建議只是機械截短（只會刪、不會濃縮），標清楚別讓人當成推薦的最終版 */}
+              {auto_truncated ? '自動截短版' : '改後'} {suggested_len ? `(${suggested_len} 字)` : ''}
               {/* 自動建議仍低於下限時、顯示橘色「仍嫌短」警告 chip — 提醒用戶需手動再延伸 */}
               {still_too_short && (
                 <span style={{
@@ -1742,6 +1746,17 @@ function SuggestionBlock({ suggestion }) {
               wordBreak: 'break-all',
               border: still_too_short ? '1px dashed rgba(251,191,36,0.3)' : 'none',
             }}>{suggested}</div>
+            {heavyTruncation && (
+              <div style={{
+                marginTop: 6, padding: '8px 10px', borderRadius: 6,
+                background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)',
+                color: T.textMid, fontSize: 14, lineHeight: 1.6,
+              }}>
+                <strong style={{ color: 'var(--bs-amber, #fcd34d)' }}>⚠ 後面這段被截掉了：</strong>
+                「{dropped_text}」
+                <div>截短版只是把超出的部分刪掉，重點可能一起不見。建議自己改寫，把重點濃縮進 {max_len} 字內，不要直接用截短版。</div>
+              </div>
+            )}
           </div>
         </div>
       )}
