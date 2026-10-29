@@ -1915,7 +1915,7 @@ const PROBLEM_LABELS = {
 }
 const PROBLEM_SEVERITY = {
   missing_h1: 'high', multiple_h1: 'medium',
-  missing_meta_title: 'high', short_meta_title: 'medium', long_meta_title: 'low',
+  missing_meta_title: 'high', short_meta_title: 'low', long_meta_title: 'low',
   missing_meta_desc: 'high', short_meta_desc: 'medium', long_meta_desc: 'low',
   missing_og: 'medium', incomplete_og: 'low',
   no_json_ld: 'high', no_article_schema: 'medium', no_product_schema: 'medium',
@@ -1935,7 +1935,7 @@ const PROBLEM_FIX_TIPS = {
   missing_meta_title:
     '這是 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱、不是 H1）。安裝 Yoast SEO 或 Rank Math 外掛 → 編輯文章 → 下方 SEO 區塊「SEO Title」欄位填中文 15–30 字（英文 30–60 字元）、含主關鍵字',
   short_meta_title:
-    '這是 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）。SEO Title 太短搜尋引擎判定資訊量不足、擴充到中文 15–30 字（英文 30–60 字元）、含主關鍵字 + 品牌名',
+    '這是 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）。SEO Title 太短不會被扣分，但搜尋結果的標題比較單薄、點閱率可能吃虧。可擴充到中文 15–30 字（英文 30–60 字元），補這頁自己的內容描述；品牌已在標題裡就不用再加',
   long_meta_title:
     '這是 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）。Google 約在中文 30 字（英文 60 字元）後截斷、壓縮到這個範圍內、重要關鍵字放前段',
 

@@ -532,7 +532,11 @@ function analyzeArticleHtml(html, url) {
     // 短標題建議：如果有品牌名、補成「{current}｜{brand}」；如果連品牌都沒有、純粹提示
     // 重要：補完品牌名後可能還是低於下限、要主動告訴用戶仍需手動延伸（不能讓用戶以為「照建議改了就解決」）
     // ⚠️ 注意：以下所有「SEO 標題」都指 <title> tag、即 Rank Math 的「SEO Title」欄位、不是 WP 文章/商品標題
-    const containsBrand = brandName && metaTitle.includes(brandName)
+    // 2026-10-29：og:site_name 常是「關鍵字 + 品牌」（例：a-ark「台南網頁設計 優勢方舟」）。舊版整串比對、
+    // 標題已有「優勢方舟」仍判定沒品牌 → 建議變成「…優勢方舟…｜台南網頁設計 優勢方舟」：品牌重複兩次，
+    // 還把主力頁的關鍵字灌進每個案例頁。改成拆段比對，任一段（≥2 字）已在標題裡就算有品牌
+    const containsBrand = brandName && (metaTitle.includes(brandName) ||
+      brandName.split(/[\s｜|\-–—·]+/).some(seg => seg.length >= 2 && metaTitle.includes(seg)))
     const suggested = brandName && !containsBrand ? `${metaTitle}｜${brandName}` : null
     const suggestedV = suggested ? metaLengthVerdict(suggested, 'title') : null
     const suggestedLen = suggestedV ? suggestedV.chars : null
@@ -544,12 +548,15 @@ function analyzeArticleHtml(html, url) {
       // 補完品牌名仍低於下限、要明確告訴用戶這不夠、需要手動延伸主關鍵字 / 描述
       const need = titleV.min - suggestedLen
       note = `自動補品牌名只拉到 ${suggestedLen} ${unit(titleV)}、還差 ${need} ${unit(titleV)}才到建議下限 ${titleV.min}。請手動延伸：在 SEO Title 前段加主關鍵字或服務描述、或加副標再接品牌。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
+    } else if (containsBrand) {
+      // 品牌已在標題裡、再加一次只是重複；要補的是這頁自己的內容描述，不是全站關鍵字（會跟主力頁搶詞）
+      note = `標題已含品牌，不用再加。要拉到 ${rangeText(titleV)} 的話，用這頁自己的內容補描述詞（例：產品／服務類型、案例主題），不要套全站主關鍵字，避免跟主力頁互搶排名。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
     } else {
       note = `建議補主關鍵字 + 品牌名拉到 ${rangeText(titleV)}（系統未偵測到品牌名、需手動補）。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`
     }
     problems.push({
       id: 'short_meta_title',
-      severity: 'medium',
+      severity: 'low',   // 2026-10-29 由 medium 降級：標題短不扣分（Rank Math 也沒有長度測項），只影響點閱率
       label: `SEO Title 只有 ${titleV.chars} ${titleV.isCJK ? '字' : '字元'}、建議 ${rangeText(titleV)}（Rank Math「SEO Title」欄位）`,
       suggestion: {
         kind: 'text',

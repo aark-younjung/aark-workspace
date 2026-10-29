@@ -9,12 +9,20 @@
  * 這裡依「中文佔比」切換門檻，讓台灣客群量得準、講得也準。
  */
 
-// 中文佔比 ≥ 40% 視為「中文為主」
+// 全形字（中文、全形標點如「｜」「，」）在 SERP 的佔寬約半形兩倍
+const WIDE = /[㐀-鿿豈-﫿　-〿＀-￯]/
+
+// 全形字佔「顯示寬度」≥ 40% 視為「中文為主」
+// 2026-10-29：舊版逐字算（字母、中文各算 1），「WordPress RWD 網站｜優勢方舟」中文只佔 29% → 誤套英文門檻、
+// 21 字被判「過短（建議 30–60 字元）」。改成按寬度算（全形 2、半形 1），同一句變 50%、正確套中文門檻
 function cjkRatio(text) {
-  const chars = [...text]
-  if (chars.length === 0) return 0
-  const cjk = chars.filter(c => /[㐀-鿿豈-﫿]/.test(c)).length
-  return cjk / chars.length
+  let wide = 0, total = 0
+  for (const c of text) {
+    const w = WIDE.test(c) ? 2 : 1
+    total += w
+    if (w === 2) wide += w
+  }
+  return total === 0 ? 0 : wide / total
 }
 
 // 2026-10-15：中文標題上限 40 → 30。Google 標題顯示寬度約 600px，中文字約 20px 寬 → 實際約 30 字就截斷，
