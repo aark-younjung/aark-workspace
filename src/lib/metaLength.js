@@ -32,17 +32,36 @@ const RANGES = {
   latin: { title: [30, 60], desc: [70, 155] },  // 英文
 }
 
+// 單字寬度：中文模式下全形 1、半形 0.5（中文字寬）；英文模式下半形 1、全形 2（字元寬）
+const charWidth = (c, isCJK) => WIDE.test(c) ? (isCJK ? 1 : 2) : (isCJK ? 0.5 : 1)
+
 /**
+ * 2026-10-29：長度改按顯示寬度算（跟 cjkRatio 同一套）。Google 截斷看的是畫面寬度，
+ * 舊版逐字算、英數字跟中文字一樣算 1：「GPT-6 Astra 企業應用實測：月付600元，一天只做2支影片」
+ * 34 個字元被判過長，實際只有 26 個中文字寬、放得下。回傳的 chars 就是寬度（畫面顯示的「N 字」跟判定一致）
  * @param {string} text  標題或描述文字
  * @param {'title'|'desc'} kind
- * @returns {{ chars, min, max, isCJK, verdict }}  verdict: 'empty'|'short'|'long'|'ok'
+ * @returns {{ chars, min, max, isCJK, verdict }}  verdict: 'empty'|'short'|'long'|'ok'；chars 可能是 x.5
  */
 export function metaLengthVerdict(text, kind) {
   const t = (text || '').trim()
-  const chars = [...t].length
-  if (chars === 0) return { chars: 0, min: 0, max: 0, isCJK: false, verdict: 'empty' }
+  if (!t) return { chars: 0, min: 0, max: 0, isCJK: false, verdict: 'empty' }
   const isCJK = cjkRatio(t) >= 0.4
+  let chars = 0
+  for (const c of t) chars += charWidth(c, isCJK)
   const [min, max] = (isCJK ? RANGES.cjk : RANGES.latin)[kind]
   const verdict = chars < min ? 'short' : chars > max ? 'long' : 'ok'
   return { chars, min, max, isCJK, verdict }
+}
+
+// 寬度上限換算成字串長度：開頭最多幾個 code unit 放得進 maxWidth（給自動截短用，避免截完還是過長）
+export function fitLength(text, maxWidth) {
+  const isCJK = cjkRatio(text) >= 0.4
+  let w = 0, len = 0
+  for (const c of text) {
+    w += charWidth(c, isCJK)
+    if (w > maxWidth) break
+    len += c.length
+  }
+  return len
 }

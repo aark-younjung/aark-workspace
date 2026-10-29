@@ -22,7 +22,7 @@ import { createClient } from '@supabase/supabase-js'
 // 2026-10-15：Meta 長度門檻改用與單篇體檢同一支（中英文分開判）。
 // 舊版這裡寫死英文門檻（title <20 / 30-60、desc <50 / 70-155），中文站會誤報「19 字太短」，
 // 還叫客戶把描述寫到 155 個中文字（Google 約 80 字就截斷）。純函式、無依賴，不會多算一支 function。
-import { metaLengthVerdict } from '../src/lib/metaLength.js'
+import { metaLengthVerdict, fitLength } from '../src/lib/metaLength.js'
 
 // 並發數從 8 降到 3（2026-06-05）— Hostinger / 共享主機 + mod_security 被 8 並發打就全部 timeout，
 // 改 3 並發給主機喘息、實際完成率從 ~10% 拉到 95%+。慢 2.7x 但能跑完比快但失敗好。
@@ -578,7 +578,7 @@ function analyzeArticleHtml(html, url) {
       suggestion: {
         kind: 'text',
         current: metaTitle, current_len: titleV.chars,
-        suggested: truncated, suggested_len: [...truncated].length,
+        suggested: truncated, suggested_len: metaLengthVerdict(truncated, 'title').chars,
         ...truncationInfo(metaTitle, truncated, titleV.max),
         code_snippet: `<title>${truncated}</title>`,
         note: `Google 搜尋結果顯示寬度有限，超過約 ${titleV.max} ${titleV.isCJK ? '個中文字' : '字元'}會被「...」截掉。改 Rank Math meta box 的「SEO Title」欄位（不是 WP 文章/商品名稱）`,
@@ -600,7 +600,7 @@ function analyzeArticleHtml(html, url) {
   const cappedExcerpt = rawExcerpt && descV.chars ? smartTruncate(rawExcerpt, descV.max) : rawExcerpt
   // 品質把關：摘要本身達不到描述下限就不拿來當建議（也不拿去填 OG／schema），
   // 改成照實告訴用戶「這頁沒有足夠的說明文字」。分類頁、作品集頁常常只有標題＋卡片。
-  const excerptChars = cappedExcerpt ? [...cappedExcerpt].length : 0
+  const excerptChars = cappedExcerpt ? metaLengthVerdict(cappedExcerpt, 'desc').chars : 0
   const excerptTooThin = !!cappedExcerpt && metaLengthVerdict(cappedExcerpt, 'desc').verdict === 'short'
   const bodyExcerpt = excerptTooThin ? null : cappedExcerpt
   const noExcerptNote = (excerptTooThin
@@ -615,7 +615,7 @@ function analyzeArticleHtml(html, url) {
       label: '缺 Meta 描述（Rank Math「Description」欄位空白）',
       suggestion: bodyExcerpt ? {
         kind: 'text',
-        suggested: bodyExcerpt, suggested_len: [...bodyExcerpt].length,
+        suggested: bodyExcerpt, suggested_len: metaLengthVerdict(bodyExcerpt, 'desc').chars,
         code_snippet: metaDescCode(bodyExcerpt),
         note: '系統從文章內文自動抓的開頭摘要、可直接複製或微調後使用。貼到 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）',
       } : {
@@ -630,7 +630,7 @@ function analyzeArticleHtml(html, url) {
     // 只差 4 字，卻建議換成「Case Study 潔德美有限公司的名片設計。標誌本身的設計見 潔德美Logo。…」——比原本還差。
     const gap = descV.min - descV.chars
     const nearMin = descV.chars >= Math.ceil(descV.min * 0.75)
-    const replacement = !nearMin && bodyExcerpt && [...bodyExcerpt].length > descV.chars ? bodyExcerpt : null
+    const replacement = !nearMin && bodyExcerpt && metaLengthVerdict(bodyExcerpt, 'desc').chars > descV.chars ? bodyExcerpt : null
     const descUnit = descV.isCJK ? '字' : '字元'
     problems.push({
       id: 'short_meta_desc',
@@ -639,7 +639,7 @@ function analyzeArticleHtml(html, url) {
       suggestion: {
         kind: 'text',
         current: metaDesc, current_len: descV.chars,
-        suggested: replacement, suggested_len: replacement ? [...replacement].length : null,
+        suggested: replacement, suggested_len: replacement ? metaLengthVerdict(replacement, 'desc').chars : null,
         from_excerpt: !!replacement,   // 前端據此標「內文摘要（參考）」而不是「改後」
         code_snippet: replacement ? metaDescCode(replacement) : null,
         note: nearMin
@@ -659,7 +659,7 @@ function analyzeArticleHtml(html, url) {
       suggestion: {
         kind: 'text',
         current: metaDesc, current_len: descV.chars,
-        suggested: truncated, suggested_len: [...truncated].length,
+        suggested: truncated, suggested_len: metaLengthVerdict(truncated, 'desc').chars,
         ...truncationInfo(metaDesc, truncated, descV.max),
         code_snippet: metaDescCode(truncated),
         note: `Google 搜尋結果的描述約顯示 ${descV.max} ${descV.isCJK ? '個中文字' : '字元'}、超過會被截掉。改 Rank Math meta box 的「Description」欄位（不是 WP 文章內文 / 商品說明）`,
@@ -1251,7 +1251,9 @@ function truncationInfo(original, truncated, maxLen) {
 
 // 保證回傳長度 ≤ maxLen（含「…」）——舊版 window 多取 10 字、尾巴再加「…」，
 // 建議的截短版本本身就會超過上限、又被判成「過長」（2026-10-15 修）
-function smartTruncate(text, maxLen) {
+// 2026-10-29：maxWidth 是顯示寬度（跟 metaLengthVerdict 同單位），先換算成這段文字放得下的字串長度再切
+function smartTruncate(text, maxWidth) {
+  const maxLen = fitLength(text, maxWidth)
   if (text.length <= maxLen) return text
   const window = text.slice(0, maxLen)
   // 先找句尾

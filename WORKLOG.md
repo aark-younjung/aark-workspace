@@ -6,6 +6,18 @@
 
 ---
 
+### 2026-10-29c（Meta 標題／描述長度改按顯示寬度算）
+
+**起因**：早上語言判斷已經改成看寬度，但「太長／太短」還是逐字算，英數字、空格都跟中文字一樣算 1。「GPT-6 Astra 企業應用實測：月付600元，一天只做2支影片」34 個字元被判過長，實際只有 26 個中文字寬，Google 放得下。用戶要讓雷達閉嘴，只能刪掉有用的資訊。
+
+**改了什麼**
+- [metaLength.js](src/lib/metaLength.js) `metaLengthVerdict`：長度改成顯示寬度，跟 `cjkRatio` 同一套算法。中文模式下全形算 1、半形算 0.5；英文模式下半形算 1、全形算 2。門檻不變。回傳的 `chars` 就是寬度，可能出現 x.5。新增 `fitLength(text, maxWidth)`，把寬度上限換算成字串長度。
+- [cron-bulk-scan.js](api/cron-bulk-scan.js)：`smartTruncate` 改吃寬度（先用 `fitLength` 換算再切），自動截短的版本不會又被判成過長。所有 `suggested_len`、摘要字數也改用寬度。
+- [contentAnalyzer.js](src/services/contentAnalyzer.js)：文章分析顯示的 `titleLength`／`descLength` 改用寬度，不會再出現「34 字卻判合格」。
+- 影響：SEO／AEO／文章分析／批次掃描共用，中英混排頁面的分數會變動。英數字多的標題，判定會從「過長」變合格；也有反過來的，例如「WordPress RWD 網站｜優勢方舟」寬度只有 14，會從合格變成「過短」。
+
+---
+
 ### 2026-10-29b（批次掃描：「已有進行中的掃描」卻看不到進度條）
 
 **起因**：a-ark 按「立刻重掃確認」跳出「此網站已有進行中的批次掃描」，畫面還是 51 分鐘前的結果，沒有進度條，也沒有取消鈕可以按。

@@ -86,10 +86,10 @@ function checkMetaTags(doc) {
 
   return {
     title,
-    titleLength: title.length,
+    titleLength: metaLengthVerdict(title, 'title').chars,   // 顯示寬度、跟判定同單位（2026-10-29）
     hasTitleOptimal: metaLengthVerdict(title, 'title').verdict === 'ok',   // 中英文分開判
     description: desc,
-    descLength: desc.length,
+    descLength: metaLengthVerdict(desc, 'desc').chars,
     hasDescOptimal: metaLengthVerdict(desc, 'desc').verdict === 'ok',
     hasOgTitle: !!ogTitle,
     hasOgDesc: !!ogDesc,
