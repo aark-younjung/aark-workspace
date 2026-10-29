@@ -1,5 +1,5 @@
 import { metaLengthVerdict } from '../../lib/metaLength.js'
-import { HOMEPAGE_NOTES, metaDescFindingDetail } from '../../lib/pageAudit.js'
+import { HOMEPAGE_NOTES, metaDescFindingDetail, contentVolumeFindingDetail, CONTENT_VOLUME_RECOMMENDATION } from '../../lib/pageAudit.js'
 
 // ponytail: 四個舊 audit 頁尚未匯出 check metadata；此 adapter 僅鏡射既有欄位 id／優先級，
 // 不執行或改寫 analyzer。日後若舊頁抽成共用 check registry，這裡應直接改為 import。
@@ -22,6 +22,7 @@ const SEO_META = [
   { id: 'page_speed', name: '頁面載入速度', icon: '⚡', priority: 'P3', recommendation: '壓縮圖片、啟用快取與 CDN，移除不必要的 JavaScript。' },
   { id: 'ssl_chain', name: 'SSL 憑證鏈完整性', icon: '🔒', priority: 'P2', recommendation: '確認伺服器送出完整憑證鏈；Nginx 應指向 fullchain 憑證。' },
   { id: 'bot_accessibility', name: '爬蟲可達性', icon: '🛡️', priority: 'P1', recommendation: '檢查 Cloudflare／WAF，放行 GPTBot、ClaudeBot、PerplexityBot 等爬蟲 User-Agent。' },
+  { id: 'content_volume', name: '首頁內容份量', icon: '📄', priority: 'P1', recommendation: CONTENT_VOLUME_RECOMMENDATION },
 ]
 
 const AEO_META = [
@@ -147,6 +148,10 @@ function buildSeoChecks(audit) {
       if (bot.blocked) return { passed: false, detail: '三種爬蟲身份都被擋，AI 爬蟲可能無法讀取這一頁' }
       if (bot.fallback) return { passed: true, warning: true, detail: '部分爬蟲身份被擋，anti-bot 設定可能偏嚴' }
       return { passed: true, detail: '爬蟲可正常存取這一頁' }
+    },
+    content_volume() {
+      if (partial) return NOT_CHECKED
+      return contentVolumeFindingDetail(audit?.content_volume)
     },
   }
 

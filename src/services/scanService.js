@@ -53,6 +53,7 @@ export async function runFullScan({ websiteId, url, onProgress }) {
       alt_tags: seo.alt_tags, mobile_compatible: seo.mobile_compatible,
       page_speed: seo.page_speed,
       ssl_chain: seo.ssl_chain, bot_accessibility: seo.bot_accessibility,
+      content_volume: seo.content_volume,   // 2026-10-16 第 8 項首頁內容份量
     }]),
     aeo && supabase.from('aeo_audits').insert([{
       website_id: websiteId, score: aeo.score,

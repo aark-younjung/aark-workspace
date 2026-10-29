@@ -28,7 +28,7 @@ const DIMS = [
     items: [
       ['meta_tags', 'Meta 標題與描述'], ['h1_structure', 'H1 標題結構'], ['alt_tags', '圖片 Alt 文字'],
       ['mobile_compatible', '手機相容性'], ['page_speed', '載入速度'], ['ssl_chain', 'SSL 憑證鏈'],
-      ['bot_accessibility', 'AI 爬蟲可達性'],
+      ['bot_accessibility', 'AI 爬蟲可達性'], ['content_volume', '首頁內容份量'],
     ],
   },
   {

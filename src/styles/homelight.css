@@ -208,6 +208,24 @@ html.dark-theme .homelight input::placeholder{ color:var(--ink-3) !important; }
 .homelight .hl-verdict .miss{display:block;font-size:14px;color:var(--ink-3);margin-top:2px;}
 /* 完成後才出現的說明＋CTA：淡入上移，讓「掃完了」是看得見的事件而非無聲替換 */
 .homelight .hl-done{animation:hl-rise .44s cubic-bezier(.2,.75,.25,1);}
+
+/* ── 渲染方式提示（2026-08-28）──
+   JS 才長內容的站，AI 爬蟲拿到的是空殼；不先講清楚，四個低分會被誤讀成「我內容不夠」。
+   兩級：is-warn 用琥珀框（確定 CSR / 幾乎空白），is-note 只是一行灰字（內容偏少）。
+   琥珀取 --eeat #b45309（暖白底 4.6:1 過 AA），刻意不用紅 —— 紅在這張卡代表「檢測沒過」。 */
+.homelight .hl-render{margin:0 0 14px;padding:13px 15px;border-radius:12px;}
+.homelight .hl-render.is-warn{
+  background:rgba(180,83,9,.07);              /* 極淡琥珀底，不搶掉分數卡的視覺重量 */
+  border:1px solid rgba(180,83,9,.28);
+}
+.homelight .hl-render.is-warn b{display:block;font-size:14.5px;font-weight:750;color:#b45309;margin:0 0 6px;}
+.homelight .hl-render.is-warn p{font-size:13.5px;line-height:1.65;color:var(--ink-2);margin:0 0 5px;}
+.homelight .hl-render.is-warn p:last-child{margin-bottom:0;}
+/* is-note：內容偏少而已，不值得一個框 —— 降成跟 .note 同級的灰字 */
+.homelight .hl-render.is-note{padding:0;background:none;border:0;}
+.homelight .hl-render.is-note b{font-weight:700;color:var(--ink-2);font-size:14px;}
+.homelight .hl-render.is-note p{display:inline;font-size:14px;color:var(--ink-3);line-height:1.6;margin:0;}
+.homelight .hl-render.is-note b::after{content:"——";font-weight:400;color:var(--ink-3);}
 @keyframes hl-rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 .homelight .hl-anon .note{font-size:14px;color:var(--ink-3);margin:0 0 16px;line-height:1.6;}
 .homelight .hl-anon .acts{display:flex;gap:10px;flex-wrap:wrap;}

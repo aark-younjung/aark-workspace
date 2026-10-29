@@ -5,7 +5,7 @@
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/((?!api/|sitemap.xml|robots.txt|llms.txt).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|embed/|sitemap.xml|robots.txt|llms.txt).*)", "destination": "/index.html" }
   ],
   "crons": [
     {

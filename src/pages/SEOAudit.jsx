@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { metaLengthVerdict } from '../lib/metaLength'
+import { contentVolumeFindingDetail, CONTENT_VOLUME_RECOMMENDATION } from '../lib/pageAudit'
 import { analyzeSEO } from '../services/seoAnalyzer'
 import { useAuth } from '../context/AuthContext'
 import { T } from '../styles/v2-tokens'
@@ -168,6 +169,16 @@ const SEO_CHECKS = [
       return { passed: true, detail: '所有爬蟲都能順利存取，AI 引擎抓取無障礙' }
     },
   },
+  {
+    id: 'content_volume', name: '首頁內容份量', icon: '📄',
+    description: '首頁原始 HTML 裡看得到的文字量。技術設定再完整，沒有內容 Google 與 AI 也沒東西可以引用，建議至少 300 字',
+    recommendation: CONTENT_VOLUME_RECOMMENDATION,
+    priority: 'P1',
+    getValue: (audit) => {
+      if (isPartialAudit(audit)) return NOT_CHECKED
+      return contentVolumeFindingDetail(audit?.content_volume)
+    },
+  },
 ]
 
 export default function SEOAudit() {
@@ -213,6 +224,8 @@ export default function SEOAudit() {
         meta_tags: result.meta_tags, h1_structure: result.h1_structure,
         alt_tags: result.alt_tags, mobile_compatible: result.mobile_compatible,
         page_speed: result.page_speed,
+        ssl_chain: result.ssl_chain, bot_accessibility: result.bot_accessibility,
+        content_volume: result.content_volume,
       }])
       fetchData()
     } catch (error) {

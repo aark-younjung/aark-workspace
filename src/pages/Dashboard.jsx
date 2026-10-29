@@ -403,7 +403,9 @@ export default function Dashboard() {
           website_id: id, score: seoResult.score,
           meta_tags: seoResult.meta_tags, h1_structure: seoResult.h1_structure,
           alt_tags: seoResult.alt_tags, mobile_compatible: seoResult.mobile_compatible,
-          page_speed: seoResult.page_speed
+          page_speed: seoResult.page_speed,
+          ssl_chain: seoResult.ssl_chain, bot_accessibility: seoResult.bot_accessibility,
+          content_volume: seoResult.content_volume,
         }]),
         supabase.from('aeo_audits').insert([{
           website_id: id, score: aeoResult.score,

@@ -608,6 +608,7 @@ export default function HomeDark() {
           page_speed: seoResult.page_speed,
           ssl_chain: seoResult.ssl_chain,                       // 第 6 項 SSL 憑證鏈檢測（2026-05-22 新增）
           bot_accessibility: seoResult.bot_accessibility,       // 第 7 項 爬蟲可達性 / Cloudflare 擋 AI 爬蟲（2026-05-22 新增）
+          content_volume: seoResult.content_volume,             // 第 8 項 首頁內容份量（2026-10-16 新增）
         }]),
         aeoResult && supabase.from('aeo_audits').insert([{
           website_id: websiteId, score: aeoResult.score,

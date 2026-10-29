@@ -44,6 +44,21 @@
 
 ---
 
+### 2026-10-16（SEO 分數加「首頁內容份量」、拿掉 meta keywords 計分）
+
+**起因**：青山空間設計預覽站（ChatGPT 做的）首頁只有 logo 動畫加約 40 字，SEO 卻拿 95。原本 7 項只看技術設定有沒有做，不看內容；唯一扣分的是 meta keywords，而 Google 早就不讀這個標籤。結果是薄頁也能拿高分，懂行的人（例如代理商）一看就不會相信。
+
+**改了什麼**
+- [seoAnalyzer.js](src/services/seoAnalyzer.js)：Meta 計分改成 title、description 各 50，keywords 欄位照樣回傳但不計分。新增第 8 項 `checkContentVolume`：計算原始 HTML body 看得到的字數（中文算字、英文算詞，排除 script／style／svg），分級為 <150 → 0、150–299 → 50、300–599 → 80、600 以上 → 100，passed 門檻 300。總分改成 8 項加權平均，內容份量算 2 倍（分母 9）。等權時青山仍有 88 分，用戶要求加倍。不檢查關鍵字密度。
+- 寫入 `content_volume`（JSONB）：[scanService.js](src/services/scanService.js)、[HomeDark.jsx](src/pages/HomeDark.jsx)、[Dashboard.jsx](src/pages/Dashboard.jsx)、[SEOAudit.jsx](src/pages/SEOAudit.jsx)。後兩支原本就漏存 ssl_chain／bot_accessibility，這次一併補上。
+- 顯示：[healthData.js](src/components/appshell/healthData.js)、[SEOAudit.jsx](src/pages/SEOAudit.jsx)、[embed/items.js](src/embed/items.js)、[AnonDiagnosis.jsx](src/components/AnonDiagnosis.jsx)、[pdfExport.js](src/services/pdfExport.js)（檢測項＋行動清單）。說明文字共用 [pageAudit.js](src/lib/pageAudit.js) 的 `contentVolumeFindingDetail`；舊掃描沒有這個欄位時顯示「未檢測」，不算失敗。
+
+**⚠️ 部署前必跑 SQL**：`alter table seo_audits add column if not exists content_volume jsonb;`。沒跑的話整筆 seo_audits insert 會失敗（scanService 會記 log，但分數不會更新）。
+
+**驗證**（jsdom 跑真實 HTML）：青山 95 → 78（內容 40 字、該項 0 分，其餘 7 項滿分）；a-ark.com.tw 2638 字，仍是 100。`npm test` 120／120，`vite build` 通過（需 `--max-old-space-size=8192`，否則會因記憶體不足無聲退出）。從這天起，所有站的 SEO 趨勢線會有一次斷層，舊資料不回頭重算。
+
+---
+
 ### 2026-10-15j（描述「差一點」時建議補一句、不整段換掉；摘要濾掉標籤字與站內導覽句）
 
 **起因**：潔德美名片作品頁原描述 36 字（「潔德美：清潔公司名片設計。正面列出五項服務範圍，背面姓名區做成吊牌造型。」），內容具體、只差 4 字就合格，系統卻建議整段換成內文摘要「Case Study 潔德美有限公司的名片設計。標誌本身的設計見 潔德美Logo。 清潔公司的服務範圍…」——比原本還差，還標「改後」。
@@ -225,6 +240,43 @@
 **驗證**：重現掃描當時的頁面狀態（拿掉分類說明與描述）→ 不再給 CTA 文字，改給「請自己寫」；有分類說明時抓到的是說明（68 字）不是 CTA；只有 15 字說明 → 不給建議；35 字中文標題 → 判過長、建議在分隔符前切成 28 字。`npm test` 120／120 通過、`vite build` 通過。
 
 ---
+
+### 2026-09-23a（池子層不再假裝有啟停開關；核心題上限維持 10）
+
+**1. 池子層的「已停用」標籤在騙人（[PromptManager.jsx](src/components/appshell/PromptManager.jsx)）**
+
+用戶問「要怎麼開啟已停用的提示詞」，查下去發現真正的問題是標籤說謊。全專案 grep 過一遍，`is_active` **只有 `tier === 'core'` 會被讀**：
+
+| 讀取點 | 條件 |
+|---|---|
+| `aivisScanService.buildScanTargets` | `tier==='core' && is_active` |
+| `api/aivis/fetch.js` 守衛 | `tier==='core' && !is_active` 才拒掃 |
+| `aivisData` 矩陣／曝光率 | core only |
+| `cron-weekly-reports` | core only |
+| `PromptManager` 上限計數 | core only |
+
+也就是說輪替／品牌／知識／競品四層的 `is_active` 純裝飾——顯示「已停用」但每次掃描照跑。按下去也只是白按（還會去卡核心題的上限）。
+
+改法照經典版既有的 `inPool` 慣例：核心層保留啟停開關，池子層改成**不可點的靜態標籤**，而且照實寫各層的實際行為——輪替寫「池中・每次抽用」，品牌／知識／競品寫「池中・每次都掃」。列表變灰的條件也改成只有「核心題被手動停用」才灰（原本池子題全部灰掉，視覺上也在暗示「沒在用」）。CSS 加 `.op.pool`：透明底無邊框、`cursor:default`，一眼看得出不是按鈕。
+
+**2. `PROMPT_CAP` 10 → 15 → 改回 10（同日決定放棄）**
+
+用戶原本要改 15，實作後發現兩個代價，評估完決定維持 10：
+
+- **光改 JS 不生效**：DB 端有 plpgsql trigger 強制同一個上限（WORKLOG 2026-04「aivis-prompt-limit.sql」，SQL 檔照慣例已刪）。沒同步改 DB 的話，啟用第 11 條會被 `check_violation` 打回、前端跳「切換失敗」。要先到 Supabase Dashboard 查 trigger 定義再改。
+- **額度成本**（核心題額度 = 啟用數 × `SCAN_RUNS`=3）：
+
+| 核心啟用數 | 單次掃描額度 | Pro 150/月可掃 |
+|---|---|---|
+| 6（自動產生預設） | 33 | 4.5 次 |
+| **10（維持）** | **45** | **3.3 次** |
+| 15（放棄） | 60 | 2.5 次 |
+
+  試用期只有 50 次額度，15 條的話單次掃描 60 次、**一次都跑不完**。
+
+常數已還原成 10，但**留下了這趟查到的東西**：`aivisScanService.js` 的 PROMPT_CAP 上方現在寫明「改這個要連同 DB trigger 一起」與成本公式；四處寫死「10 條上限」的過期散文註解改成指向常數（避免下次改動又留下對不上的數字）。
+
+**驗證**：63/63 測試通過；PromptManager 與 aivisScanService eslint 0 問題（AIVisibilityDashboard 的 5 個是既有問題，已用 git stash 比對確認非本次引入）。⚠️ 未實機看過池子標籤的外觀。
 
 ### 2026-09-11（llms.txt 文案排序對齊計分現況）
 

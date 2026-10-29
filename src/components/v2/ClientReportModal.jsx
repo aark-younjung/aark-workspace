@@ -11,18 +11,25 @@
  *   4. localStorage 記住代理商 info、下次自動帶入（同代理商連續做多客戶提案不用重填）
  *
  * 代理商署名要不要必填？我選「非必填」— 個人用戶也可以匯出沒署名版、保持彈性
+ *
+ * 2026-08-28：aivis 資料改由本元件在開啟時自己抓。
+ *   為什麼放這裡而不是叫兩個呼叫端（AppOverview / DashboardV2）各自傳進來——
+ *   那樣要改兩個頁面、兩邊的 select 欄位還得同步（scanService 就是這樣出過漏欄位的 bug）。
+ *   放在 modal 裡只有一份、只在使用者真的要產報告時才查，平常頁面載入零成本。
  */
 import { useState, useEffect } from 'react'
 import { exportClientProposalPDF } from '../../services/pdfExport'
+import { supabase } from '../../lib/supabase'
+import { buildAivisReport } from '../appshell/aivisData'
 
 const STORAGE_KEY_AGENCY = 'aark_agency_info'
 
 function loadAgencyInfo() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_AGENCY)
-    return raw ? JSON.parse(raw) : { agencyName: '', agencyContact: '' }
+    return raw ? JSON.parse(raw) : { agencyName: '', agencyContact: '', agencyCommitment: '' }
   } catch {
-    return { agencyName: '', agencyContact: '' }
+    return { agencyName: '', agencyContact: '', agencyCommitment: '' }
   }
 }
 
@@ -31,6 +38,7 @@ function saveAgencyInfo(info) {
     localStorage.setItem(STORAGE_KEY_AGENCY, JSON.stringify({
       agencyName: info.agencyName || '',
       agencyContact: info.agencyContact || '',
+      agencyCommitment: info.agencyCommitment || '',
     }))
   } catch {}
 }
@@ -39,8 +47,14 @@ export default function ClientReportModal({ open, onClose, data }) {
   const [clientName, setClientName] = useState('')
   const [agencyName, setAgencyName] = useState('')
   const [agencyContact, setAgencyContact] = useState('')
+  // 代理商自填的服務承諾 —— 刻意不預填任何內容：
+  // 替別人生成他沒答應過的商業承諾，比報告裡放錯數字更嚴重（見 pdfAivisSections 承諾頁註解）
+  const [agencyCommitment, setAgencyCommitment] = useState('')
   const [reportTitle, setReportTitle] = useState('')
   const [generating, setGenerating] = useState(false)
+  // aivis 實測資料：null = 還沒查 / false = 這個網站沒接監測（報告就少那四頁）
+  const [aivisReport, setAivisReport] = useState(null)
+  const [aivisLoading, setAivisLoading] = useState(false)
 
   // mount 時載入代理商 info、若 props 帶網站名就預填客戶名
   useEffect(() => {
@@ -48,21 +62,64 @@ export default function ClientReportModal({ open, onClose, data }) {
     const saved = loadAgencyInfo()
     setAgencyName(saved.agencyName)
     setAgencyContact(saved.agencyContact)
+    setAgencyCommitment(saved.agencyCommitment || '')
     setClientName(data?.website?.name || '')
     setReportTitle('')
   }, [open, data?.website?.name])
+
+  // 開啟時抓 aivis 實測資料（近 90 天）——查得到才會多出實測 / 原話 / 對照 / 來源歸因四頁。
+  // 任何一步失敗都只是「這次報告沒有那四頁」，不擋住 PDF 產生（報告本身仍可交付）。
+  useEffect(() => {
+    const websiteId = data?.website?.id
+    if (!open || !websiteId) return
+    let cancelled = false
+    setAivisReport(null)
+    setAivisLoading(true)
+    ;(async () => {
+      try {
+        const { data: brand } = await supabase
+          .from('aivis_brands').select('*').eq('website_id', websiteId).maybeSingle()
+        if (cancelled) return
+        if (!brand) { setAivisReport(false); return }
+        const since = new Date(Date.now() - 90 * 86_400_000).toISOString()
+        const [promptResult, responseResult, mentionResult] = await Promise.all([
+          supabase.from('aivis_prompts').select('*').eq('brand_id', brand.id),
+          supabase.from('aivis_responses')
+            .select('id, prompt_id, run_index, raw_response, brand_mentioned, created_at, engine_results')
+            .eq('brand_id', brand.id).gte('created_at', since),
+          supabase.from('aivis_mentions').select('response_id, position, context')
+            .eq('brand_id', brand.id).gte('created_at', since),
+        ])
+        if (cancelled) return
+        const report = buildAivisReport({
+          brand,
+          prompts: promptResult.data || [],
+          responses: responseResult.data || [],
+          mentions: mentionResult.data || [],
+        })
+        setAivisReport(report.hasData ? report : false)
+      } catch (err) {
+        console.warn('[ClientReportModal] aivis 資料讀取失敗、報告改出基本版：', err?.message || err)
+        if (!cancelled) setAivisReport(false)
+      } finally {
+        if (!cancelled) setAivisLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [open, data?.website?.id])
 
   async function handleGenerate() {
     if (generating) return
     setGenerating(true)
     try {
       // 記住代理商 info、下次自動帶入
-      saveAgencyInfo({ agencyName, agencyContact })
+      saveAgencyInfo({ agencyName, agencyContact, agencyCommitment })
 
-      await exportClientProposalPDF(data, {
+      await exportClientProposalPDF({ ...data, aivisReport: aivisReport || null }, {
         clientName: clientName.trim() || data?.website?.name || data?.website?.url || '',
         agencyName: agencyName.trim(),
         agencyContact: agencyContact.trim(),
+        agencyCommitment: agencyCommitment.trim(),
         reportTitle: reportTitle.trim() || 'AI 能見度檢測報告',
       })
       // 產 PDF 成功、關閉 modal
@@ -164,8 +221,47 @@ export default function ClientReportModal({ open, onClose, data }) {
                   className="w-full px-4 py-2 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/35 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400/50 text-sm"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-white/65 mb-1.5">
+                  你的服務承諾 <span className="text-sm font-normal text-white/35">(選填，會印在報告最後一頁)</span>
+                </label>
+                <textarea
+                  value={agencyCommitment}
+                  onChange={e => setAgencyCommitment(e.target.value)}
+                  rows={3}
+                  placeholder="例：合作滿 12 個月，若三個主要服務在三個引擎仍為零提及，無償展延 6 個月。"
+                  className="w-full px-4 py-2 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/35 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400/50 text-sm leading-relaxed resize-y"
+                />
+                <p className="mt-1 text-sm text-white/40">
+                  報告最後一頁固定有「方法邊界」（我們量什麼、不承諾什麼）。這一欄是你自己的服務承諾，留空就不會出現。
+                </p>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* 這次報告會不會有 aivis 那四頁 —— 代理商送出前要知道自己拿到的是幾頁版本（2026-08-28） */}
+        <div className="mt-5 px-4 py-3 rounded-xl text-sm leading-relaxed"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          {aivisLoading ? (
+            <span className="text-white/55">正在讀取 AI 實測資料…</span>
+          ) : aivisReport ? (
+            <span className="text-white/70">
+              <b className="text-emerald-300">含 AI 實測 4 頁</b>：實測矩陣（{aivisReport.totals.prompts} 題 × {aivisReport.totals.enginesUsed} 引擎、
+              {aivisReport.totals.observed} 次觀測）、AI 原話與來源、
+              {aivisReport.previous ? '前後對照、' : ''}分引擎來源歸因。
+              {!aivisReport.previous && (
+                <span className="block mt-1 text-white/45">
+                  只有一場掃描紀錄、這次沒有前後對照頁——再掃一次就會有。
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="text-white/55">
+              這個網站還沒有 AI 曝光監測資料，報告只會有技術檢測的部分。
+              到「AI 曝光監測」設定品牌與題庫、跑一次掃描，報告就會多出實測與來源歸因。
+            </span>
+          )}
         </div>
 
         {/* CTA */}

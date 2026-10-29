@@ -40,3 +40,15 @@ export function metaDescFindingDetail(text) {
   if (v.verdict === 'short') return { passed: false, detail: `偵測為${lang}，這頁 ${v.chars} ${unit}（${range}）→ 過短，建議補到至少 ${v.min} ${unit}` }
   return { passed: true, detail: `偵測為${lang}，這頁 ${v.chars} ${unit}，符合${range}` }
 }
+
+// 首頁內容份量（SEO 第 8 項，2026-10-16 新增）的說明句，SEOAudit 與 appshell 共用。
+// 舊掃描沒有 content_volume 欄位 → 照其他新增項慣例顯示「未檢測」、不算失敗。
+export const CONTENT_VOLUME_RECOMMENDATION = '在首頁加一段 300 字以上的介紹：做什麼、服務誰、在哪裡、跟別人哪裡不同。形象首頁可以保留動畫，把文字放在動畫下方即可。'
+export function contentVolumeFindingDetail(cv) {
+  if (!cv) return { passed: true, detail: '此次掃描未檢測（請重新檢測）' }
+  const n = cv.wordCount ?? 0
+  if (n === 0) return { passed: false, detail: '原始 HTML 裡讀不到任何文字。若網站是用 JavaScript 才把內容畫出來，AI 爬蟲多半看不到' }
+  if (n < 150) return { passed: false, detail: `首頁只有約 ${n} 字，Google 與 AI 抓到首頁時幾乎沒有內容可以引用` }
+  if (n < 300) return { passed: false, detail: `首頁約 ${n} 字，內容偏薄，建議至少 300 字` }
+  return { passed: true, detail: `首頁約 ${n} 字${n < 600 ? '，堪用；600 字以上更好' : '，內容份量足夠'}` }
+}

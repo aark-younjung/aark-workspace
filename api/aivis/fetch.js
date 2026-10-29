@@ -106,7 +106,7 @@ export default async function handler(req, res) {
     }
 
     // 題庫分流：core 看 is_active（curated 固定樣本）；rotating/brand/info 是「池子」
-    //   —— is_active=false 只是用來「不佔 10 條啟用上限」，這些題本來就該被掃（掃描時照 tier 抽用）。
+    //   —— is_active=false 只是用來「不佔核心啟用上限」，這些題本來就該被掃（掃描時照 tier 抽用）。
     // 所以只有【核心題被手動停用】才拒掃；池子題不受 is_active 影響。
     // 2026-07-17 修：舊守衛一律擋 is_active=false，害所有池子題（含 info）掃描回 'Prompt is disabled'、整趟掃描失敗。
     const tier = prompt.tier || 'core'

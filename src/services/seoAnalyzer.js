@@ -6,10 +6,13 @@
  * 3. 圖片 Alt 屬性檢測
  * 4. 行動版相容性檢測
  * 5. 頁面載入速度檢測
+ * 6. SSL 憑證鏈完整性
+ * 7. 爬蟲可達性
+ * 8. 首頁內容份量（2026-10-16 新增）
  */
 
-// Vercel Serverless API endpoint
-const API_BASE = '/api/fetch-url'
+// Vercel Serverless API endpoint（嵌到別的網域時由 apiBase 換成絕對網址）
+import { FETCH_API_BASE as API_BASE } from '../lib/apiBase'
 
 /**
  * 取得網頁內容（使用 Serverless API 解決 CORS 問題）
@@ -165,11 +168,13 @@ function checkMetaTags(doc) {
   const hasDescription = descriptionContent.length > 0
   const hasKeywords = keywordsContent.length > 0
   
-  // 評分標準 (滿分 33.33 分)
+  // 評分標準：title、description 各 50
+  // 2026-10-16 拿掉 meta keywords 計分 — Google 2009 年起就不讀這個標籤，
+  // 原本它佔 34 分，等於用過時項目扣分（青山空間設計案：唯一扣分竟是 keywords）。
+  // hasKeywords / keywordsContent 仍照實回傳，只是不進分數。
   let score = 0
-  if (hasTitle) score += 33.33
-  if (hasDescription) score += 33.33
-  if (hasKeywords) score += 34
+  if (hasTitle) score += 50
+  if (hasDescription) score += 50
   
   return {
     hasTitle,
@@ -342,6 +347,46 @@ function checkMobileCompatibility(doc, rawHtml = '') {
 }
 
 /**
+ * 首頁內容份量檢測（2026-10-16 新增）
+ *
+ * 起因：青山空間設計首頁只有 logo 動畫 + 約 50 字，技術項目全過、SEO 拿 95 分。
+ * 原本 7 項只看「有沒有設定」，不看「有沒有內容」→ 薄頁也能高分，懂行的人一看就不信。
+ *
+ * 量的是原始 HTML 裡看得到的文字（不跑 JS）—— 這正是 GPTBot / ClaudeBot 抓到的樣子，
+ * 所以純前端渲染（SPA）的站也會被算成 0 字，這是真問題不是誤判。
+ * 不檢查關鍵字密度：那是過時做法，硬塞反而有風險。
+ *
+ * @param {Document} doc - DOM 物件
+ * @returns {Object} - 檢測結果
+ */
+function checkContentVolume(doc) {
+  // 複製 body 再刪，避免動到原 doc
+  const body = doc.body?.cloneNode(true)
+  if (body) body.querySelectorAll('script, style, noscript, template, svg').forEach(el => el.remove())
+  const text = (body?.textContent || '').replace(/\s+/g, ' ').trim()
+
+  // 中文算字、英文算詞（與 contentAnalyzer 同一套算法）
+  const chineseChars = (text.match(/[一-鿿]/g) || []).length
+  const englishWords = (text.match(/\b[a-zA-Z]+\b/g) || []).length
+  const wordCount = chineseChars + englishWords
+
+  // 評分梯度：<150 幾乎沒內容、150–300 偏薄、300–600 堪用、600+ 足夠
+  let score
+  if (wordCount >= 600) score = 100
+  else if (wordCount >= 300) score = 80
+  else if (wordCount >= 150) score = 50
+  else score = 0
+
+  return {
+    wordCount,
+    chineseChars,
+    englishWords,
+    score,
+    passed: wordCount >= 300
+  }
+}
+
+/**
  * 5. 頁面載入速度檢測
  * 透過 /api/fetch-url proxy 測量（避免瀏覽器 CORS 阻擋）
  * @param {string} url - 網址
@@ -421,7 +466,7 @@ export async function analyzeSEO(url) {
     const { html, sslFallback, uaFallback, antiBotBlocked } = await fetchPageContent(cleanUrl)
     const doc = parseHTML(html)
 
-    // 執行 7 項檢測（第 6/7 項從 fetch 旗標判定，不需 DOM）
+    // 執行 8 項檢測（第 6/7 項從 fetch 旗標判定，不需 DOM）
     const metaTags = checkMetaTags(doc)
     const h1Structure = checkH1Structure(doc)
     const altTags = checkAltTags(doc)
@@ -429,10 +474,12 @@ export async function analyzeSEO(url) {
     const pageSpeed = await checkPageSpeed(cleanUrl)
     const sslChain = checkSSLChain(sslFallback)
     const botAccessibility = checkBotAccessibility(uaFallback, antiBotBlocked)
+    const contentVolume = checkContentVolume(doc)
 
-    // 計算總分（7 項平均）
+    // 計算總分（8 項加權平均，內容份量算 2 倍 → 分母 9）
+    // 2026-10-16：等權時青山首頁 40 字仍有 88 分，薄頁看起來還是太好看；加倍後 78
     const totalScore = Math.round(
-      (metaTags.score + h1Structure.score + altTags.score + mobileCompatible.score + pageSpeed.score + sslChain.score + botAccessibility.score) / 7
+      (metaTags.score + h1Structure.score + altTags.score + mobileCompatible.score + pageSpeed.score + sslChain.score + botAccessibility.score + contentVolume.score * 2) / 9
     )
 
     // 回傳結果
@@ -446,6 +493,7 @@ export async function analyzeSEO(url) {
       page_speed: pageSpeed,
       ssl_chain: sslChain,
       bot_accessibility: botAccessibility,
+      content_volume: contentVolume,
       analyzed_at: new Date().toISOString()
     }
 
@@ -467,7 +515,7 @@ export function getAuditItems() {
     {
       id: 'meta_tags',
       name: 'Meta 標籤',
-      description: '檢查 title、description、keywords 標籤是否完整',
+      description: '檢查 title、description 標籤是否完整',
       icon: '🔍'
     },
     {
@@ -505,6 +553,12 @@ export function getAuditItems() {
       name: '爬蟲可達性',
       description: '檢測 Cloudflare / WAF 是否擋下 AI 引擎爬蟲 — anti-bot 鎖太嚴會讓你的網站在 ChatGPT/Claude/Gemini 答案中完全隱形',
       icon: '🛡️'
+    },
+    {
+      id: 'content_volume',
+      name: '首頁內容份量',
+      description: '檢測首頁原始 HTML 中看得到的文字量 — 內容太少，Google 與 AI 都沒有東西可以引用',
+      icon: '📄'
     }
   ]
 }

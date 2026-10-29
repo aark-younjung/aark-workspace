@@ -1,5 +1,12 @@
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+// aivis 客戶報告頁（2026-08-28）：實測矩陣 / 原話證據 / 前後對照 / 來源歸因
+import {
+  buildAivisMatrixHTML, buildAivisEvidenceHTML, buildAivisTrendHTML, buildAivisSourceHTML,
+  buildExecutiveVerdictHTML, buildCommitmentHTML,
+} from './pdfAivisSections'
+// 判語引擎：把數字收斂成一句可轉述的話，全部由資料推導（見 reportVerdict.js 檔頭）
+import { buildVerdict } from './reportVerdict'
 
 // 分數對應顏色：≥70 綠 / ≥40 琥珀 / 否則紅 — export 出去給其他 PDF 服務（如 LLMO 6 週清單）共用
 export function scoreColor(score) {
@@ -26,6 +33,8 @@ function buildReportHTML({ website, seoAudit, aeoAudit, geoAudit, eeatAudit }) {
     { name: 'H1 標題結構', passed: !!seoAudit?.h1_structure?.hasOnlyOneH1 },
     { name: '圖片 Alt 屬性', passed: (seoAudit?.alt_tags?.altCoverage || 0) >= 80 },
     { name: '行動版相容', passed: !!seoAudit?.mobile_compatible?.hasViewport },
+    // 舊掃描沒有 content_volume → 不列，避免把「未檢測」印成沒過
+    ...(seoAudit?.content_volume ? [{ name: '首頁內容份量', passed: !!seoAudit.content_volume.passed }] : []),
   ]
 
   const aeoChecks = [
@@ -224,11 +233,16 @@ function buildActionItems({ seoAudit, aeoAudit, geoAudit, eeatAudit }) {
   if (seoAudit?.meta_tags && seoAudit.meta_tags.passed === false) {
     items.push({ priority: 9, layer: 'SEO', title: '補完 Meta 標籤', desc: 'Title / Description 缺漏會讓 Google SERP 顯示殘缺、CTR 大幅下降' })
   }
+  if (seoAudit?.content_volume && seoAudit.content_volume.passed === false) {
+    items.push({ priority: 9, layer: 'SEO', title: '補首頁內容', desc: `首頁只有約 ${seoAudit.content_volume.wordCount} 字，Google 與 AI 沒有東西可以引用；加一段 300 字以上的介紹` })
+  }
   if (geoAudit && !geoAudit.llms_txt) {
     items.push({ priority: 9, layer: 'GEO', title: '建立 llms.txt', desc: '告訴 ChatGPT / Claude 怎麼讀你的網站、LLMO 業界新標準' })
   }
   if (aeoAudit && !aeoAudit.faq_schema) {
-    items.push({ priority: 9, layer: 'AEO', title: '補 FAQ Schema', desc: 'AI 引用率會提升 ~15%、特別適合教學 / 服務介紹頁' })
+    // ⚠️ 2026-08-28：原文寫「AI 引用率會提升 ~15%」——這個數字沒有出處，屬於捏造統計（PRODUCT.md 法規紅線）。
+    // 改成講機制，不講沒量過的成效數字。
+    items.push({ priority: 9, layer: 'AEO', title: '補 FAQ Schema', desc: '把問答包成 AI 可以整段引用的結構、特別適合教學與服務介紹頁' })
   }
   if (eeatAudit && !eeatAudit.organization_schema) {
     items.push({ priority: 8, layer: 'E-E-A-T', title: '加 Organization Schema', desc: '告訴 Google 「你是誰」的核心訊號、品牌可信度大幅提升' })
@@ -240,7 +254,8 @@ function buildActionItems({ seoAudit, aeoAudit, geoAudit, eeatAudit }) {
     items.push({ priority: 7, layer: 'GEO', title: '建 sitemap.xml', desc: '幫 AI 爬蟲快速發現所有頁面' })
   }
   if (eeatAudit && !eeatAudit.author_info) {
-    items.push({ priority: 6, layer: 'E-E-A-T', title: '加文章作者署名', desc: 'E-E-A-T 分數會 +6、AI 判斷你可信值得引用' })
+    // ⚠️ 2026-08-28：原文寫「E-E-A-T 分數會 +6」——同樣是沒有出處的數字，改成講作用。
+    items.push({ priority: 6, layer: 'E-E-A-T', title: '加文章作者署名', desc: '作者資訊是 AI 判斷內容可信度的訊號之一、缺了這項這一層拿不到分' })
   }
   if (aeoAudit && !aeoAudit.open_graph) {
     items.push({ priority: 6, layer: 'AEO', title: '補 Open Graph 標籤', desc: 'FB / LINE / X 分享預覽會空白、social CTR 會差' })
@@ -257,7 +272,7 @@ export const LAYER_COLOR = {
 // 之前用單一 HTML + html2canvas 切片、會在文字中間切（user feedback）
 // 改成「每個 section 1 個 canvas、1 頁 PDF」、徹底沒切字問題
 
-function buildCoverHTML(data, clientInfo) {
+function buildCoverHTML(data, clientInfo, verdict) {
   const { website } = data
   const { clientName = '', agencyName = '', agencyContact = '', reportTitle = 'AI 能見度檢測報告' } = clientInfo || {}
   const date = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -283,6 +298,11 @@ function buildCoverHTML(data, clientInfo) {
           <div style="font-size:28px;font-weight:bold;color:white;letter-spacing:-0.01em;">${clientName}</div>
           ${website?.url ? `<div style="font-size:14px;color:rgba(255,255,255,0.65);margin-top:6px;font-family:'JetBrains Mono',monospace;">${website.url}</div>` : ''}
         </div>` : ''}
+        ${verdict?.method ? `
+        <div style="padding:14px 18px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:20px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:5px;">檢測範圍 · Scope</div>
+          <div style="font-size:13.5px;color:rgba(255,255,255,0.85);line-height:1.7;">${verdict.method}</div>
+        </div>` : ''}
         <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;padding-top:40px;border-top:1px solid rgba(255,255,255,0.1);">
           <div>
             ${agencyName ? `
@@ -302,7 +322,12 @@ function buildCoverHTML(data, clientInfo) {
 }
 
 function buildSummaryHTML(data) {
-  const { seoAudit, aeoAudit, geoAudit, eeatAudit } = data
+  const { seoAudit, aeoAudit, geoAudit, eeatAudit, aivisReport } = data
+  // 第 5 層原本永遠印「需 Pro 訂閱」——有實測資料時就印真實提及率（這才是我們最強的一層）
+  const aivisCell = aivisReport?.hasData
+    ? `<span style="font-weight:bold;color:${scoreColor(aivisReport.totals.rate ?? 0)};">${aivisReport.totals.rate ?? '—'}%</span>
+       <span style="font-size:10px;color:#94a3b8;display:block;">${aivisReport.totals.hit} / ${aivisReport.totals.observed} 次</span>`
+    : `<span style="color:#94a3b8;font-size:11px;">未啟用監測</span>`
   const seoScore = seoAudit?.score || 0
   const aeoScore = aeoAudit?.score || 0
   const geoScore = geoAudit?.score || 0
@@ -316,8 +341,8 @@ function buildSummaryHTML(data) {
   }
   return `
     <div style="width:794px;background:white;font-family:'Microsoft JhengHei','微軟正黑體','PingFang TC',sans-serif;color:#1e293b;padding:48px 56px;min-height:1080px;">
-      <div style="font-size:11px;color:#94a3b8;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">01 · Executive Summary</div>
-      <h2 style="font-size:28px;font-weight:bold;color:#1e293b;margin:0 0 20px;letter-spacing:-0.02em;">總體 AI 能見度分析</h2>
+      <div style="font-size:11px;color:#94a3b8;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">02 · Signal Layers</div>
+      <h2 style="font-size:28px;font-weight:bold;color:#1e293b;margin:0 0 20px;letter-spacing:-0.02em;">五個訊號層的實際分數</h2>
       <div style="display:flex;align-items:center;gap:32px;padding:28px;background:#f8fafc;border-radius:16px;border:1px solid #e2e8f0;margin-bottom:32px;">
         <div style="text-align:center;min-width:120px;">
           <div style="font-size:72px;font-weight:bold;color:${scoreColor(overall)};line-height:1;letter-spacing:-0.04em;">${overall}</div>
@@ -347,7 +372,7 @@ function buildSummaryHTML(data) {
           <tr><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:${LAYER_COLOR.AEO};font-weight:600;">② AEO</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#475569;">讓 AI 把你當答案、引用你的內容</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:bold;color:${scoreColor(aeoScore)};">${aeoScore}</td></tr>
           <tr><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:${LAYER_COLOR.GEO};font-weight:600;">③ GEO</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#475569;">讓 ChatGPT / Perplexity 主動推薦你</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:bold;color:${scoreColor(geoScore)};">${geoScore}</td></tr>
           <tr><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:${LAYER_COLOR['E-E-A-T']};font-weight:600;">④ E-E-A-T</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#475569;">可信度框架 — AI 判斷你值得引用的訊號</td><td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:bold;color:${scoreColor(eeatScore)};">${eeatScore}</td></tr>
-          <tr><td style="padding:10px 12px;color:#f97316;font-weight:600;">⑤ aivis</td><td style="padding:10px 12px;color:#475569;">跨 LLM 引用率追蹤 — 結果驗證層</td><td style="padding:10px 12px;text-align:right;color:#94a3b8;font-size:11px;">需 Pro 訂閱</td></tr>
+          <tr><td style="padding:10px 12px;color:#f97316;font-weight:600;">⑤ aivis</td><td style="padding:10px 12px;color:#475569;">跨 LLM 引用率追蹤 — 實際去問 ChatGPT / Claude / Gemini</td><td style="padding:10px 12px;text-align:right;">${aivisCell}</td></tr>
         </tbody>
       </table>
     </div>
@@ -361,7 +386,7 @@ function buildRecommendationsHTML(data, clientInfo) {
   const date = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
   return `
     <div style="width:794px;background:white;font-family:'Microsoft JhengHei','微軟正黑體','PingFang TC',sans-serif;color:#1e293b;padding:48px 56px;min-height:1080px;">
-      <div style="font-size:11px;color:#94a3b8;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">02 · Recommendations</div>
+      <div style="font-size:11px;color:#94a3b8;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">07 · Recommendations</div>
       <h2 style="font-size:28px;font-weight:bold;color:#1e293b;margin:0 0 12px;letter-spacing:-0.02em;">給您的 Top ${actionItems.length} 建議行動</h2>
       <p style="font-size:13px;color:#64748b;line-height:1.7;margin:0 0 20px;">
         以下依優先級排序、由高至低、修這 ${actionItems.length} 項可帶來最大 AI 能見度提升。建議在下一個 sprint 內完成。
@@ -439,12 +464,12 @@ function buildDetailedAuditHTML(data, clientInfo) {
   }
   return `
     <div style="width:794px;background:white;font-family:'Microsoft JhengHei','微軟正黑體','PingFang TC',sans-serif;color:#1e293b;padding:48px 56px;">
-      <div style="font-size:11px;color:#94a3b8;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">03 · Detailed Audit</div>
+      <div style="font-size:11px;color:#94a3b8;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">08 · Detailed Audit</div>
       <h2 style="font-size:28px;font-weight:bold;color:#1e293b;margin:0 0 24px;letter-spacing:-0.02em;">各訊號層詳細檢測</h2>
       ${[
         { key: 'SEO', fullName: 'Search Engine Optimization', score: seoScore, checks: seoChecks, desc: '傳統搜尋排名地基' },
         { key: 'AEO', fullName: 'Answer Engine Optimization', score: aeoScore, checks: aeoChecks, desc: '讓 AI 把你當答案' },
-        { key: 'GEO', fullName: 'Generative Engine Optimization', score: geoScore, checks: geoChecks, desc: '讓生成式 AI 推薦你' },
+        { key: 'GEO', fullName: 'Generative Engine Optimization', score: geoScore, checks: geoChecks, desc: '讓生成式 AI 讀得到你' },
         { key: 'E-E-A-T', fullName: 'Experience · Expertise · Authoritativeness · Trustworthiness', score: eeatScore, checks: eeatChecks, desc: '可信度框架' },
       ].map(s => `
         <div style="margin-bottom:32px;">
@@ -470,11 +495,27 @@ function buildDetailedAuditHTML(data, clientInfo) {
 export async function exportClientProposalPDF(data, clientInfo) {
   // 2026-06-07：分段渲染 — 每個 section 各自 1 個 canvas、各自 1 頁 PDF
   // 不再用單一 HTML + html2canvas 切片（之前會在文字中間切、看起來不專業）
+  // aivis 四頁只有真的有掃描資料才會出現（builder 自己回 null）——沒資料就是原本的 4 頁報告，不放空殼頁
+  const aivis = data?.aivisReport
+  // 判語先算：封面的檢測範圍摘要與第 1 頁的一句話結論都吃它
+  const verdict = buildVerdict({
+    scores: {
+      seo: data?.seoAudit?.score, aeo: data?.aeoAudit?.score,
+      geo: data?.geoAudit?.score, eeat: data?.eeatAudit?.score,
+    },
+    aivis,
+  })
   const sections = [
-    buildCoverHTML(data, clientInfo),
+    buildCoverHTML(data, clientInfo, verdict),
+    buildExecutiveVerdictHTML(verdict, clientInfo),   // 一句話結論 + 好消息／最強一題／缺口／資源配置
     buildSummaryHTML(data),
+    buildAivisMatrixHTML(aivis),      // 實測矩陣（每格帶分母）
+    buildAivisEvidenceHTML(aivis),    // AI 原話與引用來源
+    buildAivisTrendHTML(aivis),       // 與上一次對照（只有兩場以上才有）
+    buildAivisSourceHTML(aivis),      // 分引擎來源歸因
     buildRecommendationsHTML(data, clientInfo),  // 可能 null（無建議行動）
     buildDetailedAuditHTML(data, clientInfo),
+    buildCommitmentHTML({ verdict, aivis, clientInfo }),   // 承諾邊界（最後一頁，永遠出現）
   ].filter(Boolean)
 
   const container = document.createElement('div')
