@@ -103,11 +103,24 @@ async function handleStart(req, res, supabase, userId) {
 
   // 同一網站只允許 1 個 active job（避免重複觸發）
   const { data: existing } = await supabase
-    .from('bulk_scan_jobs').select('id, status')
+    .from('bulk_scan_jobs').select('id, status, started_at')
     .eq('website_id', websiteId)
     .in('status', ['pending', 'discovering', 'scanning'])
+    .order('started_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
-  if (existing) {
+  // 2026-10-29：'discovering' 只活在本支 request 裡（找完 sitemap 就改 scanning）。request 被 Vercel 中斷
+  // （逾時／部署切換）會留下永遠卡 discovering 的殭屍 job，worker 只撿 scanning、沒人清 → 這個網站永遠無法重掃。
+  // 超過 5 分鐘（> 任何函式上限）還在 discovering 就判定死掉、標 failed 放行
+  const isZombie = existing && ['pending', 'discovering'].includes(existing.status) &&
+    Date.now() - new Date(existing.started_at).getTime() > 5 * 60 * 1000
+  if (isZombie) {
+    await supabase.from('bulk_scan_jobs').update({
+      status: 'failed',
+      error_message: '探索 sitemap 時中斷（request 逾時），已自動結束',
+      finished_at: new Date().toISOString(),
+    }).eq('id', existing.id)
+  } else if (existing) {
     return res.status(409).json({ error: '此網站已有進行中的批次掃描', jobId: existing.id, status: existing.status })
   }
 

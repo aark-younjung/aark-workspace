@@ -105,6 +105,13 @@ export default function BulkScan({ inShell = false }) {
         body: JSON.stringify({ websiteId, mode: safeMode }),
       })
       const data = await r.json()
+      // 409 = 已有進行中的 job（可能是別的分頁開的）— 直接切過去顯示進度條＋取消鈕，不要只丟錯誤訊息
+      // 讓用戶對著舊結果乾瞪眼（2026-10-29）
+      if (r.status === 409 && data.jobId) {
+        const { data: running } = await supabase
+          .from('bulk_scan_jobs').select('*').eq('id', data.jobId).single()
+        if (running) { setJob(running); setResults(null); return }
+      }
       // detail 優先：後端的 detail 帶完整診斷（試了哪些路徑、robots.txt 有沒有寫、是否被 anti-bot 擋）
       // 只顯示泛泛的 data.error 會讓用戶不知道怎麼修（2026-06-12 fix）
       if (!r.ok) throw new Error(data.detail || data.hint || data.error || `HTTP ${r.status}`)
