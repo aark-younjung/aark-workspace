@@ -523,7 +523,10 @@ function analyzeArticleHtml(html, url) {
       label: '缺 <title> 標題',
       suggestion: brandName ? {
         kind: 'code',
-        note: `加在 <head> 區、品牌名「${brandName}」自動帶入`,
+        // 品牌名還是多段 = 交叉比對不到、照網站名稱整串帶入，可能夾著關鍵字 → 請用戶自己確認
+        note: /\s/.test(brandName)
+          ? `加在 <head> 區。品牌名照網站名稱「${brandName}」帶入；如果裡面含關鍵字（例：「台南網頁設計 優勢方舟」），請只留品牌本身，主關鍵字放前段`
+          : `加在 <head> 區、品牌名「${brandName}」自動帶入`,
         code_snippet: `<title>主關鍵字｜${brandName}</title>`,
       } : null,
     })
@@ -1172,9 +1175,24 @@ function decodeEntities(s) {
 
 // 從 HTML 抽品牌名 — 用來建議「{title}｜{brand}」這種 SEO 標題模板
 // 優先序：og:site_name > 從 <title> 末段「｜brand」或「| brand」或「- brand」抓
+// 2026-10-29：og:site_name 常是「關鍵字 + 品牌」（a-ark「台南網頁設計 優勢方舟」），整串拿去當品牌會把關鍵字
+// 灌進每個標題範本與 OG／schema。網站名稱有多段時，用這頁的 <title>／og:title／twitter:title 交叉比對，
+// 剛好只有一段出現在其中 → 那段才是品牌。對不到（例如整頁沒標題）就照舊回整串，由呼叫端提醒用戶確認
 function extractBrandName(html, metaTitle) {
   const siteName = matchAttr(html, /<meta\s+[^>]*property\s*=\s*["']og:site_name["'][^>]*>/i)
-  if (siteName && siteName.length <= 30) return siteName
+  if (siteName && siteName.length <= 30) {
+    const segs = siteName.split(/[\s｜|\-–—·]+/).filter(s => s.length >= 2)
+    if (segs.length > 1) {
+      const hay = [
+        metaTitle,
+        matchAttr(html, /<meta\s+[^>]*property\s*=\s*["']og:title["'][^>]*>/i),
+        matchAttr(html, /<meta\s+[^>]*name\s*=\s*["']twitter:title["'][^>]*>/i),
+      ].filter(Boolean).join(' ')
+      const hits = segs.filter(s => hay.includes(s))
+      if (hits.length === 1) return hits[0]
+    }
+    return siteName
+  }
   // 從現有 title 倒推：「主標題｜品牌」「主標題 - 品牌」抓最後一段
   if (metaTitle) {
     const m = metaTitle.match(/[｜|\-–—]\s*([^｜|\-–—]{2,30})\s*$/)
