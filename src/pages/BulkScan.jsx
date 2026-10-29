@@ -447,7 +447,7 @@ function ResultsView({ job, results, onRescan, starting, websiteId, userId, webs
             <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {offenderResults.map((r, i) => (
-                  <UrlRow key={i} result={r} websiteId={websiteId} userId={userId} />
+                  <UrlRow key={i} index={i + 1} result={r} websiteId={websiteId} userId={userId} />
                 ))}
               </div>
             </GlassCard>
@@ -560,7 +560,8 @@ function ProblemBreakdown({ sortedProblems, totalScanned }) {
   )
 }
 
-function UrlRow({ result, websiteId, userId }) {
+// index：列表序號（從 1 起），方便對照「第幾篇」；不傳就不顯示
+function UrlRow({ result, websiteId, userId, index }) {
   const probs = result.findings?.problems || []
   const isDone = result.status === 'done'
   const hasProblems = isDone && probs.length > 0
@@ -582,6 +583,9 @@ function UrlRow({ result, websiteId, userId }) {
         cursor: hasProblems ? 'pointer' : 'default',
       }}
       onClick={() => hasProblems && setExpanded(v => !v)}>
+        {index != null && (
+          <span style={{ fontSize: 14, color: T.textLow, minWidth: '2.5em', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{index}.</span>
+        )}
         <a href={result.url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{
           fontSize: 14, color: T.textMid, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           textDecoration: 'none', marginRight: 8,
@@ -1409,7 +1413,7 @@ function FullResultsList({ results, websiteId, userId }) {
         <GlassCard color={PAGE_ACCENT} style={{ padding: 16, marginBottom: 20 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 600, overflowY: 'auto' }}>
             {(results.results || []).map((r, i) => (
-              <UrlRow key={i} result={r} websiteId={websiteId} userId={userId} />
+              <UrlRow key={i} index={i + 1} result={r} websiteId={websiteId} userId={userId} />
             ))}
           </div>
         </GlassCard>

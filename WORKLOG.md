@@ -6,6 +6,13 @@
 
 ---
 
+### 2026-10-29e（批次掃描列表加序號）
+
+- [BulkScan.jsx](src/pages/BulkScan.jsx) `UrlRow` 新增 `index` prop，「最需要修的 N 篇」和「全部結果」每一列前面都有序號（1.、2.…），方便對照第幾篇。
+- 備忘：這台 Windows 跑 `vite build` 會在 transform 之後崩潰（exit 127，`dist/` 不會更新），Vercel 上 build 正常。本機要檢查語法，改用 `rolldown/utils` 的 `transform` 對單檔檢查。
+
+---
+
 ### 2026-10-29d（品牌偵測：網站名稱夾關鍵字時只取品牌段）
 
 **起因**：早上修的「標題已含品牌就不再接」只處理了短標題。品牌偵測本身還是把 og:site_name 整串當品牌，所以「缺 <title>」的範本會變成「主關鍵字｜台南網頁設計 優勢方舟」，OG 和 schema 的 siteName 也一樣夾著關鍵字。
